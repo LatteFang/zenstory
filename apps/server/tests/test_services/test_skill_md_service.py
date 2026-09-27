@@ -13,6 +13,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+import yaml
 
 from services.skill_md_service import SkillMdService, skill_md_service
 
@@ -369,6 +370,75 @@ class TestContentStructure:
         # Both should have JSON in examples
         assert '"title":' in zh_content
         assert '"title":' in en_content
+
+
+def _parse_frontmatter(content: str) -> dict:
+    assert content.startswith("---\n")
+    frontmatter = content.split("---\n", 2)[1]
+    return yaml.safe_load(frontmatter)
+
+
+@pytest.mark.unit
+class TestAgentSkillsSpecCompliance:
+    """/skill.md frontmatter must follow the Agent Skills spec (agentskills.io)."""
+
+    ALLOWED_TOP_LEVEL = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
+
+    @pytest.fixture(params=["zh", "en"])
+    def frontmatter(self, request):
+        return _parse_frontmatter(SkillMdService().generate_skill_md(lang=request.param))
+
+    def test_only_spec_fields_at_top_level(self, frontmatter):
+        assert set(frontmatter) <= self.ALLOWED_TOP_LEVEL
+        assert {"name", "description", "metadata"} <= set(frontmatter)
+
+    def test_name_is_lowercase_slug(self, frontmatter):
+        assert frontmatter["name"] == "zenstory"
+
+    def test_description_within_limit(self, frontmatter):
+        description = frontmatter["description"]
+        assert isinstance(description, str)
+        assert 0 < len(description) <= 1024
+        assert "zenstory" in description
+
+    def test_metadata_is_string_map_with_legacy_fields(self, frontmatter):
+        metadata = frontmatter["metadata"]
+        assert all(isinstance(k, str) and isinstance(v, str) for k, v in metadata.items())
+        for key in (
+            "version", "api_base", "auth_method", "auth_header", "auth_prefix",
+            "rate_limit", "triggers", "capabilities", "file_types",
+        ):
+            assert key in metadata
+        assert metadata["auth_header"] == "X-Agent-API-Key"
+        assert metadata["auth_prefix"] == "eg_"
+        assert "read=2000/hour" in metadata["rate_limit"]
+        assert "writing_context" in metadata["capabilities"]
+
+    def test_metadata_keeps_env_values(self):
+        with patch.dict(os.environ, {"APP_VERSION": "2.5.0", "API_BASE_URL": "https://custom.api.com/api/v1"}):
+            metadata = _parse_frontmatter(SkillMdService().generate_skill_md(lang="en"))["metadata"]
+        assert metadata["version"] == "2.5.0"
+        assert metadata["api_base"] == "https://custom.api.com/api/v1"
+
+    @pytest.mark.parametrize("lang", ["zh", "en"])
+    def test_body_recommends_cli(self, lang):
+        content = SkillMdService().generate_skill_md(lang=lang)
+        body = content.split("---\n", 2)[2]
+        assert "npx zenstory login\n" in body
+        assert "npx zenstory login --key" not in body
+        assert "Paste API key:" in body
+        assert "npx zenstory skill install" in body
+        # If a key leaked into a chat, the doc tells the user to regenerate it.
+        assert ("重新生成" if lang == "zh" else "regenerate it") in body
+        # The CLI section sits near the top, before authentication details.
+        auth_heading = "## 认证说明" if lang == "zh" else "## Authentication"
+        assert body.index("npx zenstory login") < body.index(auth_heading)
+
+    @pytest.mark.parametrize("lang", ["zh", "en"])
+    def test_self_hosted_login_command_carries_api_base(self, lang):
+        with patch.dict(os.environ, {"API_BASE_URL": "https://zenstory.example.com/api/v1/"}):
+            body = SkillMdService().generate_skill_md(lang=lang).split("---\n", 2)[2]
+        assert "npx zenstory login --api-base https://zenstory.example.com/api/v1\n" in body
 
 
 @pytest.mark.unit

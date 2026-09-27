@@ -517,17 +517,5 @@
         "description": "The inspiration library helps you refill premises, setup, and opening scenes whenever you hit a wall."
       }
     }
-  },
-  "agentConnection": {
-    "title": "Connect your AI agent",
-    "activeTitle": "AI agent connected",
-    "description": "Let Claude Code or OpenClaw directly operate your novel projects",
-    "createKey": "Create Key",
-    "manageKeys": "Manage",
-    "manageKeysAria": "Manage API keys",
-    "createKeyAria": "Create an Agent API key",
-    "keyCount": "{{count}} active key(s)",
-    "errorTitle": "Failed to load",
-    "retry": "Retry"
   }
 }

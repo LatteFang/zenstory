@@ -20,6 +20,31 @@ RATE_LIMITS = {
     "context": "500/hour",
 }
 
+# Agent Skills spec (agentskills.io): only name/description/license/compatibility/metadata/
+# allowed-tools are valid top-level keys, and metadata is a string-to-string map. Legacy
+# fields (version, api_base, triggers, ...) therefore live under `metadata` as strings.
+_DESCRIPTIONS = {
+    "zh": (
+        "zenstory（AI 辅助小说写作工作台）的 Agent API 使用说明：用 API Key 读取和管理用户在 zenstory 中的"
+        "小说项目、章节草稿、大纲、人物设定、世界观与素材，并提供混合搜索与写作上下文。"
+        "当用户提到 zenstory、自己存放在 zenstory 的小说项目，或需要读写其中的章节、大纲、人物、设定时使用。"
+    ),
+    "en": (
+        "Documents the zenstory Agent API: reads and manages a user's novel projects in zenstory "
+        "(chapter drafts, outlines, characters, lore, materials) with an API key, plus hybrid search "
+        "and AI-assembled writing context. Use when the user mentions zenstory or a novel project stored "
+        "there, or asks to read or write its chapters, outlines, characters or world-building."
+    ),
+}
+_DEFAULT_API_BASE = "https://api.zenstory.ai/api/v1"
+_CAPABILITIES = "project_management, file_crud, hybrid_search, writing_context"
+_FILE_TYPES = "outline, draft, character, lore, material"
+
+
+def _rate_limit_str() -> str:
+    return ", ".join(f"{k}={v}" for k, v in RATE_LIMITS.items())
+
+
 _TABLE_HEADERS = {
     "zh": "| 端点 | 方法 | 描述 | 所需权限 |\n|------|------|------|----------|",
     "en": "| Endpoint | Method | Description | Required Scope |\n|----------|--------|-------------|----------------|",
@@ -58,7 +83,14 @@ class SkillMdService:
     def __init__(self):
         self.app_name = os.getenv("APP_NAME", "zenstory API")
         self.app_version = os.getenv("APP_VERSION", "1.0.0")
-        self.api_base = os.getenv("API_BASE_URL", "https://api.zenstory.ai/api/v1")
+        self.api_base = os.getenv("API_BASE_URL", _DEFAULT_API_BASE)
+
+    def _cli_login_command(self) -> str:
+        """`npx zenstory login`, plus --api-base when this server is not the hosted one."""
+        base = self.api_base.rstrip("/")
+        if base == _DEFAULT_API_BASE:
+            return "npx zenstory login"
+        return f"npx zenstory login --api-base {base}"
 
     def generate_skill_md(self, lang: str = "zh") -> str:
         """
@@ -90,45 +122,39 @@ class SkillMdService:
         endpoint_table = _build_endpoint_table(endpoints, "zh")
 
         return f'''---
-name: zenstory 小说写作平台
-version: "{self.app_version}"
-description: AI 辅助的小说写作工作台，支持大纲、草稿、人物设定、世界观管理
-api_base: {self.api_base}
-auth_method: api_key
-auth_header: X-Agent-API-Key
-auth_prefix: eg_
-rate_limit:
-  read: {RATE_LIMITS["read"]}
-  write: {RATE_LIMITS["write"]}
-  search: {RATE_LIMITS["search"]}
-  context: {RATE_LIMITS["context"]}
-triggers:
-  - "写小说"
-  - "小说创作"
-  - "角色创建"
-  - "大纲规划"
-  - "世界观设定"
-  - "write a novel"
-  - "create characters"
-  - "story outline"
-  - "world building"
-  - "draft chapters"
-capabilities:
-  - project_management
-  - file_crud
-  - hybrid_search
-  - writing_context
-file_types:
-  - outline
-  - draft
-  - character
-  - lore
-  - material
+name: zenstory
+description: "{_DESCRIPTIONS["zh"]}"
+metadata:
+  display_name: "zenstory 小说写作平台"
+  version: "{self.app_version}"
+  api_base: "{self.api_base}"
+  auth_method: "api_key"
+  auth_header: "X-Agent-API-Key"
+  auth_prefix: "eg_"
+  rate_limit: "{_rate_limit_str()}"
+  triggers: "写小说, 小说创作, 角色创建, 大纲规划, 世界观设定, write a novel, create characters, story outline, world building, draft chapters"
+  capabilities: "{_CAPABILITIES}"
+  file_types: "{_FILE_TYPES}"
+  cli: "npx zenstory"
 ---
 
 # zenstory 小说写作平台
 
 AI 辅助的小说写作工作台，提供智能对话、文件管理、语义搜索等功能。
+
+## 推荐：使用 zenstory CLI
+
+编程 Agent（Claude Code、Codex、OpenClaw 等）推荐直接使用官方 CLI 和标准 Agent Skill，无需手写 HTTP 请求：
+
+```bash
+{self._cli_login_command()}
+# 出现 "Paste API key:" 时粘贴密钥（输入不回显，不会进入 shell 历史；本地以 0600 权限保存）
+npx zenstory skill install   # 安装 Skill 到 Claude Code（--target codex|openclaw|<目录>）
+npx zenstory whoami          # 检查登录状态与读写权限
+```
+
+请由用户本人在终端里运行登录命令并在提示时粘贴密钥，不要把密钥写在命令行参数里，也不要贴进 AI 对话。
+如果密钥已经被贴进对话，请到「设置 → Agent」重新生成密钥后再登录。
 
 ## 认证说明
 
@@ -285,45 +311,40 @@ API 返回标准化的错误响应格式：
         endpoint_table = _build_endpoint_table(endpoints, "en")
 
         return f'''---
-name: zenstory Novel Writing Platform
-version: "{self.app_version}"
-description: AI-assisted novel writing workbench with file management, semantic search, and writing context
-api_base: {self.api_base}
-auth_method: api_key
-auth_header: X-Agent-API-Key
-auth_prefix: eg_
-rate_limit:
-  read: {RATE_LIMITS["read"]}
-  write: {RATE_LIMITS["write"]}
-  search: {RATE_LIMITS["search"]}
-  context: {RATE_LIMITS["context"]}
-triggers:
-  - "write a novel"
-  - "novel writing"
-  - "create characters"
-  - "story outline"
-  - "world building"
-  - "draft chapters"
-  - "写小说"
-  - "小说创作"
-  - "角色创建"
-  - "大纲规划"
-capabilities:
-  - project_management
-  - file_crud
-  - hybrid_search
-  - writing_context
-file_types:
-  - outline
-  - draft
-  - character
-  - lore
-  - material
+name: zenstory
+description: "{_DESCRIPTIONS["en"]}"
+metadata:
+  display_name: "zenstory Novel Writing Platform"
+  version: "{self.app_version}"
+  api_base: "{self.api_base}"
+  auth_method: "api_key"
+  auth_header: "X-Agent-API-Key"
+  auth_prefix: "eg_"
+  rate_limit: "{_rate_limit_str()}"
+  triggers: "write a novel, novel writing, create characters, story outline, world building, draft chapters, 写小说, 小说创作, 角色创建, 大纲规划"
+  capabilities: "{_CAPABILITIES}"
+  file_types: "{_FILE_TYPES}"
+  cli: "npx zenstory"
 ---
 
 # zenstory Novel Writing Platform
 
 AI-assisted novel writing workbench with file management, semantic search, and writing context.
+
+## Recommended: use the zenstory CLI
+
+Coding agents (Claude Code, Codex, OpenClaw, ...) should prefer the official CLI and standard Agent Skill over hand-written HTTP calls:
+
+```bash
+{self._cli_login_command()}
+# paste the key at the "Paste API key:" prompt (hidden input, kept out of shell history; stored locally, mode 0600)
+npx zenstory skill install   # install the skill for Claude Code (--target codex|openclaw|<dir>)
+npx zenstory whoami          # check login state and read/write scopes
+```
+
+The user should run the login command in their own terminal and paste the key when prompted. Never put the key
+on the command line or paste it into an AI chat; if it was already pasted into a chat, regenerate it in
+Settings → Agent and log in again.
 
 ## Authentication
 

@@ -20,6 +20,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.server_backend }}
       frontend: ${{ steps.filter.outputs.web_frontend }}
+      cli: ${{ steps.filter.outputs.cli }}
       ci: ${{ steps.filter.outputs.ci }}
     steps:
     - name: Checkout code
@@ -34,6 +35,9 @@ jobs:
             - 'apps/server/**'
           web_frontend:
             - 'apps/web/**'
+          cli:
+            - 'apps/cli/**'
+            - 'pnpm-lock.yaml'
           ci:
             - '.github/workflows/**'
             - '.github/actions/**'
@@ -374,6 +378,40 @@ jobs:
         path: apps/web/dist/
         retention-days: 7
 
+  cli-test:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.cli == 'true' || needs.detect-changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 10.29.3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+        cache-dependency-path: pnpm-lock.yaml
+
+    - name: Install CLI dependencies
+      run: pnpm install --frozen-lockfile --filter zenstory
+
+    - name: Run CLI tests
+      run: pnpm --filter zenstory test
+
+    - name: Build CLI
+      run: pnpm --filter zenstory build
+
+    - name: Check npm package contents
+      working-directory: apps/cli
+      run: npm pack --dry-run
+
   vercel-build:
     needs: detect-changes
     if: needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.ci == 'true'
@@ -404,7 +442,7 @@ jobs:
 
   ci-summary:
     runs-on: ubuntu-latest
-    needs: [detect-changes, frontend-lint, ci-lint, backend-test, prefect-compatibility, production-images, frontend-test, frontend-build, vercel-build]
+    needs: [detect-changes, frontend-lint, ci-lint, backend-test, prefect-compatibility, production-images, frontend-test, frontend-build, cli-test, vercel-build]
     if: always()
     steps:
     - name: Check CI results
@@ -416,6 +454,7 @@ jobs:
         PRODUCTION_IMAGES_RESULT: ${{ needs['production-images'].result }}
         FRONTEND_TEST_RESULT: ${{ needs['frontend-test'].result }}
         FRONTEND_BUILD_RESULT: ${{ needs['frontend-build'].result }}
+        CLI_TEST_RESULT: ${{ needs['cli-test'].result }}
         VERCEL_BUILD_RESULT: ${{ needs['vercel-build'].result }}
       run: |
         echo "Frontend lint: $FRONTEND_LINT_RESULT"
@@ -425,6 +464,7 @@ jobs:
         echo "Production images: $PRODUCTION_IMAGES_RESULT"
         echo "Frontend tests: $FRONTEND_TEST_RESULT"
         echo "Frontend build: $FRONTEND_BUILD_RESULT"
+        echo "CLI tests: $CLI_TEST_RESULT"
         echo "Vercel build: $VERCEL_BUILD_RESULT"
 
         check_job() {
@@ -444,6 +484,7 @@ jobs:
         check_job "production-images" "$PRODUCTION_IMAGES_RESULT"
         check_job "frontend-test" "$FRONTEND_TEST_RESULT"
         check_job "frontend-build" "$FRONTEND_BUILD_RESULT"
+        check_job "cli-test" "$CLI_TEST_RESULT"
         check_job "vercel-build" "$VERCEL_BUILD_RESULT"
 
         echo "All CI checks passed!"

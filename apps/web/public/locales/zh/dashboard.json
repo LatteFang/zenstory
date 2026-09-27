@@ -517,17 +517,5 @@
         "description": "灵感库可以帮你补素材、补设定、补开头。卡住时先来这里找突破口。"
       }
     }
-  },
-  "agentConnection": {
-    "title": "连接你的 AI 助手",
-    "activeTitle": "AI 助手已连接",
-    "description": "让 Claude Code 或 OpenClaw 直接操作你的小说项目",
-    "createKey": "创建 Key",
-    "manageKeys": "管理",
-    "manageKeysAria": "管理 API 密钥",
-    "createKeyAria": "创建 Agent API 密钥",
-    "keyCount": "{{count}} 个活跃密钥",
-    "errorTitle": "加载失败",
-    "retry": "重试"
   }
 }

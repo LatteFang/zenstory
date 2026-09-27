@@ -25,6 +25,7 @@ from core.error_handler import APIException
 from database import create_session
 from middleware.rate_limit import require_agent_rate_limit
 from models import File, Project
+from models.file_version import CHANGE_SOURCE_USER, CHANGE_TYPE_AI_EDIT
 from services.agent_auth_service import verify_project_access
 from utils.logger import get_logger, log_with_context
 
@@ -385,7 +386,8 @@ async def list_files(
     if parent_id is not None:
         query = query.where(File.parent_id == parent_id)
 
-    query = query.order_by(File.order.asc(), col(File.created_at).desc())
+    # File.id is the final tiebreaker so offset pagination is deterministic.
+    query = query.order_by(File.order.asc(), col(File.created_at).desc(), File.id.asc())
     query = query.offset(offset).limit(limit)
 
     files = session.exec(query).all()
@@ -556,6 +558,41 @@ async def get_file(
     return FileResponse.model_validate(file).to_filtered_dict(requested_fields)
 
 
+def _snapshot_agent_file_update(session, file: File, user_id: str, api_key_id: str) -> None:
+    """Record a FileVersion for an Agent API content update, like the web PUT /files/{id}.
+
+    Same contract as api/files.py update_file: the version is attributed to the user
+    (quota_source=user, so an API key cannot bypass the per-file version quota), it is
+    flushed inside a savepoint of the caller's transaction, and a quota overflow or snapshot
+    failure never blocks the content save.
+    """
+    from services.file_version import get_file_version_service
+
+    try:
+        with session.begin_nested():
+            get_file_version_service().create_version(
+                session=session,
+                file_id=file.id,
+                new_content=file.content,
+                change_type=CHANGE_TYPE_AI_EDIT,
+                change_source=CHANGE_SOURCE_USER,
+                change_summary="Updated via Agent API",
+                user_id=user_id,
+                quota_source=CHANGE_SOURCE_USER,
+                commit=False,
+            )
+    except Exception as e:
+        log_with_context(
+            logger,
+            logging.WARNING,
+            "Agent API: saved file content without a version snapshot",
+            error=str(e),
+            file_id=file.id,
+            api_key_id=api_key_id,
+            operation="agent_update_file_create_version",
+        )
+
+
 @router.put("/files/{file_id}", response_model=FileResponse)
 async def update_file(
     file_id: str,
@@ -598,10 +635,14 @@ async def update_file(
     if file_data.title is not None:
         file.title = file_data.title
 
+    content_changed = file_data.content is not None and file_data.content != file.content
     if file_data.content is not None:
         file.content = file_data.content
 
     file.updated_at = utcnow()
+
+    if content_changed:
+        _snapshot_agent_file_update(session, file, user_id, api_key.id)
 
     session.commit()
     session.refresh(file)

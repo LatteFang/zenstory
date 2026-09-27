@@ -3,13 +3,30 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Key, Plus, Copy, Trash2, RefreshCw, Shield, ShieldOff, Check, Zap, X } from 'lucide-react';
 import { agentApiKeysApi } from '../../lib/api';
+import { getApiBase } from '../../lib/apiClient';
 import { getLocaleCode } from '../../lib/i18n-helpers';
 import type {
   AgentApiKey,
   CreateAgentApiKeyRequest,
 } from '../../types';
 
-const SKILL_MD_URL = 'https://api.zenstory.ai/skill.md';
+const HOSTED_API_ORIGIN = 'https://api.zenstory.ai';
+/** Origins that reach the hosted API (the web app may call it directly or through the /api rewrite). */
+const HOSTED_ORIGINS = new Set([HOSTED_API_ORIGIN, 'https://zenstory.ai', 'https://www.zenstory.ai']);
+const SKILL_INSTALL_COMMAND = 'npx zenstory skill install';
+
+/**
+ * CLI login command and skill.md URL for the server this web app talks to. Self-hosted
+ * deployments get an explicit --api-base so the key is bound to (and only sent to) that server.
+ * The key itself is never part of the command: `zenstory login` prompts for it.
+ */
+function getAgentConnectInfo(apiBase: string = getApiBase()) {
+  const origin = apiBase.trim().replace(/\/+$/, '');
+  if (!origin || HOSTED_ORIGINS.has(origin)) {
+    return { loginCommand: 'npx zenstory login', skillMdUrl: `${HOSTED_API_ORIGIN}/skill.md` };
+  }
+  return { loginCommand: `npx zenstory login --api-base ${origin}/api/v1`, skillMdUrl: `${origin}/skill.md` };
+}
 
 const SCOPES = [
   { value: 'read', labelKey: 'settings:apiKeys.permissions.read' },
@@ -90,6 +107,102 @@ function ConfirmDialog({
   );
 }
 
+function CopiedStatus({ copied }: { copied: boolean }) {
+  const { t } = useTranslation('settings');
+  return (
+    <span role="status" aria-live="polite" className="sr-only">
+      {copied ? t('apiKeys.copied') : ''}
+    </span>
+  );
+}
+
+function CommandLine({ command }: { command: string }) {
+  const { t } = useTranslation('settings');
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (await copyToClipboard(command)) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[hsl(var(--bg-tertiary))] border border-[hsl(var(--border-color))]">
+      <code className="flex-1 min-w-0 text-xs text-[hsl(var(--text-primary))] font-mono break-all">
+        {command}
+      </code>
+      <button
+        onClick={handleCopy}
+        aria-label={copied ? t('apiKeys.copied') : t('apiKeys.copy')}
+        className="shrink-0 p-1 rounded-md hover:bg-[hsl(var(--bg-hover))] transition-colors text-[hsl(var(--text-secondary))]"
+      >
+        {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+      </button>
+      <CopiedStatus copied={copied} />
+    </div>
+  );
+}
+
+function ConnectGuide() {
+  const { t } = useTranslation('settings');
+  const { loginCommand, skillMdUrl } = getAgentConnectInfo();
+  const steps = [
+    { label: t('apiKeys.connectGuide.step1') },
+    {
+      label: t('apiKeys.connectGuide.step2'),
+      command: loginCommand,
+      hint: t('apiKeys.connectGuide.step2Hint'),
+    },
+    {
+      label: t('apiKeys.connectGuide.step3'),
+      command: SKILL_INSTALL_COMMAND,
+      hint: t('apiKeys.connectGuide.step3Hint'),
+    },
+  ];
+
+  return (
+    <section
+      aria-labelledby="agent-connect-guide-title"
+      className="p-4 rounded-xl border border-[hsl(var(--border-color))] bg-[hsl(var(--bg-secondary))]"
+    >
+      <h3 id="agent-connect-guide-title" className="text-sm font-medium text-[hsl(var(--text-primary))] mb-1">
+        {t('apiKeys.connectGuide.title')}
+      </h3>
+      <p className="text-xs text-[hsl(var(--text-secondary))] mb-3">
+        {t('apiKeys.connectGuide.description')}
+      </p>
+      <ol className="space-y-3">
+        {steps.map((step, index) => (
+          <li key={index} className="flex gap-2.5">
+            <span aria-hidden="true" className="shrink-0 w-5 h-5 rounded-full bg-[hsl(var(--bg-tertiary))] text-[10px] font-medium text-[hsl(var(--text-secondary))] flex items-center justify-center">
+              {index + 1}
+            </span>
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <div className="text-xs text-[hsl(var(--text-primary))] leading-5">{step.label}</div>
+              {step.command && <CommandLine command={step.command} />}
+              {step.hint && (
+                <p className="text-[11px] text-[hsl(var(--text-secondary))]">{step.hint}</p>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 text-[11px] text-[hsl(var(--text-secondary))]">
+        {t('apiKeys.connectGuide.otherAgents')}{' '}
+        <a
+          href={skillMdUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-[hsl(var(--accent-primary))] hover:underline break-all"
+        >
+          {skillMdUrl}
+        </a>
+      </p>
+    </section>
+  );
+}
+
 function KeyCreatedModal({
   apiKey,
   onClose,
@@ -97,30 +210,14 @@ function KeyCreatedModal({
   apiKey: string;
   onClose: () => void;
 }) {
-  const { t, i18n } = useTranslation('settings');
+  const { t } = useTranslation('settings');
   const [copied, setCopied] = useState(false);
-  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const { loginCommand } = getAgentConnectInfo();
 
   const handleCopy = async () => {
     if (await copyToClipboard(apiKey)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const isZh = i18n.language.startsWith('zh');
-  const promptTemplate = isZh
-    ? t('apiKeys.agentPromptZh')
-    : t('apiKeys.agentPromptEn');
-
-  const agentPrompt = promptTemplate
-    .replace(/\{\{skillUrl\}\}/g, SKILL_MD_URL)
-    .replace(/\{\{apiKey\}\}/g, apiKey);
-
-  const handleCopyPrompt = async () => {
-    if (await copyToClipboard(agentPrompt)) {
-      setCopiedPrompt(true);
-      setTimeout(() => setCopiedPrompt(false), 2000);
     }
   };
 
@@ -137,26 +234,25 @@ function KeyCreatedModal({
           <code className="flex-1 text-xs text-[hsl(var(--text-primary))] break-all font-mono">
             {apiKey}
           </code>
-          <button onClick={handleCopy} className="shrink-0 p-1.5 rounded-lg hover:bg-[hsl(var(--bg-hover))] transition-colors text-[hsl(var(--text-secondary))]">
+          <button
+            onClick={handleCopy}
+            aria-label={copied ? t('apiKeys.copied') : t('apiKeys.copyKey')}
+            className="shrink-0 p-1.5 rounded-lg hover:bg-[hsl(var(--bg-hover))] transition-colors text-[hsl(var(--text-secondary))]"
+          >
             {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
           </button>
+          <CopiedStatus copied={copied} />
         </div>
 
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-[hsl(var(--text-primary))]">
-              {t('apiKeys.copyPrompt')}
-            </span>
-            <button onClick={handleCopyPrompt} className="flex items-center gap-1 text-xs text-[hsl(var(--accent-primary))] hover:opacity-80 transition-opacity">
-              {copiedPrompt ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
-              {copiedPrompt ? t('apiKeys.copiedPrompt') : t('apiKeys.copyPrompt')}
-            </button>
-          </div>
-          <div className="p-3 rounded-lg bg-[hsl(var(--bg-secondary))] border border-[hsl(var(--border-color))]">
-            <p className="text-xs text-[hsl(var(--text-secondary))] whitespace-pre-wrap font-mono leading-relaxed">
-              {agentPrompt}
-            </p>
-          </div>
+        <div className="mb-4 space-y-2">
+          <p className="text-xs text-[hsl(var(--text-secondary))]">
+            {t('apiKeys.createdNextSteps')}
+          </p>
+          <CommandLine command={loginCommand} />
+          <p className="text-[11px] text-[hsl(var(--text-secondary))]">
+            {t('apiKeys.connectGuide.step2Hint')}
+          </p>
+          <CommandLine command={SKILL_INSTALL_COMMAND} />
         </div>
 
         <div className="flex justify-end">
@@ -397,6 +493,7 @@ function KeyRow({
           <code className="font-mono">{apiKey.key_prefix}...</code>
           <button
             onClick={handleCopyPrefix}
+            aria-label={copiedPrefix ? t('apiKeys.copied') : t('apiKeys.copyPrefix')}
             className="p-0.5 rounded hover:bg-[hsl(var(--bg-hover))] transition-colors"
           >
             {copiedPrefix ? (
@@ -405,6 +502,7 @@ function KeyRow({
               <Copy size={11} />
             )}
           </button>
+          <CopiedStatus copied={copiedPrefix} />
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           {apiKey.scopes.map((scope) => (
@@ -538,29 +636,34 @@ export const AgentApiKeysPanel: React.FC = () => {
 
   if (keys.length === 0 && !showCreateForm) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 text-center">
-        <div className="w-12 h-12 rounded-full bg-[hsl(var(--bg-tertiary))] flex items-center justify-center mb-3">
-          <Key size={20} className="text-[hsl(var(--text-secondary))]" />
+      <div className="space-y-3">
+        <ConnectGuide />
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="w-12 h-12 rounded-full bg-[hsl(var(--bg-tertiary))] flex items-center justify-center mb-3">
+            <Key size={20} className="text-[hsl(var(--text-secondary))]" />
+          </div>
+          <h3 className="text-sm font-medium text-[hsl(var(--text-primary))] mb-1">
+            {t('apiKeys.noKeys')}
+          </h3>
+          <p className="text-xs text-[hsl(var(--text-secondary))] mb-4 max-w-xs">
+            {t('apiKeys.emptyState')}
+          </p>
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white bg-[hsl(var(--accent-primary))] hover:opacity-90 transition-colors"
+          >
+            <Plus size={14} />
+            {t('apiKeys.create')}
+          </button>
         </div>
-        <h3 className="text-sm font-medium text-[hsl(var(--text-primary))] mb-1">
-          {t('apiKeys.noKeys')}
-        </h3>
-        <p className="text-xs text-[hsl(var(--text-secondary))] mb-4 max-w-xs">
-          {t('apiKeys.emptyState')}
-        </p>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white bg-[hsl(var(--accent-primary))] hover:opacity-90 transition-colors"
-        >
-          <Plus size={14} />
-          {t('apiKeys.create')}
-        </button>
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
+      <ConnectGuide />
+
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-[hsl(var(--text-primary))]">{t('apiKeys.title')}</h3>
         {!showCreateForm && (

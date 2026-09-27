@@ -86,16 +86,27 @@
       "toggleFailed": "切换密钥状态失败",
       "nameRequired": "名称为必填项"
     },
-    "emptyState": "创建 API Key 后，将链接和密钥发给你的 AI 助手（Claude Code、OpenClaw 等），它会自动接入你的创作空间。",
-    "agentPromptZh": "请先阅读 {{skillUrl}} 了解我的小说写作平台 API，然后用以下 API Key 接入：\nAPI Key: {{apiKey}}\n请求头: X-Agent-API-Key: {{apiKey}}\n\n接入后请先调用 GET {{skillUrl}} 验证连接。",
-    "agentPromptEn": "Read {{skillUrl}} to learn about my novel writing platform API, then connect with this API key:\nAPI Key: {{apiKey}}\nHeader: X-Agent-API-Key: {{apiKey}}\n\nAfter connecting, verify by calling GET {{skillUrl}}.",
-    "copyPrompt": "复制给 AI 的提示词",
-    "copiedPrompt": "已复制！",
+    "emptyState": "创建 API 密钥后，用 zenstory 命令行工具登录，你的 AI 助手（Claude Code、Codex、OpenClaw 等）就能直接读写你的小说项目。",
     "testConnection": "测试连接",
     "testing": "测试中...",
     "testSuccess": "API Key 有效且处于活跃状态。",
     "testFailed": "连接失败：{{error}}",
-    "hintBar": "将 SKILL.md 链接和 API Key 发给你的 AI 助手，它会自动接入。"
+    "hintBar": "请在终端里登录，不要把 API 密钥贴进 AI 对话。密钥可以随时禁用或重新生成。",
+    "createdNextSteps": "在终端里运行以下命令完成接入（不要把密钥贴进 AI 对话）：",
+    "copy": "复制",
+    "copied": "已复制",
+    "copyKey": "复制 API 密钥",
+    "copyPrefix": "复制密钥前缀",
+    "connectGuide": {
+      "title": "在 AI 编程助手中使用 zenstory",
+      "description": "安装 zenstory 命令行工具和技能后，Claude Code、Codex、OpenClaw 等助手就能直接读写你的小说项目。需要 Node.js 20 或以上版本。",
+      "step1": "创建一个 API 密钥（只读或读写）",
+      "step2": "在终端里登录，出现提示时粘贴密钥——密钥只保存在本机",
+      "step2Hint": "出现提示时粘贴密钥（输入不会显示，也不会留在 shell 历史里）。",
+      "step3": "为 AI 助手安装 zenstory 技能",
+      "step3Hint": "默认安装到 Claude Code；其他助手加上 --target codex 或 --target openclaw。",
+      "otherAgents": "其他 AI 助手可以直接阅读接入文档："
+    }
   },
   "subscription": {
     "usage": "使用量",

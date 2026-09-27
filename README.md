@@ -42,7 +42,7 @@ ZenStory 工作台是一个在浏览器里写小说的地方。大纲、正文�
 - **一个路由，四个专职 Agent**：路由只看你这一句话，从五条流程里选一条，再由大纲规划师、爽点设计师、内容创作者、质量审稿人接力。内容创作者一轮输出满 500 字并且写了文件，会自动交给审稿人；审稿人不能改文件，有问题交回去重写。
 - **对话里的改动都留版本**：对话里的 AI 每改一次文件都存一个版本，对话里的编辑卡片可以一键撤销；你自己保存时，内容长度变化超过 10 个字才记版本；AI 一轮回复正常结束后，整个项目再拍一次快照。
 - **每轮带上该带的资料**：在约 6000 token 的预算里，给 AI 带上「AI 记忆」的四栏（项目简介、写作风格、当前阶段、备注，太长会被截短）、项目文件清单、你正在编辑的文件、同一文件夹里的上一章和最近改过的几份文件，以及最近改过的角色和设定。
-- **别的 Agent 也能接进来**：在设置里生成 API Key，把提示词发给 Claude Code、OpenClaw 这类 Agent，它们就能读写你的项目。
+- **别的 Agent 也能接进来**：在设置里生成 API Key，用 `npx zenstory login` 在终端登录、`npx zenstory skill install` 装上技能，Claude Code、Codex、OpenClaw 这类 Agent 就能读写你的项目。
 
 ## 工作台里有什么
 
@@ -171,7 +171,7 @@ docker compose exec server python scripts/migrate_skills.py --db-url sqlite:////
 | 语音输入 | `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` |
 | Google 登录 | 后端 `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`、`GOOGLE_REDIRECT_URI`、`FRONTEND_URL`；前端 `VITE_GOOGLE_OAUTH_ENABLED=true` |
 | 素材库拆解 | 另外运行 Prefect server 和 worker（见 [`apps/server/prefect.yaml`](apps/server/prefect.yaml)），并在套餐里打开素材库权限 |
-| 外部 Agent 接入 | `API_BASE_URL=http://你的服务器:8000/api/v1`（后端地址）；设置页复制的提示词写的是 `https://api.zenstory.ai/skill.md`，发给 Agent 前换成 `http://你的服务器:8000/skill.md` |
+| 外部 Agent 接入 | `API_BASE_URL=https://你的服务器/api/v1`（后端地址，写进 `/skill.md`）。设置页按前端的 `VITE_API_BASE_URL` 给出 `npx zenstory login --api-base <后端地址>/api/v1` 和 `<后端地址>/skill.md`；CLI 只接受 https，本机的 `localhost` / `127.0.0.1` 例外 |
 | 兑换码 | `REDEMPTION_CODE_HMAC_SECRET`（至少 32 字符），并先建好 Pro 套餐 |
 
 </details>
@@ -259,25 +259,27 @@ PostgreSQL + Redis 的部署方式、以及再建账号、改端口等细节见 
 
 ### 让 Claude Code 接进来
 
-在「设置 → Agent」里创建 Key 后，弹窗给出一段提示词，整段发给 Agent（这里 Key 换成了占位；自己部署的，先按上面的配置表把两处网址换成自己的服务器）：
+在「设置 → Agent」里创建 Key，然后在自己的终端里运行（需要 Node.js 20+）：
 
-```text
-请先阅读 https://api.zenstory.ai/skill.md 了解我的小说写作平台 API，然后用以下 API Key 接入：
-API Key: eg_……
-请求头: X-Agent-API-Key: eg_……
-
-接入后请先调用 GET https://api.zenstory.ai/skill.md 验证连接。
+```bash
+npx zenstory login           # 出现 "Paste API key:" 时粘贴 Key，输入不显示，也不进 shell 历史
+npx zenstory skill install   # 把技能装到 Claude Code；Codex、OpenClaw 加 --target codex / --target openclaw
+npx zenstory whoami          # 确认登录状态和读写权限
 ```
 
-`skill.md` 里写好了续写一章的五步：
+自己部署的，登录时加上 `--api-base https://你的服务器/api/v1`（设置页会直接给出带这个参数的命令）。Key 不要贴进 AI 对话；已经贴过的，到「设置 → Agent」重新生成。
 
-```text
-1. GET  /agent/projects/{id}/files?file_type=draft&fields=id,title  → 列出草稿
-2. GET  /agent/files/{file_id}                                        → 读取当前内容
-3. GET  /agent/projects/{id}/writing-context?file_id={file_id}     → 获取相关上下文
-4. POST /agent/projects/{id}/search  query="角色关系"                 → 搜索人物关系
-5. PUT  /agent/files/{file_id}                                        → 更新草稿内容
+装好技能后，Agent 通过 `zenstory` 命令行读写项目。技能里写好的续写流程：
+
+```bash
+zenstory files list <项目ID> --type draft --fields id,title --json           # 列出草稿
+zenstory context <项目ID> --file <章节ID> --query "接下来写什么" --json        # 相关上下文
+zenstory files get <章节ID> --fields updated_at --json                       # 记下 updated_at
+zenstory files get <章节ID> -o "$dir/<章节ID>.md"                            # 读到 mktemp -d 建的临时目录
+zenstory files put <章节ID> --content-file "$dir/<章节ID>.md" --if-updated-at <updated_at>   # 写回
 ```
+
+其他 Agent 也可以直接读 `https://api.zenstory.ai/skill.md`，里面有 HTTP 接口说明。
 
 用这把 Key 走第 1 步，拿到的就是上面那几章，顺序和文件树一样：
 
@@ -294,7 +296,7 @@ API Key: eg_……
 }
 ```
 
-Agent 用自己的模型写，ZenStory 负责存稿和整理上下文。它通过第 5 步写回的内容是整篇覆盖，不会在版本历史里留版本；让它改稿前，先用「导出正文」另存一份当前稿。
+Agent 用自己的模型写，ZenStory 负责存稿和整理上下文。`files put` 写回的是整篇覆盖，所以有几道保护：你在网页里改过（`updated_at` 变了）就拒绝写入；新稿不到原稿一半长时要显式加 `--allow-shrink`；写入前把服务器上的旧稿存到本机 `~/.cache/zenstory/backups/`；服务器也会在版本历史里记一个版本（版本额度用完时只存正文、不记版本）。
 
 ## 常见问题
 
