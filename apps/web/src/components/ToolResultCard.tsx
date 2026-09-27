@@ -224,6 +224,16 @@ const getToolDisplayInfo = (toolName: string, t: (key: string) => string): { ico
         icon: <Layers className="w-4 h-4 text-[hsl(var(--accent-primary))]" />,
         label: t('chat:tool.parallel_execute')
       };
+    case 'load_skill':
+      return {
+        icon: <BookOpen className="w-4 h-4 text-[hsl(var(--accent-primary))]" />,
+        label: t('chat:tool.load_skill')
+      };
+    case 'read_skill_resource':
+      return {
+        icon: <FileText className="w-4 h-4 text-[hsl(var(--accent-primary))]" />,
+        label: t('chat:tool.read_skill_resource')
+      };
     default:
       return { 
         icon: <FileText className="w-4 h-4 text-[hsl(var(--ref-tag-text))]" />, 
@@ -435,6 +445,12 @@ const ToolResultCardComponent: React.FC<ToolResultCardProps> = ({
       }
     } else if (toolName === 'update_project') {
       description = t('chat:tool.update_status_description');
+    } else if (toolName === 'load_skill' && typeof args.name === 'string' && args.name) {
+      description = quote(args.name);
+    } else if (toolName === 'read_skill_resource' && typeof args.path === 'string' && args.path) {
+      description = typeof args.name === 'string' && args.name
+        ? `${quote(args.name)} · ${args.path}`
+        : args.path;
     } else if (title) {
       description = quote(title);
     }
@@ -884,6 +900,28 @@ const ToolResultCardComponent: React.FC<ToolResultCardProps> = ({
               })}
             </div>
           )}
+        </div>
+      );
+    }
+
+    // load_skill / read_skill_resource success: the server only ships the skill
+    // name, resource path and sizes (full instructions/content go to the model only)
+    if ((toolName === 'load_skill' || toolName === 'read_skill_resource') && data) {
+      const { label } = getToolDisplayInfo(toolName, t);
+      const skillName = typeof data.skill_name === 'string' ? data.skill_name : '';
+      const path = typeof data.path === 'string' ? data.path : '';
+      const detail = [skillName ? quote(skillName) : '', path].filter(Boolean).join(' · ');
+      return (
+        <div className="bg-[hsl(var(--result-bg))] border border-[hsl(var(--result-border))] rounded-lg px-3 py-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-[hsl(var(--success-light))]" />
+            <span className="text-sm text-[hsl(var(--success-light))]">
+              {label}{t('chat:tool.complete_suffix')}
+            </span>
+            {detail && (
+              <span className="text-sm text-[hsl(var(--text-primary))] truncate">{detail}</span>
+            )}
+          </div>
         </div>
       );
     }

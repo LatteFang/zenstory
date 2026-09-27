@@ -1,15 +1,17 @@
-# 创建角色
-
-帮助用户创建小说或剧本中的角色，包括外貌、性格、背景等设定。
-
-## Triggers
-- 创建角色
-- 新建角色
-- 添加角色
-- 设计角色
-- 角色设定
-
-## Instructions
+---
+name: create-character
+description: 帮助用户创建小说或剧本中的角色，包括外貌、性格、背景等设定。
+metadata:
+  zenstory:
+    display_name: 创建角色
+    triggers:
+    - 创建角色
+    - 新建角色
+    - 添加角色
+    - 设计角色
+    - 角色设定
+    category: character
+---
 你现在进入角色创建模式。请帮助用户创建一个完整的角色设定。
 
 ### 任务目标

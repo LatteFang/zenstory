@@ -1,15 +1,17 @@
-# 世界观设定
-
-帮助用户构建故事的世界观和背景设定。
-
-## Triggers
-- 世界观
-- 世界设定
-- 背景设定
-- 创建世界
-- 设定集
-
-## Instructions
+---
+name: worldbuilding
+description: 帮助用户构建故事的世界观和背景设定。
+metadata:
+  zenstory:
+    display_name: 世界观设定
+    triggers:
+    - 世界观
+    - 世界设定
+    - 背景设定
+    - 创建世界
+    - 设定集
+    category: worldbuilding
+---
 你现在进入世界观设定模式。
 
 ### 任务目标

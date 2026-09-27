@@ -1,16 +1,18 @@
-# 节奏控制
-
-分析并优化故事节奏，设计情绪起伏和爽点分布。
-
-## Triggers
-- 节奏
-- 节奏控制
-- 调整节奏
-- 情绪曲线
-- 爽点设计
-- 节奏分析
-
-## Instructions
+---
+name: rhythm-control
+description: 分析并优化故事节奏，设计情绪起伏和爽点分布。
+metadata:
+  zenstory:
+    display_name: 节奏控制
+    triggers:
+    - 节奏
+    - 节奏控制
+    - 调整节奏
+    - 情绪曲线
+    - 爽点设计
+    - 节奏分析
+    category: style
+---
 你现在进入节奏控制模式。请帮助用户分析和优化故事节奏。
 
 ### 任务目标

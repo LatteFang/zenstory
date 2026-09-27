@@ -647,6 +647,8 @@ export interface AgentRequest {
   outline_id?: string; // For backward compatibility
   metadata?: Record<string, unknown>;
   stream?: boolean;
+  /** Skills explicitly selected by the user for this message (max 3). */
+  selected_skill_ids?: string[];
 }
 
 export interface AgentExecutionResult {
@@ -734,8 +736,36 @@ export interface Skill {
   instructions: string;
   source: SkillSource;
   is_active: boolean;
+  /** Number of bundled resource files (references/, assets/) */
+  resource_count?: number;
   created_at?: string;
   updated_at?: string;
+}
+
+/**
+ * A text resource file bundled with a skill (under references/ or assets/)
+ */
+export interface SkillResource {
+  path: string;
+  size: number;
+  updated_at: string;
+}
+
+/**
+ * Content of a single skill resource file
+ */
+export interface SkillResourceContent {
+  path: string;
+  content: string;
+}
+
+/**
+ * Response of importing a skill package (.zip or SKILL.md)
+ */
+export interface ImportSkillResponse {
+  skill: Skill;
+  /** Files dropped during import (scripts, unsupported types, ...) */
+  warnings: string[];
 }
 
 /**

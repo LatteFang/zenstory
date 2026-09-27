@@ -40,6 +40,7 @@ from .core.events import (
     done_event,
     error_event,
     session_started_event,
+    skill_matched_event,
     thinking_event,
 )
 from .core.message_manager import MessageManager
@@ -59,8 +60,8 @@ from .core.steering import (
 )
 from .graph.state import WritingState
 from .graph.writing_graph import run_writing_workflow_streaming
-from .skills import get_skill_context_injector
-from .skills.explicit_resolver import resolve_explicit_skill_selection
+from .skills import get_skill_context_injector, resolve_selected_skills
+from .skills.active_skills import list_active_skill_resources
 from .stream_adapter import create_stream_adapter
 from .tools.mcp_tools import ToolContext, _should_offload_tool_execution
 
@@ -334,74 +335,113 @@ class AgentService:
                 requested_session_id=requested_session_id,
             )
 
-    def _prepare_prompt_artifacts_sync(
+    def _resolve_selected_skills(
         self,
+        session: Session,
         *,
         project_id: str,
         user_id: str | None,
-        explicit_skill: Any,
-        processed_message: str,
+        selected_skill_ids: list[str] | None,
+        message: str,
+    ) -> list[dict[str, Any]]:
+        """
+        Resolve skills the user explicitly selected for this message and record their usage.
+
+        只接受属于当前用户且启用中的技能，其余 ID 静默忽略。
+        """
+        if not user_id or not selected_skill_ids:
+            return []
+
+        from services.skill_usage_service import record_skill_usage
+
+        selected: list[dict[str, Any]] = []
+        for skill in resolve_selected_skills(session, user_id, selected_skill_ids):
+            selected.append({
+                "id": skill.id,
+                "name": skill.name,
+                "instructions": skill.instructions,
+                "source": skill.source,
+                "resources": [
+                    resource.path for resource in list_active_skill_resources(session, skill)
+                ],
+            })
+            # 用独立 session（同一个 engine）记录用量：record_skill_usage 失败时要回滚，
+            # 若用请求 session 回滚，会连带丢掉它上面尚未提交的状态并让已加载对象全部过期。
+            try:
+                with Session(session.get_bind()) as usage_session:
+                    record_skill_usage(
+                        session=usage_session,
+                        project_id=project_id,
+                        skill_id=skill.id,
+                        skill_name=skill.name,
+                        skill_source=skill.source,
+                        matched_trigger="selected",
+                        confidence=1.0,
+                        user_id=user_id,
+                        user_message=message,
+                    )
+            except Exception as exc:
+                log_with_context(
+                    logger,
+                    30,  # WARNING
+                    "Failed to record selected skill usage",
+                    skill_id=skill.id,
+                    project_id=project_id,
+                    error=str(exc),
+                    error_type=type(exc).__name__,
+                )
+        return selected
+
+    def _prepare_prompt_artifacts(
+        self,
+        session: Session,
+        *,
+        project_id: str,
+        user_id: str | None,
+        selected_skill_ids: list[str] | None,
+        message: str,
         session_id: str | None,
         metadata: dict[str, Any] | None,
         language: str,
         assembled_context: str | None,
         context_items: list[dict[str, Any]] | None,
-    ) -> tuple[Any, str, str | None, str | None, str]:
+    ) -> tuple[list[dict[str, Any]], str]:
         """
-        Resolve skill references + system prompt in a fresh sync session.
+        Build the skill catalog, resolve selected skills and build the system prompt.
+
+        Returns:
+            (selected skills, system prompt)
         """
+        skill_injector = get_skill_context_injector()
+        skill_catalog = skill_injector.build_skill_catalog(session, user_id)
+
+        message_manager = MessageManager(
+            project_id=project_id,
+            user_id=user_id,
+        )
+        selected_skills = self._resolve_selected_skills(
+            session,
+            project_id=project_id,
+            user_id=user_id,
+            selected_skill_ids=selected_skill_ids,
+            message=message,
+        )
+        system_prompt = message_manager.build_system_prompt(
+            session=session,
+            session_id=session_id,
+            metadata=metadata,
+            assembled_context=assembled_context,
+            context_items=context_items,
+            language=language,
+            skill_catalog=skill_catalog,
+            selected_skills=selected_skills or None,
+        )
+        return selected_skills, system_prompt
+
+    def _prepare_prompt_artifacts_sync(self, **kwargs: Any) -> tuple[list[dict[str, Any]], str]:
+        """Same as _prepare_prompt_artifacts, using a fresh sync DB session."""
         with create_session() as sync_session:
-            skill_injector = get_skill_context_injector()
-            skill_catalog = skill_injector.build_skill_catalog(sync_session, user_id)
-            skill_reference = skill_injector.build_skill_reference(sync_session, user_id)
-
-            message_manager = MessageManager(
-                project_id=project_id,
-                user_id=user_id,
-            )
-            system_prompt = message_manager.build_system_prompt(
-                session=sync_session,
-                session_id=session_id,
-                metadata=metadata,
-                assembled_context=assembled_context,
-                context_items=context_items,
-                language=language,
-                skill_catalog=skill_catalog,
-                skill_reference=skill_reference,
-                selected_skill=(
-                    {
-                        "id": explicit_skill.skill_id,
-                        "name": explicit_skill.name,
-                        "instructions": explicit_skill.instructions,
-                        "source": explicit_skill.source,
-                        "matched_text": explicit_skill.matched_text,
-                    }
-                    if explicit_skill
-                    else None
-                ),
-            )
-
-            return (
-                explicit_skill,
-                processed_message,
-                skill_catalog,
-                skill_reference,
-                system_prompt,
-            )
-
-    def _resolve_explicit_skill_selection_sync(
-        self,
-        *,
-        user_id: str | None,
-        message: str,
-    ) -> Any:
-        """Resolve explicit skill selection using a fresh sync DB session."""
-        with create_session() as sync_session:
-            return resolve_explicit_skill_selection(
-                session=sync_session,
-                user_id=user_id,
-                message=message,
-            )
+            return self._prepare_prompt_artifacts(sync_session, **kwargs)
 
     async def process_stream(
         self,
@@ -413,6 +453,7 @@ class AgentService:
         selected_text: str | None = None,
         metadata: dict[str, Any] | None = None,
         language: str | None = None,
+        selected_skill_ids: list[str] | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         Process user message with streaming response.
@@ -425,6 +466,7 @@ class AgentService:
             selected_text: Optional selected text for context
             metadata: Optional metadata (current_file_id, etc.)
             language: Language preference (zh/en)
+            selected_skill_ids: Skills the user explicitly selected for this message
 
         Yields:
             SSE event strings
@@ -673,24 +715,6 @@ class AgentService:
             if generation_mode not in {"fast", "quality"}:
                 generation_mode = None
 
-            if self._should_offload_session_work(session):
-                explicit_skill = await asyncio.to_thread(
-                    self._resolve_explicit_skill_selection_sync,
-                    user_id=user_id,
-                    message=message,
-                )
-            else:
-                explicit_skill = resolve_explicit_skill_selection(
-                    session=session,
-                    user_id=user_id,
-                    message=message,
-                )
-            processed_message = (
-                explicit_skill.cleaned_message
-                if explicit_skill and explicit_skill.cleaned_message
-                else message
-            )
-
             # Assemble intelligent context
             yield thinking_event(
                 "Assembling context..." if force_en else "正在组装上下文..."
@@ -700,7 +724,7 @@ class AgentService:
             session_data = await session_loader.load_session_with_compaction(
                 session=session,
                 context_assembler=self.context_assembler,
-                query=processed_message,
+                query=message,
                 focus_file_id=focus_file_id,
                 attached_file_ids=attached_file_ids,
                 attached_library_materials=attached_library_materials,
@@ -726,56 +750,38 @@ class AgentService:
                 user_id=user_id,
             )
 
+            prompt_kwargs: dict[str, Any] = {
+                "project_id": project_id,
+                "user_id": user_id,
+                "selected_skill_ids": selected_skill_ids,
+                "message": message,
+                "session_id": session_id,
+                "metadata": metadata,
+                "language": lang,
+                "assembled_context": context_data.context if context_data.context else None,
+                "context_items": context_data.items if context_data.items else None,
+            }
             if self._should_offload_session_work(session):
-                (
-                    explicit_skill,
-                    processed_message,
-                    skill_catalog,
-                    skill_reference,
-                    system_prompt,
-                ) = await asyncio.to_thread(
+                selected_skills, system_prompt = await asyncio.to_thread(
                     self._prepare_prompt_artifacts_sync,
-                    project_id=project_id,
-                    user_id=user_id,
-                    explicit_skill=explicit_skill,
-                    processed_message=processed_message,
-                    session_id=session_id,
-                    metadata=metadata,
-                    language=lang,
-                    assembled_context=context_data.context if context_data.context else None,
-                    context_items=context_data.items if context_data.items else None,
+                    **prompt_kwargs,
                 )
             else:
-                # Build skill catalog for AI-driven selection
-                skill_injector = get_skill_context_injector()
-                skill_catalog = skill_injector.build_skill_catalog(session, user_id)
-                skill_reference = skill_injector.build_skill_reference(session, user_id)
-
-                # Build system prompt with assembled context
-                system_prompt = message_manager.build_system_prompt(
-                    session=session,
-                    session_id=session_id,
-                    metadata=metadata,
-                    assembled_context=context_data.context if context_data.context else None,
-                    context_items=context_data.items if context_data.items else None,
-                    language=lang,
-                    skill_catalog=skill_catalog,
-                    skill_reference=skill_reference,
-                    selected_skill=(
-                        {
-                            "id": explicit_skill.skill_id,
-                            "name": explicit_skill.name,
-                            "instructions": explicit_skill.instructions,
-                            "source": explicit_skill.source,
-                            "matched_text": explicit_skill.matched_text,
-                        }
-                        if explicit_skill
-                        else None
-                    ),
+                selected_skills, system_prompt = self._prepare_prompt_artifacts(
+                    session,
+                    **prompt_kwargs,
                 )
 
+            # 显式选择的技能已注入完整方法，流开头告知前端
+            for selected in selected_skills:
+                yield skill_matched_event(
+                    skill_id=selected["id"],
+                    skill_name=selected["name"],
+                    matched_trigger="selected",
+                ).to_sse()
+
             # Build current user message
-            user_content = processed_message
+            user_content = message
             if selected_text:
                 user_content += f"\n\n{'Selected text' if force_en else '选中的文本'}:\n{selected_text}"
 
@@ -802,7 +808,7 @@ class AgentService:
             # dual budgets are unchanged — this only trims what is *loaded*.
             #
             # system_prompt 已由 build_system_prompt 内嵌 skill catalog /
-            # skill reference / assembled context，台账只按最终 prompt 计费一次，
+            # selected skills / assembled context，台账只按最终 prompt 计费一次，
             # 避免同一段文本重复扣减历史预算。
             from agent.utils.token_utils import estimate_text_tokens
 
@@ -861,13 +867,15 @@ class AgentService:
                 project_id=project_id,
                 session_id=session_id,
                 create_session_func=create_session,
+                # 显式选择的技能已记过 selected 用量，模型再 load_skill 它时不重复记
+                recorded_skill_ids=[selected["id"] for selected in selected_skills],
             )
 
             # Build WritingState for workflow execution
             writing_state: WritingState = {
                 "user_message": user_content,
                 # Router only needs the raw user message (exclude selected_text / metadata decorations)
-                "router_message": processed_message,
+                "router_message": message,
                 "project_id": project_id,
                 "user_id": user_id or "",
                 "session_id": session_id,
@@ -886,6 +894,8 @@ class AgentService:
                 project_id=project_id,
                 user_id=user_id,
                 process_file_markers=True,
+                # 流开头已为显式选择的技能发过 skill_matched，load_skill 它们时不再重复发
+                matched_skill_ids=[selected["id"] for selected in selected_skills],
             )
 
             try:

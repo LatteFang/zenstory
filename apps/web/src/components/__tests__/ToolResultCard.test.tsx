@@ -45,6 +45,8 @@ const mockT = vi.fn((key: string, options?: Record<string, unknown>) => {
     'chat:tool.delete_file': 'Delete file',
     'chat:tool.query_files': 'Query files',
     'chat:tool.update_project': 'Update project',
+    'chat:tool.load_skill': 'Load skill',
+    'chat:tool.read_skill_resource': 'Read skill resource',
     'chat:fileType.outline': 'Outline',
     'chat:fileType.draft': 'Draft',
     'chat:fileType.character': 'Character',
@@ -774,6 +776,54 @@ describe('ToolResultCard', () => {
         />
       )
       expect(screen.getByText('检索资料')).toBeInTheDocument()
+    })
+  })
+
+  describe('skill tools', () => {
+    it('labels a pending load_skill call with the skill name', () => {
+      render(
+        <ToolResultCard type="tool_call" toolName="load_skill" isPending={true} result={{ name: '悬念大师' }} />
+      )
+      expect(screen.getByText('Load skill')).toBeInTheDocument()
+      expect(screen.getByText(/「悬念大师」/)).toBeInTheDocument()
+      expect(screen.queryByText('load_skill')).not.toBeInTheDocument()
+    })
+
+    it('labels a pending read_skill_resource call with skill and path', () => {
+      render(
+        <ToolResultCard
+          type="tool_call"
+          toolName="read_skill_resource"
+          isPending={true}
+          result={{ name: '悬念大师', path: 'references/hooks.md' }}
+        />
+      )
+      expect(screen.getByText('Read skill resource')).toBeInTheDocument()
+      expect(screen.getByText(/「悬念大师」 · references\/hooks\.md/)).toBeInTheDocument()
+    })
+
+    it('renders load_skill success with the skill name only', () => {
+      render(
+        <ToolResultCard
+          type="tool_result"
+          toolName="load_skill"
+          result={{ skill_id: 's-1', skill_name: '悬念大师', source: 'user', instructions_chars: 120, resources: [] }}
+        />
+      )
+      expect(screen.getByText('Load skill complete')).toBeInTheDocument()
+      expect(screen.getByText('「悬念大师」')).toBeInTheDocument()
+    })
+
+    it('renders read_skill_resource success with skill name and path', () => {
+      render(
+        <ToolResultCard
+          type="tool_result"
+          toolName="read_skill_resource"
+          result={{ skill_name: '悬念大师', path: 'references/hooks.md', size: 12 }}
+        />
+      )
+      expect(screen.getByText('Read skill resource complete')).toBeInTheDocument()
+      expect(screen.getByText('「悬念大师」 · references/hooks.md')).toBeInTheDocument()
     })
   })
 })

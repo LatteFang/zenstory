@@ -56,14 +56,7 @@ The Files tab displays the complete file tree structure of the current project, 
 
 [Screenshot: Skills tab showing available skills list]
 
-The Skills tab provides a series of AI writing assistance features to help you:
-
-- Generate new content
-- Expand and polish existing paragraphs
-- Create character dialogues
-- Build scene descriptions
-
-Click a skill card to quickly invoke the corresponding AI capability.
+The Skills tab lists your currently enabled skills. The AI decides on its own whether a request needs a given skill, so there's no manual activation step; if you want the AI to definitely use a skill for your next message, hover over it and click the **+** button to select it — selected skills appear as chips above the chat input (up to 3 at a time). Click a skill's name to view its details.
 
 ### Materials Tab
 
@@ -138,6 +131,7 @@ The input area provides multiple interaction methods:
 - **Voice Input** - Click the microphone button to use speech-to-text
 - **AI Suggestions** - Quick buttons providing common command suggestions
 - **Attach Materials** - Select relevant files as context before sending
+- **Select a Skill** - Type `/` to open the skill quick picker; selected skills appear as chips above the input (up to 3)
 
 **The input box can be resized by dragging**. Double-click the divider to reset to default height.
 

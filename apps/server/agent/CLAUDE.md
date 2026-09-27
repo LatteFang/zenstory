@@ -36,12 +36,12 @@ agent/
 │   └── suggestions.py      # 建议生成提示
 ├── schemas/                # 数据模型
 │   ├── context.py          # 上下文数据模型
-├── skills/                 # 技能系统
-│   ├── context_injector.py # 技能上下文注入
-│   ├── loader.py           # 技能加载
-│   ├── matcher.py          # 技能匹配
-│   ├── schemas.py          # 技能数据模型
-│   └── user_skill_service.py # 用户技能服务
+├── skills/                 # 技能系统（标准 SKILL.md，渐进式加载，永不执行脚本）
+│   ├── active_skills.py    # 当前用户启用中的技能视图（目录/工具/显式选择共用）
+│   ├── context_injector.py # L1 技能目录（只含名称 + 用途）
+│   ├── loader.py           # 内置技能加载（builtin/<id>/SKILL.md）
+│   ├── package.py          # SKILL.md 解析、zip 导入安全检查、导出打包
+│   └── builtin/            # 官方技能（由 services/builtin_skill_seed.py 写入 PublicSkill）
 └── tools/                  # 工具实现
     ├── tool_schemas.py     # provider-neutral 工具 schema 定义
     ├── file_executor.py    # 文件操作执行器
@@ -234,6 +234,8 @@ async def run_openai_agents_streaming_agent(...):
 | `handoff_to_agent` | 交接给另一个 agent |
 | `request_clarification` | 请求用户澄清并暂停工作流 |
 | `parallel_execute` | 并行执行多个只读/工具任务 |
+| `load_skill` | 按名称加载已启用技能的完整方法与资源清单（技能 L2，记录用量） |
+| `read_skill_resource` | 读取技能附带的一个参考文件（技能 L3） |
 
 ### 文件流式写入协议
 

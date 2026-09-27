@@ -14,9 +14,10 @@ const { mockUseMaterialAttachment, mockUseTextQuote, mockUseSkillTrigger } = vi.
     removeQuote: vi.fn(),
   })),
   mockUseSkillTrigger: vi.fn(() => ({
-    pendingTrigger: null,
-    consumeTrigger: vi.fn(),
-    insertTrigger: vi.fn(),
+    selectedSkills: [],
+    selectSkill: vi.fn(),
+    removeSkill: vi.fn(),
+    clearSkills: vi.fn(),
   })),
 }))
 
@@ -42,6 +43,7 @@ vi.mock('../../contexts/TextQuoteContext', () => ({
 }))
 
 vi.mock('../../contexts/SkillTriggerContext', () => ({
+  MAX_SELECTED_SKILLS: 3,
   useSkillTrigger: mockUseSkillTrigger,
 }))
 
@@ -95,9 +97,10 @@ describe('MessageInput', () => {
       removeQuote: vi.fn(),
     })
     mockUseSkillTrigger.mockReturnValue({
-      pendingTrigger: null,
-      consumeTrigger: vi.fn(),
-      insertTrigger: vi.fn(),
+      selectedSkills: [],
+      selectSkill: vi.fn(),
+      removeSkill: vi.fn(),
+      clearSkills: vi.fn(),
     })
   })
 
@@ -132,7 +135,7 @@ describe('MessageInput', () => {
     await user.type(textarea, 'Test message')
     await user.click(screen.getByRole('button', { name: /common:send/i }))
 
-    expect(onSend).toHaveBeenCalledWith('Test message')
+    expect(onSend).toHaveBeenCalledWith('Test message', [])
     await waitFor(() => {
       expect(textarea).toHaveValue('')
     })
@@ -158,7 +161,7 @@ describe('MessageInput', () => {
     const textarea = screen.getByPlaceholderText('chat:input.placeholder')
     await user.type(textarea, 'Test message{Enter}')
 
-    expect(onSend).toHaveBeenCalledWith('Test message')
+    expect(onSend).toHaveBeenCalledWith('Test message', [])
   })
 
   it('does not send empty messages', async () => {
@@ -181,7 +184,7 @@ describe('MessageInput', () => {
     const textarea = screen.getByPlaceholderText('chat:input.placeholder')
     await user.type(textarea, '  Test message  {Enter}')
 
-    expect(onSend).toHaveBeenCalledWith('Test message')
+    expect(onSend).toHaveBeenCalledWith('Test message', [])
   })
 
   it('shows cancel button when onCancel provided and disabled', () => {
@@ -332,9 +335,15 @@ describe('MessageInput', () => {
     expect(textarea).toHaveValue('/')
   })
 
-  it('keeps a delimiter after slash-menu skill selection before sending follow-up text', async () => {
+  it('adds a skill chip (not trigger text) when picking from the slash menu', async () => {
     const user = userEvent.setup({ delay: null })
-    const onSend = vi.fn()
+    const selectSkill = vi.fn()
+    mockUseSkillTrigger.mockReturnValue({
+      selectedSkills: [],
+      selectSkill,
+      removeSkill: vi.fn(),
+      clearSkills: vi.fn(),
+    })
     vi.mocked(skillsApi.list).mockResolvedValueOnce({
       skills: [
         {
@@ -350,57 +359,143 @@ describe('MessageInput', () => {
       total: 1,
     })
 
-    render(<MessageInput {...defaultProps} onSend={onSend} />)
+    render(<MessageInput {...defaultProps} />)
 
     const textarea = screen.getByPlaceholderText('chat:input.placeholder')
     await user.type(textarea, '/')
     await user.click(await screen.findByRole('button', { name: /场景节奏/i }))
-    await user.type(textarea, '继续写这一章')
-    await user.click(screen.getByRole('button', { name: /common:send/i }))
 
-    expect(onSend).toHaveBeenCalledWith('/pace 继续写这一章')
+    expect(selectSkill).toHaveBeenCalledWith({ id: 'skill-menu-1', name: '场景节奏' })
+    expect(textarea).toHaveValue('')
   })
 
-  it('renders selected skill triggers as a compact rail in fill layout', async () => {
+  it('keeps the input and explains the limit when 3 skills are already selected', async () => {
+    const user = userEvent.setup({ delay: null })
+    const selectSkill = vi.fn()
     mockUseSkillTrigger.mockReturnValue({
-      pendingTrigger: '/outline-helper',
-      consumeTrigger: vi.fn(),
-      insertTrigger: vi.fn(),
+      selectedSkills: [
+        { id: 'skill-a', name: '技能A' },
+        { id: 'skill-b', name: '技能B' },
+        { id: 'skill-c', name: '技能C' },
+      ],
+      selectSkill,
+      removeSkill: vi.fn(),
+      clearSkills: vi.fn(),
+    })
+    vi.mocked(skillsApi.list).mockResolvedValueOnce({
+      skills: [
+        {
+          id: 'skill-menu-4',
+          name: '第四个技能',
+          description: '',
+          triggers: [],
+          instructions: 'x',
+          source: 'user',
+          is_active: true,
+        },
+      ],
+      total: 1,
+    })
+
+    render(<MessageInput {...defaultProps} />)
+
+    const textarea = screen.getByPlaceholderText('chat:input.placeholder')
+    await user.type(textarea, '/第')
+    const option = await screen.findByRole('button', { name: /第四个技能/ })
+
+    expect(option).toBeDisabled()
+    expect(screen.getByRole('status')).toHaveTextContent('chat:skill.selectionFull')
+
+    await user.click(option)
+    await user.keyboard('{Enter}')
+
+    expect(selectSkill).not.toHaveBeenCalled()
+    expect(textarea).toHaveValue('/第')
+  })
+
+  it('renders selected skills as a compact rail in fill layout', async () => {
+    mockUseSkillTrigger.mockReturnValue({
+      selectedSkills: [{ id: 'skill-outline', name: '大纲助手' }],
+      selectSkill: vi.fn(),
+      removeSkill: vi.fn(),
+      clearSkills: vi.fn(),
     })
 
     render(<MessageInput {...defaultProps} layout="fill" />)
 
-    const skillRow = await screen.findByTestId('chat-skill-trigger-row')
+    const skillRow = await screen.findByTestId('chat-selected-skill-row')
     expect(skillRow.className).toContain('overflow-x-auto')
     expect(skillRow.className).not.toContain('flex-wrap')
-    expect(screen.getByText('/outline-helper')).toBeInTheDocument()
+    expect(screen.getByText('大纲助手')).toBeInTheDocument()
     expect(screen.getByTestId('chat-input-accessories').className).toContain('overflow-y-auto')
   })
 
-  it('prepends selected skill triggers when sending a message', async () => {
+  it('removes a selected skill via its accessible remove button', async () => {
+    const user = userEvent.setup({ delay: null })
+    const removeSkill = vi.fn()
+    mockUseSkillTrigger.mockReturnValue({
+      selectedSkills: [{ id: 'skill-a', name: '技能A' }],
+      selectSkill: vi.fn(),
+      removeSkill,
+      clearSkills: vi.fn(),
+    })
+
+    render(<MessageInput {...defaultProps} />)
+
+    await user.click(screen.getByRole('button', { name: 'chat:skill.removeSelected' }))
+    expect(removeSkill).toHaveBeenCalledWith('skill-a')
+  })
+
+  it('sends selected skill ids with the message and clears the chips', async () => {
     const user = userEvent.setup({ delay: null })
     const onSend = vi.fn()
+    const clearSkills = vi.fn()
     mockUseSkillTrigger.mockReturnValue({
-      pendingTrigger: '/story-skill',
-      consumeTrigger: vi.fn(),
-      insertTrigger: vi.fn(),
+      selectedSkills: [
+        { id: 'skill-a', name: '技能A' },
+        { id: 'skill-b', name: '技能B' },
+      ],
+      selectSkill: vi.fn(),
+      removeSkill: vi.fn(),
+      clearSkills,
     })
 
     render(<MessageInput {...defaultProps} onSend={onSend} />)
 
     const textarea = screen.getByPlaceholderText('chat:input.placeholder')
-    await screen.findByText('/story-skill')
     await user.type(textarea, '继续写这一章')
     await user.click(screen.getByRole('button', { name: /common:send/i }))
 
-    expect(onSend).toHaveBeenCalledWith('/story-skill 继续写这一章')
+    expect(onSend).toHaveBeenCalledWith('继续写这一章', ['skill-a', 'skill-b'])
+    expect(clearSkills).toHaveBeenCalled()
+    expect(textarea).toHaveValue('')
   })
 
-  it('hides suggestion chips in fill layout when a skill trigger is already selected', () => {
+  it('does not send or clear chips when only skills are selected without text', async () => {
+    const user = userEvent.setup({ delay: null })
+    const onSend = vi.fn()
+    const clearSkills = vi.fn()
     mockUseSkillTrigger.mockReturnValue({
-      pendingTrigger: '/story-skill',
-      consumeTrigger: vi.fn(),
-      insertTrigger: vi.fn(),
+      selectedSkills: [{ id: 'skill-a', name: '技能A' }],
+      selectSkill: vi.fn(),
+      removeSkill: vi.fn(),
+      clearSkills,
+    })
+
+    render(<MessageInput {...defaultProps} onSend={onSend} />)
+
+    await user.type(screen.getByPlaceholderText('chat:input.placeholder'), '{Enter}')
+
+    expect(onSend).not.toHaveBeenCalled()
+    expect(clearSkills).not.toHaveBeenCalled()
+  })
+
+  it('hides suggestion chips in fill layout when a skill is already selected', () => {
+    mockUseSkillTrigger.mockReturnValue({
+      selectedSkills: [{ id: 'skill-a', name: '技能A' }],
+      selectSkill: vi.fn(),
+      removeSkill: vi.fn(),
+      clearSkills: vi.fn(),
     })
 
     render(
@@ -530,6 +625,36 @@ describe('MessageInput', () => {
       await waitFor(() => expect(textarea).toHaveValue(''))
     })
 
+    it('keeps selected skill chips after steering (steering does not carry skill ids)', async () => {
+      const user = userEvent.setup({ delay: null })
+      const clearSkills = vi.fn()
+      mockUseSkillTrigger.mockReturnValue({
+        selectedSkills: [{ id: 'skill-a', name: '技能A' }],
+        selectSkill: vi.fn(),
+        removeSkill: vi.fn(),
+        clearSkills,
+      })
+      const onSteer = vi.fn()
+      render(
+        <MessageInput
+          {...defaultProps}
+          sendDisabled={true}
+          onCancel={vi.fn()}
+          onSteer={onSteer}
+          canSteer={true}
+        />
+      )
+
+      const textarea = screen.getByPlaceholderText('chat:input.steerPlaceholder')
+      await user.type(textarea, '补充指令')
+      await user.click(screen.getByTestId('steer-button'))
+
+      await waitFor(() => expect(textarea).toHaveValue(''))
+      expect(onSteer).toHaveBeenCalledWith('补充指令')
+      expect(clearSkills).not.toHaveBeenCalled()
+      expect(screen.getByText('技能A')).toBeInTheDocument()
+    })
+
     it('steers on Enter while generating', async () => {
       const user = userEvent.setup({ delay: null })
       const onSend = vi.fn()
@@ -617,7 +742,7 @@ describe('MessageInput', () => {
       fireEvent.compositionEnd(textarea)
       fireEvent.keyDown(textarea, { key: 'Enter' })
 
-      expect(onSend).toHaveBeenCalledWith('你好')
+      expect(onSend).toHaveBeenCalledWith('你好', [])
     })
 
     it('does not steer when Enter keydown carries isComposing while generating', () => {

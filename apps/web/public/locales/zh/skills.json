@@ -91,5 +91,52 @@
     "createDescription": "你已达到当前套餐可创建的自定义技能上限。可前往订阅页升级，或先查看套餐对比后再决定。",
     "upgradePrimary": "查看升级方案",
     "upgradeSecondary": "查看套餐对比"
+  },
+  "import": {
+    "button": "导入",
+    "hint": "导入技能包（.zip）或 SKILL.md",
+    "invalidType": "仅支持导入 .zip 或 .md 文件",
+    "tooLarge": "文件超过 1 MB 导入上限",
+    "failed": "导入失败，请稍后重试",
+    "successTitle": "技能已导入",
+    "success": "已导入「{{name}}」。",
+    "warningsTitle_one": "跳过了 {{count}} 个文件",
+    "warningsTitle_other": "跳过了 {{count}} 个文件",
+    "warningsTitle": "跳过了 {{count}} 个文件",
+    "done": "完成"
+  },
+  "export": {
+    "button": "导出为 zip",
+    "failed": "导出失败，请稍后重试"
+  },
+  "resources": {
+    "title": "资源文件",
+    "count_one": "{{count}} 个文件",
+    "count_other": "{{count}} 个文件",
+    "count": "{{count}} 个文件",
+    "hint": "AI 可按需读取的文本参考文件。路径需以 references/ 或 assets/ 开头，支持 .md .txt .json .yaml .yml .csv。",
+    "empty": "暂无资源文件",
+    "add": "添加文件",
+    "view": "查看文件",
+    "edit": "编辑文件",
+    "delete": "删除 {{path}}",
+    "confirmDelete": "确认删除",
+    "close": "关闭编辑器",
+    "path": "文件路径",
+    "pathPlaceholder": "references/example.md",
+    "content": "文件内容",
+    "saveFile": "保存文件",
+    "saving": "保存中...",
+    "saveFirst": "先保存技能，才能添加资源文件。",
+    "errors": {
+      "prefix": "路径必须以 references/ 或 assets/ 开头",
+      "invalidPath": "路径无效",
+      "extension": "仅支持 .md .txt .json .yaml .yml .csv 文件",
+      "exists": "该路径的文件已存在",
+      "tooLarge": "文件内容超过 64 KB",
+      "loadFailed": "资源文件加载失败",
+      "saveFailed": "文件保存失败",
+      "deleteFailed": "文件删除失败"
+    }
   }
 }

@@ -91,5 +91,52 @@
     "createDescription": "You've reached the custom skill limit for your current plan. Upgrade your plan, or compare plans before deciding.",
     "upgradePrimary": "View upgrade options",
     "upgradeSecondary": "Compare plans"
+  },
+  "import": {
+    "button": "Import",
+    "hint": "Import a skill package (.zip) or SKILL.md",
+    "invalidType": "Only .zip or .md files can be imported",
+    "tooLarge": "The file exceeds the 1 MB import limit",
+    "failed": "Import failed. Please try again later.",
+    "successTitle": "Skill imported",
+    "success": "Imported “{{name}}”.",
+    "warningsTitle_one": "{{count}} file was skipped",
+    "warningsTitle_other": "{{count}} files were skipped",
+    "warningsTitle": "{{count}} files were skipped",
+    "done": "Done"
+  },
+  "export": {
+    "button": "Export as zip",
+    "failed": "Export failed. Please try again later."
+  },
+  "resources": {
+    "title": "Resource files",
+    "count_one": "{{count}} file",
+    "count_other": "{{count}} files",
+    "count": "{{count}} files",
+    "hint": "Text reference files the AI can read on demand. Paths start with references/ or assets/; allowed types: .md .txt .json .yaml .yml .csv.",
+    "empty": "No resource files",
+    "add": "Add file",
+    "view": "View file",
+    "edit": "Edit file",
+    "delete": "Delete {{path}}",
+    "confirmDelete": "Delete",
+    "close": "Close editor",
+    "path": "File path",
+    "pathPlaceholder": "references/example.md",
+    "content": "File content",
+    "saveFile": "Save file",
+    "saving": "Saving...",
+    "saveFirst": "Save the skill first to add resource files.",
+    "errors": {
+      "prefix": "Path must start with references/ or assets/",
+      "invalidPath": "Invalid path",
+      "extension": "Allowed file types: .md .txt .json .yaml .yml .csv",
+      "exists": "A file with this path already exists",
+      "tooLarge": "File content exceeds 64 KB",
+      "loadFailed": "Failed to load resource files",
+      "saveFailed": "Failed to save the file",
+      "deleteFailed": "Failed to delete the file"
+    }
   }
 }

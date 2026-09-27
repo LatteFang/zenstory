@@ -1,15 +1,17 @@
-# 对话生成
-
-生成符合角色性格的对话，让人物通过语言展现个性。
-
-## Triggers
-- 写对话
-- 对话
-- 对白
-- 台词
-- 人物对话
-
-## Instructions
+---
+name: generate-dialogue
+description: 生成符合角色性格的对话，让人物通过语言展现个性。
+metadata:
+  zenstory:
+    display_name: 对话生成
+    triggers:
+    - 写对话
+    - 对话
+    - 对白
+    - 台词
+    - 人物对话
+    category: writing
+---
 你现在进入对话生成模式。请帮助用户创作生动的人物对话。
 
 ### 任务目标

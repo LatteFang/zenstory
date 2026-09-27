@@ -219,6 +219,8 @@ export interface EditProgress {
  * Used to display which skills were activated by user input.
  */
 export interface MatchedSkill {
+  /** Skill id (when the server provides one); used to dedupe repeated matches */
+  id?: string;
   /** Display name of the matched skill */
   name: string;
   /** The trigger phrase that activated this skill */
@@ -1306,11 +1308,23 @@ export function useChatStreaming(): UseChatStreamingReturn {
          * Called when a skill is matched
          */
         onSkillMatched: (
-          _skillId: string,
+          skillId: string,
           skillName: string,
           matchedTrigger: string
         ) => {
-          setMatchedSkills([{ name: skillName, trigger: matchedTrigger }]);
+          // 一轮里可能先后收到多个技能（显式选择的 + 模型 load_skill 的），追加而不是覆盖；
+          // 同一技能（按 id，没有 id 时按名称）只保留第一次。
+          setMatchedSkills((prev) => {
+            const isSame = (skill: MatchedSkill) =>
+              skillId ? skill.id === skillId : skill.name === skillName;
+            if (prev.some(isSame)) {
+              return prev;
+            }
+            return [
+              ...prev,
+              { ...(skillId ? { id: skillId } : {}), name: skillName, trigger: matchedTrigger },
+            ];
+          });
         },
 
         /**

@@ -1,17 +1,19 @@
-# 润色修改
-
-提升文字质量和表达效果，优化语言表达和叙事技巧。
-
-## Triggers
-- 润色
-- 修改
-- 优化
-- 改写
-- 重写
-- 润色一下
-- 帮我改改
-
-## Instructions
+---
+name: polish-text
+description: 提升文字质量和表达效果，优化语言表达和叙事技巧。
+metadata:
+  zenstory:
+    display_name: 润色修改
+    triggers:
+    - 润色
+    - 修改
+    - 优化
+    - 改写
+    - 重写
+    - 润色一下
+    - 帮我改改
+    category: style
+---
 你现在进入润色修改模式。请帮助用户提升文字质量。
 
 ### 任务目标

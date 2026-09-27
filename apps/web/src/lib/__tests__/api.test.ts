@@ -29,6 +29,11 @@ vi.mock('../apiClient', () => ({
       this.name = 'ApiError'
     }
   },
+  apiErrorFromPayload: vi.fn((status: number, payload: unknown) => {
+    const error = new Error(JSON.stringify(payload)) as Error & { status: number }
+    error.status = status
+    return error
+  }),
 }))
 
 vi.mock('../analytics', () => ({
@@ -47,7 +52,7 @@ import {
   skillsApi,
   publicSkillsApi,
 } from '../api'
-import { ApiError, api } from '../apiClient'
+import { ApiError, api, apiErrorFromPayload } from '../apiClient'
 
 // Get the mocked api
 const mockApi = api as { [key: string]: ReturnType<typeof vi.fn> }
@@ -821,6 +826,105 @@ describe('api', () => {
         skill_ids: ['1', '2', '3'],
         action: 'enable',
       })
+    })
+
+    it('imports a skill package as multipart form data with auth', async () => {
+      const mockResponse = { skill: { id: 's1', name: 'Imported' }, warnings: ['scripts/run.py dropped'] }
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(mockResponse),
+      })
+      const file = new File(['x'], 'skill.zip', { type: 'application/zip' })
+
+      const result = await skillsApi.importSkill(file)
+
+      expect(result).toEqual(mockResponse)
+      const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
+      expect(url).toBe('/api/v1/skills/import')
+      expect(init.method).toBe('POST')
+      expect(init.headers.Authorization).toBe('Bearer test-token')
+      expect((init.body as FormData).get('file')).toBe(file)
+    })
+
+    it('builds the import error from the full payload so the server reason is kept', async () => {
+      const payload = {
+        detail: 'ERR_SKILL_PACKAGE_INVALID',
+        error_code: 'ERR_SKILL_PACKAGE_INVALID',
+        error_detail: '技能包中包含重复的资源路径：references/a.md',
+      }
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve(payload),
+      })
+
+      await expect(
+        skillsApi.importSkill(new File(['x'], 'skill.zip', { type: 'application/zip' }))
+      ).rejects.toMatchObject({ status: 400 })
+      expect(apiErrorFromPayload).toHaveBeenCalledWith(400, payload)
+    })
+
+    it('exports a skill zip using the Content-Disposition filename', async () => {
+      const createObjectURL = vi.fn(() => 'blob:skill')
+      const revokeObjectURL = vi.fn()
+      Object.assign(URL, { createObjectURL, revokeObjectURL })
+      const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers({
+          'Content-Disposition': "attachment; filename=\"skill.zip\"; filename*=UTF-8''%E8%8A%82%E5%A5%8F.zip",
+        }),
+        blob: () => Promise.resolve(new Blob(['zip'])),
+      })
+
+      await skillsApi.exportSkill('s1', 'fallback')
+
+      expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0]).toBe('/api/v1/skills/s1/export')
+      const anchor = clickSpy.mock.instances[0] as unknown as HTMLAnchorElement
+      expect(anchor.download).toBe('节奏.zip')
+      expect(revokeObjectURL).toHaveBeenCalledWith('blob:skill')
+    })
+
+    it('falls back to <name>.zip when Content-Disposition is missing', async () => {
+      Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:x'), revokeObjectURL: vi.fn() })
+      const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        blob: () => Promise.resolve(new Blob(['zip'])),
+      })
+
+      await skillsApi.exportSkill('s1', '我的技能')
+
+      const anchor = clickSpy.mock.instances[0] as unknown as HTMLAnchorElement
+      expect(anchor.download).toBe('我的技能.zip')
+    })
+
+    it('manages skill resources with encoded paths', async () => {
+      mockApi.get.mockResolvedValue({ resources: [] })
+      mockApi.put.mockResolvedValue({})
+      mockApi.delete.mockResolvedValue({})
+
+      await skillsApi.listResources('s1')
+      await skillsApi.getResourceContent('s1', 'references/a b.md')
+      await skillsApi.upsertResource('s1', 'references/a.md', 'hello')
+      await skillsApi.deleteResource('s1', 'references/a b.md')
+
+      expect(mockApi.get).toHaveBeenNthCalledWith(1, '/api/v1/skills/s1/resources')
+      expect(mockApi.get).toHaveBeenNthCalledWith(
+        2,
+        '/api/v1/skills/s1/resources/content?path=references%2Fa%20b.md'
+      )
+      expect(mockApi.put).toHaveBeenCalledWith('/api/v1/skills/s1/resources', {
+        path: 'references/a.md',
+        content: 'hello',
+      })
+      expect(mockApi.delete).toHaveBeenCalledWith(
+        '/api/v1/skills/s1/resources?path=references%2Fa%20b.md'
+      )
     })
   })
 

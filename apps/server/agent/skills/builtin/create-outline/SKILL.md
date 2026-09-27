@@ -1,15 +1,17 @@
-# 创建大纲
-
-帮助用户创建故事大纲，包括章节结构和情节规划。
-
-## Triggers
-- 创建大纲
-- 写大纲
-- 故事大纲
-- 章节大纲
-- 情节规划
-
-## Instructions
+---
+name: create-outline
+description: 帮助用户创建故事大纲，包括章节结构和情节规划。
+metadata:
+  zenstory:
+    display_name: 创建大纲
+    triggers:
+    - 创建大纲
+    - 写大纲
+    - 故事大纲
+    - 章节大纲
+    - 情节规划
+    category: plot
+---
 你现在进入大纲创建模式。请帮助用户规划故事结构。
 
 ### 任务目标

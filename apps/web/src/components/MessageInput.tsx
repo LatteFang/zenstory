@@ -1,12 +1,13 @@
 /**
- * @fileoverview MessageInput component - Chat input with suggestions, attachments, and skill triggers.
+ * @fileoverview MessageInput component - Chat input with suggestions, attachments, and selected skills.
  *
  * This component provides a rich input interface for AI chat, handling:
  * - Auto-resizing textarea with keyboard shortcuts
  * - Project-aware suggestion display with fallback behavior
  * - Swipe-to-dismiss suggestion chips on mobile
  * - Material attachments and text quotes
- * - Skill quick trigger menu ( "/" prefix)
+ * - Explicitly selected skills shown as removable chips (sent as selected_skill_ids)
+ * - Skill quick picker menu ("/" prefix) that adds a skill chip
  * - Voice input integration
  * - Draft persistence with external state sync
  *
@@ -18,7 +19,7 @@ import { Send, X, RefreshCw, FileText, Quote, Zap, Sparkles } from "lucide-react
 import { VoiceInputButton } from "./VoiceInputButton";
 import { useMaterialAttachment } from "../contexts/MaterialAttachmentContext";
 import { useTextQuote } from "../contexts/TextQuoteContext";
-import { useSkillTrigger } from "../contexts/SkillTriggerContext";
+import { MAX_SELECTED_SKILLS, useSkillTrigger } from "../contexts/SkillTriggerContext";
 import { useMobileLayout } from "../contexts/MobileLayoutContext";
 import { useTranslation } from "react-i18next";
 import { skillsApi } from "../lib/api";
@@ -154,14 +155,15 @@ const SwipeableSuggestionChip: React.FC<SwipeableSuggestionChipProps> = ({
 
 /**
  * Props for the MessageInput component.
- * Provides a rich chat input interface with suggestions, attachments, and skill triggers.
+ * Provides a rich chat input interface with suggestions, attachments, and selected skills.
  */
 interface MessageInputProps {
   /**
    * Callback invoked when the user submits a message.
-   * @param message - The message text (including any skill trigger prefixes)
+   * @param message - The message text
+   * @param selectedSkillIds - Ids of the skills the user explicitly selected (chips), max 3
    */
-  onSend: (message: string) => void;
+  onSend: (message: string, selectedSkillIds: string[]) => void;
   /**
    * Whether the input is disabled (e.g., when the panel is unavailable).
    * This disables both editing and sending.
@@ -222,7 +224,7 @@ interface MessageInputProps {
 }
 
 /**
- * Rich chat input component with suggestions, attachments, and skill triggers.
+ * Rich chat input component with suggestions, attachments, and selected skills.
  *
  * Features:
  * - Auto-resizing textarea with Enter-to-send and Shift+Enter for newline
@@ -230,7 +232,8 @@ interface MessageInputProps {
  * - Swipe-to-dismiss suggestions on mobile devices
  * - Material attachment display from MaterialAttachmentContext
  * - Text quote display from TextQuoteContext
- * - Skill quick trigger menu (type "/" to search and select skills)
+ * - Selected skill chips from SkillTriggerContext (removable, cleared on send)
+ * - Skill quick picker menu (type "/" to search and select skills as chips)
  * - Voice input integration via VoiceInputButton
  * - Draft persistence with external state synchronization
  *
@@ -333,10 +336,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const isComposingRef = useRef(false);
   const { attachedMaterials, removeMaterial } = useMaterialAttachment();
   const { quotes, removeQuote } = useTextQuote();
-  const { pendingTrigger, consumeTrigger } = useSkillTrigger();
-
-  // Skill trigger tags (displayed as chips above input)
-  const [skillTriggers, setSkillTriggers] = useState<string[]>([]);
+  const { selectedSkills, selectSkill, removeSkill, clearSkills } = useSkillTrigger();
 
   // 追加指令发送中：用于禁用按钮/回车，避免重复提交同一条 steering。
   const [steerPending, setSteerPending] = useState(false);
@@ -354,15 +354,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     setStaticSuggestions(getRandomSuggestions(allStaticSuggestions, 3));
   }, [allStaticSuggestions]);
 
-  // Consume pendingTrigger from SkillTriggerContext
-  useEffect(() => {
-    if (pendingTrigger) {
-      setSkillTriggers((prev) => prev.includes(pendingTrigger) ? prev : [...prev, pendingTrigger]);
-      consumeTrigger();
-      textareaRef.current?.focus();
-    }
-  }, [pendingTrigger, consumeTrigger]);
-
   const baseDisplaySuggestions = getSuggestionsToDisplay(
     staticSuggestions,
     aiSuggestions,
@@ -379,7 +370,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     !input &&
     !inputDisabled &&
     !effectiveSendDisabled &&
-    !(layout === "fill" && skillTriggers.length > 0) &&
+    !(layout === "fill" && selectedSkills.length > 0) &&
     (isSuggestionLoading || suggestionDisplayState === "fallback" || displaySuggestions.length > 0);
 
   // Load skills when menu is shown
@@ -407,27 +398,29 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     );
   }, [skills, skillSearchQuery]);
 
-  // Handle skill selection
-  const selectSkill = useCallback((skill: Skill) => {
-    // Use the first trigger word as the input and keep a delimiter so follow-up
-    // typing remains a backend-recognizable explicit skill prefix.
-    const triggerWord = skill.triggers[0] || skill.name;
-    setInput(`${triggerWord} `);
+  // 已选满 MAX_SELECTED_SKILLS 个时，菜单里未选中的技能不可再选（否则 selectSkill 静默忽略、
+  // 输入却被清空，用户看不出发生了什么）；已选中的仍可点，等价于保持原样。
+  const skillSelectionFull = selectedSkills.length >= MAX_SELECTED_SKILLS;
+  const isSkillPickable = useCallback(
+    (skill: Skill) => !skillSelectionFull || selectedSkills.some((selected) => selected.id === skill.id),
+    [selectedSkills, skillSelectionFull],
+  );
+
+  // Handle skill selection from the "/" menu: add a chip and drop the "/query" text
+  const pickSkillFromMenu = useCallback((skill: Skill) => {
+    if (!isSkillPickable(skill)) {
+      return;
+    }
+    selectSkill({ id: skill.id, name: skill.name });
+    setInput("");
     setShowSkillMenu(false);
     setSkillSearchQuery("");
     setSelectedSkillIndex(0);
     textareaRef.current?.focus();
-    // Inline height adjustment to avoid dependency issues
     if (layout === "auto" && textareaRef.current) {
-      setTimeout(() => {
-        const textarea = textareaRef.current;
-        if (textarea) {
-          textarea.style.height = "auto";
-          textarea.style.height = `${Math.min(textarea.scrollHeight, TEXTAREA_AUTO_MAX_HEIGHT_PX)}px`;
-        }
-      }, 0);
+      textareaRef.current.style.height = "auto";
     }
-  }, [layout, setInput]);
+  }, [isSkillPickable, layout, selectSkill, setInput]);
 
   // Close skill menu when clicking outside
   useEffect(() => {
@@ -532,7 +525,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       }
       if (e.key === "Enter" || e.key === "Tab") {
         e.preventDefault();
-        selectSkill(filteredSkills[selectedSkillIndex]);
+        pickSkillFromMenu(filteredSkills[selectedSkillIndex]);
         return;
       }
       if (e.key === "Escape") {
@@ -584,30 +577,27 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     try {
       await onSteer(trimmed);
     } catch (error) {
-      // 失败时保留输入与技能芯片，用户可直接重试（提示由上层 toast 负责）。
+      // 失败时保留输入，用户可直接重试（提示由上层 toast 负责）。
       logger.error("Failed to send steering message", error);
       return;
     } finally {
       setSteerPending(false);
     }
 
+    // 追加指令不携带 selected_skill_ids，所以已选技能 chip 保留给下一轮正式发送。
     setInput("");
-    setSkillTriggers([]);
     if (textareaRef.current && layout === "auto") {
       textareaRef.current.style.height = "auto";
     }
   };
 
   const handleSubmit = () => {
-    const trimmed = input.trim();
-    const triggerPrefix = skillTriggers.join(' ');
-    const message = triggerPrefix
-      ? (trimmed ? `${triggerPrefix} ${trimmed}` : triggerPrefix)
-      : trimmed;
+    const message = input.trim();
     if (message && !effectiveSendDisabled) {
-      onSend(message);
+      onSend(message, selectedSkills.map((skill) => skill.id));
+      // 与输入框文本保持一致：发送即清空（onSend 不回报失败）。
       setInput("");
-      setSkillTriggers([]);
+      clearSkills();
       // Reset height (auto layout only)
       if (textareaRef.current && layout === "auto") {
         textareaRef.current.style.height = "auto";
@@ -654,7 +644,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     attachedMaterials.length > 0 ||
     quotes.length > 0 ||
     matchedSkills.length > 0 ||
-    skillTriggers.length > 0 ||
+    selectedSkills.length > 0 ||
     showSuggestionRow ||
     showSkillMenu;
 
@@ -724,22 +714,26 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         </div>
       )}
 
-      {/* Skill trigger tags */}
-      {skillTriggers.length > 0 && (
-        <div className={compactAccessoryRowClass} data-testid="chat-skill-trigger-row">
-          <span className={accessoryLabelClass}>{t("chat:skill.triggerLabel")}</span>
-          {skillTriggers.map((trigger, index) => (
+      {/* Explicitly selected skills (sent as selected_skill_ids) */}
+      {selectedSkills.length > 0 && (
+        <div className={compactAccessoryRowClass} data-testid="chat-selected-skill-row">
+          <span className={accessoryLabelClass}>
+            {t("chat:skill.selectedLabel", { count: selectedSkills.length, max: MAX_SELECTED_SKILLS })}
+          </span>
+          {selectedSkills.map((skill) => (
             <span
-              key={index}
-              className={`inline-flex min-w-0 items-center gap-1 px-2 py-0.5 bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))] rounded text-xs font-mono ${isFillLayout ? "shrink-0" : ""}`}
-              data-testid="chat-skill-trigger-chip"
+              key={skill.id}
+              className={`inline-flex min-w-0 items-center gap-1 px-2 py-0.5 bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))] rounded text-xs ${isFillLayout ? "shrink-0" : ""}`}
+              data-testid="chat-selected-skill-chip"
             >
               <Zap size={10} className="shrink-0" />
-              <span className="max-w-[200px] truncate">{trigger}</span>
+              <span className="max-w-[200px] truncate">{skill.name}</span>
               <button
-                onClick={() => setSkillTriggers((prev) => prev.filter((_, i) => i !== index))}
-                className="shrink-0 hover:text-[hsl(var(--error))] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-primary))] focus-visible:ring-offset-1 focus-visible:ring-offset-[hsl(var(--success)/0.15)] rounded-sm"
+                type="button"
+                onClick={() => removeSkill(skill.id)}
+                className={`shrink-0 hover:text-[hsl(var(--error))] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-primary))] focus-visible:ring-offset-1 focus-visible:ring-offset-[hsl(var(--success)/0.15)] rounded-sm ${isMobile ? "p-1 -m-1" : ""}`}
                 title={t("chat:input.remove")}
+                aria-label={t("chat:skill.removeSelected", { name: skill.name })}
               >
                 <X size={12} />
               </button>
@@ -800,11 +794,21 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             </div>
           ) : (
             <div className="py-1">
+              {skillSelectionFull && (
+                <div
+                  role="status"
+                  className="px-3 py-2 text-xs text-[hsl(var(--warning))]"
+                >
+                  {t("chat:skill.selectionFull", { max: MAX_SELECTED_SKILLS })}
+                </div>
+              )}
               {filteredSkills.map((skill, index) => (
                 <button
                   key={skill.id}
-                  onClick={() => selectSkill(skill)}
-                  className={`w-full px-3 py-2 text-left hover:bg-[hsl(var(--bg-tertiary))] transition-colors focus-visible:outline-none focus-visible:bg-[hsl(var(--bg-tertiary))] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[hsl(var(--accent-primary))] ${
+                  type="button"
+                  onClick={() => pickSkillFromMenu(skill)}
+                  disabled={!isSkillPickable(skill)}
+                  className={`w-full px-3 py-2 text-left hover:bg-[hsl(var(--bg-tertiary))] transition-colors focus-visible:outline-none focus-visible:bg-[hsl(var(--bg-tertiary))] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[hsl(var(--accent-primary))] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent ${
                     index === selectedSkillIndex
                       ? "bg-[hsl(var(--accent-primary)/0.1)] border-l-2 border-l-[hsl(var(--accent-primary))]"
                       : ""

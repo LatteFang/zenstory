@@ -24,9 +24,10 @@ const { mockUseMaterialAttachment, mockUseTextQuote, mockUseSkillTrigger } = vi.
     removeQuote: vi.fn(),
   })),
   mockUseSkillTrigger: vi.fn(() => ({
-    pendingTrigger: null,
-    consumeTrigger: vi.fn(),
-    insertTrigger: vi.fn(),
+    selectedSkills: [],
+    selectSkill: vi.fn(),
+    removeSkill: vi.fn(),
+    clearSkills: vi.fn(),
   })),
 }))
 
@@ -49,6 +50,7 @@ vi.mock('../../contexts/TextQuoteContext', () => ({
 }))
 
 vi.mock('../../contexts/SkillTriggerContext', () => ({
+  MAX_SELECTED_SKILLS: 3,
   useSkillTrigger: mockUseSkillTrigger,
 }))
 
@@ -120,9 +122,10 @@ describe('round3 #24 steering 失败不得吞掉用户输入', () => {
     })
     mockUseTextQuote.mockReturnValue({ quotes: [], removeQuote: vi.fn() })
     mockUseSkillTrigger.mockReturnValue({
-      pendingTrigger: null,
-      consumeTrigger: vi.fn(),
-      insertTrigger: vi.fn(),
+      selectedSkills: [],
+      selectSkill: vi.fn(),
+      removeSkill: vi.fn(),
+      clearSkills: vi.fn(),
     })
   })
 

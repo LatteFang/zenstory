@@ -1,15 +1,17 @@
-# 场景描写
-
-细腻描绘场景和氛围，让读者身临其境。
-
-## Triggers
-- 场景
-- 环境描写
-- 氛围
-- 描写场景
-- 写场景
-
-## Instructions
+---
+name: describe-scene
+description: 细腻描绘场景和氛围，让读者身临其境。
+metadata:
+  zenstory:
+    display_name: 场景描写
+    triggers:
+    - 场景
+    - 环境描写
+    - 氛围
+    - 描写场景
+    - 写场景
+    category: writing
+---
 你现在进入场景描写模式。请帮助用户创作生动的场景描写。
 
 ### 任务目标

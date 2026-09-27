@@ -1,15 +1,17 @@
-# 冲突设计
-
-设计戏剧冲突和情节转折，让故事更有张力。
-
-## Triggers
-- 冲突
-- 矛盾
-- 转折
-- 高潮
-- 设计冲突
-
-## Instructions
+---
+name: design-conflict
+description: 设计戏剧冲突和情节转折，让故事更有张力。
+metadata:
+  zenstory:
+    display_name: 冲突设计
+    triggers:
+    - 冲突
+    - 矛盾
+    - 转折
+    - 高潮
+    - 设计冲突
+    category: plot
+---
 你现在进入冲突设计模式。请帮助用户设计有张力的戏剧冲突。
 
 ### 任务目标

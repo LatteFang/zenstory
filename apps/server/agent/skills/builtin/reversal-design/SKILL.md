@@ -1,16 +1,18 @@
-# 反转设计
-
-设计出人意料又合情合理的剧情反转。
-
-## Triggers
-- 反转
-- 剧情反转
-- 设计反转
-- 出人意料
-- 颠覆
-- 意外
-
-## Instructions
+---
+name: reversal-design
+description: 设计出人意料又合情合理的剧情反转。
+metadata:
+  zenstory:
+    display_name: 反转设计
+    triggers:
+    - 反转
+    - 剧情反转
+    - 设计反转
+    - 出人意料
+    - 颠覆
+    - 意外
+    category: plot
+---
 你现在进入反转设计模式。请帮助用户设计精彩的剧情反转。
 
 ### 任务目标

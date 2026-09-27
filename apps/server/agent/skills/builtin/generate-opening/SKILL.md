@@ -1,15 +1,17 @@
-# 开头生成
-
-创作引人入胜的故事开头，抓住读者注意力。
-
-## Triggers
-- 写开头
-- 开篇
-- 第一章
-- 开场
-- 故事开头
-
-## Instructions
+---
+name: generate-opening
+description: 创作引人入胜的故事开头，抓住读者注意力。
+metadata:
+  zenstory:
+    display_name: 开头生成
+    triggers:
+    - 写开头
+    - 开篇
+    - 第一章
+    - 开场
+    - 故事开头
+    category: writing
+---
 你现在进入开头生成模式。请帮助用户创作吸引人的故事开头。
 
 ### 任务目标

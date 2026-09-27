@@ -109,7 +109,7 @@ class TestStreamAdapterInit:
         assert adapter._current_tool_calls == {}
         assert adapter._last_message_stop_reason is None
         assert adapter._last_message_usage is None
-        assert adapter._accumulated_text == ""
+        assert adapter._matched_skill_ids == set()
 
     def test_init_without_config(self):
         """Test initialization with default config."""
@@ -121,7 +121,7 @@ class TestStreamAdapterInit:
         """Test reset clears all state."""
         # Set some state
         adapter._content_started = True
-        adapter._accumulated_text = "some text"
+        adapter._matched_skill_ids.add("skill-1")
         adapter._current_tool_calls["tool-1"] = {"name": "test"}
         adapter._last_message_stop_reason = "end_turn"
         adapter._last_message_usage = {"input_tokens": 1}
@@ -134,7 +134,7 @@ class TestStreamAdapterInit:
 
         # Verify all state cleared
         assert adapter._content_started is False
-        assert adapter._accumulated_text == ""
+        assert adapter._matched_skill_ids == set()
         assert adapter._current_tool_calls == {}
         assert adapter._last_message_stop_reason is None
         assert adapter._last_message_usage is None
@@ -215,25 +215,6 @@ class TestProcessEventText:
         assert events[1].data["text"] == "Hello"
         assert events[2].type == EventType.CONTENT
         assert events[2].data["text"] == " world"
-
-    @pytest.mark.asyncio
-    async def test_text_accumulates_for_skill_detection(self, adapter):
-        """Test text is accumulated for skill usage detection."""
-        event1 = LangGraphStreamEvent(
-            type=StreamEventType.TEXT,
-            data={"text": "[使用技能: "},
-        )
-        event2 = LangGraphStreamEvent(
-            type=StreamEventType.TEXT,
-            data={"text": "大纲规划师]"},
-        )
-
-        async for _ in adapter._process_langgraph_event(event1):
-            pass
-        async for _ in adapter._process_langgraph_event(event2):
-            pass
-
-        assert adapter._accumulated_text == "[使用技能: 大纲规划师]"
 
 
 class TestProcessEventThinking:
@@ -986,17 +967,6 @@ class TestHandleTextContent:
         assert events[2].data["text"] == "after"
         adapter._save_file_content.assert_awaited_once_with("file-1", "Hello")
 
-    @pytest.mark.asyncio
-    async def test_text_accumulates(self, adapter):
-        """Test text accumulation for skill detection."""
-        # _handle_text_content is an async generator, need to consume it
-        async for _ in adapter._handle_text_content("[使用技能: "):
-            pass
-        async for _ in adapter._handle_text_content("大纲规划师]"):
-            pass
-
-        assert adapter._accumulated_text == "[使用技能: 大纲规划师]"
-
 
 class TestHandleCreateFileResult:
     """Tests for _handle_create_file_result method."""
@@ -1225,79 +1195,6 @@ class TestSaveFileContent:
             # Should not raise, just log error and return False
             saved = await adapter._save_file_content("file-1", "Test content")
             assert saved is False
-
-
-class TestSkillUsageDetection:
-    """Tests for skill usage detection."""
-
-    @pytest.mark.asyncio
-    async def test_detect_skill_usage(self, adapter):
-        """Test skill usage detection from text."""
-        adapter._accumulated_text = "Some text [使用技能: 大纲规划师] more text"
-
-        with patch("database.get_session") as mock_get_session:
-            mock_session = MagicMock()
-            mock_gen = MagicMock()
-            mock_gen.__next__ = MagicMock(return_value=mock_session)
-            mock_gen.__iter__ = MagicMock(return_value=iter([mock_session, None]))
-            mock_get_session.return_value = mock_gen
-
-            with patch("agent.skills.loader.get_builtin_skills") as mock_skills, \
-                 patch("services.skill_usage_service.record_skill_usage") as mock_record:
-
-                # Mock skill with matching name
-                mock_skill = MagicMock()
-                mock_skill.id = "skill-1"
-                mock_skill.name = "大纲规划师"
-                mock_skills.return_value = [mock_skill]
-
-                await adapter._detect_and_record_skill_usage()
-
-                # Should record usage
-                mock_record.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_no_skill_usage_without_project(self, adapter):
-        """Test skill usage not recorded without project ID."""
-        adapter.config.project_id = ""
-        adapter._accumulated_text = "[使用技能: 大纲规划师]"
-
-        await adapter._detect_and_record_skill_usage()
-
-        # Should do nothing without project_id
-
-    @pytest.mark.asyncio
-    async def test_detect_added_skill_usage(self, adapter):
-        """Test usage recording works for added public skills."""
-        adapter._accumulated_text = "[使用技能: 社区技能]"
-
-        with patch("database.get_session") as mock_get_session:
-            mock_session = MagicMock()
-            mock_gen = MagicMock()
-            mock_gen.__next__ = MagicMock(return_value=mock_session)
-            mock_gen.__iter__ = MagicMock(return_value=iter([mock_session, None]))
-            mock_get_session.return_value = mock_gen
-
-            with patch("agent.skills.loader.get_builtin_skills", return_value=[]), \
-                 patch("agent.skills.user_skill_service.get_user_skills", return_value=[]), \
-                 patch("services.skill_usage_service.record_skill_usage") as mock_record:
-
-                added_skill = MagicMock()
-                added_skill.custom_name = "社区技能"
-                public_skill = MagicMock()
-                public_skill.id = "public-skill-1"
-                public_skill.name = "社区技能"
-
-                mock_exec_result = MagicMock()
-                mock_exec_result.all.return_value = [(added_skill, public_skill)]
-                mock_session.exec.return_value = mock_exec_result
-
-                await adapter._detect_and_record_skill_usage()
-
-                assert mock_record.call_count == 1
-                kwargs = mock_record.call_args.kwargs
-                assert kwargs["skill_id"] == "public-skill-1"
-                assert kwargs["skill_source"] == "added"
 
 
 class TestGetFileContent:

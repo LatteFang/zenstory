@@ -778,6 +778,7 @@ export function useAgentStream(
           context_after: request.context_after,
           outline_id: request.outline_id,
           metadata: request.metadata,
+          selected_skill_ids: request.selected_skill_ids,
         },
         {
           onThinking: (message) => {

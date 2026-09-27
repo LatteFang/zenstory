@@ -24,6 +24,8 @@ DEFAULT_TOOL_NAMES: list[str] = [
     "handoff_to_agent",
     "request_clarification",
     "parallel_execute",
+    "load_skill",
+    "read_skill_resource",
 ]
 
 QUALITY_REVIEWER_TOOL_NAMES: list[str] = [
@@ -32,6 +34,8 @@ QUALITY_REVIEWER_TOOL_NAMES: list[str] = [
     "update_project",
     "handoff_to_agent",
     "request_clarification",
+    "load_skill",
+    "read_skill_resource",
 ]
 
 AGENT_TOOL_NAME_MAP: dict[str, list[str]] = {

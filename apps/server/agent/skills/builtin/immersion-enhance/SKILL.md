@@ -1,16 +1,18 @@
-# 代入感强化
-
-通过五感描写和情绪渲染增强读者的沉浸体验。
-
-## Triggers
-- 代入感
-- 沉浸感
-- 五感描写
-- 增强代入
-- 画面感
-- 氛围感
-
-## Instructions
+---
+name: immersion-enhance
+description: 通过五感描写和情绪渲染增强读者的沉浸体验。
+metadata:
+  zenstory:
+    display_name: 代入感强化
+    triggers:
+    - 代入感
+    - 沉浸感
+    - 五感描写
+    - 增强代入
+    - 画面感
+    - 氛围感
+    category: style
+---
 你现在进入代入感强化模式。请帮助用户增强文字的沉浸体验。
 
 ### 任务目标

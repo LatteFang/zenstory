@@ -1,15 +1,17 @@
-# 续写正文
-
-根据上下文自然延续故事内容，保持风格和情节的连贯性。
-
-## Triggers
-- 续写
-- 继续写
-- 接着写
-- 往下写
-- 继续
-
-## Instructions
+---
+name: continue-writing
+description: 根据上下文自然延续故事内容，保持风格和情节的连贯性。
+metadata:
+  zenstory:
+    display_name: 续写正文
+    triggers:
+    - 续写
+    - 继续写
+    - 接着写
+    - 往下写
+    - 继续
+    category: writing
+---
 你现在进入续写模式。请根据已有内容自然延续故事。
 
 ### 任务目标

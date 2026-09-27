@@ -1,16 +1,18 @@
-# 钩子设计
-
-设计章末钩子和长线悬念，吸引读者持续阅读。
-
-## Triggers
-- 钩子
-- 悬念
-- 章末
-- 吸引读者
-- 设计钩子
-- 留悬念
-
-## Instructions
+---
+name: hook-design
+description: 设计章末钩子和长线悬念，吸引读者持续阅读。
+metadata:
+  zenstory:
+    display_name: 钩子设计
+    triggers:
+    - 钩子
+    - 悬念
+    - 章末
+    - 吸引读者
+    - 设计钩子
+    - 留悬念
+    category: plot
+---
 你现在进入钩子设计模式。请帮助用户设计吸引读者的钩子和悬念。
 
 ### 任务目标

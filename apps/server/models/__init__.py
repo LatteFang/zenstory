@@ -85,6 +85,7 @@ from .referral import (
 )
 from .refresh_token import RefreshTokenRecord
 from .skill import UserSkill
+from .skill_resource import SkillResource
 from .skill_usage import SkillUsage
 from .subscription import (
     AdminAuditLog,
@@ -144,6 +145,7 @@ __all__ = [
     "CHANGE_SOURCE_SYSTEM",
     # Skill model
     "UserSkill",
+    "SkillResource",
     "SkillUsage",
     "PublicSkill",
     "UserAddedSkill",

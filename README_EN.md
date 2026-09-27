@@ -96,7 +96,7 @@ The skill names are Chinese in the product; the file ids are given here.
 | Character | 创建角色 `create-character` |
 | Worldbuilding | 世界观设定 `worldbuilding` |
 
-Each skill is a Markdown file in [`apps/server/agent/skills/builtin/`](apps/server/agent/skills/builtin/) with its trigger words and the instructions the AI receives. Add a skill under Skills → Discover, then use it: type `/` in the input box and pick it, or start your message with the skill's name or trigger followed by a space or punctuation (for example 「钩子设计：给这章换个结尾」), and that message follows the skill. If you name none, the AI may apply a skill by itself, but each turn carries the full instructions of only a few enabled skills (about 4,000 characters in total); the rest take effect only when you name them at the start of a message. You can write your own skills too; shared skills go public after an admin approves them.
+Each skill is a `SKILL.md` in the open Agent Skills format ([`apps/server/agent/skills/builtin/`](apps/server/agent/skills/builtin/)) describing what it is for and the method the AI should follow, optionally with `references/` files. Add a skill under Skills → Discover, then use it: each turn the AI sees only the names and purposes of your enabled skills and loads a skill’s full method when your request matches it; you can also type `/` in the input box or click a skill in the sidebar to attach it to that message as a chip (up to 3). You can write your own skills, or import and export them as `.zip` / `.md` packages; scripts inside a package are never executed and are dropped on import with a warning. Shared skills go public after an admin approves them.
 
 ### Versions, snapshots and export
 

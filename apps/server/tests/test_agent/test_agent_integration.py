@@ -72,7 +72,7 @@ class TestMCPTools:
         """Test that all MCP tools are registered."""
         from agent.tools.mcp_tools import ALL_MCP_TOOLS
 
-        assert len(ALL_MCP_TOOLS) == 8
+        assert len(ALL_MCP_TOOLS) == 10
 
         # ALL_MCP_TOOLS is now a list of functions
         tool_names = [tool.__name__ for tool in ALL_MCP_TOOLS]
@@ -85,6 +85,8 @@ class TestMCPTools:
             "update_project",
             "handoff_to_agent",
             "request_clarification",
+            "load_skill",
+            "read_skill_resource",
         ]
         for expected in expected_tools:
             assert expected in tool_names, f"Tool {expected} not found"

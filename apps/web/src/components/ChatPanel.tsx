@@ -1119,9 +1119,10 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
    * Clears draft and attachments after sending.
    *
    * @param message - The user's message text to send
+   * @param selectedSkillIds - Skills explicitly selected via chips (sent as selected_skill_ids)
    */
   // Handle sending a message
-  const handleSendMessage = useCallback(async (message: string) => {
+  const handleSendMessage = useCallback(async (message: string, selectedSkillIds?: string[]) => {
     if (!message.trim() || isStreaming) return;
 
     // Clear draft after sending
@@ -1155,6 +1156,7 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
       context_before: undefined,
       context_after: undefined,
       outline_id: selectedItem?.id,
+      selected_skill_ids: selectedSkillIds && selectedSkillIds.length > 0 ? selectedSkillIds : undefined,
       metadata: {
         generation_mode: generationMode,
         // Current focused file info (used by backend context assembler)

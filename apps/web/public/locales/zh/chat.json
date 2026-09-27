@@ -152,6 +152,8 @@
     "query_files": "查询文件",
     "update_project": "更新项目状态",
     "parallel_execute": "并行执行",
+    "load_skill": "加载技能",
+    "read_skill_resource": "读取技能资源",
     "parallel_summary": "并行执行 {{total}} 个任务：{{completed}} 成功，{{failed}} 失败",
     "processing": "处理中",
     "processing_ellipsis": "处理中...",
@@ -261,7 +263,9 @@
     "builtin": "内置",
     "user": "自定义",
     "hint": "↑↓ 选择 · Enter 确认 · Esc 取消",
-    "triggerLabel": "已选技能"
+    "selectedLabel": "已选技能（{{count}}/{{max}}）",
+    "removeSelected": "移除技能 {{name}}",
+    "selectionFull": "每条消息最多选择 {{max}} 个技能，先移除一个再添加"
   },
   "feedback": {
     "like": "点赞",
