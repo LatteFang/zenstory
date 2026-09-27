@@ -16,6 +16,7 @@ from prefect import flow, get_run_logger
 from prefect.task_runners import ConcurrentTaskRunner
 
 from config.material_settings import material_settings as settings
+from config.material_settings import resolve_enabled_stages
 from flows.atomic_tasks.linking import (
     build_character_relationships_task,
     extract_character_relationships_task,
@@ -84,7 +85,7 @@ def relationship_flow(
         # ========================================
 
         relationships_count = 0
-        if settings.ENABLE_RELATIONSHIP_EXTRACTION:
+        if resolve_enabled_stages(settings).relationships:
             logger.info(f"步骤1: 提取人物关系（每{DEFAULT_RELATIONSHIP_BATCH_SIZE}章一批，贯穿全书）")
 
             with monitor.measure("relationship_extract_build"):

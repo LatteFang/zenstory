@@ -249,3 +249,41 @@ def test_world_view_service_upsert_and_entity_return_paths(db_session: Session):
     assert updated.power_system == "Aura"
     assert json.loads(updated.special_rules or "[]") == ["结界"]
     assert service.get_by_novel(db_session, novel.id).world_structure == "三界"
+
+
+
+def test_attach_plots_to_story_rejects_foreign_novel_plots_and_duplicates(db_session):
+    from sqlmodel import select
+
+    from models.material_models import Chapter, Novel, Plot, Story, StoryPlotLink
+    from services.material.stories_service import StoriesService
+
+    novel = Novel(user_id="u-attach", title="Mine")
+    other = Novel(user_id="u-attach-2", title="Theirs")
+    db_session.add_all([novel, other])
+    db_session.commit()
+    own_chapter = Chapter(novel_id=novel.id, chapter_number=1, title="c1")
+    other_chapter = Chapter(novel_id=other.id, chapter_number=1, title="c1")
+    db_session.add_all([own_chapter, other_chapter])
+    db_session.commit()
+    own_plot = Plot(chapter_id=own_chapter.id, index=0, plot_type="SETUP", description="own")
+    other_plot = Plot(chapter_id=other_chapter.id, index=0, plot_type="SETUP", description="other")
+    db_session.add_all([own_plot, other_plot])
+    db_session.commit()
+
+    svc = StoriesService()
+    story_id = svc.upsert_story(db_session, novel.id, {"title": "t", "synopsis": "s"})
+
+    assert svc.attach_plots_to_story(db_session, story_id, [own_plot.id, other_plot.id, own_plot.id]) == 1
+    # Re-running the aggregation must not duplicate links.
+    assert svc.attach_plots_to_story(db_session, story_id, [own_plot.id]) == 0
+    db_session.commit()
+
+    links = db_session.exec(select(StoryPlotLink.plot_id).where(StoryPlotLink.story_id == story_id)).all()
+    assert links == [own_plot.id]
+
+    # Legacy story without novel_id: no novel check, dedupe still applies.
+    legacy = Story(title="legacy", synopsis="s")
+    db_session.add(legacy)
+    db_session.commit()
+    assert svc.attach_plots_to_story(db_session, legacy.id, [other_plot.id, other_plot.id]) == 1

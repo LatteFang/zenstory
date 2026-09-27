@@ -38,7 +38,7 @@ Enter material details, expand the category you need and select an item. Categor
 | Plot, story or storyline | Description, type and related chapters; read earlier or later text when needed. |
 | World and special ability | Available systems, structure, factions or ability development; ask how a limit changes a choice, not just what label it has. |
 
-These are display capabilities, not a promise that every material contains every result. Relationship or timeline categories do not establish a complete interactive graph. Structured descriptions can omit or misread evidence; “the analysis does not list a rule” does not mean “the source has no such rule.”
+These are display capabilities, not a promise that every material contains every result. The default configuration does not extract plot points, stories and storylines, or relationships; categories that were not enabled for a decomposition and hold no data are labelled “Not enabled” and cannot be expanded (data produced by an earlier decomposition stays viewable). The relationship category does not establish a complete interactive graph. Structured descriptions can omit or misread evidence; “the analysis does not list a rule” does not mean “the source has no such rule.”
 
 This guide does not describe the result viewer as an analysis-card editor or bulk exporter. Keep your own interpretations in separate reading notes with source location and inference labels. Changing those notes is not the same as correcting the library's extracted analysis.
 

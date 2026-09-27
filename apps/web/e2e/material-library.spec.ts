@@ -222,21 +222,6 @@ const mockWorldView = {
   updated_at: mockTimestamp,
 }
 
-const mockTimeline = [
-  {
-    id: 1,
-    novel_id: 1,
-    chapter_id: 1,
-    chapter_title: '第一章 陨落的天才',
-    plot_id: 1,
-    plot_description: '萧炎失去斗气',
-    rel_order: 1,
-    time_tag: '斗历1200年',
-    uncertain: false,
-    created_at: mockTimestamp,
-  },
-]
-
 const mockStats = {
   total_novels: 2,
   completed_novels: 2,
@@ -401,12 +386,6 @@ async function setupMaterialLibraryMocking(page: Page) {
         contentType: 'application/json',
         body: JSON.stringify(mockWorldView),
       })
-    } else if (pathname.endsWith('/timeline')) {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockTimeline),
-      })
     } else {
       // Get material detail
       const materialId = pathname.match(/\/materials\/(\d+)/)?.[1]
@@ -470,7 +449,6 @@ const _DETAIL_PAGE = {
   relationshipTab: 'button:has-text("Relation"), button:has-text("关系")',
   worldViewTab: 'button:has-text("World"), button:has-text("世界")',
   goldenFingerTab: 'button:has-text("Golden"), button:has-text("金手指")',
-  timelineTab: 'button:has-text("Timeline"), button:has-text("时间线")',
 }
 
 const UPLOAD_MODAL = {

@@ -17,6 +17,7 @@ from prefect import flow, get_run_logger
 from prefect.task_runners import ConcurrentTaskRunner
 
 from config.material_settings import material_settings as settings
+from config.material_settings import resolve_enabled_stages
 from flows.atomic_tasks.narrative import (
     aggregate_plots_to_stories_task,
     generate_storylines_task,
@@ -71,6 +72,7 @@ def story_aggregate_flow(
     """
     logger = get_run_logger()
     flow_start = _def_now()
+    stages = resolve_enabled_stages(settings)
 
     logger.info(
         "[剧情聚合流程] 开始: novel_id=%s, chapters_count=%s",
@@ -94,7 +96,7 @@ def story_aggregate_flow(
         meta_extracted = False
 
         # 1.1 生成小说概要
-        if settings.ENABLE_NOVEL_SYNOPSIS:
+        if stages.synopsis:
             logger.info("步骤1.1: 生成小说概要")
 
             # 获取章节摘要
@@ -137,7 +139,7 @@ def story_aggregate_flow(
             logger.info("步骤1.1跳过: 小说概要功能未启用")
 
         # 1.2 元数据应由阶段1统一触发，这里仅根据checkpoint判断是否已完成
-        if settings.ENABLE_ENTITY_EXTRACTION:
+        if stages.meta:
             resume_cp = checkpoint.get_checkpoint(checkpoint_stage) if hasattr(checkpoint, "get_checkpoint") else None
             _raw = getattr(resume_cp, "checkpoint_data", None) if resume_cp else None
             if isinstance(_raw, str):
@@ -161,7 +163,7 @@ def story_aggregate_flow(
         stories_count = 0
         stories = []
         failed_stories: list[str] = []
-        if settings.ENABLE_STORY_AGGREGATION:
+        if stages.stories:
             logger.info("步骤2: 剧情聚合（智能分块）")
 
             # 2.1 智能分块 + 识别剧情框架
@@ -260,7 +262,7 @@ def story_aggregate_flow(
         # ========================================
 
         orphan_handled = 0
-        if settings.ENABLE_STORY_AGGREGATION and stories_count > 0:
+        if stages.stories and stories_count > 0:
             logger.info("步骤2.5: 处理未归类情节点")
 
             with monitor.measure("handle_orphan_plots"):
@@ -292,7 +294,7 @@ def story_aggregate_flow(
         # ========================================
 
         storylines_count = 0
-        if settings.ENABLE_STORYLINE_GENERATION and stories_count > 0:
+        if stages.storylines and stories_count > 0:
             logger.info("步骤3: 剧情线生成")
 
             # 生成剧情线

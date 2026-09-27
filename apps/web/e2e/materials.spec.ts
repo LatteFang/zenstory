@@ -162,21 +162,6 @@ const mockWorldView = {
   updated_at: mockTimestamp,
 }
 
-const mockTimeline = [
-  {
-    id: 1,
-    novel_id: 1,
-    chapter_id: 1,
-    chapter_title: 'Chapter 1: The Beginning',
-    plot_id: 1,
-    plot_description: 'The hero is introduced',
-    rel_order: 1,
-    time_tag: 'Year 1, Day 1',
-    uncertain: false,
-    created_at: mockTimestamp,
-  },
-]
-
 // Helper to set up route mocking for materials API
 async function setupMaterialsMocking(page: Page) {
   // Mock material detail and sub-resources
@@ -308,12 +293,6 @@ async function setupMaterialsMocking(page: Page) {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(mockWorldView),
-      })
-    } else if (pathname.endsWith('/timeline')) {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockTimeline),
       })
     } else {
       // Get material detail

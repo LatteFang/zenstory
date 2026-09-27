@@ -20,6 +20,7 @@ from models.material_models import (
     StoryLine,
     WorldView,
 )
+from services.material.stories_service import story_in_novel
 from utils.logger import get_logger
 
 from .helpers import _get_novel_or_404
@@ -145,9 +146,8 @@ def get_material_preview(
     elif entity_type == "stories":
         story = session.exec(
             select(Story)
-            .join(StoryLine, Story.story_line_id == StoryLine.id)
             .where(Story.id == entity_id)
-            .where(StoryLine.novel_id == novel_id)
+            .where(story_in_novel(novel_id))
         ).first()
         if not story:
             raise APIException(error_code=ErrorCode.FILE_NOT_FOUND, status_code=404)

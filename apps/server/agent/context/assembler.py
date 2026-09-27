@@ -685,11 +685,15 @@ class ContextAssembler:
 
                 elif entity_type == "stories":
                     story = stories_map.get(entity_id)
-                    if not story or not story.story_line_id:
+                    if not story:
                         continue
 
-                    story_line = session.get(StoryLine, story.story_line_id)
-                    if not story_line or story_line.novel_id != novel_id:
+                    story_novel_id = story.novel_id
+                    if story_novel_id is None and story.story_line_id:
+                        # 历史行没有 novel_id，经故事线归属
+                        story_line = session.get(StoryLine, story.story_line_id)
+                        story_novel_id = story_line.novel_id if story_line else None
+                    if story_novel_id != novel_id:
                         continue
 
                     title, markdown = format_story_to_markdown(story, novel.title)

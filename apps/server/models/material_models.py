@@ -96,6 +96,8 @@ class Story(SQLModel, table=True):
     __tablename__ = "stories"
 
     id: int | None = Field(default=None, primary_key=True)
+    # 所属小说。数据库层可为空（兼容历史数据），所有新写入必须设置。
+    novel_id: int | None = Field(default=None, foreign_key="novels.id", index=True)
     story_line_id: int | None = Field(default=None, foreign_key="story_lines.id", index=True)
     title: str = Field(max_length=500)
     synopsis: str | None = None  # 100-300字剧情概述

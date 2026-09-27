@@ -109,7 +109,7 @@ Each skill is a `SKILL.md` in the open Agent Skills format ([`apps/server/agent/
 
 ### Material library and inspiration library
 
-- **Material library**: upload a reference novel as TXT (up to 300,000 characters) and the backend extracts per-chapter summaries, plot points for each chapter, character profiles, cross-chapter arcs and storylines, the world setting, and cheat abilities (金手指, the protagonist's special edge). The AI does not browse the library on its own; attach entries to the chat or import them into the project (see the [FAQ](#does-the-ai-consult-my-material-library-automatically)). On the hosted service the material library is a Pro feature.
+- **Material library**: upload a reference novel as TXT (up to 300,000 characters) and by default the backend extracts per-chapter summaries, a whole-book synopsis, character profiles, the world setting, and cheat abilities (金手指, the protagonist's special edge). Per-chapter plot points and what is built on them (cross-chapter arcs and storylines, character relationships) are off by default; enable them with the `MATERIAL_ENABLE_*` flags (see `apps/server/.env.example`). Each chapter's full text is still sent twice, for the summary and for character extraction (three times with plot points on). The AI does not browse the library on its own; attach entries to the chat or import them into the project (see the [FAQ](#does-the-ai-consult-my-material-library-automatically)). On the hosted service the material library is a Pro feature.
 - **Inspiration library**: complete project templates, either published by the admins or submitted by users and approved by an admin. Use This Template creates a new project with a copy of every file in the template.
 
 ### Also

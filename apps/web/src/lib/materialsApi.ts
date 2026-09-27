@@ -41,10 +41,52 @@ export interface MaterialNovel {
   chapters_count?: number;
   /** Total number of characters extracted */
   total_characters?: number;
+  /**
+   * Per-folder data counts (detail endpoint only). A folder whose stage is off
+   * is only shown as "not enabled" when its count is 0.
+   */
+  characters_count?: number;
+  plots_count?: number;
+  stories_count?: number;
+  story_lines_count?: number;
+  relationships_count?: number;
+  golden_fingers_count?: number;
+  has_world_view?: boolean;
+  /**
+   * Decomposition stages that were effective for the latest job.
+   * null/undefined for jobs created before the snapshot existed.
+   */
+  enabled_stages?: MaterialEnabledStages | null;
   /** UTC timestamp of creation */
   created_at: string;
   /** UTC timestamp of last update */
   updated_at: string;
+}
+
+/**
+ * Effective decomposition stage map recorded when the ingestion job started
+ * (backend: IngestionJob.stage_progress["enabled_stages"]).
+ */
+export interface MaterialEnabledStages {
+  /** Per-chapter summaries */
+  chapter_summaries: boolean;
+  /** Per-chapter plot points (情节点) */
+  plots: boolean;
+  /** Character mentions + consolidated characters (角色) */
+  characters: boolean;
+  /** Golden fingers + worldview (金手指 / 世界观) */
+  meta: boolean;
+  /** Whole-novel synopsis */
+  synopsis: boolean;
+  /**
+   * Story aggregation (剧情). Snapshots recorded before `storylines` existed
+   * used this key for both 剧情 and 故事线.
+   */
+  stories: boolean;
+  /** Storylines (故事线); absent in older snapshots */
+  storylines?: boolean;
+  /** Character relationships */
+  relationships: boolean;
 }
 
 /**
@@ -253,32 +295,6 @@ export interface MaterialWorldView {
   created_at: string;
   /** UTC timestamp of last update */
   updated_at: string;
-}
-
-/**
- * Represents an event in the story timeline.
- */
-export interface MaterialEventTimeline {
-  /** Unique identifier for the event */
-  id: number;
-  /** ID of the parent material library */
-  novel_id: number;
-  /** ID of the chapter containing this event */
-  chapter_id: number;
-  /** Title of the chapter */
-  chapter_title: string;
-  /** ID of the related plot point */
-  plot_id: number;
-  /** Description of the event */
-  plot_description: string | null;
-  /** Relative order within the timeline */
-  rel_order: number;
-  /** Time tag for the event */
-  time_tag: string | null;
-  /** Whether the timing is uncertain */
-  uncertain: boolean;
-  /** UTC timestamp of creation */
-  created_at: string;
 }
 
 /**
@@ -666,15 +682,6 @@ export const materialsApi = {
    */
   getWorldView: (novelId: string) =>
     api.get<MaterialWorldView | null>(`/api/v1/materials/${novelId}/worldview`),
-
-  /**
-   * Get event timeline from a material library.
-   *
-   * @param novelId - The unique identifier of the material library
-   * @returns Promise resolving to array of MaterialEventTimeline objects
-   */
-  getTimeline: (novelId: string) =>
-    api.get<MaterialEventTimeline[]>(`/api/v1/materials/${novelId}/timeline`),
 
   // ==================== Material Bridge APIs ====================
 

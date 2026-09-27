@@ -188,7 +188,7 @@ def assign_orphans_with_llm_task(
 
 @api_task(name="assign_single_batch", retries=3)
 def _assign_single_batch_task(
-    _novel_id: int,
+    novel_id: int,  # noqa: ARG001
     orphan_plot_ids: list[int],
     stories: list[dict[str, Any]],
     all_plots: list,
@@ -199,7 +199,7 @@ def _assign_single_batch_task(
     处理单批孤儿情节点（优化版：精简输入输出）
 
     Args:
-        _novel_id: 小说ID（未使用，保留用于接口一致性）
+        novel_id: 小说ID（未使用，保留用于接口一致性；调用方按 novel_id= 传参）
         orphan_plot_ids: 本批次的孤儿情节点ID列表
         stories: 现有剧情列表
         all_plots: 所有情节点列表
@@ -328,8 +328,12 @@ def _assign_single_batch_task(
         f"{len(unassigned_ids)} 个未分配"
     )
 
-    # 6. 执行分配
-    assigned_count = _execute_assignments(assignments)
+    # 6. 执行分配（只接受本批次的剧情与孤儿情节点，LLM 返回的其他 ID 一律丢弃）
+    assigned_count = _execute_assignments(
+        assignments,
+        allowed_story_ids={int(s["id"]) for s in existing_stories},
+        allowed_plot_ids={int(pid) for pid in orphan_plot_ids},
+    )
 
     return {
         "assigned_count": assigned_count,
@@ -340,17 +344,26 @@ def _assign_single_batch_task(
 
 
 
-def _execute_assignments(assignments: list[dict[str, Any]]) -> int:
+def _execute_assignments(
+    assignments: list[dict[str, Any]],
+    *,
+    allowed_story_ids: set[int],
+    allowed_plot_ids: set[int],
+) -> int:
     """
     执行情节点分配
 
     Args:
-        assignments: 分配列表，每项包含 plot_id, story_id
+        assignments: 分配列表，每项包含 plot_id, story_id（来自 LLM，不可信）
+        allowed_story_ids: 本批次提供给 LLM 的剧情 ID；其他 story_id 一律丢弃
+        allowed_plot_ids: 本批次的孤儿情节点 ID；其他 plot_id 一律丢弃
 
     Returns:
-        int: 成功分配的数量
+        int: 成功分配（新建链接）的数量；已存在的链接不重复创建
     """
     logger = get_run_logger()
+
+    from sqlalchemy import select as sa_select
 
     from models.material_models import Chapter, Plot, StoryPlotLink
     from services.material.story_plots_service import StoryPlotsService
@@ -359,13 +372,30 @@ def _execute_assignments(assignments: list[dict[str, Any]]) -> int:
     affected_story_ids: set[int] = set()
 
     with get_db_session() as db:
+        existing_pairs: set[tuple[int, int]] = set()
+        if allowed_story_ids:
+            existing_pairs = {
+                (int(row.story_id), int(row.plot_id))
+                for row in db.execute(
+                    sa_select(StoryPlotLink.story_id, StoryPlotLink.plot_id).where(
+                        StoryPlotLink.story_id.in_(allowed_story_ids)
+                    )
+                ).all()
+            }
+
         # 1) 幂等写入所有分配（先不关心顺序）
         for assignment in assignments:
-            plot_id = assignment.get("plot_id")
-            story_id = assignment.get("story_id")
-
-            if not plot_id or not story_id:
+            try:
+                plot_id = int(assignment.get("plot_id"))
+                story_id = int(assignment.get("story_id"))
+            except (TypeError, ValueError):
                 logger.warning(f"⚠️  无效的分配: {assignment}")
+                continue
+
+            if story_id not in allowed_story_ids or plot_id not in allowed_plot_ids:
+                logger.warning(f"⚠️  丢弃不属于本批次的分配: {assignment}")
+                continue
+            if (story_id, plot_id) in existing_pairs:
                 continue
 
             try:
@@ -374,8 +404,9 @@ def _execute_assignments(assignments: list[dict[str, Any]]) -> int:
                     story_id=story_id,
                     plot_id=plot_id,
                 )
+                existing_pairs.add((story_id, plot_id))
                 assigned_count += 1
-                affected_story_ids.add(int(story_id))
+                affected_story_ids.add(story_id)
                 logger.info(
                     f"✅ 分配成功: plot_id={plot_id} -> story_id={story_id}"
                 )
@@ -384,7 +415,6 @@ def _execute_assignments(assignments: list[dict[str, Any]]) -> int:
 
         # 2) 对受影响的每个 story，按叙事顺序整体重排 order_index
         for sid in affected_story_ids:
-            from sqlalchemy import select as sa_select
             rows = db.execute(
                 sa_select(
                     StoryPlotLink.id,

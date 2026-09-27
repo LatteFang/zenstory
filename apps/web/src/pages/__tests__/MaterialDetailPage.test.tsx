@@ -16,7 +16,6 @@ const mockGetStoryLines = vi.fn();
 const mockGetRelationships = vi.fn();
 const mockGetGoldenFingers = vi.fn();
 const mockGetWorldView = vi.fn();
-const mockGetTimeline = vi.fn();
 const materialsConfigState = vi.hoisted(() => ({
   relationshipsEnabled: false,
 }));
@@ -88,7 +87,6 @@ vi.mock("../../lib/materialsApi", () => ({
     getRelationships: () => mockGetRelationships(),
     getGoldenFingers: () => mockGetGoldenFingers(),
     getWorldView: () => mockGetWorldView(),
-    getTimeline: () => mockGetTimeline(),
   },
 }));
 
@@ -185,13 +183,6 @@ describe("MaterialDetailPage", () => {
       world_structure: "Three realms",
       key_forces: ["Court"],
     });
-    mockGetTimeline.mockResolvedValue([
-      {
-        id: 1,
-        time_tag: "Year 1",
-        rel_order: 1,
-      },
-    ]);
     mockGet.mockResolvedValue({
       id: "novel-1",
       title: "Novel One",
@@ -294,7 +285,7 @@ describe("MaterialDetailPage", () => {
     expect(screen.getByText("Save the city")).toBeInTheDocument();
   });
 
-  it("loads plot, storyline, worldview, timeline, and goldenfinger folders", async () => {
+  it("loads plot, storyline, worldview, and goldenfinger folders and hides timeline", async () => {
     materialsConfigState.relationshipsEnabled = true;
     render(<MaterialDetailPage />, { wrapper: createWrapper() });
 
@@ -317,10 +308,7 @@ describe("MaterialDetailPage", () => {
       expect(screen.getByText("materials:detail.worldviewItem")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /materials:detail.timeline/ }));
-    await waitFor(() => {
-      expect(screen.getByText("Year 1")).toBeInTheDocument();
-    });
+    expect(screen.queryByText("materials:detail.timeline")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /materials:detail.goldenfingers/ }));
     await waitFor(() => {
@@ -328,6 +316,7 @@ describe("MaterialDetailPage", () => {
     });
 
     expect(screen.getByText("materials:detail.relationships")).toBeInTheDocument();
+    expect(screen.queryByText("materials:detail.notEnabled")).not.toBeInTheDocument();
   });
 
   it("shows pending materials as active instead of an empty detail", async () => {
@@ -434,7 +423,7 @@ describe("MaterialDetailPage", () => {
     expect(await screen.findByText("A fearless lead")).toBeInTheDocument();
   });
 
-  it("renders relationship, worldview, timeline, and goldenfinger details", async () => {
+  it("renders relationship, worldview, and goldenfinger details", async () => {
     materialsConfigState.relationshipsEnabled = true;
     mockGetRelationships.mockResolvedValueOnce([
       {
@@ -464,17 +453,6 @@ describe("MaterialDetailPage", () => {
       key_factions: [{ name: "Court", description: "Rules the empire", leader: "Emperor", territory: "Capital" }],
       special_rules: "No magic after dusk",
     });
-    mockGetTimeline.mockResolvedValueOnce([
-      {
-        id: 1,
-        time_tag: "Year 1",
-        rel_order: 1,
-        uncertain: true,
-        chapter_title: "Opening Chapter",
-        plot_description: "The turning point",
-      },
-    ]);
-
     render(<MaterialDetailPage />, { wrapper: createWrapper() });
     await waitFor(() => {
       expect(screen.getByText("Novel One")).toBeInTheDocument();
@@ -502,13 +480,212 @@ describe("MaterialDetailPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /materials:detail.worldviewItem/ }));
     expect(await screen.findByText("Court")).toBeInTheDocument();
     expect(screen.getByText("No magic after dusk")).toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: /materials:detail.timeline/ }));
-    await waitFor(() => {
-      expect(screen.getByText("Year 1")).toBeInTheDocument();
+  it("marks folders of disabled stages as not enabled and keeps them collapsed", async () => {
+    materialsConfigState.relationshipsEnabled = true;
+    mockGet.mockResolvedValue({
+      id: "novel-1",
+      title: "Lean Novel",
+      status: "completed",
+      chapters_count: 1,
+      enabled_stages: {
+        chapter_summaries: true,
+        plots: false,
+        characters: true,
+        meta: true,
+        synopsis: true,
+        stories: false,
+        relationships: false,
+      },
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
     });
-    fireEvent.click(screen.getByRole("button", { name: /Year 1/ }));
-    expect(await screen.findByText("Opening Chapter")).toBeInTheDocument();
-    expect(screen.getByText("The turning point")).toBeInTheDocument();
+
+    render(<MaterialDetailPage />, { wrapper: createWrapper() });
+    expect(await screen.findByText("Lean Novel")).toBeInTheDocument();
+
+    // plots -> 情节点, stories -> 剧情 + 故事线 (snapshot without `storylines`), relationships -> 关系
+    const disabledFolders = [
+      /materials:detail.plots/,
+      /materials:detail.stories/,
+      /materials:detail.storylines/,
+      /materials:detail.relationships/,
+    ];
+    expect(screen.getAllByText("materials:detail.notEnabled")).toHaveLength(disabledFolders.length);
+    for (const name of disabledFolders) {
+      const folder = screen.getByRole("button", { name });
+      expect(folder).toBeDisabled();
+      expect(folder).toHaveTextContent("materials:detail.notEnabled");
+      fireEvent.click(folder);
+    }
+    expect(mockGetPlots).not.toHaveBeenCalled();
+    expect(mockGetStories).not.toHaveBeenCalled();
+    expect(mockGetStoryLines).not.toHaveBeenCalled();
+    expect(mockGetRelationships).not.toHaveBeenCalled();
+
+    // Enabled stages still expand and load as before.
+    const charactersFolder = screen.getByRole("button", { name: /materials:detail.characters/ });
+    expect(charactersFolder).toBeEnabled();
+    expect(charactersFolder).not.toHaveTextContent("materials:detail.notEnabled");
+    fireEvent.click(charactersFolder);
+    expect(await screen.findByText("Li Wei")).toBeInTheDocument();
+    expect(screen.queryByText("materials:detail.timeline")).not.toBeInTheDocument();
+  });
+
+  it("marks character and meta folders when those stages were off", async () => {
+    mockGet.mockResolvedValue({
+      id: "novel-1",
+      title: "Plot Only Novel",
+      status: "completed",
+      chapters_count: 1,
+      enabled_stages: {
+        chapter_summaries: true,
+        plots: true,
+        characters: false,
+        meta: false,
+        synopsis: true,
+        stories: true,
+        relationships: false,
+      },
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+
+    render(<MaterialDetailPage />, { wrapper: createWrapper() });
+    expect(await screen.findByText("Plot Only Novel")).toBeInTheDocument();
+
+    for (const name of [
+      /materials:detail.characters/,
+      /materials:detail.goldenfingers/,
+      /materials:detail.worldview/,
+    ]) {
+      expect(screen.getByRole("button", { name })).toBeDisabled();
+    }
+    // relationships folder stays hidden while the VITE flag is off
+    expect(screen.queryByText("materials:detail.relationships")).not.toBeInTheDocument();
+    expect(screen.getAllByText("materials:detail.notEnabled")).toHaveLength(3);
+    expect(screen.getByRole("button", { name: /materials:detail.plots/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /materials:detail.stories/ })).toBeEnabled();
+  });
+
+  it("maps storylines to its own stage when the snapshot has the storylines key", async () => {
+    mockGet.mockResolvedValue({
+      id: "novel-1",
+      title: "Stories Only Novel",
+      status: "completed",
+      chapters_count: 1,
+      enabled_stages: {
+        chapter_summaries: true,
+        plots: true,
+        characters: true,
+        meta: true,
+        synopsis: true,
+        stories: true,
+        storylines: false,
+        relationships: false,
+      },
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+
+    render(<MaterialDetailPage />, { wrapper: createWrapper() });
+    expect(await screen.findByText("Stories Only Novel")).toBeInTheDocument();
+
+    expect(screen.getByRole("button", { name: /materials:detail.stories/ })).toBeEnabled();
+    const storylinesFolder = screen.getByRole("button", { name: /materials:detail.storylines/ });
+    expect(storylinesFolder).toBeDisabled();
+    expect(storylinesFolder).toHaveTextContent("materials:detail.notEnabled");
+    expect(screen.getAllByText("materials:detail.notEnabled")).toHaveLength(1);
+  });
+
+  it("keeps folders with data usable when their stage is now off (retried job)", async () => {
+    materialsConfigState.relationshipsEnabled = true;
+    mockGet.mockResolvedValue({
+      id: "novel-1",
+      title: "Retried Novel",
+      status: "completed",
+      chapters_count: 1,
+      characters_count: 0,
+      plots_count: 3,
+      stories_count: 2,
+      story_lines_count: 0,
+      relationships_count: 0,
+      golden_fingers_count: 0,
+      has_world_view: true,
+      enabled_stages: {
+        chapter_summaries: true,
+        plots: false,
+        characters: false,
+        meta: false,
+        synopsis: true,
+        stories: false,
+        storylines: false,
+        relationships: false,
+      },
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+
+    render(<MaterialDetailPage />, { wrapper: createWrapper() });
+    expect(await screen.findByText("Retried Novel")).toBeInTheDocument();
+
+    // Stage off but data exists (produced before the stage was switched off): usable.
+    for (const name of [
+      /materials:detail.plots/,
+      /materials:detail.stories/,
+      /materials:detail.worldview/,
+    ]) {
+      const folder = screen.getByRole("button", { name });
+      expect(folder).toBeEnabled();
+      expect(folder).not.toHaveTextContent("materials:detail.notEnabled");
+    }
+    // Stage off and no data: greyed out.
+    for (const name of [
+      /materials:detail.characters/,
+      /materials:detail.storylines/,
+      /materials:detail.relationships/,
+      /materials:detail.goldenfingers/,
+    ]) {
+      expect(screen.getByRole("button", { name })).toBeDisabled();
+    }
+    expect(screen.getAllByText("materials:detail.notEnabled")).toHaveLength(4);
+
+    fireEvent.click(screen.getByRole("button", { name: /materials:detail.plots/ }));
+    expect(await screen.findByText(/Hidden betrayal/)).toBeInTheDocument();
+  });
+
+  it("keeps legacy behavior when the job has no enabled-stage snapshot", async () => {
+    materialsConfigState.relationshipsEnabled = true;
+    mockGet.mockResolvedValue({
+      id: "novel-1",
+      title: "Legacy Novel",
+      status: "completed",
+      chapters_count: 1,
+      enabled_stages: null,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+
+    render(<MaterialDetailPage />, { wrapper: createWrapper() });
+    expect(await screen.findByText("Legacy Novel")).toBeInTheDocument();
+
+    expect(screen.queryByText("materials:detail.notEnabled")).not.toBeInTheDocument();
+    for (const name of [
+      /materials:detail.characters/,
+      /materials:detail.stories/,
+      /materials:detail.plots/,
+      /materials:detail.storylines/,
+      /materials:detail.relationships/,
+      /materials:detail.goldenfingers/,
+      /materials:detail.worldview/,
+    ]) {
+      expect(screen.getByRole("button", { name })).toBeEnabled();
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: /materials:detail.plots/ }));
+    await waitFor(() => {
+      expect(screen.getByText(/Hidden betrayal/)).toBeInTheDocument();
+    });
   });
 });

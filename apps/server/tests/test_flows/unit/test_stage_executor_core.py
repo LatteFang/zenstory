@@ -85,7 +85,7 @@ class TestStageExecutorCore:
     def test_execute_parallel_stages_runs_subflows_when_not_done(self, monkeypatch):
         monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
         monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
-        monkeypatch.setattr(se_mod.settings, "ENABLE_ENTITY_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHARACTER_EXTRACTION", True)
 
         story_task = FakeTask({"stories_count": 2, "storylines_count": 1, "synopsis_generated": True})
         character_task = FakeTask({"created_count": 4, "updated_count": 1, "failed_count": 0})

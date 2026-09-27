@@ -30,7 +30,7 @@ class TestChapterExtractionFlow:
 
         monkeypatch.setattr(chapter_mod.settings, "ENABLE_CHAPTER_SUMMARIES", False)
         monkeypatch.setattr(chapter_mod.settings, "ENABLE_PLOT_EXTRACTION", False)
-        monkeypatch.setattr(chapter_mod.settings, "ENABLE_ENTITY_EXTRACTION", False)
+        monkeypatch.setattr(chapter_mod.settings, "ENABLE_CHARACTER_EXTRACTION", False)
 
         result = chapter_mod.chapter_extraction_flow.fn(novel_id=1, chapter_ids=[10, 20])
 
@@ -47,7 +47,7 @@ class TestChapterExtractionFlow:
 
         monkeypatch.setattr(chapter_mod.settings, "ENABLE_CHAPTER_SUMMARIES", False)
         monkeypatch.setattr(chapter_mod.settings, "ENABLE_PLOT_EXTRACTION", False)
-        monkeypatch.setattr(chapter_mod.settings, "ENABLE_ENTITY_EXTRACTION", True)
+        monkeypatch.setattr(chapter_mod.settings, "ENABLE_CHARACTER_EXTRACTION", True)
         monkeypatch.setattr(chapter_mod.settings, "MAX_CONCURRENT_CHAPTERS", 3)
 
         mention_task = FakeTask({"chapter_id": 10, "mentions": ["A"]})
@@ -66,7 +66,7 @@ class TestChapterExtractionFlow:
 
         monkeypatch.setattr(chapter_mod.settings, "ENABLE_CHAPTER_SUMMARIES", False)
         monkeypatch.setattr(chapter_mod.settings, "ENABLE_PLOT_EXTRACTION", False)
-        monkeypatch.setattr(chapter_mod.settings, "ENABLE_ENTITY_EXTRACTION", True)
+        monkeypatch.setattr(chapter_mod.settings, "ENABLE_CHARACTER_EXTRACTION", True)
         monkeypatch.setattr(chapter_mod.settings, "MAX_CONCURRENT_CHAPTERS", 3)
 
         class _MentionTask:

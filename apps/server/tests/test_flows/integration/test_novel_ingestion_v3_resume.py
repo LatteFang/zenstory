@@ -121,6 +121,10 @@ class TestNovelIngestionResume:
             def __init__(self, **kwargs):
                 self.kwargs = kwargs
 
+            def record_enabled_stages(self):
+                calls["recorded"] = calls.get("recorded", 0) + 1
+                return {}
+
             def execute_stage1(self):
                 calls["stage1"] += 1
                 return {"summaries_count": 2}
@@ -144,7 +148,7 @@ class TestNovelIngestionResume:
 
         assert result["completed"] is True
         assert result["result"]["novel_id"] == 88
-        assert calls == {"stage1": 1, "stage2": 1}
+        assert calls == {"stage1": 1, "stage2": 1, "recorded": 1}
 
     def test_check_and_resume_returns_incomplete_when_resume_not_allowed(self, monkeypatch, fake_logger):
         session = _FakeSession()
@@ -206,6 +210,10 @@ class TestNovelIngestionResume:
             def __init__(self, **kwargs):
                 self.kwargs = kwargs
 
+            def record_enabled_stages(self):
+                calls["recorded"] = calls.get("recorded", 0) + 1
+                return {}
+
             def execute_stage1(self):
                 calls["stage1"] += 1
                 raise AssertionError("stage2 恢复路径不应执行 stage1")
@@ -229,7 +237,7 @@ class TestNovelIngestionResume:
 
         assert result["completed"] is True
         assert result["result"]["novel_id"] == 55
-        assert calls == {"stage1": 0, "stage2": 1}
+        assert calls == {"stage1": 0, "stage2": 1, "recorded": 1}
 
     def test_check_and_resume_treats_unknown_stage_as_fresh_start(self, monkeypatch, fake_logger):
         session = _FakeSession()

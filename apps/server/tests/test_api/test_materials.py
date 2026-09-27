@@ -355,6 +355,7 @@ async def test_upload_material_returns_503_when_flow_dispatch_fails(
             "status": "failed",
             "error_message": "Failed to dispatch ingestion flow",
             "chapters_count": 0,
+            "enabled_stages": None,
         }
     ]
 
@@ -1585,3 +1586,17 @@ async def test_materials_endpoints_require_auth(client: AsyncClient, db_session)
             response = await client.delete(endpoint)
 
         assert response.status_code == 401, f"{method} {endpoint} should return 401"
+
+
+@pytest.mark.integration
+async def test_timeline_endpoint_removed(client: AsyncClient, db_session):
+    """No decomposition stage populates event timelines; the unused endpoint is gone."""
+    user, token = await create_test_user(client, db_session, "timelinegone")
+    novel = create_test_novel(db_session, user.id, "No Timeline")
+
+    response = await client.get(
+        f"/api/v1/materials/{novel.id}/timeline",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code in (404, 405)
