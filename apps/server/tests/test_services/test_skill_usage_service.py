@@ -249,7 +249,7 @@ class TestGetSkillUsageStats:
         assert stats["total_triggers"] == 0
         assert stats["builtin_count"] == 0
         assert stats["user_count"] == 0
-        assert stats["avg_confidence"] == 0.0
+        assert "avg_confidence" not in stats
         assert stats["top_skills"] == []
         assert len(stats["daily_usage"]) == 30  # Default 30 days
 
@@ -276,7 +276,6 @@ class TestGetSkillUsageStats:
         assert stats["total_triggers"] == 5
         assert stats["builtin_count"] == 3  # i=0, 2, 4
         assert stats["user_count"] == 2  # i=1, 3
-        assert stats["avg_confidence"] > 0.8
         assert len(stats["top_skills"]) <= 10
 
     def test_get_stats_counts_added_source_as_user(self, db_session: Session, test_project: Project, test_user: User):
@@ -483,30 +482,6 @@ class TestGetSkillUsageStats:
         assert stats["total_triggers"] == 1
         assert len([s for s in stats["top_skills"] if s["skill_id"] == "old-skill"]) == 0
 
-    def test_get_stats_average_confidence(self, db_session: Session, test_project: Project, test_user: User):
-        """Test average confidence calculation."""
-        # Create skills with specific confidence scores
-        confidences = [0.5, 0.75, 1.0]
-        for conf in confidences:
-            record_skill_usage(
-                session=db_session,
-                project_id=test_project.id,
-                skill_id=f"skill-conf-{conf}",
-                skill_name=f"Skill {conf}",
-                skill_source="builtin",
-                matched_trigger="test",
-                confidence=conf,
-                user_id=test_user.id,
-            )
-
-        stats = get_skill_usage_stats(
-            session=db_session,
-            project_id=test_project.id,
-        )
-
-        expected_avg = sum(confidences) / len(confidences)
-        assert abs(stats["avg_confidence"] - round(expected_avg, 2)) < 0.01
-
     def test_get_stats_isolated_per_project(self, db_session: Session, test_user: User):
         """Test that stats are isolated per project."""
         # Create two projects
@@ -674,7 +649,6 @@ class TestSkillUsageStatsTypedDict:
         assert "total_triggers" in stats
         assert "builtin_count" in stats
         assert "user_count" in stats
-        assert "avg_confidence" in stats
         assert "top_skills" in stats
         assert "daily_usage" in stats
 
@@ -682,7 +656,6 @@ class TestSkillUsageStatsTypedDict:
         assert isinstance(stats["total_triggers"], int)
         assert isinstance(stats["builtin_count"], int)
         assert isinstance(stats["user_count"], int)
-        assert isinstance(stats["avg_confidence"], (int, float))
         assert isinstance(stats["top_skills"], list)
         assert isinstance(stats["daily_usage"], list)
 

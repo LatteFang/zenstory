@@ -22,7 +22,6 @@ class SkillUsageStats(TypedDict):
     total_triggers: int
     builtin_count: int
     user_count: int
-    avg_confidence: float
     top_skills: list[dict]
     daily_usage: list[dict]
 
@@ -138,10 +137,6 @@ def get_skill_usage_stats(
     )
     user_count = session.exec(user_stmt).one() or 0
 
-    # Average confidence
-    avg_stmt = select(func.avg(SkillUsage.confidence)).where(*base_filter)
-    avg_confidence = session.exec(avg_stmt).one() or 0.0
-
     # Top skills (most used)
     top_skills_stmt = (
         select(
@@ -173,7 +168,6 @@ def get_skill_usage_stats(
         total_triggers=total_triggers,
         builtin_count=builtin_count,
         user_count=user_count,
-        avg_confidence=round(avg_confidence, 2) if avg_confidence else 0.0,
         top_skills=top_skills,
         daily_usage=daily_usage,
     )

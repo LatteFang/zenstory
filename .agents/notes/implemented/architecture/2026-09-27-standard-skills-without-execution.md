@@ -41,7 +41,7 @@ zenstory 的「技能」不是标准 Agent Skill，而且三套实现并存、�
 ## Consequences
 
 - 收益：技能数量不再受 prompt 预算限制；system prompt 只含元数据，更短、更稳定，也更利于缓存；用量统计来自工具调用，准确可靠；可以导入、导出标准 SKILL.md 包，与外部生态互通；删掉一套死代码，只剩一个技能来源。
-- 代价：多一次工具往返，模型需要先调 `load_skill` 才能拿到指令，DeepSeek 模型是否会稳定地主动调用需要评估，必要时靠 description 写法和显式选择兜底；需要一次数据迁移（`skill_resource` 表与 `skill_metadata` 列）和前端改动（技能标签、导入导出、资源文件编辑）；技能统计面板的「平均置信度」在新机制下恒为 1.0，已无信息量；依赖脚本的外部技能导入后功能不完整，只能作为参考。
+- 代价：多一次工具往返，模型需要先调 `load_skill` 才能拿到指令，DeepSeek 模型是否会稳定地主动调用需要评估，必要时靠 description 写法和显式选择兜底；需要一次数据迁移（`skill_resource` 表与 `skill_metadata` 列）和前端改动（技能标签、导入导出、资源文件编辑）；用量记录的 `confidence` 在新机制下恒为 1.0，统计面板与 `GET /skills/stats/{project_id}` 已不再给出「平均置信度」（数据库列保留、不做迁移），面板的「总触发次数」改称「总使用次数」（响应字段仍叫 `total_triggers`）；依赖脚本的外部技能导入后功能不完整，只能作为参考。
 
 ## Verification
 

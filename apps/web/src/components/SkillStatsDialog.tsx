@@ -85,7 +85,7 @@ export const SkillStatsDialog: React.FC<SkillStatsDialogProps> = ({
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <StatCard
                 icon={<Zap size={16} />}
-                label={t('stats.totalTriggers')}
+                label={t('stats.totalUses')}
                 value={stats.total_triggers}
               />
               <StatCard

@@ -387,7 +387,7 @@ async def test_skills_contract_stats_endpoint_returns_project_usage_rollups(
     assert payload["total_triggers"] == 3
     assert payload["builtin_count"] == 1
     assert payload["user_count"] == 2
-    assert payload["avg_confidence"] == 0.8
+    assert "avg_confidence" not in payload
     assert payload["top_skills"][0]["count"] == 1
     assert {item["skill_source"] for item in payload["top_skills"]} == {"builtin", "user", "added"}
     assert len(payload["daily_usage"]) == 7

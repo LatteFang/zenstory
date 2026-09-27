@@ -1,6 +1,6 @@
 {
   "title": "技能管理",
-  "description": "管理你的 AI 写作技能，自定义触发词和指令",
+  "description": "管理你的 AI 写作技能：写清它做什么、什么时候用，AI 会按需加载",
   "create": "创建技能",
   "mySkillsTab": "我的技能",
   "discoverTab": "发现技能",
@@ -52,12 +52,12 @@
     "name": "技能名称",
     "namePlaceholder": "输入技能名称",
     "description": "描述",
-    "descriptionPlaceholder": "简要描述这个技能的用途",
+    "descriptionPlaceholder": "写清它做什么、什么时候该用——AI 靠这段描述决定何时加载这个技能",
     "triggers": "触发词",
     "triggersPlaceholder": "创建角色, 新建人物",
-    "triggersHint": "多个触发词用逗号分隔",
+    "triggersHint": "仅作你自己整理技能的标签，不影响 AI 何时使用这个技能；多个用逗号分隔",
     "instructions": "指令内容",
-    "instructionsPlaceholder": "当用户触发此技能时，AI 将遵循这些指令...",
+    "instructionsPlaceholder": "AI 加载这个技能时会按这些方法执行...",
     "instructionsHint": "支持 Markdown 格式，如标题、列表、代码块等"
   },
   "deleteConfirm": {
@@ -76,8 +76,7 @@
     "days7": "最近 7 天",
     "days30": "最近 30 天",
     "days90": "最近 90 天",
-    "totalTriggers": "总触发次数",
-    "avgConfidence": "平均置信度",
+    "totalUses": "总使用次数",
     "builtinCount": "内置技能",
     "userCount": "自定义技能",
     "topSkills": "最常用技能",

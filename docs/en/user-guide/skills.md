@@ -165,8 +165,8 @@ Shared skills will be submitted for administrator review and appear in the publi
 Click "Usage Statistics" to view skill usage for the current project. This counts how many times the AI actually loaded a skill's full instructions (including times you selected it manually) — not simple keyword matches.
 
 **Statistical Indicators**:
-- Total trigger count, average confidence
-- Built-in skills vs. custom skills trigger count
+- Total uses
+- Uses of built-in vs. custom skills
 
 **Time Range**: 7 days / 30 days / 90 days
 

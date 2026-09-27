@@ -508,7 +508,7 @@ async def test_get_skill_stats_success(client: AsyncClient, db_session):
     assert "total_triggers" in data
     assert "builtin_count" in data
     assert "user_count" in data
-    assert "avg_confidence" in data
+    assert "avg_confidence" not in data
     assert "top_skills" in data
     assert "daily_usage" in data
 

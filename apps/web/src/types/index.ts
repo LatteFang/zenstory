@@ -796,7 +796,6 @@ export interface SkillUsageStats {
   total_triggers: number;
   builtin_count: number;
   user_count: number;
-  avg_confidence: number;
   top_skills: TopSkillItem[];
   daily_usage: DailyUsageItem[];
 }

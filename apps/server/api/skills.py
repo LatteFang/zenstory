@@ -349,7 +349,6 @@ class SkillStatsResponse(BaseModel):
     total_triggers: int
     builtin_count: int
     user_count: int
-    avg_confidence: float
     top_skills: list[dict]
     daily_usage: list[dict]
 

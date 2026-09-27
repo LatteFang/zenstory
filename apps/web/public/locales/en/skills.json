@@ -1,6 +1,6 @@
 {
   "title": "Skills",
-  "description": "Manage your AI writing skills with custom triggers and instructions",
+  "description": "Manage your AI writing skills: say what each does and when to use it, and the AI loads it when needed",
   "create": "Create Skill",
   "mySkillsTab": "My Skills",
   "discoverTab": "Discover",
@@ -52,12 +52,12 @@
     "name": "Skill Name",
     "namePlaceholder": "Enter skill name",
     "description": "Description",
-    "descriptionPlaceholder": "Briefly describe what this skill does",
+    "descriptionPlaceholder": "What it does and when to use it — the AI uses this description to decide when to load the skill",
     "triggers": "Triggers",
     "triggersPlaceholder": "create character, new person",
-    "triggersHint": "Separate multiple triggers with commas",
+    "triggersHint": "Personal tags for organizing your skills; they don't affect when the AI uses the skill. Separate with commas",
     "instructions": "Instructions",
-    "instructionsPlaceholder": "When this skill is triggered, AI will follow these instructions...",
+    "instructionsPlaceholder": "When the AI loads this skill, it follows these instructions...",
     "instructionsHint": "Supports Markdown format: headings, lists, code blocks, etc."
   },
   "deleteConfirm": {
@@ -76,8 +76,7 @@
     "days7": "Last 7 days",
     "days30": "Last 30 days",
     "days90": "Last 90 days",
-    "totalTriggers": "Total Triggers",
-    "avgConfidence": "Avg Confidence",
+    "totalUses": "Total Uses",
     "builtinCount": "Built-in",
     "userCount": "Custom",
     "topSkills": "Top Skills",
