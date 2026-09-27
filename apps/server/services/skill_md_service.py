@@ -37,7 +37,7 @@ _DESCRIPTIONS = {
     ),
 }
 _DEFAULT_API_BASE = "https://api.zenstory.ai/api/v1"
-_CAPABILITIES = "project_management, file_crud, hybrid_search, writing_context"
+_CAPABILITIES = "project_management, file_crud, file_tree, version_history, hybrid_search, writing_context"
 _FILE_TYPES = "outline, draft, character, lore, material"
 
 
@@ -248,13 +248,16 @@ curl -X POST "{self.api_base}/agent/projects/{{project_id}}/search" \\
 ### 工作流 1：创建新小说项目
 
 ```
-1. POST /agent/projects                          → 创建新项目
-2. POST /agent/projects/{{id}}/files             → 创建大纲文件 (file_type=outline)
-3. POST /agent/projects/{{id}}/files             → 创建人物设定 (file_type=character)
-4. POST /agent/projects/{{id}}/files             → 创建世界观设定 (file_type=lore)
+1. POST /agent/projects                          → 创建新项目（响应 folders 字段列出自动创建的默认文件夹）
+2. POST /agent/projects/{{id}}/files             → 创建大纲文件 (file_type=outline, parent_id=大纲文件夹)
+3. POST /agent/projects/{{id}}/files             → 创建人物设定 (file_type=character, parent_id=角色文件夹)
+4. POST /agent/projects/{{id}}/files             → 创建世界观设定 (file_type=lore, parent_id=设定文件夹)
 5. GET  /agent/projects/{{id}}/writing-context   → 获取写作上下文
-6. POST /agent/projects/{{id}}/files             → 创建草稿文件 (file_type=draft)
+6. POST /agent/projects/{{id}}/files             → 创建章节 (file_type=draft, parent_id=正文文件夹, order=章节序号)
 ```
+
+默认文件夹 id 可预测：`{{project_id}}-lore-folder`、`-character-folder`、`-material-folder`、`-outline-folder`、
+`-draft-folder`（剧本项目为 `-script-folder`）。已有文件可用 `POST /agent/files/{{file_id}}/move` 移入文件夹。
 
 ### 工作流 2：续写已有章节
 
@@ -264,6 +267,14 @@ curl -X POST "{self.api_base}/agent/projects/{{project_id}}/search" \\
 3. GET  /agent/projects/{{id}}/writing-context?file_id={{file_id}}     → 获取相关上下文
 4. POST /agent/projects/{{id}}/search  query="角色关系"                 → 搜索人物关系
 5. PUT  /agent/files/{{file_id}}                                        → 更新草稿内容
+```
+
+### 工作流 3：撤销一次修改
+
+```
+1. GET  /agent/files/{{file_id}}/versions                    → 版本历史（最新在前，不含正文）
+2. GET  /agent/files/{{file_id}}/versions/{{n}}               → 查看第 n 版正文
+3. POST /agent/files/{{file_id}}/versions/{{n}}/rollback      → 恢复到第 n 版（历史不丢；版本额度未满时生成一个新版本）
 ```
 
 ## 错误处理
@@ -438,13 +449,16 @@ curl -X POST "{self.api_base}/agent/projects/{{project_id}}/search" \\
 ### Workflow 1: Create a New Novel Project
 
 ```
-1. POST /agent/projects                          → Create new project
-2. POST /agent/projects/{{id}}/files             → Create outline file (file_type=outline)
-3. POST /agent/projects/{{id}}/files             → Create character profiles (file_type=character)
-4. POST /agent/projects/{{id}}/files             → Create lore entries (file_type=lore)
+1. POST /agent/projects                          → Create new project (response `folders` lists the default folders)
+2. POST /agent/projects/{{id}}/files             → Create outline file (file_type=outline, parent_id=outline folder)
+3. POST /agent/projects/{{id}}/files             → Create character profiles (file_type=character, parent_id=character folder)
+4. POST /agent/projects/{{id}}/files             → Create lore entries (file_type=lore, parent_id=lore folder)
 5. GET  /agent/projects/{{id}}/writing-context   → Get writing context
-6. POST /agent/projects/{{id}}/files             → Create draft file (file_type=draft)
+6. POST /agent/projects/{{id}}/files             → Create chapter (file_type=draft, parent_id=draft folder, order=chapter number)
 ```
+
+Default folder ids are predictable: `{{project_id}}-lore-folder`, `-character-folder`, `-material-folder`,
+`-outline-folder`, `-draft-folder` (`-script-folder` for screenplays). Move existing files with `POST /agent/files/{{file_id}}/move`.
 
 ### Workflow 2: Continue an Existing Chapter
 
@@ -454,6 +468,14 @@ curl -X POST "{self.api_base}/agent/projects/{{project_id}}/search" \\
 3. GET  /agent/projects/{{id}}/writing-context?file_id={{file_id}}     → Get relevant context
 4. POST /agent/projects/{{id}}/search  query="character relationships"  → Search character relations
 5. PUT  /agent/files/{{file_id}}                                        → Update draft content
+```
+
+### Workflow 3: Undo a Change
+
+```
+1. GET  /agent/files/{{file_id}}/versions                    → Version history (newest first, no content)
+2. GET  /agent/files/{{file_id}}/versions/{{n}}               → Content of version n
+3. POST /agent/files/{{file_id}}/versions/{{n}}/rollback      → Restore version n (history is kept; adds a new version unless the per-file version quota is full)
 ```
 
 ## Error Handling

@@ -41,6 +41,7 @@ export interface ClientOptions {
 export interface RequestOptions {
   query?: Record<string, string | number | boolean | undefined | null>;
   body?: unknown;
+  headers?: Record<string, string>;
 }
 
 interface ErrorBody {
@@ -151,6 +152,7 @@ export class ZenstoryClient {
       'X-Agent-API-Key': this.apiKey,
       Accept: 'application/json',
       'User-Agent': this.userAgent,
+      ...opts.headers,
     };
     let body: string | undefined;
     if (opts.body !== undefined) {
@@ -195,8 +197,8 @@ export class ZenstoryClient {
     return this.request<T>('GET', path, { query });
   }
 
-  post<T = unknown>(path: string, body: unknown): Promise<T> {
-    return this.request<T>('POST', path, { body });
+  post<T = unknown>(path: string, body: unknown, headers?: Record<string, string>): Promise<T> {
+    return this.request<T>('POST', path, { body, headers });
   }
 
   put<T = unknown>(path: string, body: unknown): Promise<T> {

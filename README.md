@@ -296,7 +296,7 @@ zenstory files put <章节ID> --content-file "$dir/<章节ID>.md" --if-updated-a
 }
 ```
 
-Agent 用自己的模型写，ZenStory 负责存稿和整理上下文。`files put` 写回的是整篇覆盖，所以有几道保护：你在网页里改过（`updated_at` 变了）就拒绝写入；新稿不到原稿一半长时要显式加 `--allow-shrink`；写入前把服务器上的旧稿存到本机 `~/.cache/zenstory/backups/`；服务器也会在版本历史里记一个版本（版本额度用完时只存正文、不记版本）。
+Agent 用自己的模型写，ZenStory 负责存稿和整理上下文。`files put` 写回的是整篇覆盖，所以有几道保护：你在网页里改过（`updated_at` 变了）就拒绝写入；新稿不到原稿一半长时要显式加 `--allow-shrink`；服务器会在版本历史里记一个版本（版本额度用完时只存正文、不记版本），写坏了用 `zenstory files versions <章节ID>` 找到旧版本，再 `zenstory files rollback <章节ID> <版本号> --yes` 恢复；写入前还会把服务器上的旧稿存一份到本机 `~/.cache/zenstory/backups/`。用 CLI 新建的项目和网页里一样带默认文件夹，新章节用 `--order` 排在正确的位置。
 
 ## 常见问题
 

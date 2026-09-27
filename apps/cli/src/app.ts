@@ -48,6 +48,58 @@ interface Project {
   updated_at: string;
 }
 
+interface Folder {
+  id: string;
+  title: string;
+  file_type: string;
+  order: number;
+}
+
+/** POST /agent/projects response: the project plus the default folders created with it. */
+interface CreatedProject extends Project {
+  folders?: Folder[];
+}
+
+interface FileVersion {
+  id: string;
+  file_id: string;
+  project_id: string;
+  version_number: number;
+  is_base_version: boolean;
+  word_count: number;
+  char_count: number;
+  change_type: string;
+  change_source: string;
+  change_summary: string | null;
+  lines_added: number;
+  lines_removed: number;
+  created_at: string;
+}
+
+interface FileVersionList {
+  versions: FileVersion[];
+  total: number;
+  limit: number;
+  offset: number;
+  file_id: string;
+  file_title: string;
+}
+
+interface FileVersionDetail extends FileVersion {
+  content: string;
+}
+
+interface RollbackResult {
+  success: boolean;
+  message: string;
+  file_id: string;
+  restored_version: number;
+  new_version_number: number | null;
+  snapshot_created: boolean;
+  version_quota_exceeded: boolean;
+  updated_at: string;
+}
+
 interface ZsFile {
   id?: string;
   project_id?: string;
@@ -59,6 +111,8 @@ interface ZsFile {
   file_metadata?: string | null;
   created_at?: string;
   updated_at?: string;
+  /** Set on create/PUT: content saved, but no version recorded (per-file version quota full). */
+  version_quota_exceeded?: boolean;
 }
 
 interface FileList {
@@ -127,10 +181,23 @@ export const FILE_TYPES = ['outline', 'draft', 'character', 'lore', 'snippet', '
 /** Friendly aliases: the web UI calls snippets "materials" (素材). */
 const FILE_TYPE_ALIASES: Record<string, string> = { material: 'snippet', materials: 'snippet' };
 const PROJECT_TYPES = ['novel', 'short', 'screenplay'];
+const PROJECT_LANGS = ['zh', 'en'];
+/** File.order is a 32-bit INTEGER column on the server. */
+const MAX_ORDER = 2_147_483_647;
 const LIST_FIELDS_DEFAULT = 'id,title,file_type,parent_id,order,updated_at';
 const TREE_FIELDS = 'id,title,file_type,parent_id,order';
 const PAGE_MAX = 200;
+const VERSIONS_PAGE_MAX = 100;
 const SCOPE_PROBE_PROJECT_ID = 'zenstory-cli-scope-probe';
+
+/** Default folder-title language for `projects create`: ZENSTORY_LANG, then LC_ALL, then LANG; zh* → zh, else en. */
+export function defaultProjectLang(env: Env): string {
+  const locale = [env.ZENSTORY_LANG, env.LC_ALL, env.LANG].map((v) => v?.trim()).find(Boolean) ?? '';
+  return locale.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+}
+
+const VERSION_QUOTA_WARNING =
+  'Warning: the content was saved, but no version was recorded because the plan\'s per-file version quota is full';
 
 export function normalizeFileType(raw: string): string {
   const t = raw.trim().toLowerCase();
@@ -182,6 +249,15 @@ function parseMetadata(values: OptionValues): Record<string, unknown> | undefine
 
 function enc(id: string): string {
   return encodeURIComponent(id);
+}
+
+/** A 1-based version number given as a positional argument. */
+function versionNumber(raw: string): number {
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1) {
+    throw new CliError(`Version number must be a positive integer (got "${raw}"). See \`zenstory files versions <fileId>\`.`, EXIT.USAGE);
+  }
+  return n;
 }
 
 function requireYes(values: OptionValues, what: string): void {
@@ -548,20 +624,34 @@ export const COMMANDS: CommandDef<Ctx>[] = [
       name: { type: 'string', valueName: 'name', description: 'Project name (1-100 chars, required)' },
       description: { type: 'string', valueName: 'text', description: 'Description (≤500 chars)' },
       type: { type: 'string', valueName: 'type', description: 'novel | short | screenplay (default novel)' },
+      lang: {
+        type: 'string',
+        valueName: 'zh|en',
+        description: 'Language of the default folder titles (default: from ZENSTORY_LANG, LC_ALL or LANG; zh* → zh, else en)',
+      },
     },
-    details: 'Note: projects created through the Agent API start empty (no default folders).',
+    details:
+      'The project gets the same default folders as in the web app (e.g. <projectId>-draft-folder,\n' +
+      '<projectId>-outline-folder, <projectId>-character-folder); they are printed after creation.\n' +
+      'Fails with 402 when the plan\'s project limit is reached, and with 403 when the API key is limited\n' +
+      'to specific projects (such a key could not access the new project).',
     async run(ctx, values) {
       const name = str(values, 'name');
       if (!name) throw new CliError('Missing --name.', EXIT.USAGE);
       const type = str(values, 'type') ?? 'novel';
       if (!PROJECT_TYPES.includes(type)) throw new CliError(`--type must be one of: ${PROJECT_TYPES.join(', ')}`, EXIT.USAGE);
-      const p = await ctx.client().post<Project>('/agent/projects', {
-        name,
-        description: str(values, 'description'),
-        project_type: type,
-      });
+      const lang = str(values, 'lang') ?? defaultProjectLang(ctx.io.env);
+      if (!PROJECT_LANGS.includes(lang)) throw new CliError(`--lang must be one of: ${PROJECT_LANGS.join(', ')}`, EXIT.USAGE);
+      const p = await ctx.client().post<CreatedProject>(
+        '/agent/projects',
+        { name, description: str(values, 'description'), project_type: type },
+        { 'Accept-Language': lang },
+      );
       if (ctx.json) return ctx.printJson(p);
       ctx.print(`Created project "${p.name}" (${p.project_type}) ${p.id}`);
+      if (p.folders?.length) {
+        ctx.print(`Folders:\n${p.folders.map((f) => `  ${f.title}/  ${f.id}`).join('\n')}`);
+      }
     },
   },
   {
@@ -698,10 +788,14 @@ export const COMMANDS: CommandDef<Ctx>[] = [
     options: {
       title: { type: 'string', valueName: 'title', description: 'File title (required)' },
       type: { type: 'string', valueName: 'type', description: `${FILE_TYPES.join('|')} (default draft)` },
-      parent: { type: 'string', valueName: 'id', description: 'Parent folder id' },
+      parent: { type: 'string', valueName: 'id', description: 'Parent folder id (a folder in the same project)' },
+      order: { type: 'string', valueName: 'n', description: 'Position among siblings (integer ≥ 0; default: after the last sibling)' },
       ...contentOptions,
       metadata: { type: 'string', valueName: 'json', description: 'Metadata JSON object, e.g. \'{"chapter_number":3}\'' },
     },
+    details:
+      'Without --order the file goes after its last sibling, or takes the chapter number found in the title/metadata.\n' +
+      'draft/outline/script files with chapter-like titles (第N章 / Chapter N) always sort by N, whatever --order says.',
     async run(ctx, values, pos) {
       requirePositionals(this, pos, 1);
       const title = str(values, 'title');
@@ -712,20 +806,23 @@ export const COMMANDS: CommandDef<Ctx>[] = [
         file_type: typeRaw ? normalizeFileType(typeRaw) : 'draft',
         content: (await readContent(ctx, values)) ?? '',
         parent_id: str(values, 'parent'),
+        order: int(values, 'order', 0, MAX_ORDER),
         metadata: parseMetadata(values),
       };
       const file = await ctx.client().post<ZsFile>(`/agent/projects/${enc(pos[0])}/files`, body);
+      if (file.version_quota_exceeded) ctx.note(`${VERSION_QUOTA_WARNING}.`);
       if (ctx.json) return ctx.printJson(file);
       ctx.print(`Created ${file.file_type} "${file.title}" ${file.id} (${file.content?.length ?? 0} chars)`);
     },
   },
   {
     name: 'files put',
-    summary: 'Replace a file\'s content and/or title.  [PUT /agent/files/{id}]',
+    summary: 'Replace a file\'s content, title and/or order.  [PUT /agent/files/{id}]',
     args: ['<fileId>'],
     options: {
       ...contentOptions,
       title: { type: 'string', valueName: 'title', description: 'New title' },
+      order: { type: 'string', valueName: 'n', description: 'New position among siblings (integer ≥ 0)' },
       'if-updated-at': {
         type: 'string',
         valueName: 'ts',
@@ -739,15 +836,19 @@ export const COMMANDS: CommandDef<Ctx>[] = [
       '  1. zenstory files get <fileId> --json            (note updated_at)\n' +
       '  2. zenstory files get <fileId> -o <path>          (edit <path>)\n' +
       '  3. zenstory files put <fileId> --content-file <path> --if-updated-at <updated_at>\n' +
-      'Before writing, the current server content is saved to $XDG_CACHE_HOME/zenstory/backups\n' +
-      '(default ~/.cache/zenstory/backups, mode 0600) and the path is printed. The server also keeps a version.',
+      'The server records a version for every content change unless the plan\'s per-file version quota is\n' +
+      'full (then a warning is printed and version_quota_exceeded is true in --json): undo with\n' +
+      '`files versions <fileId>` and `files rollback <fileId> <n> --yes`. As a second net, the current server\n' +
+      'content is also saved to $XDG_CACHE_HOME/zenstory/backups (default ~/.cache/zenstory/backups,\n' +
+      'mode 0600) and the path is printed; with the quota full, that backup is the only copy of the old content.',
     async run(ctx, values, pos) {
       requirePositionals(this, pos, 1);
       const content = await readContent(ctx, values);
       const title = str(values, 'title');
+      const order = int(values, 'order', 0, MAX_ORDER);
       const ifUpdatedAt = str(values, 'if-updated-at');
-      if (content === undefined && title === undefined) {
-        throw new CliError('Nothing to update: pass --content-file, --content (or "-" for stdin) and/or --title.', EXIT.USAGE);
+      if (content === undefined && title === undefined && order === undefined) {
+        throw new CliError('Nothing to update: pass --content-file, --content (or "-" for stdin), --title and/or --order.', EXIT.USAGE);
       }
       const allowEmpty = bool(values, 'allow-empty');
       if (content !== undefined && content.trim() === '' && !allowEmpty) {
@@ -781,7 +882,10 @@ export const COMMANDS: CommandDef<Ctx>[] = [
       let backupPath: string | null = null;
       if (content !== undefined && oldContent !== '') backupPath = writeBackup(ctx.io.env, pos[0], oldContent);
 
-      const file = await client.put<ZsFile>(`/agent/files/${enc(pos[0])}`, { title, content });
+      const file = await client.put<ZsFile>(`/agent/files/${enc(pos[0])}`, { title, content, order });
+      if (file.version_quota_exceeded) {
+        ctx.note(`${VERSION_QUOTA_WARNING}${backupPath ? `; the previous content is only in ${backupPath}` : ''}.`);
+      }
       if (ctx.json) return ctx.printJson({ ...file, backupPath });
       ctx.print(`Updated ${file.file_type} "${file.title}" ${file.id} (${file.content?.length ?? 0} chars)`);
       if (backupPath) ctx.print(`Previous content saved to ${backupPath}`);
@@ -798,6 +902,115 @@ export const COMMANDS: CommandDef<Ctx>[] = [
       const res = await ctx.client().delete<{ message: string }>(`/agent/files/${enc(pos[0])}`);
       if (ctx.json) return ctx.printJson({ ok: true, id: pos[0], ...res });
       ctx.print(`Deleted file ${pos[0]}`);
+    },
+  },
+  {
+    name: 'files move',
+    summary: 'Move a file into a folder (or to the project root).  [POST /agent/files/{id}/move]',
+    args: ['<fileId>'],
+    options: {
+      parent: { type: 'string', valueName: 'folderId|root', description: 'Target folder id in the same project, or "root" (required)' },
+      order: { type: 'string', valueName: 'n', description: 'New position among the new siblings (integer ≥ 0)' },
+    },
+    details: 'The target must be a folder of the same project; a folder cannot be moved into itself or its subfolders.',
+    async run(ctx, values, pos) {
+      requirePositionals(this, pos, 1);
+      const parent = str(values, 'parent');
+      if (!parent) throw new CliError('Missing --parent <folderId|root>.', EXIT.USAGE);
+      const parentId = parent === 'root' ? null : parent;
+      const file = await ctx.client().post<ZsFile>(`/agent/files/${enc(pos[0])}/move`, {
+        parent_id: parentId,
+        order: int(values, 'order', 0, MAX_ORDER),
+      });
+      if (ctx.json) return ctx.printJson(file);
+      ctx.print(`Moved ${file.file_type} "${file.title}" ${file.id} to ${file.parent_id ?? 'the project root'} (order ${file.order})`);
+    },
+  },
+  {
+    name: 'files versions',
+    summary: 'List a file\'s version history, newest first (no content).  [GET /agent/files/{id}/versions]',
+    args: ['<fileId>'],
+    options: {
+      limit: { type: 'string', valueName: 'n', description: `Page size 1-${VERSIONS_PAGE_MAX} (default 50)` },
+      offset: { type: 'string', valueName: 'n', description: 'Pagination offset (default 0)' },
+      'include-auto-save': { type: 'boolean', description: 'Also list the web editor\'s auto-save versions' },
+    },
+    async run(ctx, values, pos) {
+      requirePositionals(this, pos, 1);
+      const res = await ctx.client().get<FileVersionList>(`/agent/files/${enc(pos[0])}/versions`, {
+        limit: int(values, 'limit', 1, VERSIONS_PAGE_MAX),
+        offset: int(values, 'offset', 0, Number.MAX_SAFE_INTEGER),
+        include_auto_save: bool(values, 'include-auto-save') || undefined,
+      });
+      if (ctx.json) return ctx.printJson(res);
+      if (res.versions.length === 0) return ctx.print(`No versions of "${res.file_title}" (total ${res.total}).`);
+      ctx.print(
+        formatTable(res.versions, [
+          { header: 'VERSION', get: (v) => v.version_number },
+          { header: 'CREATED', get: (v) => v.created_at?.slice(0, 19) },
+          { header: 'TYPE', get: (v) => v.change_type },
+          { header: 'WORDS', get: (v) => v.word_count },
+          { header: '+/-', get: (v) => `+${v.lines_added}/-${v.lines_removed}` },
+          { header: 'SUMMARY', get: (v) => v.change_summary ?? '', max: 50 },
+        ]),
+      );
+      const shown = res.offset + res.versions.length;
+      if (shown < res.total) ctx.print(`\nShowing ${res.offset + 1}-${shown} of ${res.total}. Use --offset ${shown}.`);
+      else ctx.print(`\n${res.total} version(s) of "${res.file_title}".`);
+    },
+  },
+  {
+    name: 'files version',
+    summary: 'Print the content of one version (use --json for metadata too).  [GET /agent/files/{id}/versions/{n}]',
+    args: ['<fileId>', '<n>'],
+    options: {
+      output: {
+        type: 'string',
+        short: 'o',
+        valueName: 'path',
+        description: 'Write the content to a new file (mode 0600) instead of stdout; symlinks are refused',
+      },
+      force: { type: 'boolean', description: 'Allow -o to overwrite an existing regular file' },
+    },
+    async run(ctx, values, pos) {
+      requirePositionals(this, pos, 2);
+      const n = versionNumber(pos[1]);
+      const version = await ctx.client().get<FileVersionDetail>(`/agent/files/${enc(pos[0])}/versions/${n}`);
+      const output = str(values, 'output');
+      if (output !== undefined) {
+        writePrivateFile(output, version.content, bool(values, 'force'));
+        const summary = { file_id: version.file_id, version_number: version.version_number, path: output, chars: version.content.length };
+        if (ctx.json) return ctx.printJson(summary);
+        return ctx.print(`Wrote ${summary.chars} chars of version ${n} to ${output}`);
+      }
+      if (ctx.json) return ctx.printJson(version);
+      ctx.io.stdout.write(version.content);
+      if (version.content && !version.content.endsWith('\n')) ctx.io.stdout.write('\n');
+    },
+  },
+  {
+    name: 'files rollback',
+    summary: 'Restore a file to an earlier version (requires --yes).  [POST /agent/files/{id}/versions/{n}/rollback]',
+    args: ['<fileId>', '<n>'],
+    options: { yes: { type: 'boolean', short: 'y', description: 'Confirm replacing the current content' } },
+    details:
+      'Replaces the current content with version <n>. History is kept: the restored content becomes a new\n' +
+      'version (unless the per-file version quota is full), so a rollback can itself be undone.',
+    async run(ctx, values, pos) {
+      requirePositionals(this, pos, 2);
+      const n = versionNumber(pos[1]);
+      if (!bool(values, 'yes')) {
+        throw new CliError(`Refusing to replace the content of ${pos[0]} with version ${n} without --yes.`, EXIT.USAGE);
+      }
+      const res = await ctx.client().post<RollbackResult>(`/agent/files/${enc(pos[0])}/versions/${n}/rollback`, {});
+      if (ctx.json) return ctx.printJson(res);
+      ctx.print(
+        res.new_version_number !== null
+          ? `Restored ${res.file_id} to version ${res.restored_version}; saved as new version ${res.new_version_number}.`
+          : res.version_quota_exceeded
+            ? `Restored ${res.file_id} to version ${res.restored_version}; no new version was recorded (per-file version quota full).`
+            : `Restored ${res.file_id} to version ${res.restored_version}; no snapshot was recorded.`,
+      );
     },
   },
 
@@ -906,7 +1119,8 @@ function rootHelp(version: string): string {
   const groups: Array<[string, string[]]> = [
     ['Auth', ['login', 'logout', 'whoami']],
     ['Projects', ['projects list', 'projects get', 'projects create', 'projects update', 'projects delete']],
-    ['Files', ['files list', 'files tree', 'files get', 'files create', 'files put', 'files delete']],
+    ['Files', ['files list', 'files tree', 'files get', 'files create', 'files put', 'files move', 'files delete']],
+    ['Versions', ['files versions', 'files version', 'files rollback']],
     ['Retrieval', ['search', 'context']],
     ['Agent skill', ['skill install', 'skill path']],
   ];
@@ -932,6 +1146,7 @@ function rootHelp(version: string): string {
     'Environment:',
     '  ZENSTORY_API_KEY   API key (overrides the saved key)',
     `  ZENSTORY_API_BASE  API base URL (default ${DEFAULT_API_BASE}); https only, except localhost`,
+    '  ZENSTORY_LANG      Folder-title language for `projects create` (zh|en; else LC_ALL/LANG)',
     '  XDG_CONFIG_HOME    Config dir root (default ~/.config)',
     '  XDG_CACHE_HOME     Backup dir root for `files put` (default ~/.cache)',
     '',

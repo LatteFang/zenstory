@@ -3,7 +3,7 @@ name: zenstory
 description: Reads, writes and organizes the user's novel projects stored in zenstory (chapters/drafts, outlines, character profiles, lore/world-building, materials) through the zenstory CLI and its Agent API. Use when the user mentions zenstory, refers to their novel or story project kept in zenstory, or asks to read, continue, draft, revise, or reorganize chapters, outlines, characters or settings stored there, or to check continuity across a zenstory project (e.g. "continue chapter 12 in zenstory", "add this character to my zenstory novel", "在 zenstory 里续写第三章", "把人物设定存到 zenstory").
 compatibility: Requires Node.js 20+ (runs the zenstory CLI via a global install or npx) and network access to api.zenstory.ai.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   homepage: "https://zenstory.ai"
   cli: "zenstory"
   api_base: "https://api.zenstory.ai/api/v1"
@@ -55,12 +55,15 @@ zenstory files tree <projectId>               # folders + titles + ids, no conte
 zenstory files list <projectId> --type draft --json   # chapters (content omitted)
 ```
 
-Projects created in the web app start with root folders whose ids are predictable, e.g.
-`<projectId>-draft-folder` (正文/Drafts), `<projectId>-outline-folder` (大纲/Outlines),
-`<projectId>-character-folder` (角色/Characters), `<projectId>-lore-folder` (设定/World
-Building), `<projectId>-material-folder` (素材/Materials). Confirm with `files tree` before
-relying on them. See [references/concepts.md](references/concepts.md) for file types,
-folders per project type, and what writing-context returns.
+Every project (created in the web app or with `zenstory projects create`) starts with root
+folders whose ids are predictable, e.g. `<projectId>-draft-folder` (正文/Drafts),
+`<projectId>-outline-folder` (大纲/Outlines), `<projectId>-character-folder`
+(角色/Characters), `<projectId>-lore-folder` (设定/World Building),
+`<projectId>-material-folder` (素材/Materials); screenplays use `<projectId>-script-folder`.
+`projects create` prints them. The user may have renamed, deleted or nested folders, so
+confirm with `files tree` before relying on them. See
+[references/concepts.md](references/concepts.md) for file types, folders per project type,
+and what writing-context returns.
 
 ## Workflow: continue or revise a chapter
 
@@ -86,8 +89,9 @@ folders per project type, and what writing-context returns.
      --if-updated-at <updated_at> --json
    ```
    If it fails with "changed on the server", re-read, re-merge, and retry with the new
-   `updated_at`. The CLI prints `backupPath` (the previous content, saved locally) and the
-   server keeps a version the user can roll back to.
+   `updated_at`. The server records a version of every content change unless the plan's
+   per-file version quota is full (see [Undo](#undo-a-change)); the CLI also saves the
+   previous content locally and prints `backupPath` as a second safety net.
 
 `files put` **replaces the whole content**. Never put a partial chapter or a summary back.
 It refuses content shorter than half of the current text unless you pass `--allow-shrink`
@@ -99,11 +103,14 @@ It refuses content shorter than half of the current text unless you pass `--allo
 zenstory context <projectId> --query "chapter 13: the duel at the pass" --json
 # write the chapter to "$dir/ch13.md" (dir=$(mktemp -d)), then:
 zenstory files create <projectId> --type draft --title "第十三章 关山对决" \
-  --parent <projectId>-draft-folder --content-file "$dir/ch13.md" --json
+  --parent <projectId>-draft-folder --order 13 --content-file "$dir/ch13.md" --json
 ```
 
-Match the title pattern of existing chapters (look at `files list --type draft`). For a
-chapter outline use `--type outline` under the outline folder.
+Match the title pattern of existing chapters (look at `files list --type draft`) and pass
+`--order <chapter number>` so chapters sort in reading order (without it the new file goes
+after its last sibling; chapter titles like `第N章` / `Chapter N` always sort by N). For a chapter
+outline use `--type outline` under the outline folder. Fix the order of an existing file
+with `files put <fileId> --order <n>`.
 
 ## Workflow: characters, lore and materials
 
@@ -117,8 +124,10 @@ zenstory files create <projectId> --type lore --title "灵脉体系" \
 ```
 
 Materials (素材) use file type `snippet` (`--type material` is accepted as an alias).
-If the project has no folders (projects created through the API start empty), create them
-first: `zenstory files create <projectId> --type folder --title "角色" --json`.
+`--parent` must be a folder in the same project. To tidy a file that sits in the wrong
+place (e.g. at the project root), move it: `zenstory files move <fileId> --parent
+<projectId>-character-folder` (`--parent root` moves it to the top level). Create extra
+folders (e.g. one per volume) with `files create --type folder --title "第一卷"`.
 
 ## Workflow: continuity check
 
@@ -131,12 +140,33 @@ Results carry `id`, `title`, `file_type`, `snippet`, `line_start` and `score`. O
 source with `files get <id>` before asserting a fact. Newly written files are indexed in
 the background, so a just-saved change may take a moment to appear in search.
 
+## Undo a change
+
+Every content change made through the CLI (and the web editor) is recorded as a version,
+unless the plan's per-file version quota is full: then the content is still saved, the CLI
+prints a warning (`version_quota_exceeded: true` in `--json`) and only the local
+`backupPath` copy of the previous content remains. Tell the user when that happens.
+
+```bash
+zenstory files versions <fileId> --json            # newest first, no content
+zenstory files version <fileId> <n> -o "$dir/<fileId>-v<n>.md"   # inspect version n
+zenstory files rollback <fileId> <n> --yes --json  # restore it; prints new_version_number
+```
+
+A rollback keeps the history: the restored content becomes a new version, so it can be
+undone too. Ask the user before rolling back. If `new_version_number` is `null`, the
+content was restored but no new version was recorded — because the per-file version quota
+is full when `version_quota_exceeded` is `true`, otherwise because the snapshot could not
+be saved. Files created with content
+through the CLI start at version 1; the local `backupPath` copies from `files put` remain a
+second net (e.g. for files whose history started before the CLI touched them).
+
 ## Safety rules
 
 - **Confirm before destructive actions.** Ask the user before `files delete` /
-  `projects delete` (both need `--yes`) and before `files put` that would shrink or
-  replace substantial existing text (e.g. more than a few paragraphs). Show what will
-  change.
+  `projects delete` / `files rollback` (all need `--yes`) and before `files put` that would
+  shrink or replace substantial existing text (e.g. more than a few paragraphs). Show what
+  will change.
 - **Read before you write.** Never overwrite a file you have not just read; always pass
   `--if-updated-at` to `files put`.
 - **Respect rate limits** (per key, per hour): read 2000, write 1000, search 500,

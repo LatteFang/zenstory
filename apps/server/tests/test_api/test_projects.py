@@ -232,7 +232,7 @@ async def test_create_project_rolls_back_when_folder_init_fails(client: AsyncCli
     def broken_folders(*_args, **_kwargs):
         raise RuntimeError("template failure")
 
-    monkeypatch.setattr("api.projects.get_folders_for_type", broken_folders)
+    monkeypatch.setattr("services.project_service.get_folders_for_type", broken_folders)
 
     response = await client.post(
         "/api/v1/projects",

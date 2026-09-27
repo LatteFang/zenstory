@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, statSync, symlinkSync, writeFile
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { buildTree, normalizeFileType, redactKeys } from '../src/app.js';
+import { buildTree, defaultProjectLang, normalizeFileType, redactKeys } from '../src/app.js';
 import { configPath, writeConfig } from '../src/config.js';
 import { KEY, mockFetch, runCli, tempDir } from './helpers.js';
 
@@ -233,6 +233,50 @@ describe('projects', () => {
     expect(calls[0]).toMatchObject({ method: 'POST', url: `${BASE}/agent/projects`, body: { name: '星海', description: 'd', project_type: 'short' } });
   });
 
+  it('create prints the default folders from the response', async () => {
+    const folders = [
+      { id: 'p1-lore-folder', title: '设定', file_type: 'folder', order: 0 },
+      { id: 'p1-draft-folder', title: '正文', file_type: 'folder', order: 4 },
+    ];
+    const { fetch } = mockFetch(() => ({ body: { ...project, folders } }));
+    const env = loggedInEnv();
+    const res = await runCli(['projects', 'create', '--name', '星海'], { env, fetch });
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain('Folders:\n  设定/  p1-lore-folder\n  正文/  p1-draft-folder');
+    const json = await runCli(['projects', 'create', '--name', '星海', '--json'], { env, fetch });
+    expect(JSON.parse(json.stdout).folders).toEqual(folders);
+  });
+
+  it('create sends Accept-Language from --lang, else ZENSTORY_LANG / LC_ALL / LANG', async () => {
+    const { fetch, calls } = mockFetch(() => ({ body: project }));
+    const env = loggedInEnv();
+    const lang = async (extraEnv: Record<string, string>, args: string[] = []) => {
+      const res = await runCli(['projects', 'create', '--name', '星海', ...args], { env: { ...env, ...extraEnv }, fetch });
+      expect(res.code).toBe(0);
+      return calls.at(-1)!.headers['Accept-Language'];
+    };
+    expect(await lang({})).toBe('en');
+    expect(await lang({ LANG: 'zh_CN.UTF-8' })).toBe('zh');
+    expect(await lang({ LANG: 'zh_CN.UTF-8', LC_ALL: 'en_US.UTF-8' })).toBe('en');
+    expect(await lang({ LANG: 'en_US.UTF-8', ZENSTORY_LANG: 'zh' })).toBe('zh');
+    expect(await lang({ ZENSTORY_LANG: 'zh' }, ['--lang', 'en'])).toBe('en');
+    expect(calls.at(-1)!.body).toEqual({ name: '星海', project_type: 'novel' });
+
+    const before = calls.length;
+    const bad = await runCli(['projects', 'create', '--name', '星海', '--lang', 'fr'], { env, fetch });
+    expect(bad.code).toBe(2);
+    expect(calls).toHaveLength(before);
+    expect(defaultProjectLang({ LC_ALL: 'ZH_tw' })).toBe('zh');
+  });
+
+  it('create surfaces the 403 for keys limited to specific projects', async () => {
+    const detail = 'This API key is limited to specific projects and cannot create new projects.';
+    const { fetch } = mockFetch(() => ({ status: 403, body: { detail: 'ERR_NOT_AUTHORIZED', error_code: 'ERR_NOT_AUTHORIZED', error_detail: detail } }));
+    const res = await runCli(['projects', 'create', '--name', '星海'], { env: loggedInEnv(), fetch });
+    expect(res.code).toBe(3);
+    expect(res.stderr).toContain(detail);
+  });
+
   it('list renders a table with CJK names', async () => {
     const { fetch } = mockFetch(() => ({ body: [project] }));
     const res = await runCli(['projects', 'list'], { env: loggedInEnv(), fetch });
@@ -356,6 +400,45 @@ describe('files', () => {
     });
   });
 
+  it('create and put send --order as an integer', async () => {
+    const { fetch, calls } = mockFetch((c) =>
+      c.method === 'GET' ? { body: { id: 'f1', title: 't', content: 'x', updated_at: 'u' } } : { body: { id: 'f1', ...(c.body as object) } },
+    );
+    const env = loggedInEnv();
+    const created = await runCli(['files', 'create', 'p1', '--title', 'Ch 3', '--order', '3'], { env, fetch });
+    expect(created.code).toBe(0);
+    expect(calls[0].body).toMatchObject({ title: 'Ch 3', order: 3 });
+
+    const put = await runCli(['files', 'put', 'f1', '--order', '0'], { env, fetch });
+    expect(put.code).toBe(0);
+    expect(calls.at(-1)).toMatchObject({ method: 'PUT', url: `${BASE}/agent/files/f1`, body: { order: 0 } });
+    expect(existsSync(join(env.XDG_CACHE_HOME, 'zenstory', 'backups'))).toBe(false);
+
+    const before = calls.length;
+    for (const bad of ['-1', '1.5', 'x', '2147483648']) {
+      expect((await runCli(['files', 'create', 'p1', '--title', 't', '--order', bad], { env, fetch })).code).toBe(2);
+      expect((await runCli(['files', 'put', 'f1', '--order', bad], { env, fetch })).code).toBe(2);
+    }
+    expect(calls).toHaveLength(before);
+  });
+
+  it('move posts parent_id (root → null) and order', async () => {
+    const { fetch, calls } = mockFetch((c) => ({ body: { id: 'f1', title: '第一章', file_type: 'draft', order: 1, ...(c.body as object) } }));
+    const env = loggedInEnv();
+    const res = await runCli(['files', 'move', 'f1', '--parent', 'p1-draft-folder', '--order', '1'], { env, fetch });
+    expect(res.code).toBe(0);
+    expect(calls[0]).toMatchObject({ method: 'POST', url: `${BASE}/agent/files/f1/move`, body: { parent_id: 'p1-draft-folder', order: 1 } });
+    expect(res.stdout).toContain('to p1-draft-folder');
+
+    const root = await runCli(['files', 'move', 'f1', '--parent', 'root', '--json'], { env, fetch });
+    expect(root.code).toBe(0);
+    expect(calls[1].body).toEqual({ parent_id: null });
+
+    const missing = await runCli(['files', 'move', 'f1'], { env, fetch });
+    expect(missing.code).toBe(2);
+    expect(calls).toHaveLength(2);
+  });
+
   it('create reads content from stdin with --content -', async () => {
     const { fetch, calls } = mockFetch((c) => ({ body: c.body }));
     await runCli(['files', 'create', 'p1', '--title', 'Ch 2', '--content', '-'], { env: loggedInEnv(), fetch, stdin: 'from stdin' });
@@ -401,6 +484,24 @@ describe('files', () => {
     expect(calls.filter((c) => c.method === 'PUT')).toHaveLength(1);
   });
 
+  it('put and create warn when the version quota is full', async () => {
+    const { fetch } = mockFetch((c) =>
+      c.method === 'GET' ? { body: serverFile } : { body: { ...serverFile, ...(c.body as object), version_quota_exceeded: true } },
+    );
+    const env = loggedInEnv();
+    const human = await runCli(['files', 'put', 'f1', '--content', 'new text'], { env, fetch });
+    expect(human.code).toBe(0);
+    expect(human.stderr).toContain("per-file version quota is full; the previous content is only in");
+    // Fresh cache dir: two backups of f1 within the same millisecond would collide.
+    const json = await runCli(['files', 'put', 'f1', '--content', 'new text', '--json'], { env: loggedInEnv(), fetch });
+    expect(JSON.parse(json.stdout).version_quota_exceeded).toBe(true);
+    const created = await runCli(['files', 'create', 'p1', '--title', 'x', '--content', 'body'], { env, fetch });
+    expect(created.stderr).toContain('no version was recorded');
+
+    const quiet = await runCli(['files', 'put', 'f1', '--content', 'new text'], { env: loggedInEnv(), fetch: putFetch().fetch });
+    expect(quiet.stderr).toBe('');
+  });
+
   it('put refuses to shrink content below 50% unless --allow-shrink', async () => {
     const { fetch, calls } = putFetch();
     const env = loggedInEnv();
@@ -443,6 +544,102 @@ describe('files', () => {
   it('normalizes file types', () => {
     expect(normalizeFileType('Material')).toBe('snippet');
     expect(() => normalizeFileType('chapter')).toThrow(/Valid types/);
+  });
+});
+
+describe('versions', () => {
+  const version = {
+    id: 'v2',
+    file_id: 'f1',
+    project_id: 'p1',
+    version_number: 2,
+    is_base_version: false,
+    word_count: 3,
+    char_count: 6,
+    change_type: 'ai_edit',
+    change_source: 'user',
+    change_summary: 'Updated via Agent API',
+    lines_added: 1,
+    lines_removed: 1,
+    created_at: '2026-01-02T00:00:00',
+  };
+
+  it('versions lists history with limit/offset/include_auto_save', async () => {
+    const { fetch, calls } = mockFetch(() => ({ body: { versions: [version], total: 3, limit: 1, offset: 1, file_id: 'f1', file_title: '第一章' } }));
+    const env = loggedInEnv();
+    const res = await runCli(['files', 'versions', 'f1', '--limit', '1', '--offset', '1', '--include-auto-save'], { env, fetch });
+    expect(res.code).toBe(0);
+    const url = new URL(calls[0].url);
+    expect(url.pathname).toBe('/api/v1/agent/files/f1/versions');
+    expect(Object.fromEntries(url.searchParams)).toEqual({ limit: '1', offset: '1', include_auto_save: 'true' });
+    expect(res.stdout).toMatch(/^VERSION\s+CREATED\s+TYPE/);
+    expect(res.stdout).toContain('Showing 2-2 of 3');
+
+    const plain = await runCli(['files', 'versions', 'f1', '--json'], { env, fetch });
+    expect(Object.fromEntries(new URL(calls[1].url).searchParams)).toEqual({});
+    expect(JSON.parse(plain.stdout).versions[0].version_number).toBe(2);
+    expect((await runCli(['files', 'versions', 'f1', '--limit', '101'], { env, fetch })).code).toBe(2);
+  });
+
+  it('version prints content, or writes it with -o via the safe writer', async () => {
+    const { fetch, calls } = mockFetch(() => ({ body: { ...version, content: '旧稿' } }));
+    const env = loggedInEnv();
+    const raw = await runCli(['files', 'version', 'f1', '2'], { env, fetch });
+    expect(raw.stdout).toBe('旧稿\n');
+    expect(calls[0].url).toBe(`${BASE}/agent/files/f1/versions/2`);
+
+    const dir = tempDir();
+    const out = join(dir, 'v2.md');
+    const written = await runCli(['files', 'version', 'f1', '2', '-o', out], { env, fetch });
+    expect(written.code).toBe(0);
+    expect(readFileSync(out, 'utf8')).toBe('旧稿');
+    if (process.platform !== 'win32') expect(statSync(out).mode & 0o777).toBe(0o600);
+    expect((await runCli(['files', 'version', 'f1', '2', '-o', out], { env, fetch })).code).toBe(2);
+    const link = join(dir, 'link.md');
+    symlinkSync(out, link);
+    const viaLink = await runCli(['files', 'version', 'f1', '2', '-o', link, '--force'], { env, fetch });
+    expect(viaLink.stderr).toContain('symbolic link');
+
+    const before = calls.length;
+    expect((await runCli(['files', 'version', 'f1', '0'], { env, fetch })).code).toBe(2);
+    expect((await runCli(['files', 'version', 'f1', 'latest'], { env, fetch })).code).toBe(2);
+    expect(calls).toHaveLength(before);
+  });
+
+  it('rollback requires --yes and prints the new version number', async () => {
+    const result = {
+      success: true,
+      message: 'Successfully rolled back to version 1',
+      file_id: 'f1',
+      restored_version: 1,
+      new_version_number: 4,
+      snapshot_created: true,
+      version_quota_exceeded: false,
+      updated_at: '2026-01-03T00:00:00',
+    };
+    const { fetch, calls } = mockFetch(() => ({ body: result }));
+    const env = loggedInEnv();
+    const denied = await runCli(['files', 'rollback', 'f1', '1'], { env, fetch });
+    expect(denied.code).toBe(2);
+    expect(denied.stderr).toContain('--yes');
+    expect(calls).toHaveLength(0);
+
+    const ok = await runCli(['files', 'rollback', 'f1', '1', '--yes'], { env, fetch });
+    expect(ok.code).toBe(0);
+    expect(calls[0]).toMatchObject({ method: 'POST', url: `${BASE}/agent/files/f1/versions/1/rollback` });
+    expect(ok.stdout).toContain('new version 4');
+    const json = await runCli(['files', 'rollback', 'f1', '1', '--yes', '--json'], { env, fetch });
+    expect(JSON.parse(json.stdout)).toEqual(result);
+  });
+
+  it('rollback explains a missing new version from version_quota_exceeded', async () => {
+    const base = { success: true, message: 'm', file_id: 'f1', restored_version: 1, new_version_number: null, snapshot_created: false, updated_at: 'u' };
+    const env = loggedInEnv();
+    const quota = await runCli(['files', 'rollback', 'f1', '1', '--yes'], { env, fetch: mockFetch(() => ({ body: { ...base, version_quota_exceeded: true } })).fetch });
+    expect(quota.stdout).toContain('version quota full');
+    const other = await runCli(['files', 'rollback', 'f1', '1', '--yes'], { env, fetch: mockFetch(() => ({ body: { ...base, version_quota_exceeded: false } })).fetch });
+    expect(other.stdout).toContain('no snapshot was recorded');
+    expect(other.stdout).not.toContain('quota');
   });
 });
 

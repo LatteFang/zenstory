@@ -9,6 +9,7 @@ base (default `https://api.zenstory.ai/api/v1`); all requests send `X-Agent-API-
 - [Auth and configuration](#auth-and-configuration)
 - [Projects](#projects)
 - [Files](#files)
+- [Versions](#versions)
 - [Search and writing context](#search-and-writing-context)
 - [Skill management](#skill-management)
 - [Errors and exit codes](#errors-and-exit-codes)
@@ -22,7 +23,8 @@ base (default `https://api.zenstory.ai/api/v1`); all requests send `X-Agent-API-
 | `zenstory whoami` | `GET /agent/projects`, `PUT /agent/projects/<nonexistent>` | Prints API base, masked key, `read`/`write` scope and project count. The write probe targets a project id that cannot exist, so it changes nothing (404 = write allowed). |
 
 Environment variables override the saved config: `ZENSTORY_API_KEY`, `ZENSTORY_API_BASE`
-(blank values count as unset). Safety rules:
+(blank values count as unset). `ZENSTORY_LANG` (then `LC_ALL`, then `LANG`) sets the
+default `--lang` of `projects create`. Safety rules:
 
 - API bases must be `https://`; plain `http://` is accepted only for `localhost`,
   `127.0.0.1` and `[::1]`.
@@ -53,13 +55,19 @@ Environment variables override the saved config: `ZENSTORY_API_KEY`, `ZENSTORY_A
 |---|---|---|
 | `zenstory projects list` | `GET /agent/projects` | read |
 | `zenstory projects get <projectId>` | `GET /agent/projects/{id}` | read |
-| `zenstory projects create --name <name> [--description <text>] [--type novel\|short\|screenplay]` | `POST /agent/projects` | write |
+| `zenstory projects create --name <name> [--description <text>] [--type novel\|short\|screenplay] [--lang zh\|en]` | `POST /agent/projects` | write |
 | `zenstory projects update <projectId> [--name <name>] [--description <text>]` | `PUT /agent/projects/{id}` | write |
 | `zenstory projects delete <projectId> --yes` | `DELETE /agent/projects/{id}` (soft delete) | write |
 
 Project object: `id, name, description, project_type, owner_id, created_at, updated_at`.
-`name` is 1–100 chars, `description` ≤ 500. Projects created through the API have **no
-default folders** (the web app creates them; the API does not).
+`name` is 1–100 chars, `description` ≤ 500. `projects create` makes the same default root
+folders as the web app (see concepts.md) and prints them; `--json` returns the project plus
+`folders: [{id, title, file_type, order}]`. Folder ids are `<projectId>-<kind>-folder`
+(e.g. `<projectId>-draft-folder`). Folder titles follow `--lang`, sent as
+`Accept-Language`; it defaults to `ZENSTORY_LANG`, else `LC_ALL`, else `LANG` (`zh*` → `zh`,
+anything else → `en`). Errors: HTTP 402 (exit 1) when the plan's project limit is reached;
+HTTP 403 (exit 3) when the key is limited to specific projects — such a key cannot create
+projects, because it could not access them.
 
 ## Files
 
@@ -68,8 +76,9 @@ default folders** (the web app creates them; the API does not).
 | `zenstory files list <projectId> [--type T] [--parent <folderId>] [--fields csv] [--limit 1-200] [--offset N] [--all]` | `GET /agent/projects/{id}/files` | read |
 | `zenstory files tree <projectId>` | `GET /agent/projects/{id}/files` (all pages, no content) | read |
 | `zenstory files get <fileId> [--fields csv] [-o path [--force]]` | `GET /agent/files/{id}` | read |
-| `zenstory files create <projectId> --title <t> [--type T] [--parent <folderId>] [--content-file path \| --content text\|-] [--metadata json]` | `POST /agent/projects/{id}/files` | write |
-| `zenstory files put <fileId> [--content-file path \| --content text\|-] [--title t] [--if-updated-at ts] [--allow-shrink] [--allow-empty]` | `GET` then `PUT /agent/files/{id}` | read + write |
+| `zenstory files create <projectId> --title <t> [--type T] [--parent <folderId>] [--order n] [--content-file path \| --content text\|-] [--metadata json]` | `POST /agent/projects/{id}/files` | write |
+| `zenstory files put <fileId> [--content-file path \| --content text\|-] [--title t] [--order n] [--if-updated-at ts] [--allow-shrink] [--allow-empty]` | `GET` then `PUT /agent/files/{id}` | read + write |
+| `zenstory files move <fileId> --parent <folderId\|root> [--order n]` | `POST /agent/files/{id}/move` | write |
 | `zenstory files delete <fileId> --yes` | `DELETE /agent/files/{id}` (soft delete) | write |
 
 Details:
@@ -93,10 +102,14 @@ Details:
   `id, project_id, title, content, file_type, parent_id, order, file_metadata (JSON
   string or null), created_at, updated_at`.
 - `files create`: `--type` defaults to `draft`; content defaults to empty. `--parent`
-  must be an existing file in the same project (otherwise HTTP 400). The API does not
-  check that the parent is a folder, but you should always use one: the web tree and
-  chapter context assume files live in folders. `--metadata` must be a JSON
-  object; it is stored as `file_metadata`. New files get `order: 0`.
+  must be a folder in the same project (otherwise HTTP 400, exit 2). `--metadata` must be
+  a JSON object; it is stored as `file_metadata`. Request body: `{title, file_type,
+  content, parent_id?, order?, metadata?}`. `--order` is an integer 0–2147483647; without it the
+  file takes the chapter number found in its title/metadata, or goes after its last
+  sibling. `draft`/`outline`/`script` files titled like `第N章` / `Chapter N` always get
+  `order` N (same rule as the web app). Non-empty content is recorded as version 1 unless
+  the per-file version quota is full (then `version_quota_exceeded: true` and a warning).
+  An empty `parent_id` is rejected (HTTP 400); omit `--parent` for the project root.
 - `files put` replaces the whole content (and/or title). It first GETs the current file,
   then:
   - `--if-updated-at <ts>`: refuses (exit 1, code `STALE_WRITE`) when the server's
@@ -106,9 +119,43 @@ Details:
   - saves the current content to `$XDG_CACHE_HOME/zenstory/backups/<fileId>-<timestamp>.md`
     (default `~/.cache/zenstory/backups`, mode 0600) and prints the path (`backupPath` in
     `--json` output).
-  The server also records a file version, so the change can be rolled back in the web
-  app's version history. Metadata, parent and order cannot be changed via the API.
+  The server also records a file version for every content change, so the change can be
+  rolled back (see [Versions](#versions)) — unless the plan's per-file version quota is
+  full: the content is still saved, the response has `version_quota_exceeded: true` (also
+  in `--json`), the CLI prints a warning on stderr, and the backup is the only copy of the
+  previous content. Request body: `{title?, content?, order?}`;
+  `--order` alone (no content) makes no backup and no version. Metadata cannot be changed
+  via the API; use `files move` to change the parent.
+- `files move`: body `{parent_id, order?}`; `--parent root` sends `parent_id: null`
+  (project root). The target must be a folder in the same project, and a folder cannot be
+  moved into itself or one of its subfolders (HTTP 400, exit 2). Returns the file object.
 - `--content -` / `--content-file -` read from stdin. Content must be UTF-8 text.
+
+## Versions
+
+| Command | Endpoint | Scope |
+|---|---|---|
+| `zenstory files versions <fileId> [--limit 1-100] [--offset N] [--include-auto-save]` | `GET /agent/files/{id}/versions` | read |
+| `zenstory files version <fileId> <n> [-o path [--force]]` | `GET /agent/files/{id}/versions/{n}` | read |
+| `zenstory files rollback <fileId> <n> --yes` | `POST /agent/files/{id}/versions/{n}/rollback` | write |
+
+- `files versions --json`: `{ "versions": [...], "total", "limit", "offset", "file_id",
+  "file_title" }`, newest first (default 50 per page). Each version: `id, file_id,
+  project_id, version_number, is_base_version, word_count, char_count, change_type
+  (create | edit | ai_edit | restore | auto_save), change_source, change_summary,
+  lines_added, lines_removed, created_at` — no content. Auto-save versions from the web
+  editor are hidden unless `--include-auto-save`.
+- `files version` prints version `n`'s full content; `-o` uses the same safe writer as
+  `files get -o` (new file, mode 0600, never follows symlinks, `--force` to overwrite a
+  regular file). `--json` adds the metadata fields above plus `content`.
+- `files rollback` replaces the current content with version `n`. History is kept: the
+  restored content becomes a new version (`change_type: restore`). `--json`:
+  `{success, message, file_id, restored_version, new_version_number, snapshot_created,
+  version_quota_exceeded, updated_at}`. When the per-file version quota is full the
+  content is still restored but `new_version_number` is `null` and
+  `version_quota_exceeded` is `true`; `new_version_number: null` with
+  `version_quota_exceeded: false` means the snapshot itself failed.
+- Unknown version numbers return 404 (exit 4).
 
 ## Search and writing context
 

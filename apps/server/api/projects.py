@@ -16,7 +16,6 @@ from config.project_status import (
 )
 from config.project_templates import (
     get_default_project_name,
-    get_folders_for_type,
 )
 from config.project_templates import (
     get_project_templates as get_project_templates_config,
@@ -26,13 +25,13 @@ from core.error_handler import APIException
 from core.project_access import verify_project_ownership
 from database import get_session
 from models import (
-    ACTIVATION_EVENT_PROJECT_CREATED,
-    File,
     Project,
     User,
 )
-from services.features.activation_event_service import activation_event_service
-from services.quota_service import quota_service
+from services.project_service import (
+    create_project_with_default_folders,
+    resolve_template_lang,
+)
 from utils.logger import get_logger, log_with_context
 
 logger = get_logger(__name__)
@@ -107,21 +106,8 @@ def create_project(
         project_type=request.project_type,
     )
 
-    # Check project limit
-    allowed, existing_count, max_projects = quota_service.check_project_limit(
-        session, current_user.id
-    )
-    if not allowed:
-        raise APIException(
-            error_code=ErrorCode.QUOTA_PROJECTS_EXCEEDED,
-            status_code=402,
-            detail=f"Project limit reached ({existing_count}/{max_projects}). Please upgrade your plan.",
-        )
-
-    # Parse language from Accept-Language header
-    lang = 'zh'  # Default to Chinese
-    if accept_language:
-        lang = accept_language.split(',')[0].split('-')[0]
+    # Parse language from Accept-Language header (default Chinese)
+    lang = resolve_template_lang(accept_language)
 
     # If no name provided, use default project name in the selected language
     if not project.name:
@@ -138,27 +124,12 @@ def create_project(
     )
 
     try:
-        session.add(project)
-        session.flush()  # Ensure project.id is generated before creating folders
-
-        # Get folder configuration based on project type and language
-        folders = get_folders_for_type(project.project_type, lang)
-
-        # Create folders for the project
-        for folder_config in folders:
-            folder = File(
-                id=f"{project.id}-{folder_config['id']}",  # Predictable ID: project_id-folder_name
-                project_id=project.id,
-                title=folder_config["title"],
-                file_type=folder_config["file_type"],
-                order=folder_config["order"],
-                parent_id=None,  # Root level folders
-            )
-            session.add(folder)
-
-        session.commit()
+        # Plan project limit + project row + template root folders + project_created
+        # activation event, shared with the Agent API.
+        folders = create_project_with_default_folders(session, project, lang)
+    except APIException:
+        raise
     except Exception:
-        session.rollback()
         logger.exception("Failed to create project with initial folder structure")
         raise APIException(
             error_code=ErrorCode.INTERNAL_SERVER_ERROR,
@@ -174,25 +145,6 @@ def create_project(
         project_name=project.name,
         folder_count=len(folders),
     )
-
-    try:
-        activation_event_service.record_once(
-            session,
-            user_id=current_user.id,
-            event_name=ACTIVATION_EVENT_PROJECT_CREATED,
-            project_id=project.id,
-            event_metadata={"project_type": project.project_type},
-        )
-    except Exception as e:
-        log_with_context(
-            logger,
-            logging.WARNING,
-            "Failed to record project_created activation event",
-            user_id=current_user.id,
-            project_id=project.id,
-            error=str(e),
-            error_type=type(e).__name__,
-        )
 
     # Re-fetch from database to ensure proper serialization
     db_project = session.get(Project, project.id)

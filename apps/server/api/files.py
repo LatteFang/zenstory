@@ -15,7 +15,6 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Form, Query, UploadFile
 from fastapi import File as FastAPIFile
 from pydantic import BaseModel, ConfigDict, Field
 from services.auth import get_current_active_user
-from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import load_only
 from sqlmodel import Session, col, select
@@ -42,12 +41,16 @@ from models.file_version import (
     CHANGE_TYPE_RESTORE,
 )
 from services.features.activation_event_service import activation_event_service
-from services.file_tree_rules import ParentNotFoundError, validate_parent_assignment
+from services.file_tree_rules import (
+    MAX_FILE_ORDER,
+    ParentNotFoundError,
+    resolve_new_file_order,
+    validate_parent_assignment,
+)
 from utils.logger import get_logger, log_with_context
 from utils.text_metrics import count_words
 from utils.title_sequence import (
     build_sequence_sort_key,
-    extract_title_first_sequence_number,
     resolve_persisted_sequence_order,
 )
 
@@ -260,7 +263,7 @@ class FileCreate(BaseModel):
     file_type: str = "document"
     content: str = ""
     parent_id: str | None = None
-    order: int = 0
+    order: int = Field(default=0, le=MAX_FILE_ORDER)
     metadata: dict | None = None
 
 
@@ -274,7 +277,7 @@ class FileUpdate(BaseModel):
         description="Optional precomputed word count for draft/script content updates.",
     )
     parent_id: str | None = None
-    order: int | None = None
+    order: int | None = Field(default=None, le=MAX_FILE_ORDER)
     metadata: dict | None = None
     change_type: Literal["create", "edit", "ai_edit", "restore", "auto_save"] | None = None
     change_source: Literal["user", "ai", "system"] | None = Field(
@@ -709,33 +712,15 @@ def create_file(
     # Infer order when caller did not explicitly provide one.
     # NOTE: `FileCreate.order` has a default (0). We must use `model_fields_set`
     # to distinguish "explicitly set to 0" vs "omitted".
-    sequence_number = extract_title_first_sequence_number(
-        file_data.title,
-        file_data.metadata,
+    resolved_order = resolve_new_file_order(
+        session,
+        project_id,
+        normalized_parent_id,
+        title=file_data.title,
+        metadata=file_data.metadata,
+        file_type=file_data.file_type,
+        requested_order=file_data.order if "order" in file_data.model_fields_set else None,
     )
-    resolved_order: int
-    if "order" in file_data.model_fields_set:
-        resolved_order = resolve_persisted_sequence_order(
-            file_data.order,
-            title=file_data.title,
-            metadata=file_data.metadata,
-            file_type=file_data.file_type,
-        )
-    elif sequence_number is not None:
-        resolved_order = sequence_number
-    else:
-        # Append to the end of siblings (stable insertion).
-        max_order = session.exec(
-            select(func.max(File.order)).where(
-                File.project_id == project_id,
-                File.parent_id == normalized_parent_id,
-                File.is_deleted.is_(False),
-            )
-        ).one()
-        resolved_order = int(max_order or 0)
-        # If there are existing siblings, place after the current max.
-        if max_order is not None:
-            resolved_order += 1
 
     file = File(
         project_id=project_id,
@@ -1158,6 +1143,7 @@ def delete_file(
 def move_file(
     file_id: str,
     request: MoveFileRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),
     session: Session = Depends(get_session)
 ):
@@ -1195,6 +1181,35 @@ def move_file(
         file_id=file_id,
         new_parent_id=file.parent_id,
     )
+
+    # The vector index stores parent_id as metadata; re-upsert so it follows the move.
+    try:
+        from services.llama_index import schedule_index_upsert
+
+        extra_metadata = file.get_metadata()
+        if file.parent_id:
+            extra_metadata = {**extra_metadata, "parent_id": file.parent_id}
+
+        background_tasks.add_task(
+            schedule_index_upsert,
+            project_id=file.project_id,
+            entity_type=file.file_type,
+            entity_id=file.id,
+            title=file.title,
+            content=file.content or "",
+            extra_metadata=extra_metadata,
+            user_id=current_user.id,
+        )
+    except Exception as e:
+        # Indexing should never block file CRUD - log and continue
+        log_with_context(
+            logger,
+            logging.DEBUG,
+            "Vector index upsert failed (continuing)",
+            error=str(e),
+            file_id=file.id,
+            operation="move_file_index",
+        )
 
     return file
 

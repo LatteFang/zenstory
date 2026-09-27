@@ -300,7 +300,7 @@ Step 1 with that key returns the chapters above, in the file-tree order:
 }
 ```
 
-The agent writes with its own model; ZenStory stores the manuscript and assembles context. `files put` replaces the whole file, so it is guarded: it refuses when you edited the file in the browser meanwhile (`updated_at` changed), requires `--allow-shrink` when the new text is under half the old length, saves the previous server copy to `~/.cache/zenstory/backups/` before writing, and the server records a version in the history (when the per-file version quota is used up, the content is still saved without a version).
+The agent writes with its own model; ZenStory stores the manuscript and assembles context. `files put` replaces the whole file, so it is guarded: it refuses when you edited the file in the browser meanwhile (`updated_at` changed), requires `--allow-shrink` when the new text is under half the old length, and the server records a version in the history (when the per-file version quota is used up, the content is still saved without a version) — undo a bad write with `zenstory files versions <chapterId>` and `zenstory files rollback <chapterId> <n> --yes`. As a second net, the previous server copy is also saved to `~/.cache/zenstory/backups/` before writing. Projects created from the CLI get the same default folders as in the web app, and `--order` puts new chapters in place.
 
 ## FAQ
 

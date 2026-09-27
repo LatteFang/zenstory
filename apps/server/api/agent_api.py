@@ -11,7 +11,7 @@ import logging
 from datetime import datetime
 from typing import ClassVar, Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func
 from sqlalchemy.orm import load_only
@@ -24,10 +24,22 @@ from core.error_codes import ErrorCode
 from core.error_handler import APIException
 from database import create_session
 from middleware.rate_limit import require_agent_rate_limit
-from models import File, Project
-from models.file_version import CHANGE_SOURCE_USER, CHANGE_TYPE_AI_EDIT
+from models import File, FileVersion, Project
+from models.file_version import CHANGE_SOURCE_USER, CHANGE_TYPE_AI_EDIT, CHANGE_TYPE_CREATE
 from services.agent_auth_service import verify_project_access
+from services.features.file_version_service import get_file_version_service
+from services.file_tree_rules import (
+    MAX_FILE_ORDER,
+    ParentNotFoundError,
+    resolve_new_file_order,
+    validate_parent_assignment,
+)
+from services.project_service import (
+    create_project_with_default_folders,
+    resolve_template_lang,
+)
 from utils.logger import get_logger, log_with_context
+from utils.title_sequence import resolve_persisted_sequence_order
 
 logger = get_logger(__name__)
 
@@ -57,7 +69,17 @@ class FileCreate(BaseModel):
     title: str = Field(..., description="File title")
     file_type: str = Field(default="draft", description="File type (outline, draft, character, lore, etc.)")
     content: str = Field(default="", description="File content")
-    parent_id: str | None = Field(default=None, description="Parent folder ID")
+    parent_id: str | None = Field(default=None, description="Parent folder ID (a folder in the same project)")
+    order: int | None = Field(
+        default=None,
+        ge=0,
+        le=MAX_FILE_ORDER,
+        description=(
+            "Sort order among siblings. Omitted: taken from a chapter number in the title/metadata, "
+            "else appended after the last sibling. draft/outline/script files with chapter-like titles "
+            "(第N章 / Chapter N) always sort by N."
+        ),
+    )
     metadata: dict | None = Field(default=None, description="Additional metadata")
 
 
@@ -66,6 +88,16 @@ class FileUpdate(BaseModel):
 
     title: str | None = Field(default=None, description="New title")
     content: str | None = Field(default=None, description="New content")
+    order: int | None = Field(default=None, ge=0, le=MAX_FILE_ORDER, description="New sort order among siblings")
+
+
+class FileMove(BaseModel):
+    """Request body for moving a file."""
+
+    parent_id: str | None = Field(..., description="Target folder ID in the same project, or null for the project root")
+    order: int | None = Field(
+        default=None, ge=0, le=MAX_FILE_ORDER, description="Optional new sort order among the new siblings"
+    )
 
 
 class FileResponse(BaseModel):
@@ -97,6 +129,18 @@ class FileResponse(BaseModel):
         return {k: v for k, v in self.model_dump().items() if k in fields}
 
 
+class FileWriteResponse(FileResponse):
+    """Response for a content write (create / PUT). Mirrors the web PUT /files/{id}."""
+
+    version_quota_exceeded: bool = Field(
+        default=False,
+        description=(
+            "The content was saved, but no version was recorded because the plan's per-file "
+            "version quota is full."
+        ),
+    )
+
+
 class _FilteredFileResponse(BaseModel):
     """Dynamic response for filtered file fields."""
     model_config = ConfigDict(extra="allow")
@@ -109,6 +153,73 @@ class FileListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class FolderResponse(BaseModel):
+    """A folder created with a new project."""
+
+    id: str
+    title: str
+    file_type: str
+    order: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProjectCreateResponse(ProjectResponse):
+    """Response for project creation: the project plus its default folders."""
+
+    folders: list[FolderResponse]
+
+
+class FileVersionResponse(BaseModel):
+    """Version metadata (no content). Mirrors the web versions API."""
+
+    id: str
+    file_id: str
+    project_id: str
+    version_number: int
+    is_base_version: bool
+    word_count: int
+    char_count: int
+    change_type: str
+    change_source: str
+    change_summary: str | None
+    lines_added: int
+    lines_removed: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FileVersionListResponse(BaseModel):
+    """Paginated version history, newest first."""
+
+    versions: list[FileVersionResponse]
+    total: int
+    limit: int
+    offset: int
+    file_id: str
+    file_title: str
+
+
+class FileVersionDetailResponse(FileVersionResponse):
+    """One version including its full reconstructed content."""
+
+    content: str
+
+
+class FileRollbackResponse(BaseModel):
+    """Result of restoring a file to an earlier version."""
+
+    success: bool
+    message: str
+    file_id: str
+    restored_version: int
+    new_version_number: int | None
+    snapshot_created: bool
+    version_quota_exceeded: bool
+    updated_at: datetime
 
 
 class ProjectCreate(BaseModel):
@@ -124,6 +235,82 @@ class ProjectUpdate(BaseModel):
 
     name: str | None = Field(default=None, min_length=1, max_length=100, description="Project name")
     description: str | None = Field(default=None, max_length=500, description="Project description")
+
+
+# ==================== Helpers ====================
+
+
+def _load_accessible_file(session, user_id: str, api_key, file_id: str) -> File:
+    """Load a live file the key may use: another user's file is 404, a project outside the key's allowlist 403."""
+    file = session.get(File, file_id)
+    if not file or file.is_deleted:
+        raise APIException(error_code=ErrorCode.FILE_NOT_FOUND, status_code=404)
+
+    project = session.get(Project, file.project_id)
+    if not project or project.owner_id != user_id or project.is_deleted:
+        raise APIException(error_code=ErrorCode.FILE_NOT_FOUND, status_code=404)
+
+    if not verify_project_access(api_key, file.project_id):
+        raise APIException(
+            error_code=ErrorCode.NOT_AUTHORIZED,
+            status_code=403,
+            detail="API Key does not have access to this project",
+        )
+    return file
+
+
+def _validate_parent(session, project_id: str, parent_id: str | None, *, moving_file_id: str | None = None) -> str | None:
+    """services.file_tree_rules.validate_parent_assignment, translated to Agent API errors (400)."""
+    try:
+        return validate_parent_assignment(session, project_id, parent_id, moving_file_id=moving_file_id)
+    except ParentNotFoundError as exc:
+        raise APIException(
+            error_code=ErrorCode.FILE_NOT_FOUND,
+            status_code=400,
+            detail=f"Parent folder {parent_id} not found in this project",
+        ) from exc
+    except ValueError as exc:
+        # Parent is not a folder, or the move would put a folder under itself/its descendant.
+        raise APIException(error_code=ErrorCode.VALIDATION_ERROR, status_code=400, detail=str(exc)) from exc
+
+
+def _file_metadata(file: File) -> dict:
+    if not file.file_metadata:
+        return {}
+    try:
+        parsed = json.loads(file.file_metadata)
+    except Exception:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _schedule_file_index_upsert(background_tasks: BackgroundTasks, file: File, user_id: str) -> None:
+    """Fire-and-forget vector index upsert after a content change; never blocks the write."""
+    try:
+        extra_metadata = _file_metadata(file)
+        if file.parent_id:
+            extra_metadata = {**extra_metadata, "parent_id": file.parent_id}
+
+        from services.llama_index import schedule_index_upsert
+
+        background_tasks.add_task(
+            schedule_index_upsert,
+            project_id=file.project_id,
+            entity_type=file.file_type,
+            entity_id=file.id,
+            title=file.title,
+            content=file.content or "",
+            extra_metadata=extra_metadata,
+            user_id=user_id,
+        )
+    except Exception:
+        log_with_context(
+            logger,
+            logging.DEBUG,
+            "Failed to schedule vector index upsert for updated file",
+            file_id=file.id,
+            project_id=file.project_id,
+        )
 
 
 # ==================== Project Endpoints ====================
@@ -192,18 +379,36 @@ async def get_project(
     return project
 
 
-@router.post("/projects", response_model=ProjectResponse)
+@router.post("/projects", response_model=ProjectCreateResponse)
 async def create_project(
     project_data: ProjectCreate,
+    accept_language: str | None = Header(None, alias="Accept-Language"),
     _rate_limit: int = Depends(require_agent_rate_limit("agent_write", 1000, 3600)),
     context: AgentAuthContext = Depends(require_scope("write")),
 ):
     """
-    Create a new project.
+    Create a new project with the same default folders as the web app.
 
     Requires scope: write
+
+    Folder titles follow Accept-Language (zh default, en supported); folder ids are
+    `{project_id}-{kind}-folder`, e.g. `{project_id}-draft-folder`.
+
+    402 QUOTA_PROJECTS_EXCEEDED when the plan's project limit is reached; 403 when the key
+    is restricted to specific projects (it could not access the new project).
     """
     session, user_id, api_key = context
+
+    if api_key.project_ids is not None:
+        # The key could not read or write the project it creates.
+        raise APIException(
+            error_code=ErrorCode.NOT_AUTHORIZED,
+            status_code=403,
+            detail=(
+                "This API key is limited to specific projects and cannot create new projects. "
+                "Use a key without a project restriction, or create the project in the web app."
+            ),
+        )
 
     project = Project(
         name=project_data.name,
@@ -211,9 +416,20 @@ async def create_project(
         project_type=project_data.project_type,
         owner_id=user_id,
     )
-    session.add(project)
-    session.commit()
-    session.refresh(project)
+    try:
+        # Also enforces the plan's project limit (402) and records project_created, like the web.
+        folders = create_project_with_default_folders(
+            session, project, resolve_template_lang(accept_language)
+        )
+    except APIException:
+        raise
+    except Exception:
+        logger.exception("Agent API: failed to create project with default folders")
+        raise APIException(
+            error_code=ErrorCode.INTERNAL_SERVER_ERROR,
+            status_code=500,
+            detail="Failed to initialize project structure.",
+        ) from None
 
     log_with_context(
         logger,
@@ -222,9 +438,13 @@ async def create_project(
         user_id=user_id,
         api_key_id=api_key.id,
         project_id=project.id,
+        folder_count=len(folders),
     )
 
-    return project
+    return ProjectCreateResponse(
+        **ProjectResponse.model_validate(project).model_dump(),
+        folders=[FolderResponse.model_validate(f) for f in folders],
+    )
 
 
 @router.put("/projects/{project_id}", response_model=ProjectResponse)
@@ -414,7 +634,7 @@ async def list_files(
     )
 
 
-@router.post("/projects/{project_id}/files", response_model=FileResponse)
+@router.post("/projects/{project_id}/files", response_model=FileWriteResponse)
 async def create_file(
     project_id: str,
     file_data: FileCreate,
@@ -430,15 +650,7 @@ async def create_file(
     """
     session, user_id, api_key = context
 
-    # Validate parent_id if provided
-    if file_data.parent_id:
-        parent = session.get(File, file_data.parent_id)
-        if not parent or parent.is_deleted or parent.project_id != project_id:
-            raise APIException(
-                error_code=ErrorCode.FILE_NOT_FOUND,
-                status_code=400,
-                detail="Parent folder not found",
-            )
+    parent_id = _validate_parent(session, project_id, file_data.parent_id)
 
     # Serialize metadata
     metadata_str = json.dumps(file_data.metadata) if file_data.metadata else None
@@ -448,12 +660,28 @@ async def create_file(
         title=file_data.title,
         content=file_data.content,
         file_type=file_data.file_type,
-        parent_id=file_data.parent_id,
-        order=0,
+        parent_id=parent_id,
+        order=resolve_new_file_order(
+            session,
+            project_id,
+            parent_id,
+            title=file_data.title,
+            metadata=file_data.metadata,
+            file_type=file_data.file_type,
+            requested_order=file_data.order,
+        ),
         file_metadata=metadata_str,
     )
 
     session.add(file)
+    session.flush()
+    version_quota_exceeded = False
+    if file.content:
+        # Version 1 = the created content, so the first later edit can be rolled back to it.
+        version_quota_exceeded = _snapshot_agent_file_content(
+            session, file, user_id, api_key.id,
+            change_type=CHANGE_TYPE_CREATE, change_summary="Created via Agent API",
+        )
     session.commit()
     session.refresh(file)
 
@@ -495,7 +723,9 @@ async def create_file(
             file_id=file.id,
         )
 
-    return file
+    response = FileWriteResponse.model_validate(file)
+    response.version_quota_exceeded = version_quota_exceeded
+    return response
 
 
 @router.get("/files/{file_id}", response_model=_FilteredFileResponse)
@@ -558,30 +788,50 @@ async def get_file(
     return FileResponse.model_validate(file).to_filtered_dict(requested_fields)
 
 
-def _snapshot_agent_file_update(session, file: File, user_id: str, api_key_id: str) -> None:
-    """Record a FileVersion for an Agent API content update, like the web PUT /files/{id}.
+def _snapshot_agent_file_content(
+    session,
+    file: File,
+    user_id: str,
+    api_key_id: str,
+    *,
+    change_type: str = CHANGE_TYPE_AI_EDIT,
+    change_summary: str = "Updated via Agent API",
+) -> bool:
+    """Record a FileVersion for Agent API content (create or update), like the web PUT /files/{id}.
 
     Same contract as api/files.py update_file: the version is attributed to the user
     (quota_source=user, so an API key cannot bypass the per-file version quota), it is
     flushed inside a savepoint of the caller's transaction, and a quota overflow or snapshot
     failure never blocks the content save.
-    """
-    from services.file_version import get_file_version_service
 
+    Returns:
+        True when no version was recorded because the per-file version quota is full
+        (reported to the caller as `version_quota_exceeded`).
+    """
     try:
         with session.begin_nested():
             get_file_version_service().create_version(
                 session=session,
                 file_id=file.id,
                 new_content=file.content,
-                change_type=CHANGE_TYPE_AI_EDIT,
+                change_type=change_type,
                 change_source=CHANGE_SOURCE_USER,
-                change_summary="Updated via Agent API",
+                change_summary=change_summary,
                 user_id=user_id,
                 quota_source=CHANGE_SOURCE_USER,
                 commit=False,
             )
     except Exception as e:
+        if isinstance(e, APIException) and e.error_code == ErrorCode.QUOTA_FILE_VERSIONS_EXCEEDED:
+            log_with_context(
+                logger,
+                logging.INFO,
+                "Agent API: version quota reached, saved file content without a version snapshot",
+                file_id=file.id,
+                api_key_id=api_key_id,
+                operation=f"agent_file_{change_type}_create_version",
+            )
+            return True
         log_with_context(
             logger,
             logging.WARNING,
@@ -589,11 +839,12 @@ def _snapshot_agent_file_update(session, file: File, user_id: str, api_key_id: s
             error=str(e),
             file_id=file.id,
             api_key_id=api_key_id,
-            operation="agent_update_file_create_version",
+            operation=f"agent_file_{change_type}_create_version",
         )
+    return False
 
 
-@router.put("/files/{file_id}", response_model=FileResponse)
+@router.put("/files/{file_id}", response_model=FileWriteResponse)
 async def update_file(
     file_id: str,
     file_data: FileUpdate,
@@ -602,34 +853,14 @@ async def update_file(
     context: AgentAuthContext = Depends(require_scope("write")),
 ):
     """
-    Update file content.
+    Update file content, title and/or sort order.
 
     Requires scope: write
     Requires project access (via file ownership)
     """
     session, user_id, api_key = context
 
-    file = session.get(File, file_id)
-    if not file or file.is_deleted:
-        raise APIException(
-            error_code=ErrorCode.FILE_NOT_FOUND,
-            status_code=404,
-        )
-
-    # Verify project access
-    project = session.get(Project, file.project_id)
-    if not project or project.owner_id != user_id or project.is_deleted:
-        raise APIException(
-            error_code=ErrorCode.FILE_NOT_FOUND,
-            status_code=404,
-        )
-
-    if not verify_project_access(api_key, file.project_id):
-        raise APIException(
-            error_code=ErrorCode.NOT_AUTHORIZED,
-            status_code=403,
-            detail="API Key does not have access to this project",
-        )
+    file = _load_accessible_file(session, user_id, api_key, file_id)
 
     # Update fields
     if file_data.title is not None:
@@ -639,10 +870,20 @@ async def update_file(
     if file_data.content is not None:
         file.content = file_data.content
 
+    if file_data.order is not None or file_data.title is not None:
+        # Same rule as the web PUT: chapter-like titles keep sorting by their number.
+        file.order = resolve_persisted_sequence_order(
+            file_data.order if file_data.order is not None else file.order,
+            title=file.title,
+            metadata=_file_metadata(file),
+            file_type=file.file_type,
+        )
+
     file.updated_at = utcnow()
 
+    version_quota_exceeded = False
     if content_changed:
-        _snapshot_agent_file_update(session, file, user_id, api_key.id)
+        version_quota_exceeded = _snapshot_agent_file_content(session, file, user_id, api_key.id)
 
     session.commit()
     session.refresh(file)
@@ -657,39 +898,11 @@ async def update_file(
         project_id=file.project_id,
     )
 
-    # Fire-and-forget vector index upsert
-    try:
-        extra_metadata = {}
-        if file.file_metadata:
-            try:
-                extra_metadata = json.loads(file.file_metadata)
-            except Exception:
-                extra_metadata = {}
-        if file.parent_id:
-            extra_metadata = {**extra_metadata, "parent_id": file.parent_id}
+    _schedule_file_index_upsert(background_tasks, file, user_id)
 
-        from services.llama_index import schedule_index_upsert
-
-        background_tasks.add_task(
-            schedule_index_upsert,
-            project_id=file.project_id,
-            entity_type=file.file_type,
-            entity_id=file.id,
-            title=file.title,
-            content=file.content or "",
-            extra_metadata=extra_metadata,
-            user_id=user_id,
-        )
-    except Exception:
-        log_with_context(
-            logger,
-            logging.DEBUG,
-            "Failed to schedule vector index upsert for updated file",
-            file_id=file_id,
-            project_id=file.project_id,
-        )
-
-    return file
+    response = FileWriteResponse.model_validate(file)
+    response.version_quota_exceeded = version_quota_exceeded
+    return response
 
 
 @router.delete("/files/{file_id}")
@@ -768,10 +981,197 @@ async def delete_file(
     return {"message": "File deleted successfully"}
 
 
+@router.post("/files/{file_id}/move", response_model=FileResponse)
+def move_file(
+    file_id: str,
+    move_data: FileMove,
+    background_tasks: BackgroundTasks,
+    _rate_limit: int = Depends(require_agent_rate_limit("agent_write", 1000, 3600)),
+    context: AgentAuthContext = Depends(require_scope("write")),
+):
+    """
+    Move a file into a folder of the same project (parent_id=null: project root).
+
+    Requires scope: write
+    Requires project access (via file ownership)
+
+    The target must be a folder in the same project; a folder cannot be moved under
+    itself or one of its descendants. Optional `order` sets the new sibling order.
+    """
+    session, user_id, api_key = context
+
+    file = _load_accessible_file(session, user_id, api_key, file_id)
+    file.parent_id = _validate_parent(session, file.project_id, move_data.parent_id, moving_file_id=file.id)
+    if move_data.order is not None:
+        file.order = resolve_persisted_sequence_order(
+            move_data.order,
+            title=file.title,
+            metadata=_file_metadata(file),
+            file_type=file.file_type,
+        )
+    file.updated_at = utcnow()
+
+    session.commit()
+    session.refresh(file)
+
+    log_with_context(
+        logger,
+        logging.INFO,
+        "Agent API: Moved file",
+        user_id=user_id,
+        api_key_id=api_key.id,
+        file_id=file_id,
+        project_id=file.project_id,
+        new_parent_id=file.parent_id,
+    )
+
+    # The index stores parent_id as metadata; keep it in sync with the new location.
+    _schedule_file_index_upsert(background_tasks, file, user_id)
+
+    return file
+
+
+# ==================== Version Endpoints ====================
+
+
+@router.get("/files/{file_id}/versions", response_model=FileVersionListResponse)
+def list_file_versions(
+    file_id: str,
+    limit: int = Query(50, ge=1, le=100, description="Max results per page"),
+    offset: int = Query(0, ge=0, description="Results offset"),
+    include_auto_save: bool = Query(False, description="Include auto-save versions"),
+    _rate_limit: int = Depends(require_agent_rate_limit("agent_read", 2000, 3600)),
+    context: AgentAuthContext = Depends(require_scope("read")),
+):
+    """
+    List a file's version history, newest first (metadata only, no content).
+
+    Requires scope: read
+    Requires project access (via file ownership)
+    """
+    session, user_id, api_key = context
+
+    file = _load_accessible_file(session, user_id, api_key, file_id)
+    service = get_file_version_service()
+    versions = service.get_versions(
+        session=session,
+        file_id=file_id,
+        limit=limit,
+        offset=offset,
+        include_auto_save=include_auto_save,
+    )
+    total = service.get_version_count(session, file_id, include_auto_save=include_auto_save)
+
+    return FileVersionListResponse(
+        versions=[FileVersionResponse.model_validate(v) for v in versions],
+        total=total,
+        limit=limit,
+        offset=offset,
+        file_id=file_id,
+        file_title=file.title,
+    )
+
+
+def _require_version(session, file_id: str, version_number: int) -> FileVersion:
+    version = get_file_version_service().get_version_by_number(session, file_id, version_number)
+    if not version:
+        raise APIException(
+            error_code=ErrorCode.VERSION_NOT_FOUND,
+            status_code=404,
+            detail=f"Version {version_number} not found for this file",
+        )
+    return version
+
+
+@router.get("/files/{file_id}/versions/{version_number}", response_model=FileVersionDetailResponse)
+def get_file_version(
+    file_id: str,
+    version_number: int,
+    _rate_limit: int = Depends(require_agent_rate_limit("agent_read", 2000, 3600)),
+    context: AgentAuthContext = Depends(require_scope("read")),
+):
+    """
+    Get one version of a file, including its full content.
+
+    Requires scope: read
+    Requires project access (via file ownership)
+    """
+    session, user_id, api_key = context
+
+    _load_accessible_file(session, user_id, api_key, file_id)
+    version = _require_version(session, file_id, version_number)
+    content = get_file_version_service().get_content_at_version(session, file_id, version_number)
+
+    return FileVersionDetailResponse(
+        **FileVersionResponse.model_validate(version).model_dump(),
+        content=content,
+    )
+
+
+@router.post("/files/{file_id}/versions/{version_number}/rollback", response_model=FileRollbackResponse)
+def rollback_file_version(
+    file_id: str,
+    version_number: int,
+    background_tasks: BackgroundTasks,
+    _rate_limit: int = Depends(require_agent_rate_limit("agent_write", 1000, 3600)),
+    context: AgentAuthContext = Depends(require_scope("write")),
+):
+    """
+    Restore a file's content to an earlier version.
+
+    Requires scope: write
+    Requires project access (via file ownership)
+
+    Same semantics as the web rollback: history is kept, the restored content becomes a new
+    version (change_type=restore) when the per-file version quota allows it; the content is
+    restored even when the quota is full (version_quota_exceeded=true, new_version_number=null).
+    """
+    session, user_id, api_key = context
+
+    _load_accessible_file(session, user_id, api_key, file_id)
+    _require_version(session, file_id, version_number)
+
+    try:
+        file, new_version, version_quota_exceeded = get_file_version_service().rollback_to_version(
+            session,
+            file_id,
+            version_number,
+            user_id=user_id,
+        )
+    except ValueError as e:
+        raise APIException(error_code=ErrorCode.VALIDATION_ERROR, status_code=400, detail=str(e)) from e
+
+    log_with_context(
+        logger,
+        logging.INFO,
+        "Agent API: Rolled back file",
+        user_id=user_id,
+        api_key_id=api_key.id,
+        file_id=file_id,
+        project_id=file.project_id,
+        restored_version=version_number,
+        new_version_number=new_version.version_number if new_version is not None else None,
+    )
+
+    _schedule_file_index_upsert(background_tasks, file, user_id)
+
+    return FileRollbackResponse(
+        success=True,
+        message=f"Successfully rolled back to version {version_number}",
+        file_id=file_id,
+        restored_version=version_number,
+        new_version_number=new_version.version_number if new_version is not None else None,
+        snapshot_created=new_version is not None,
+        version_quota_exceeded=version_quota_exceeded,
+        updated_at=file.updated_at,
+    )
+
+
 # ==================== Writing Context Endpoint ====================
 
 MAX_CONTENT_SNIPPET = 500
 MAX_PAYLOAD_BYTES = 50 * 1024  # 50KB
+WRITING_CONTEXT_TIMEOUT_SECONDS = 10.0
 
 
 @router.get("/projects/{project_id}/writing-context")
@@ -813,7 +1213,7 @@ async def get_writing_context(
     try:
         context_data = await asyncio.wait_for(
             asyncio.to_thread(_assemble_in_thread),
-            timeout=10.0,
+            timeout=WRITING_CONTEXT_TIMEOUT_SECONDS,
         )
     except TimeoutError:
         log_with_context(
@@ -824,7 +1224,7 @@ async def get_writing_context(
             user_id=user_id,
         )
         raise APIException(
-            error_code=ErrorCode.INTERNAL_ERROR,
+            error_code=ErrorCode.SERVICE_UNAVAILABLE,
             status_code=504,
             detail="Writing context assembly timed out",
         ) from None

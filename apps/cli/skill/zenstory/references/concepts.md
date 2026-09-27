@@ -9,6 +9,7 @@ Derived from the zenstory backend (`models/file_model.py`, `config/project_templ
 - [Files and file types](#files-and-file-types)
 - [Folder conventions](#folder-conventions)
 - [Ordering](#ordering)
+- [Version history](#version-history)
 - [Writing context](#writing-context)
 - [Search](#search)
 - [API keys and scopes](#api-keys-and-scopes)
@@ -44,7 +45,8 @@ the built-in AI understand. `--metadata` can only be set when creating a file.
 
 ## Folder conventions
 
-Projects created in the **web app** get root folders with predictable ids
+Every project — created in the **web app** or through the **Agent API**
+(`zenstory projects create`) — gets root folders with predictable ids
 `<projectId>-<key>`:
 
 | Project type | Folders (order) → file type stored inside |
@@ -53,26 +55,40 @@ Projects created in the **web app** get root folders with predictable ids
 | `short` | `character-folder` 人物/Characters → character; `outline-folder` 构思/Concept → outline; `material-folder` 素材/Materials → snippet; `draft-folder` 正文/Drafts → draft |
 | `screenplay` | `character-folder` 角色/Characters → character; `lore-folder` 设定/World Building → lore; `material-folder` 素材/Materials → snippet; `outline-folder` 分集大纲/Episode Outlines → outline; `script-folder` 剧本/Scripts → script |
 
-Folder titles are Chinese or English depending on the user's language at creation time.
-Users may add subfolders (e.g. per volume: `第一卷`) — check `zenstory files tree`.
-
-Projects created through the **Agent API** (`zenstory projects create`) start with no
-folders. Create the ones you need with `files create --type folder --title ...` and use
-the returned ids as `--parent`; the `<projectId>-draft-folder` style ids will not exist.
+Folder titles are Chinese or English depending on the user's language at creation time
+(Agent API: the `Accept-Language` header, Chinese by default). Users may rename or delete
+folders and add subfolders (e.g. per volume: `第一卷`) — check `zenstory files tree`.
 
 Rules of thumb:
 
-- Put each file under the folder for its type; do not nest files under non-folder files.
+- Put each file under the folder for its type. The API only accepts a folder of the same
+  project as parent; move misplaced files with `files move <fileId> --parent <folderId>`.
 - Match the naming pattern already used (e.g. `第十二章 标题` vs `Chapter 12: Title`).
 - Before creating a character/lore entry, search for an existing one to update instead.
 
 ## Ordering
 
 `order` controls position among siblings (lower first); the API lists by `order`, then
-newest first. Files created through the Agent API always get `order: 0`, and the API
-cannot change `order` — the user can drag files into place in the web app. Because the
-writing-context engine picks the "previous chapter" by `order`, chapter titles with
-numbers are the reliable way to identify sequence.
+newest first. Set it with `files create --order <n>`, `files put <fileId> --order <n>` or
+`files move ... --order <n>`. Without `--order`, a new file takes the chapter number found
+in its title or metadata (`chapter_number`, `episode_number`, ...), else it goes after its
+last sibling. For `draft`, `outline` and `script` files a chapter-like title (`第N章`,
+`第N集`, `Chapter N`) always sorts by N — the title wins over an explicit `--order`,
+exactly as in the web app. The writing-context
+engine picks the "previous chapter" by `order`, so give chapters their number.
+
+## Version history
+
+Each file has a version history shared with the web app's history panel. A version is
+recorded when a file is created with content and whenever its content changes (web
+editor, zenstory AI, or `files put`); title/order-only updates and moves record none.
+Versions are numbered from 1 per file; `files versions` lists them newest first.
+`files rollback <fileId> <n> --yes` restores version n and records the restored content
+as a new version, so nothing is lost. Versions are recorded unless the plan's per-file
+version quota is full: then creates, edits and rollbacks still save the content but add no
+new version (`version_quota_exceeded: true`), the CLI prints a warning, and the only copy
+of the previous content is the local backup `files put` keeps
+(`~/.cache/zenstory/backups`).
 
 ## Writing context
 
@@ -106,7 +122,7 @@ fall back to `files list` + `files get`.
 
 Keys look like `eg_` + 64 hex characters and are created in zenstory
 **Settings → Agent**. Scopes: `read` (list/get/search/context) and `write`
-(create/update/delete). New keys default to `read` only. A key can optionally be limited
+(create/update/move/rollback/delete). New keys default to `read` only. A key can optionally be limited
 to specific projects; other projects then return 403 (or are hidden from
 `projects list`). Deletes are soft deletes, but deleted files are not reachable through
 the Agent API afterwards — treat them as permanent from the agent's point of view.
