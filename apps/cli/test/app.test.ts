@@ -421,7 +421,8 @@ describe('files', () => {
       { id: 'c1', title: '第一章', file_type: 'draft', parent_id: 'd', order: 0 },
       { id: 'o', title: 'orphan', file_type: 'draft', parent_id: 'gone', order: 0 },
     ]);
-    expect(tree.map((n) => n.id)).toEqual(['l', 'o', 'd']);
+    // 同 order 的根节点按标题码点排序（与运行环境的语言设置无关）：'orphan' < '设定'
+    expect(tree.map((n) => n.id)).toEqual(['o', 'l', 'd']);
     expect(tree[2].children.map((n) => n.id)).toEqual(['c1', 'c2']);
   });
 

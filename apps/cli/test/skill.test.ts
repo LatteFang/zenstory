@@ -117,7 +117,7 @@ describe('bundled skill (Agent Skills spec)', () => {
 
   it('metadata.version matches package.json', () => {
     const pkg = JSON.parse(readFileSync(join(dir, '..', '..', 'package.json'), 'utf8')) as { version: string };
-    expect(match![1]).toMatch(new RegExp(`^  version: "${pkg.version.replace(/\./g, '\\.')}"$`, 'm'));
+    expect(match![1].split('\n')).toContain(`  version: "${pkg.version}"`);
   });
 
   it('never tells users to put the key on the command line', () => {

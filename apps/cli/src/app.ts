@@ -224,6 +224,10 @@ interface TreeNode extends ZsFile {
   children: TreeNode[];
 }
 
+function compareCodePoints(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 export function buildTree(files: ZsFile[]): TreeNode[] {
   const nodes = new Map<string, TreeNode>();
   for (const f of files) if (f.id) nodes.set(f.id, { ...f, children: [] });
@@ -250,7 +254,9 @@ export function buildTree(files: ZsFile[]): TreeNode[] {
     mark(node);
   }
   const sort = (arr: TreeNode[]) => {
-    arr.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.title).localeCompare(String(b.title)));
+    // 同 order 时按标题的码点顺序、再按 id 排序：localeCompare 的结果随运行环境的语言设置变化，
+    // 会让同一份数据在不同机器上排出不同的树。
+    arr.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || compareCodePoints(String(a.title), String(b.title)) || compareCodePoints(String(a.id ?? ''), String(b.id ?? '')));
     arr.forEach((n) => sort(n.children));
   };
   sort(roots);
