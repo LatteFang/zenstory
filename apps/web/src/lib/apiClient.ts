@@ -272,6 +272,16 @@ export function getAccessToken(): string | null {
 }
 
 /**
+ * Error codes whose string `error_detail` is a user-facing reason worth
+ * showing after the localized headline (the generic headline alone would not
+ * tell the user what to fix).
+ */
+export const ERROR_CODES_WITH_REASON: ReadonlySet<string> = new Set([
+  'ERR_SKILL_PACKAGE_INVALID',
+  'ERR_SKILL_PACKAGE_TOO_LARGE',
+]);
+
+/**
  * Custom error class for API errors with HTTP status code.
  *
  * Extends the standard Error class with an HTTP status code for better
@@ -324,21 +334,60 @@ export class ApiError extends Error {
   public details?: Record<string, unknown>;
 
   /**
+   * Plain-text `error_detail` from the backend, when it is a string.
+   *
+   * For codes in {@link ERROR_CODES_WITH_REASON} this is the user-facing reason
+   * (e.g. which file in a skill package is invalid) and is appended to the
+   * localized headline in `message`.
+   */
+  public detailText?: string;
+
+  /**
    * Create a new ApiError.
    *
    * @param status - HTTP status code (e.g., 401, 404, 500)
    * @param message - Error message or error code (will be translated if starts with 'ERR_')
    * @param details - Structured error_detail object when the backend provides one
+   * @param detailText - String error_detail when the backend provides one
    */
-  constructor(status: number, message: string, details?: Record<string, unknown>) {
+  constructor(
+    status: number,
+    message: string,
+    details?: Record<string, unknown>,
+    detailText?: string,
+  ) {
     const normalized = message.trim();
-    super(toUserErrorMessage(normalized));
+    const headline = toUserErrorMessage(normalized);
+    const reason = detailText?.trim() || undefined;
+    super(
+      reason && reason !== normalized && ERROR_CODES_WITH_REASON.has(normalized)
+        ? `${headline}: ${reason}`
+        : headline,
+    );
     this.status = status;
     this.name = 'ApiError';
     this.rawMessage = normalized;
     this.errorCode = normalized.startsWith('ERR_') ? normalized : undefined;
     this.details = details;
+    this.detailText = reason;
   }
+}
+
+/**
+ * Build an ApiError from a failed response's parsed JSON body (or null when
+ * the body could not be parsed).
+ */
+export function apiErrorFromPayload(status: number, errorData: unknown): ApiError {
+  const errorMessage = resolveApiErrorMessage(errorData, `API error: ${status}`);
+  const rawDetail = (errorData as Record<string, unknown> | null)?.error_detail;
+  // 保留结构化的 error_detail：409 冲突等场景需要里面的 current_content /
+  // current_updated_at 才能正确恢复，压成一句文案就没法用了
+  const details =
+    rawDetail && typeof rawDetail === 'object' && !Array.isArray(rawDetail)
+      ? (rawDetail as Record<string, unknown>)
+      : undefined;
+  const detailText = typeof rawDetail === 'string' ? rawDetail : undefined;
+  return new ApiError(status, errorMessage, details, detailText);
 }
 
 /**
@@ -430,21 +479,13 @@ export async function apiCall<T>(
 
   // Handle other errors
   if (!response.ok) {
-    let errorMessage = `API error: ${response.status}`;
-    let errorDetails: Record<string, unknown> | undefined;
+    let errorData: unknown = null;
     try {
-      const errorData = await response.json();
-      errorMessage = resolveApiErrorMessage(errorData, errorMessage);
-      // 保留结构化的 error_detail：409 冲突等场景需要里面的 current_content /
-      // current_updated_at 才能正确恢复，压成一句文案就没法用了
-      const rawDetail = (errorData as Record<string, unknown> | null)?.error_detail;
-      if (rawDetail && typeof rawDetail === 'object' && !Array.isArray(rawDetail)) {
-        errorDetails = rawDetail as Record<string, unknown>;
-      }
+      errorData = await response.json();
     } catch {
       // Could not parse error response
     }
-    throw new ApiError(response.status, errorMessage, errorDetails);
+    throw apiErrorFromPayload(response.status, errorData);
   }
 
   return response.json();

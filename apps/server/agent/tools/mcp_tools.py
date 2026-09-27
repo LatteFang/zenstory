@@ -11,7 +11,7 @@ import json
 import os
 import re
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import Any
 from uuid import uuid4
 
@@ -273,6 +273,28 @@ class _PendingEmptyFileState:
             self._reservations.pop(ticket, None)
 
 
+class _SkillUsageClaims:
+    """本次请求里已记录过用量的技能 ID（跨子任务/线程共享，原因同 _PendingEmptyFileState）。
+
+    一次请求里同一技能只记一次用量：显式选择（selected）的技能预先登记，
+    之后模型再 load_skill 它、或多次 load_skill 同一技能都不重复记。
+    """
+
+    __slots__ = ("_lock", "_skill_ids")
+
+    def __init__(self, skill_ids: Iterable[str] | None = None) -> None:
+        self._lock = threading.Lock()
+        self._skill_ids: set[str] = {str(item) for item in (skill_ids or []) if item}
+
+    def claim(self, skill_id: str) -> bool:
+        """Return True the first time a skill id is claimed in this request."""
+        with self._lock:
+            if skill_id in self._skill_ids:
+                return False
+            self._skill_ids.add(skill_id)
+            return True
+
+
 class ToolContext:
     """
     Holds session and user_id for tool execution.
@@ -290,8 +312,14 @@ class ToolContext:
         session_id: str | None,
         create_session_func: Callable[[], Session] | None = None,
         current_agent: str | None = None,
+        recorded_skill_ids: Iterable[str] | None = None,
     ) -> None:
-        """Set the execution context for tools (request-scoped)."""
+        """Set the execution context for tools (request-scoped).
+
+        Args:
+            recorded_skill_ids: 本次请求里已记录过用量的技能（显式选择的技能），
+                load_skill 不再为它们重复记用量。
+        """
         cls._cleanup_owned_session()
         _tool_context_var.set({
             "session": session,
@@ -301,6 +329,7 @@ class ToolContext:
             "create_session_func": create_session_func,
             "current_agent": current_agent,
             "pending_empty_file_state": _PendingEmptyFileState(),
+            "skill_usage_claims": _SkillUsageClaims(recorded_skill_ids),
         })
         _owned_session_var.set(None)
         _pending_empty_file_var.set(None)
@@ -417,6 +446,15 @@ class ToolContext:
             state.clear_all()
         _tool_context_var.set(None)
         _pending_empty_file_var.set(None)
+
+    @classmethod
+    def claim_skill_usage(cls, skill_id: str) -> bool:
+        """True 表示本次请求第一次为该技能记用量；没有请求上下文时总是 True。"""
+        context = _tool_context_var.get()
+        claims = context.get("skill_usage_claims") if isinstance(context, dict) else None
+        if isinstance(claims, _SkillUsageClaims):
+            return claims.claim(skill_id)
+        return True
 
     @classmethod
     def _get_pending_empty_file_state(cls) -> _PendingEmptyFileState | None:
@@ -1792,6 +1830,140 @@ async def request_clarification(args: dict[str, Any]) -> dict[str, Any]:
     }, tool_name=tool_name)
 
 
+async def load_skill(args: dict[str, Any]) -> dict[str, Any]:
+    """按名称加载一个已启用技能的完整方法与资源清单（技能 L2）。"""
+    if _should_offload_tool_execution():
+        return await asyncio.to_thread(_run_sync_tool_with_owned_session_cleanup, _load_skill_sync, args)
+    return _load_skill_sync(args)
+
+
+def _resolve_skill_for_tool(session: Session, tool_name: str, name: str):
+    """Resolve an active skill for the current user; returns (skill, error_result)."""
+    from agent.skills.active_skills import find_active_skill, load_active_skills, suggest_skill_names
+
+    user_id = ToolContext.get_user_id()
+    if not user_id:
+        return None, _make_error("user_id not set", tool_name=tool_name)
+    if not name:
+        return None, _make_error("name is required", tool_name=tool_name)
+
+    skills = load_active_skills(session, user_id)
+    skill = find_active_skill(skills, name)
+    if skill is None:
+        available = suggest_skill_names(skills, name)
+        hint = f"可用技能：{'、'.join(available)}" if available else "当前用户没有启用中的技能"
+        return None, _make_error(f"未找到已启用的技能「{name}」。{hint}", tool_name=tool_name)
+    return skill, None
+
+
+def _load_skill_sync(args: dict[str, Any]) -> dict[str, Any]:
+    """Synchronous load_skill implementation."""
+    from agent.skills.active_skills import list_active_skill_resources
+    from services.skill_usage_service import record_skill_usage
+
+    tool_name = "load_skill"
+    name = str(args.get("name") or "").strip()
+    try:
+        session = ToolContext.get_session()
+        skill, error = _resolve_skill_for_tool(session, tool_name, name)
+        if error is not None:
+            return error
+
+        resources = [
+            {"path": resource.path, "size": resource.size}
+            for resource in list_active_skill_resources(session, skill)
+        ]
+
+        # 用量统计来自 load_skill 调用本身（而不是模型自报的文本标记）；一次请求里同一技能只记一次。
+        # 用独立 session 记录：失败时回滚的只是这条用量，不会波及工具/请求 session 上的待提交状态。
+        project_id = ToolContext.get_project_id()
+        if project_id and ToolContext.claim_skill_usage(skill.id):
+            try:
+                with Session(session.get_bind()) as usage_session:
+                    record_skill_usage(
+                        session=usage_session,
+                        project_id=project_id,
+                        skill_id=skill.id,
+                        skill_name=skill.name,
+                        skill_source=skill.source,
+                        matched_trigger="load_skill",
+                        confidence=1.0,
+                        user_id=ToolContext.get_user_id(),
+                    )
+            except Exception as exc:
+                log_with_context(
+                    logger,
+                    30,  # WARNING
+                    "Failed to record skill usage for load_skill",
+                    skill_id=skill.id,
+                    project_id=project_id,
+                    error=str(exc),
+                    error_type=type(exc).__name__,
+                )
+
+        return _make_result({
+            "status": "success",
+            "data": {
+                "skill_id": skill.id,
+                "skill_name": skill.name,
+                "source": skill.source,
+                "instructions": skill.instructions,
+                "resources": resources,
+            },
+        }, tool_name=tool_name)
+    except Exception as e:
+        return _make_error(str(e), tool_name=tool_name)
+
+
+async def read_skill_resource(args: dict[str, Any]) -> dict[str, Any]:
+    """读取已启用技能的一个参考文件（技能 L3）。"""
+    if _should_offload_tool_execution():
+        return await asyncio.to_thread(
+            _run_sync_tool_with_owned_session_cleanup, _read_skill_resource_sync, args
+        )
+    return _read_skill_resource_sync(args)
+
+
+def _read_skill_resource_sync(args: dict[str, Any]) -> dict[str, Any]:
+    """Synchronous read_skill_resource implementation."""
+    from agent.skills.active_skills import get_skill_resource, list_active_skill_resources
+    from agent.skills.package import normalize_resource_path
+
+    tool_name = "read_skill_resource"
+    name = str(args.get("name") or "").strip()
+    # 与存储时一致做 NFC 归一化，模型给出的分解形式路径也能命中
+    path = normalize_resource_path(str(args.get("path") or ""))
+    try:
+        session = ToolContext.get_session()
+        skill, error = _resolve_skill_for_tool(session, tool_name, name)
+        if error is not None:
+            return error
+        if not path:
+            return _make_error("path is required", tool_name=tool_name)
+
+        resource = get_skill_resource(
+            session,
+            path,
+            user_skill_id=skill.user_skill_id,
+            public_skill_id=skill.public_skill_id,
+        )
+        if resource is None:
+            available = [item.path for item in list_active_skill_resources(session, skill)]
+            hint = f"可用资源：{'、'.join(available)}" if available else "该技能没有资源文件"
+            return _make_error(f"技能「{skill.name}」中没有资源 {path}。{hint}", tool_name=tool_name)
+
+        return _make_result({
+            "status": "success",
+            "data": {
+                "skill_name": skill.name,
+                "path": resource.path,
+                "content": resource.content,
+            },
+        }, tool_name=tool_name)
+    except Exception as e:
+        return _make_error(str(e), tool_name=tool_name)
+
+
 # Export all tools as a list for easy registration
 MCP_TOOL_HANDLERS: dict[str, Callable[[dict[str, Any]], Any]] = {
     "create_file": create_file,
@@ -1802,6 +1974,8 @@ MCP_TOOL_HANDLERS: dict[str, Callable[[dict[str, Any]], Any]] = {
     "update_project": update_project,
     "handoff_to_agent": handoff_to_agent,
     "request_clarification": request_clarification,
+    "load_skill": load_skill,
+    "read_skill_resource": read_skill_resource,
 }
 
 ALL_MCP_TOOLS = list(MCP_TOOL_HANDLERS.values())

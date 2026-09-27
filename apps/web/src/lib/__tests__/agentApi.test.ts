@@ -229,6 +229,29 @@ describe('agentApi', () => {
       expect(body.session_id).toBe('session-123')
     })
 
+    it('passes selected_skill_ids in stream request body only when non-empty', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: createMockStream([]),
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      streamAgentRequest(
+        { project_id: 'test-project', message: 'test', selected_skill_ids: ['s1', 's2'] },
+        {}
+      )
+      streamAgentRequest(
+        { project_id: 'test-project', message: 'test', selected_skill_ids: [] },
+        {}
+      )
+
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body).selected_skill_ids).toEqual(['s1', 's2'])
+      expect(JSON.parse(mockFetch.mock.calls[1][1].body)).not.toHaveProperty('selected_skill_ids')
+    })
+
     it('calls onContent for each content chunk', async () => {
       const onContent = vi.fn()
       const mockStream = createMockStream([

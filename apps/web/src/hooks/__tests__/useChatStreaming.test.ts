@@ -1362,9 +1362,40 @@ describe('useChatStreaming', () => {
 
         expect(result.current.matchedSkills).toHaveLength(1)
         expect(result.current.matchedSkills[0]).toEqual({
+          id: 'skill-123',
           name: 'Auto-correct',
           trigger: '/fix',
         })
+      })
+
+      it('appends skills matched later in the same turn and dedupes by id', () => {
+        const { result } = renderHook(() => useChatStreaming())
+        const deps = createMockDeps()
+        const callbacks = result.current.getStreamCallbacks(deps)
+
+        act(() => {
+          callbacks.onSkillMatched('skill-1', '悬念大师', 'selected')
+          callbacks.onSkillMatched('skill-2', '节奏控', 'load_skill')
+          callbacks.onSkillMatched('skill-1', '悬念大师', 'load_skill')
+        })
+
+        expect(result.current.matchedSkills).toEqual([
+          { id: 'skill-1', name: '悬念大师', trigger: 'selected' },
+          { id: 'skill-2', name: '节奏控', trigger: 'load_skill' },
+        ])
+      })
+
+      it('dedupes by name when the skill id is missing', () => {
+        const { result } = renderHook(() => useChatStreaming())
+        const deps = createMockDeps()
+        const callbacks = result.current.getStreamCallbacks(deps)
+
+        act(() => {
+          callbacks.onSkillMatched('', 'Fix', 'load_skill')
+          callbacks.onSkillMatched('', 'Fix', 'load_skill')
+        })
+
+        expect(result.current.matchedSkills).toEqual([{ name: 'Fix', trigger: 'load_skill' }])
       })
     })
 

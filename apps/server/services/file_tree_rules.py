@@ -12,14 +12,27 @@ REST 层捕获后转成带 error_code 的 APIException，Agent 工具层转成�
 错误文本。规则本身只有这一份。
 """
 
-from sqlmodel import Session
+from collections.abc import Mapping
+from typing import Any
+
+from sqlalchemy import func
+from sqlmodel import Session, select
 
 from models import File
 from models.file_model import FILE_TYPE_FOLDER
+from utils.title_sequence import (
+    extract_title_first_sequence_number,
+    resolve_persisted_sequence_order,
+)
+
+# File.order 是 32 位 INTEGER 列：超出的值在 PostgreSQL 上会以 500 失败，所以请求模型用它做上界。
+MAX_FILE_ORDER = 2_147_483_647
 
 __all__ = [
+    "MAX_FILE_ORDER",
     "ParentNotFoundError",
     "is_descendant_of",
+    "resolve_new_file_order",
     "validate_parent_assignment",
 ]
 
@@ -106,3 +119,42 @@ def validate_parent_assignment(
         raise ValueError("不能把文件移动到它自己或它的子节点下")
 
     return parent_id
+
+
+def resolve_new_file_order(
+    session: Session,
+    project_id: str,
+    parent_id: str | None,
+    *,
+    title: str,
+    metadata: Mapping[str, Any] | None,
+    file_type: str,
+    requested_order: int | None,
+) -> int:
+    """新建文件时要落库的 order。Web 与 Agent API 的建文件入口共用这一份。
+
+    - 调用方显式给了 order：按 resolve_persisted_sequence_order 归一化——
+      「第N章 / Chapter N」这类章节式标题以标题序号为准，覆盖显式值。
+    - 没给 order 但标题/metadata 带序号：用该序号。
+    - 都没有：排到同一父节点下现有兄弟的末尾。
+    """
+    if requested_order is not None:
+        return resolve_persisted_sequence_order(
+            requested_order,
+            title=title,
+            metadata=metadata,
+            file_type=file_type,
+        )
+
+    sequence_number = extract_title_first_sequence_number(title, metadata)
+    if sequence_number is not None:
+        return sequence_number
+
+    max_order = session.exec(
+        select(func.max(File.order)).where(
+            File.project_id == project_id,
+            File.parent_id == parent_id,
+            File.is_deleted.is_(False),
+        )
+    ).one()
+    return 0 if max_order is None else int(max_order) + 1

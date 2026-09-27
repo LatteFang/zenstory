@@ -152,6 +152,8 @@
     "query_files": "Query Files",
     "update_project": "Update Project Status",
     "parallel_execute": "Parallel Execution",
+    "load_skill": "Load Skill",
+    "read_skill_resource": "Read Skill Resource",
     "parallel_summary": "Ran {{total}} tasks in parallel: {{completed}} succeeded, {{failed}} failed",
     "processing": "Processing",
     "processing_ellipsis": "Processing...",
@@ -261,7 +263,9 @@
     "builtin": "Built-in",
     "user": "Custom",
     "hint": "↑↓ Navigate · Enter Select · Esc Cancel",
-    "triggerLabel": "Active Skill"
+    "selectedLabel": "Skills ({{count}}/{{max}})",
+    "removeSelected": "Remove skill {{name}}",
+    "selectionFull": "Up to {{max}} skills per message. Remove one to add another."
   },
   "feedback": {
     "like": "Like",

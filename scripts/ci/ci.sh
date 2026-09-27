@@ -416,6 +416,19 @@ run_frontend_tests() {
     fi
 }
 
+run_cli_tests() {
+    log_step "Running CLI (apps/cli) tests and build..."
+
+    cd "$PROJECT_ROOT"
+    if pnpm --filter zenstory test && pnpm --filter zenstory build; then
+        log_info "CLI tests passed!"
+        return 0
+    else
+        log_error "CLI tests failed"
+        return 1
+    fi
+}
+
 run_backend_tests_docker() {
     log_step "Running backend tests (Docker mode)..."
 
@@ -693,6 +706,12 @@ run_all_docker() {
         failed=1
     fi
 
+    # Run CLI tests
+    if ! run_cli_tests; then
+        log_error "CLI tests failed"
+        failed=1
+    fi
+
     # Run E2E tests
     if ! run_e2e_tests; then
         log_error "E2E tests failed"
@@ -728,6 +747,12 @@ run_all_lite() {
     # Run frontend tests
     if ! run_frontend_tests; then
         log_error "Frontend tests failed"
+        failed=1
+    fi
+
+    # Run CLI tests
+    if ! run_cli_tests; then
+        log_error "CLI tests failed"
         failed=1
     fi
 
@@ -798,6 +823,7 @@ run_test() {
 
     run_backend_tests || failed=1
     run_frontend_tests || failed=1
+    run_cli_tests || failed=1
 
     return $failed
 }

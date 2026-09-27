@@ -17,6 +17,7 @@ from models.material_models import (
     Plot,
     Story,
 )
+from services.material.stories_service import story_in_novel
 
 
 class StatsService:
@@ -38,12 +39,8 @@ class StatsService:
 
         # Count stories
         story_count = session.exec(
-            select(func.count(Story.id))
-            .where(Story.story_line_id.in_(
-                select(func.distinct(Story.story_line_id))
-                .join(Chapter, Chapter.novel_id == novel_id)
-            ))
-        ).one() if session.exec(select(Story.id).limit(1)).first() else 0
+            select(func.count(Story.id)).where(story_in_novel(novel_id))
+        ).one()
 
         # Count characters
         character_count = session.exec(

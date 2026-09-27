@@ -6,23 +6,40 @@ Provides FastAPI router for skill management:
 - POST /skills - Create user skill
 - PUT /skills/{id} - Update user skill
 - DELETE /skills/{id} - Delete user skill
+- POST /skills/import - Import a standard skill package (.zip) or SKILL.md
+- GET /skills/{id}/export - Export a skill as a standard skill package
+- GET/PUT/DELETE /skills/{id}/resources - Manage skill resource files
 """
 
+import asyncio
 import json
 from collections import Counter
+from collections.abc import Callable, Coroutine
 from datetime import datetime
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
+from fastapi.responses import Response
+from fastapi.routing import APIRoute
+from pydantic import BaseModel, Field
 from services.auth import get_current_active_user
 from sqlmodel import Session, select
 
+from agent.skills.package import (
+    MAX_DESCRIPTION_CHARS,
+    MAX_INSTRUCTIONS_CHARS,
+    MAX_NAME_CHARS,
+    MAX_TRIGGER_CHARS,
+    MAX_TRIGGERS,
+    SkillPackageError,
+)
 from config.datetime_utils import utcnow
 from core.error_codes import ErrorCode
 from core.error_handler import APIException
 from core.permissions import require_quota
 from database import get_session
 from models import PublicSkill, User, UserAddedSkill, UserSkill
+from services import skill_package_service
 from utils.logger import get_logger, log_with_context
 
 logger = get_logger(__name__)
@@ -73,6 +90,7 @@ class SkillResponse(BaseModel):
     instructions: str
     source: str  # "builtin", "user", or "added"
     is_active: bool = True
+    resource_count: int = 0
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -84,22 +102,32 @@ class SkillListResponse(BaseModel):
     total: int
 
 
+# 长度限额与导入（agent/skills/package.py）共用同一组常量，手工创建/编辑与导入口径一致。
+SkillName = Annotated[str, Field(min_length=1, max_length=MAX_NAME_CHARS)]
+SkillDescription = Annotated[str, Field(max_length=MAX_DESCRIPTION_CHARS)]
+SkillTriggers = Annotated[
+    list[Annotated[str, Field(max_length=MAX_TRIGGER_CHARS)]],
+    Field(max_length=MAX_TRIGGERS),
+]
+SkillInstructions = Annotated[str, Field(min_length=1, max_length=MAX_INSTRUCTIONS_CHARS)]
+
+
 class CreateSkillRequest(BaseModel):
     """Request model for creating a skill."""
 
-    name: str
-    description: str | None = None
-    triggers: list[str]
-    instructions: str
+    name: SkillName
+    description: SkillDescription | None = None
+    triggers: SkillTriggers
+    instructions: SkillInstructions
 
 
 class UpdateSkillRequest(BaseModel):
     """Request model for updating a skill."""
 
-    name: str | None = None
-    description: str | None = None
-    triggers: list[str] | None = None
-    instructions: str | None = None
+    name: SkillName | None = None
+    description: SkillDescription | None = None
+    triggers: SkillTriggers | None = None
+    instructions: SkillInstructions | None = None
     is_active: bool | None = None
 
 
@@ -129,6 +157,26 @@ async def list_skills(
         )
     user_skills = session.exec(stmt).all()
 
+    # Add user's added public skills
+    added_stmt = select(UserAddedSkill, PublicSkill).join(
+        PublicSkill, UserAddedSkill.public_skill_id == PublicSkill.id
+    ).where(
+        UserAddedSkill.user_id == current_user.id,
+        UserAddedSkill.is_active,
+    )
+    if search_pattern:
+        added_stmt = added_stmt.where(
+            (PublicSkill.name.ilike(search_pattern)) |
+            (PublicSkill.description.ilike(search_pattern))
+        )
+    added_results = session.exec(added_stmt).all()
+
+    user_resource_counts, public_resource_counts = skill_package_service.count_resources(
+        session,
+        user_skill_ids=[db_skill.id for db_skill in user_skills],
+        public_skill_ids=[public.id for _added, public in added_results],
+    )
+
     for db_skill in user_skills:
         triggers = _safe_json_array(
             db_skill.triggers,
@@ -143,23 +191,10 @@ async def list_skills(
             instructions=db_skill.instructions,
             source="user",
             is_active=db_skill.is_active,
+            resource_count=user_resource_counts.get(db_skill.id, 0),
             created_at=db_skill.created_at,
             updated_at=db_skill.updated_at,
         ))
-
-    # Add user's added public skills
-    added_stmt = select(UserAddedSkill, PublicSkill).join(
-        PublicSkill, UserAddedSkill.public_skill_id == PublicSkill.id
-    ).where(
-        UserAddedSkill.user_id == current_user.id,
-        UserAddedSkill.is_active,
-    )
-    if search_pattern:
-        added_stmt = added_stmt.where(
-            (PublicSkill.name.ilike(search_pattern)) |
-            (PublicSkill.description.ilike(search_pattern))
-        )
-    added_results = session.exec(added_stmt).all()
 
     for added, public in added_results:
         # Parse tags as triggers
@@ -176,6 +211,7 @@ async def list_skills(
             instructions=public.instructions,
             source="added",
             is_active=added.is_active,
+            resource_count=public_resource_counts.get(public.id, 0),
         ))
 
     log_with_context(logger, 20, "Skills listed", user_id=current_user.id, count=len(skills))
@@ -258,6 +294,9 @@ async def update_skill(
         field_name="user_skill.triggers",
         record_id=db_skill.id,
     )
+    user_resource_counts, _ = skill_package_service.count_resources(
+        session, user_skill_ids=[db_skill.id]
+    )
     log_with_context(logger, 20, "Skill updated", skill_id=skill_id)
     return SkillResponse(
         id=db_skill.id,
@@ -267,6 +306,7 @@ async def update_skill(
         instructions=db_skill.instructions,
         source="user",
         is_active=db_skill.is_active,
+        resource_count=user_resource_counts.get(db_skill.id, 0),
         created_at=db_skill.created_at,
         updated_at=db_skill.updated_at,
     )
@@ -292,6 +332,7 @@ async def delete_skill(
             detail="Skill not found",
         )
 
+    skill_package_service.delete_user_skill_resources(session, db_skill.id)
     session.delete(db_skill)
     session.commit()
 
@@ -308,7 +349,6 @@ class SkillStatsResponse(BaseModel):
     total_triggers: int
     builtin_count: int
     user_count: int
-    avg_confidence: float
     top_skills: list[dict]
     daily_usage: list[dict]
 
@@ -403,6 +443,9 @@ async def get_my_skills(
             (UserSkill.description.ilike(search_pattern))
         )
     user_skills_db = session.exec(user_stmt).all()
+    user_resource_counts, _ = skill_package_service.count_resources(
+        session, user_skill_ids=[db_skill.id for db_skill in user_skills_db]
+    )
 
     user_skills = []
     for db_skill in user_skills_db:
@@ -419,6 +462,7 @@ async def get_my_skills(
             instructions=db_skill.instructions,
             source="user",
             is_active=db_skill.is_active,
+            resource_count=user_resource_counts.get(db_skill.id, 0),
             created_at=db_skill.created_at,
             updated_at=db_skill.updated_at,
         ))
@@ -530,11 +574,14 @@ async def share_skill(
             field_name="user_skill.triggers",
             record_id=user_skill.id,
         )),
+        skill_metadata=user_skill.skill_metadata or "{}",
         source="community",
         author_id=current_user.id,
         status="pending",
     )
     session.add(public_skill)
+    session.flush()
+    skill_package_service.copy_resources_to_public_skill(session, user_skill.id, public_skill.id)
     session.commit()
     session.refresh(public_skill)
 
@@ -616,6 +663,7 @@ async def batch_update_skills(
 
     for skill in user_skills:
         if request.action == "delete":
+            skill_package_service.delete_user_skill_resources(session, skill.id)
             session.delete(skill)
         else:
             skill.is_active = request.action == "enable"
@@ -672,3 +720,192 @@ async def batch_update_skills(
         updated_count=updated_count,
         message=f"Successfully {action_past} {updated_count} skill(s)",
     )
+
+
+# ==================== Skill Package Endpoints ====================
+
+
+class ImportSkillResponse(BaseModel):
+    """Response model for importing a skill package."""
+
+    skill: SkillResponse
+    warnings: list[str]
+
+
+class SkillResourceInfo(BaseModel):
+    """Metadata of a skill resource file."""
+
+    path: str
+    size: int
+    updated_at: datetime | None = None
+
+
+class SkillResourceListResponse(BaseModel):
+    """Response model for listing skill resources."""
+
+    resources: list[SkillResourceInfo]
+
+
+class SkillResourceContentResponse(BaseModel):
+    """Response model for a skill resource's content."""
+
+    path: str
+    content: str
+
+
+class UpsertSkillResourceRequest(BaseModel):
+    """Request model for creating/replacing a skill resource."""
+
+    path: str
+    content: str
+
+
+class _ImportUploadRoute(APIRoute):
+    """
+    按 Content-Length 在解析 multipart 之前拒收超大上传。
+
+    FastAPI 在跑依赖和端点之前就会把整个表单读完（文件落到临时文件），端点里再判断
+    已经晚了；所以这一检查放在路由处理器外层。没有 Content-Length（分块传输）时
+    仍由端点里的读取上限兜底。
+    """
+
+    def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
+        original_handler = super().get_route_handler()
+
+        async def handler(request: Request) -> Response:
+            content_length = request.headers.get("content-length")
+            if (
+                content_length
+                and content_length.strip().isdigit()
+                and int(content_length) > skill_package_service.MAX_IMPORT_REQUEST_BYTES
+            ):
+                raise skill_package_service.package_error_to_api(
+                    SkillPackageError(
+                        f"技能包不能超过 {skill_package_service.MAX_ZIP_BYTES // 1024 // 1024} MiB",
+                        kind="too_large",
+                    )
+                )
+            return await original_handler(request)
+
+        return handler
+
+
+@require_quota("skill_create")
+async def import_skill(
+    file: UploadFile = File(...),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
+) -> ImportSkillResponse:
+    """Import a standard skill package (.zip) or a single SKILL.md (.md).
+
+    Scripts and non-text files are never stored; they are reported in `warnings`.
+    """
+    data = await file.read(skill_package_service.MAX_UPLOAD_READ_BYTES)
+    # 解压、YAML 解析、校验都是纯 CPU 工作，放到线程池里跑，不阻塞事件循环；
+    # 落库只有几条 INSERT，沿用本文件其他端点的做法留在请求 session 上。
+    parsed = await asyncio.to_thread(
+        skill_package_service.parse_skill_upload, file.filename, data
+    )
+    db_skill, warnings = skill_package_service.import_skill_package(
+        session, current_user.id, file.filename, data, parsed=parsed
+    )
+    user_resource_counts, _ = skill_package_service.count_resources(
+        session, user_skill_ids=[db_skill.id]
+    )
+    return ImportSkillResponse(
+        skill=SkillResponse(
+            id=db_skill.id,
+            name=db_skill.name,
+            description=db_skill.description,
+            triggers=_safe_json_array(
+                db_skill.triggers,
+                field_name="user_skill.triggers",
+                record_id=db_skill.id,
+            ),
+            instructions=db_skill.instructions,
+            source="user",
+            is_active=db_skill.is_active,
+            resource_count=user_resource_counts.get(db_skill.id, 0),
+            created_at=db_skill.created_at,
+            updated_at=db_skill.updated_at,
+        ),
+        warnings=warnings,
+    )
+
+
+router.add_api_route(
+    "/import",
+    import_skill,
+    methods=["POST"],
+    response_model=ImportSkillResponse,
+    route_class_override=_ImportUploadRoute,
+)
+
+
+@router.get("/{skill_id}/export")
+async def export_skill(
+    skill_id: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
+) -> Response:
+    """Export an own or added skill as a standard skill package (zip attachment)."""
+    filename, data = skill_package_service.export_skill_package(session, current_user.id, skill_id)
+    return Response(
+        content=data,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/{skill_id}/resources", response_model=SkillResourceListResponse)
+async def list_skill_resources(
+    skill_id: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
+) -> SkillResourceListResponse:
+    """List resource files of an own or added skill."""
+    resources = skill_package_service.list_resources(session, current_user.id, skill_id)
+    return SkillResourceListResponse(
+        resources=[
+            SkillResourceInfo(path=item.path, size=item.size, updated_at=item.updated_at)
+            for item in resources
+        ]
+    )
+
+
+@router.get("/{skill_id}/resources/content", response_model=SkillResourceContentResponse)
+async def get_skill_resource_content(
+    skill_id: str,
+    path: str = Query(..., description="Resource path, e.g. references/style.md"),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
+) -> SkillResourceContentResponse:
+    """Get the content of one resource file of an own or added skill."""
+    resource = skill_package_service.get_resource(session, current_user.id, skill_id, path)
+    return SkillResourceContentResponse(path=resource.path, content=resource.content)
+
+
+@router.put("/{skill_id}/resources", response_model=SkillResourceInfo)
+async def upsert_skill_resource(
+    skill_id: str,
+    request: UpsertSkillResourceRequest,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
+) -> SkillResourceInfo:
+    """Create or replace a resource file of an own skill."""
+    resource = skill_package_service.upsert_resource(
+        session, current_user.id, skill_id, request.path, request.content
+    )
+    return SkillResourceInfo(path=resource.path, size=resource.size, updated_at=resource.updated_at)
+
+
+@router.delete("/{skill_id}/resources")
+async def delete_skill_resource(
+    skill_id: str,
+    path: str = Query(..., description="Resource path, e.g. references/style.md"),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
+) -> dict:
+    """Delete a resource file of an own skill."""
+    skill_package_service.delete_resource(session, current_user.id, skill_id, path)
+    return {"success": True, "message": "Skill resource deleted"}

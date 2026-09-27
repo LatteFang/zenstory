@@ -14,7 +14,7 @@ vi.mock('react-i18next', () => ({
           'stats.days7': '7 days',
           'stats.days30': '30 days',
           'stats.days90': '90 days',
-          'stats.totalTriggers': 'Total triggers',
+          'stats.totalUses': 'Total uses',
           'stats.builtinCount': 'Builtin',
           'stats.userCount': 'User',
           'stats.topSkills': 'Top Skills',

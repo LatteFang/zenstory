@@ -15,7 +15,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlmodel import Session, desc, select
 
-from models import ChatMessage, ChatSession, File, Project, PublicSkill, User, UserAddedSkill, UserSkill
+from models import (
+    ChatMessage,
+    ChatSession,
+    File,
+    Project,
+    PublicSkill,
+    SkillResource,
+    SkillUsage,
+    User,
+    UserAddedSkill,
+    UserSkill,
+)
 from services.core.auth_service import hash_password
 
 
@@ -262,14 +273,23 @@ class TestAgentServiceProcessStream:
 
             assert len(events) > 0
 
-    async def test_process_stream_resolves_explicit_skill_prefix_without_mutating_saved_user_message(
+    @staticmethod
+    def _skill_matched_payloads(events: list[str]) -> list[dict]:
+        payloads = []
+        for event in events:
+            if "event: skill_matched" in event:
+                data_line = next(line for line in event.splitlines() if line.startswith("data:"))
+                payloads.append(json.loads(data_line[len("data:"):].strip()))
+        return payloads
+
+    async def test_process_stream_injects_selected_skills_and_records_usage(
         self,
         mock_agent_service,
         test_user_with_project,
         db_session: Session,
         mock_workflow_stream,
     ):
-        """Leading skill prefixes should become explicit skill instructions, not pollute runtime user content."""
+        """selected_skill_ids 注入完整方法 + 资源清单，记录用量并在流开头发 skill_matched。"""
         service, _ = mock_agent_service
 
         project = test_user_with_project["project"]
@@ -285,101 +305,190 @@ class TestAgentServiceProcessStream:
         )
         db_session.add(skill)
         db_session.commit()
+        db_session.add(SkillResource(
+            user_skill_id=skill.id, path="references/hooks.md", content="钩子清单", size=12,
+        ))
+        db_session.commit()
 
-        raw_message = "悬念大师 帮我把第一段写得更有钩子"
-        cleaned_message = "帮我把第一段写得更有钩子"
+        raw_message = "帮我把第一段写得更有钩子"
 
         with patch("agent.service.run_writing_workflow_streaming") as mock_workflow:
             mock_workflow.return_value = mock_workflow_stream()
 
-            async for _ in service.process_stream(
+            events = [
+                event
+                async for event in service.process_stream(
+                    project_id=str(project.id),
+                    user_id=str(user.id),
+                    message=raw_message,
+                    session=db_session,
+                    selected_skill_ids=[skill.id],
+                )
+            ]
+
+        writing_state = mock_workflow.call_args.args[0]
+        assert writing_state["router_message"] == raw_message
+        assert writing_state["user_message"] == raw_message
+        prompt = writing_state["system_prompt"]
+        assert "## 用户本条消息指定技能" in prompt
+        assert "### 悬念大师" in prompt
+        assert "先强化钩子，再收紧悬念。" in prompt
+        assert "- references/hooks.md" in prompt
+        assert "使用技能" not in prompt
+
+        assert self._skill_matched_payloads(events) == [
+            {"skill_id": skill.id, "skill_name": "悬念大师", "matched_trigger": "selected"},
+        ]
+
+        usages = db_session.exec(select(SkillUsage).where(SkillUsage.project_id == project.id)).all()
+        assert [(u.skill_id, u.skill_source, u.matched_trigger) for u in usages] == [
+            (skill.id, "user", "selected"),
+        ]
+
+    async def test_selected_skill_is_not_recorded_or_announced_again_by_load_skill(
+        self,
+        mock_agent_service,
+        test_user_with_project,
+        db_session: Session,
+    ):
+        """显式选择的技能：ToolContext 与适配器都预先登记，模型再 load_skill 它时不重复记用量/发事件。"""
+        from agent.core.workflow_events import StreamEvent, StreamEventType
+        from agent.tools.mcp_tools import ToolContext
+
+        service, _ = mock_agent_service
+        project = test_user_with_project["project"]
+        user = test_user_with_project["user"]
+
+        skill = UserSkill(user_id=user.id, name="悬念大师", instructions="先强化钩子。", is_active=True)
+        db_session.add(skill)
+        db_session.commit()
+
+        claims: list[bool] = []
+
+        async def workflow_stream():
+            claims.append(ToolContext.claim_skill_usage(skill.id))
+            payload = {
+                "status": "success",
+                "data": {"skill_id": skill.id, "skill_name": "悬念大师", "source": "user",
+                         "instructions": "先强化钩子。", "resources": []},
+            }
+            yield StreamEvent(
+                type=StreamEventType.TOOL_RESULT,
+                data={
+                    "tool_use_id": "call-1",
+                    "name": "load_skill",
+                    "result": {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}]},
+                },
+            )
+            yield StreamEvent(type=StreamEventType.MESSAGE_END, data={"stop_reason": "end_turn"})
+
+        with patch("agent.service.run_writing_workflow_streaming") as mock_workflow:
+            mock_workflow.return_value = workflow_stream()
+            events = [
+                event
+                async for event in service.process_stream(
+                    project_id=str(project.id),
+                    user_id=str(user.id),
+                    message="写得更有钩子",
+                    session=db_session,
+                    selected_skill_ids=[skill.id],
+                )
+            ]
+
+        assert claims == [False]
+        assert self._skill_matched_payloads(events) == [
+            {"skill_id": skill.id, "skill_name": "悬念大师", "matched_trigger": "selected"},
+        ]
+
+    async def test_selected_skill_usage_failure_does_not_roll_back_request_session(
+        self,
+        mock_agent_service,
+        test_user_with_project,
+        db_session: Session,
+    ):
+        """记录 selected 用量失败时，只回滚独立 session；请求 session 上未提交的对象保持不动。"""
+        service, _ = mock_agent_service
+        project = test_user_with_project["project"]
+        user = test_user_with_project["user"]
+
+        skill = UserSkill(user_id=user.id, name="悬念大师", instructions="先强化钩子。", is_active=True)
+        db_session.add(skill)
+        db_session.commit()
+        pending = UserSkill(user_id=user.id, name="未提交的技能", instructions="x")
+        db_session.add(pending)
+
+        with patch(
+            "services.skill_usage_service.record_skill_usage",
+            side_effect=RuntimeError("usage table unavailable"),
+        ):
+            selected = service._resolve_selected_skills(
+                db_session,
                 project_id=str(project.id),
                 user_id=str(user.id),
-                message=raw_message,
-                session=db_session,
-            ):
-                pass
+                selected_skill_ids=[skill.id],
+                message="m",
+            )
 
-        assert mock_workflow.call_args is not None
-        writing_state = mock_workflow.call_args.args[0]
-        assert writing_state["router_message"] == cleaned_message
-        assert writing_state["user_message"] == cleaned_message
-        assert "## 用户本条消息指定技能" in writing_state["system_prompt"]
-        assert "### 悬念大师" in writing_state["system_prompt"]
-        assert "[使用技能: 悬念大师]" in writing_state["system_prompt"]
+        assert [item["id"] for item in selected] == [skill.id]
+        assert pending in db_session.new
 
-        latest_user_message = db_session.exec(
-            select(ChatMessage)
-            .join(ChatSession, ChatMessage.session_id == ChatSession.id)
-            .where(ChatSession.project_id == str(project.id))
-            .where(ChatMessage.role == "user")
-            .order_by(desc(ChatMessage.created_at), desc(ChatMessage.id))
-        ).first()
-        assert latest_user_message is not None
-        assert latest_user_message.content == raw_message
-
-    async def test_process_stream_skips_forced_skill_selection_when_prefix_is_ambiguous(
+    async def test_process_stream_ignores_foreign_and_inactive_selected_skill_ids(
         self,
         mock_agent_service,
         test_user_with_project,
         db_session: Session,
         mock_workflow_stream,
     ):
-        """Ambiguous leading prefixes should fail closed and preserve the raw message."""
+        """别人的技能、停用技能、不存在的 ID 一律静默忽略。"""
         service, _ = mock_agent_service
 
         project = test_user_with_project["project"]
         user = test_user_with_project["user"]
 
-        db_session.add(
-            UserSkill(
-                user_id=user.id,
-                name="悬念大师",
-                description="增强钩子和悬念",
-                triggers=json.dumps(["通用触发词"]),
-                instructions="先强化钩子，再收紧悬念。",
-                is_active=True,
-            )
+        other = User(
+            email="agent_service_other@example.com",
+            username="agentserviceother",
+            hashed_password=hash_password("password123"),
+            email_verified=True,
+            is_active=True,
         )
-        db_session.add(
-            UserSkill(
-                user_id=user.id,
-                name="节奏大师",
-                description="压缩拖沓段落",
-                triggers=json.dumps(["通用触发词"]),
-                instructions="优先压缩重复动作和解释。",
-                is_active=True,
-            )
-        )
+        db_session.add(other)
         db_session.commit()
 
-        raw_message = "通用触发词 帮我处理这一段"
+        foreign = UserSkill(user_id=other.id, name="别人的技能", instructions="偷看", is_active=True)
+        inactive = UserSkill(user_id=user.id, name="停用技能", instructions="停用", is_active=False)
+        db_session.add(foreign)
+        db_session.add(inactive)
+        db_session.commit()
 
         with patch("agent.service.run_writing_workflow_streaming") as mock_workflow:
             mock_workflow.return_value = mock_workflow_stream()
 
-            async for _ in service.process_stream(
-                project_id=str(project.id),
-                user_id=str(user.id),
-                message=raw_message,
-                session=db_session,
-            ):
-                pass
+            events = [
+                event
+                async for event in service.process_stream(
+                    project_id=str(project.id),
+                    user_id=str(user.id),
+                    message="帮我处理这一段",
+                    session=db_session,
+                    selected_skill_ids=[foreign.id, inactive.id, "no-such-id"],
+                )
+            ]
 
-        assert mock_workflow.call_args is not None
-        writing_state = mock_workflow.call_args.args[0]
-        assert writing_state["router_message"] == raw_message
-        assert writing_state["user_message"] == raw_message
-        assert "## 用户本条消息指定技能" not in writing_state["system_prompt"]
+        prompt = mock_workflow.call_args.args[0]["system_prompt"]
+        assert "## 用户本条消息指定技能" not in prompt
+        assert "偷看" not in prompt
+        assert self._skill_matched_payloads(events) == []
+        assert db_session.exec(select(SkillUsage)).all() == []
 
-    async def test_process_stream_resolves_added_skill_custom_name_prefix(
+    async def test_process_stream_resolves_added_skill_by_added_id(
         self,
         mock_agent_service,
         test_user_with_project,
         db_session: Session,
         mock_workflow_stream,
     ):
-        """Added public skills should resolve from the user's custom display name."""
+        """已添加的公共技能用 GET /skills 返回的 UserAddedSkill.id 选择，按自定义名称注入。"""
         service, _ = mock_agent_service
 
         project = test_user_with_project["project"]
@@ -396,37 +505,36 @@ class TestAgentServiceProcessStream:
         db_session.commit()
         db_session.refresh(public_skill)
 
-        db_session.add(
-            UserAddedSkill(
-                user_id=user.id,
-                public_skill_id=public_skill.id,
-                custom_name="阴影编织者",
-                is_active=True,
-            )
+        added = UserAddedSkill(
+            user_id=user.id,
+            public_skill_id=public_skill.id,
+            custom_name="阴影编织者",
+            is_active=True,
         )
+        db_session.add(added)
         db_session.commit()
-
-        raw_message = "阴影编织者 帮我把这场戏写得更阴冷"
-        cleaned_message = "帮我把这场戏写得更阴冷"
 
         with patch("agent.service.run_writing_workflow_streaming") as mock_workflow:
             mock_workflow.return_value = mock_workflow_stream()
 
-            async for _ in service.process_stream(
-                project_id=str(project.id),
-                user_id=str(user.id),
-                message=raw_message,
-                session=db_session,
-            ):
-                pass
+            events = [
+                event
+                async for event in service.process_stream(
+                    project_id=str(project.id),
+                    user_id=str(user.id),
+                    message="帮我把这场戏写得更阴冷",
+                    session=db_session,
+                    selected_skill_ids=[added.id],
+                )
+            ]
 
-        assert mock_workflow.call_args is not None
-        writing_state = mock_workflow.call_args.args[0]
-        assert writing_state["router_message"] == cleaned_message
-        assert writing_state["user_message"] == cleaned_message
-        assert "## 用户本条消息指定技能" in writing_state["system_prompt"]
-        assert "### 阴影编织者" in writing_state["system_prompt"]
-        assert "[使用技能: 阴影编织者]" in writing_state["system_prompt"]
+        prompt = mock_workflow.call_args.args[0]["system_prompt"]
+        assert "## 用户本条消息指定技能" in prompt
+        assert "### 阴影编织者" in prompt
+        assert "优先写环境与感官细节。" in prompt
+        assert self._skill_matched_payloads(events) == [
+            {"skill_id": public_skill.id, "skill_name": "阴影编织者", "matched_trigger": "selected"},
+        ]
 
     async def test_process_stream_without_user_id(
         self, mock_agent_service, test_user_with_project, db_session: Session, mock_workflow_stream
@@ -777,12 +885,11 @@ class TestAgentServiceProcessStream:
         with (
             patch.object(service, "_should_offload_session_work", return_value=True),
             patch.object(service, "_resolve_or_create_chat_session_id_sync", return_value="sess-offload"),
-            patch.object(service, "_resolve_explicit_skill_selection_sync", return_value=None),
             patch("agent.service.SessionLoader.load_session_with_compaction", new=AsyncMock(return_value=session_data)),
             patch.object(
                 service,
                 "_prepare_prompt_artifacts_sync",
-                return_value=(None, "hello", None, None, "system prompt"),
+                return_value=([], "system prompt"),
             ),
             patch("agent.service.run_writing_workflow_streaming", return_value=mock_stream()),
             patch("agent.service.MessageManager.save_messages", new=AsyncMock(return_value="assistant-msg-offload")),

@@ -7,7 +7,7 @@ Handles search and summary operations across material libraries:
 """
 from fastapi import APIRouter, Depends, Query
 from services.auth import get_current_active_user
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, select
 
@@ -37,6 +37,22 @@ SEARCHABLE_MATERIAL_STATUSES = {"completed", "completed_with_errors"}
 
 # Router without prefix/tags - will be set by parent router
 router = APIRouter()
+
+
+def _stories_in_novels(novel_ids: list[int]):
+    """WHERE condition: story belongs to one of ``novel_ids``.
+
+    Index-friendly (Story.novel_id / Story.story_line_id / StoryLine.novel_id);
+    never filter on ``coalesce(Story.novel_id, StoryLine.novel_id)``, which forces
+    a full scan of stories. Legacy rows (novel_id NULL) resolve via their storyline.
+    """
+    return or_(
+        Story.novel_id.in_(novel_ids),
+        and_(
+            Story.novel_id.is_(None),
+            Story.story_line_id.in_(select(StoryLine.id).where(StoryLine.novel_id.in_(novel_ids))),
+        ),
+    )
 
 
 def _reconcile_job_if_needed(session: Session, job: IngestionJob | None) -> IngestionJob | None:
@@ -112,11 +128,13 @@ def get_library_summary(
         story_counts_dict = dict(story_counts)
 
         # Stories count
+        # 剧情按 novel_id 归属；历史行（novel_id 为空）经故事线归属
+        story_novel_id = func.coalesce(Story.novel_id, StoryLine.novel_id)
         stories_counts = session.exec(
-            select(StoryLine.novel_id, func.count(Story.id))
-            .join(Story, Story.story_line_id == StoryLine.id)
-            .where(StoryLine.novel_id.in_(novel_ids))
-            .group_by(StoryLine.novel_id)
+            select(story_novel_id, func.count(Story.id))
+            .outerjoin(StoryLine, Story.story_line_id == StoryLine.id)
+            .where(_stories_in_novels(novel_ids))
+            .group_by(story_novel_id)
         ).all()
         stories_counts_dict = dict(stories_counts)
 
@@ -254,10 +272,11 @@ def search_materials(
     # Search stories in database
     remaining = _remaining()
     if remaining > 0:
+        story_novel_id = func.coalesce(Story.novel_id, StoryLine.novel_id)
         stories = session.exec(
-            select(Story, StoryLine.novel_id)
-            .join(StoryLine, Story.story_line_id == StoryLine.id)
-            .where(StoryLine.novel_id.in_(novel_ids))
+            select(Story, story_novel_id)
+            .outerjoin(StoryLine, Story.story_line_id == StoryLine.id)
+            .where(_stories_in_novels(novel_ids))
             .where(
                 or_(
                     func.lower(func.coalesce(Story.title, "")).contains(query),
@@ -268,8 +287,8 @@ def search_materials(
             )
             .limit(remaining)
         ).all()
-        for story, story_novel_id in stories:
-            novel = novel_map[story_novel_id][0]
+        for story, owner_novel_id in stories:
+            novel = novel_map[owner_novel_id][0]
             results.append(MaterialSearchResult(
                 novel_id=novel.id, novel_title=novel.title,
                 entity_type="stories", entity_id=story.id, name=story.title

@@ -56,6 +56,8 @@ class TestRelationshipFlow:
         monkeypatch.setattr(rel_mod, "create_checkpoint_manager", lambda _novel_id: cp)
 
         monkeypatch.setattr(rel_mod.settings, "ENABLE_RELATIONSHIP_EXTRACTION", True)
+        monkeypatch.setattr(rel_mod.settings, "ENABLE_PLOT_EXTRACTION", True)
+        monkeypatch.setattr(rel_mod.settings, "ENABLE_CHARACTER_EXTRACTION", True)
         monkeypatch.setattr(rel_mod.settings, "ENABLE_NEO4J_STORAGE", True)
         monkeypatch.setattr(rel_mod.settings, "MAX_CONCURRENT_CHAPTERS", 3)
 

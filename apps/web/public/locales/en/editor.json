@@ -82,6 +82,8 @@
     "builtinSkill": "Built-in",
     "userSkill": "Custom",
     "useSkill": "Use this skill",
+    "skillSelected": "Selected for next message",
+    "skillSelectionFull": "Up to {{max}} skills per message",
     "batchSelect": "Batch Select",
     "batchSelected": "{{count}} selected",
     "batchImport": "Batch Import",

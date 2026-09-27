@@ -70,5 +70,9 @@
   "ERR_POINTS_INSUFFICIENT_BALANCE": "Insufficient points balance",
   "ERR_POINTS_ALREADY_CHECKED_IN": "Already checked in today",
   "ERR_POINTS_INVALID_AMOUNT": "Invalid points amount",
-  "ERR_POINTS_REDEMPTION_MINIMUM_NOT_MET": "Minimum redemption is 7 days"
+  "ERR_POINTS_REDEMPTION_MINIMUM_NOT_MET": "Minimum redemption is 7 days",
+
+  "ERR_SKILL_PACKAGE_INVALID": "Invalid skill package",
+  "ERR_SKILL_PACKAGE_TOO_LARGE": "Skill package or resource file exceeds the size limit",
+  "ERR_RESOURCE_CONFLICT": "This conflicts with existing data. Please refresh and try again"
 }

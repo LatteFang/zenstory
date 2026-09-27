@@ -3,7 +3,6 @@
 
 核心任务:
 - relationship_tasks: 人物关系提取和构建
-- timeline_tasks: 时间线构建
 - neo4j_tasks: Neo4j 图数据库写入
 """
 

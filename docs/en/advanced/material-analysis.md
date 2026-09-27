@@ -19,7 +19,7 @@ See the [materials introduction](../user-guide/materials.md) for uploads, task s
 | Plots, stories or storylines and related chapters | How do goal, obstacle, choice and consequence connect? | That more plot points mean better writing, or chapter span measures reading pace. |
 | World details, special abilities and their development | Which limitation blocks an action? What changes if it is removed? | That every story needs power levels, or an empty field means no constraint exists. |
 
-Use source text to check an interpretation; use analysis items to locate it. Do not assume every material has a complete visual relationship network or timeline. For empty items, unclear summaries or task errors, establish what was actually read before choosing the next passage.
+Use source text to check an interpretation; use analysis items to locate it. Plot points, stories, storylines and relationships are not extracted by default and only appear when the deployment enables them, so do not assume every material has them. For empty items, unclear summaries or task errors, establish what was actually read before choosing the next passage.
 
 ## 2. Original reference: why does one noise change a decision?
 

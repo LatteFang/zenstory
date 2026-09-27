@@ -1,0 +1,45 @@
+{
+  "name": "zenstory",
+  "version": "0.2.0",
+  "description": "Command-line client and Agent Skill for zenstory novel projects (public Agent API).",
+  "type": "module",
+  "bin": {
+    "zenstory": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "skill",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "zenstory",
+    "novel",
+    "writing",
+    "cli",
+    "agent-skills",
+    "claude-code",
+    "codex",
+    "openclaw"
+  ],
+  "homepage": "https://zenstory.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/zenstory-ai/zenstory.git",
+    "directory": "apps/cli"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.11"
+  }
+}

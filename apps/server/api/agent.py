@@ -150,6 +150,14 @@ class AgentRequest(BaseModel):
     metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
     )
+    selected_skill_ids: list[str] = Field(
+        default_factory=list,
+        max_length=3,
+        description=(
+            "Skills the user explicitly selected for this message "
+            "(UserSkill.id / UserAddedSkill.id); their full instructions are injected"
+        ),
+    )
 
 
 class SuggestRequest(BaseModel):
@@ -331,6 +339,7 @@ async def stream_request(
                     selected_text=body.selected_text,
                     metadata=body.metadata,
                     language=lang,
+                    selected_skill_ids=body.selected_skill_ids,
                 ):
                     saw_any_event = True
                     if isinstance(event, str):

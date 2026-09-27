@@ -19,7 +19,7 @@
 ┌─────────────────────────────────────────────────────────────┐
 │ 阶段2: 使用StageExecutor执行章节提取                         │
 │  - 章节摘要生成                                              │
-│  - 情节点提取                                                │
+│  - 情节点提取(可选,默认关闭)                                  │
 │  - 角色提及提取(可选)                                         │
 │  - 元信息提取(并行,可选)                                      │
 └─────────────────────────────────────────────────────────────┘
@@ -279,6 +279,7 @@ def novel_ingestion_v3(
             checkpoint_manager=checkpoint_manager,
             correlation_id=correlation_id,
         )
+        executor.record_enabled_stages()
 
         stage1_result = executor.execute_stage1()
 
@@ -454,6 +455,7 @@ def _check_and_resume_from_checkpoint(
                 checkpoint_manager=checkpoint_manager,
                 correlation_id=correlation_id,
             )
+            executor.record_enabled_stages()
 
             # 根据恢复点执行对应阶段
             if stage == 'stage1':

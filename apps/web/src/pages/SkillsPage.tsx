@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import type { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { LazyMarkdown } from "../components/LazyMarkdown";
-import { Plus, Pencil, Trash2, Zap, Check, ChevronDown, ChevronUp, BarChart3, Share2, Compass, MinusCircle, Search, Square, CheckSquare } from "../components/icons";
+import { Plus, Pencil, Trash2, Zap, Check, ChevronDown, ChevronUp, BarChart3, Share2, Compass, MinusCircle, Search, Square, CheckSquare, Download, Upload, AlertTriangle } from "../components/icons";
 import { skillsApi, publicSkillsApi } from "../lib/api";
 import { ApiError } from "../lib/apiClient";
 import type { Skill, AddedSkill, CreateSkillRequest, UpdateSkillRequest, PublicSkill, SkillCategory } from "../types";
@@ -9,6 +10,7 @@ import { useIsMobile } from "../hooks/useMediaQuery";
 import { useProject } from "../contexts/ProjectContext";
 import { SkillStatsDialog } from "../components/SkillStatsDialog";
 import { ShareSkillModal } from "../components/skills/ShareSkillModal";
+import { SkillResourcesSection } from "../components/skills/SkillResourcesSection";
 import { DashboardPageHeader } from "../components/dashboard/DashboardPageHeader";
 import { DashboardFilterPills } from "../components/dashboard/DashboardFilterPills";
 import { DashboardSearchBar } from "../components/dashboard/DashboardSearchBar";
@@ -18,6 +20,7 @@ import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { UpgradePromptModal } from "../components/subscription/UpgradePromptModal";
 import { buildUpgradeUrl, getUpgradePromptDefinition } from "../config/upgradeExperience";
 import { logger } from "../lib/logger";
+import { toast } from "../lib/toast";
 
 interface SkillFormData {
   name: string;
@@ -34,6 +37,10 @@ const emptyForm: SkillFormData = {
 };
 
 type TabType = "my-skills" | "discover";
+
+/** Server rejects skill packages above 1 MiB; fail fast before uploading. */
+const MAX_IMPORT_BYTES = 1024 * 1024;
+const IMPORT_EXTENSIONS = [".zip", ".md"];
 
 const SKILL_CATEGORY_LABEL_KEYS: Record<string, string> = {
   writing: "categories.writing",
@@ -89,6 +96,12 @@ export default function SkillsPage() {
   const [batchDeleting, setBatchDeleting] = useState(false);
   const [batchOperating, setBatchOperating] = useState(false);
   const [showSkillCreateUpgradeModal, setShowSkillCreateUpgradeModal] = useState(false);
+
+  // Import / export state
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ skillName: string; warnings: string[] } | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   // Discover state
   const [publicSkills, setPublicSkills] = useState<PublicSkill[]>([]);
@@ -314,6 +327,56 @@ export default function SkillsPage() {
     }
   };
 
+  const handleImportFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset so selecting the same file again still fires onChange
+    e.target.value = "";
+    if (!file) return;
+
+    const lowerName = file.name.toLowerCase();
+    if (!IMPORT_EXTENSIONS.some((ext) => lowerName.endsWith(ext))) {
+      toast.error(t("skills:import.invalidType"));
+      return;
+    }
+    if (file.size > MAX_IMPORT_BYTES) {
+      toast.error(t("skills:import.tooLarge"));
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const result = await skillsApi.importSkill(file);
+      setImportResult({ skillName: result.skill.name, warnings: result.warnings ?? [] });
+      setActiveTab("my-skills");
+      await loadSkills();
+    } catch (error) {
+      logger.error("Failed to import skill:", error);
+      if (
+        error instanceof ApiError &&
+        error.errorCode === "ERR_QUOTA_EXCEEDED" &&
+        skillCreateUpgradePrompt.surface === "modal"
+      ) {
+        setShowSkillCreateUpgradeModal(true);
+      } else {
+        toast.error(error instanceof Error && error.message ? error.message : t("skills:import.failed"));
+      }
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleExport = async (id: string, name: string) => {
+    setExportingId(id);
+    try {
+      await skillsApi.exportSkill(id, name);
+    } catch (error) {
+      logger.error("Failed to export skill:", error);
+      toast.error(error instanceof Error && error.message ? error.message : t("skills:export.failed"));
+    } finally {
+      setExportingId(null);
+    }
+  };
+
   const handleCancel = () => {
     setIsCreating(false);
     setEditingSkill(null);
@@ -384,16 +447,40 @@ export default function SkillsPage() {
         title={t("title")}
         subtitle={t("description")}
         action={
-          currentProject && (
+          <div className="flex items-center gap-2">
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".zip,.md"
+              className="hidden"
+              onChange={handleImportFile}
+              data-testid="skill-import-input"
+            />
             <button
-              onClick={() => setShowStats(true)}
-              className={`rounded-xl flex items-center justify-center gap-2 ${isMobile ? "px-3 py-2.5" : "h-11 px-4"} active:scale-95 transition-all text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--bg-secondary))]`}
-              title={t("stats.title")}
+              onClick={() => importInputRef.current?.click()}
+              disabled={importing}
+              className={`rounded-xl flex items-center justify-center gap-2 ${isMobile ? "px-3 py-2.5" : "h-11 px-4"} active:scale-95 transition-all text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--bg-secondary))] disabled:opacity-50`}
+              title={t("skills:import.hint")}
+              aria-label={t("skills:import.button")}
             >
-              <BarChart3 className="w-4 h-4" />
-              {!isMobile && t("stats.title")}
+              {importing ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              {!isMobile && t("skills:import.button")}
             </button>
-          )
+            {currentProject && (
+              <button
+                onClick={() => setShowStats(true)}
+                className={`rounded-xl flex items-center justify-center gap-2 ${isMobile ? "px-3 py-2.5" : "h-11 px-4"} active:scale-95 transition-all text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--bg-secondary))]`}
+                title={t("stats.title")}
+              >
+                <BarChart3 className="w-4 h-4" />
+                {!isMobile && t("stats.title")}
+              </button>
+            )}
+          </div>
         }
       />
 
@@ -416,6 +503,8 @@ export default function SkillsPage() {
           onEdit={handleEdit}
           onDelete={setDeletingId}
           onShare={setSharingSkill}
+          onExport={handleExport}
+          exportingId={exportingId}
           onCreate={handleCreate}
           onRemoveAdded={handleRemoveAdded}
           removingId={removingId}
@@ -530,7 +619,54 @@ export default function SkillsPage() {
               {t("skills:form.instructionsHint")}
             </p>
           </div>
+
+          {editingSkill ? (
+            <SkillResourcesSection
+              key={editingSkill.id}
+              skillId={editingSkill.id}
+              isMobile={isMobile}
+              onChange={() => loadSkills()}
+            />
+          ) : (
+            <p className="text-xs text-[hsl(var(--text-tertiary))]">
+              {t("skills:resources.saveFirst")}
+            </p>
+          )}
         </div>
+      </Modal>
+
+      {/* Import Result */}
+      <Modal
+        open={!!importResult}
+        onClose={() => setImportResult(null)}
+        title={t("skills:import.successTitle")}
+        size="md"
+        footer={
+          <button onClick={() => setImportResult(null)} className="btn-primary flex-1 h-11">
+            {t("skills:import.done")}
+          </button>
+        }
+      >
+        {importResult && (
+          <div className="space-y-3" data-testid="skill-import-result">
+            <p className="text-sm text-[hsl(var(--text-primary))]">
+              {t("skills:import.success", { name: importResult.skillName })}
+            </p>
+            {importResult.warnings.length > 0 && (
+              <div className="rounded-lg border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.08)] p-3">
+                <div className="flex items-center gap-2 mb-2 text-sm font-medium text-[hsl(var(--warning))]">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  {t("skills:import.warningsTitle", { count: importResult.warnings.length })}
+                </div>
+                <ul className="list-disc pl-5 space-y-1 text-xs text-[hsl(var(--text-secondary))] break-all">
+                  {importResult.warnings.map((warning, index) => (
+                    <li key={index}>{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
 
       {/* Delete Confirmation */}
@@ -617,6 +753,8 @@ function SkillCard({
   onEdit,
   onDelete,
   onShare,
+  onExport,
+  exporting,
   readonly,
   isMobile,
   isSelected,
@@ -626,6 +764,8 @@ function SkillCard({
   onEdit?: () => void;
   onDelete?: () => void;
   onShare?: () => void;
+  onExport?: () => void;
+  exporting?: boolean;
   readonly?: boolean;
   isMobile?: boolean;
   isSelected?: boolean;
@@ -685,6 +825,11 @@ function SkillCard({
                 +{skill.triggers.length - (isMobile ? 3 : 5)}
               </span>
             )}
+            {!!skill.resource_count && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[hsl(var(--bg-tertiary))] text-[hsl(var(--text-secondary))]">
+                {t("skills:resources.count", { count: skill.resource_count })}
+              </span>
+            )}
           </div>
         </div>
 
@@ -693,6 +838,8 @@ function SkillCard({
             <>
               <button
                 onClick={onEdit}
+                title={t("skills:editSkill")}
+                aria-label={t("skills:editSkill")}
                 className={`rounded-lg text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-tertiary))] hover:text-[hsl(var(--text-primary))] transition-colors ${isMobile ? "p-1.5" : "p-2"}`}
               >
                 <Pencil className={isMobile ? "w-3.5 h-3.5" : "w-4 h-4"} />
@@ -711,6 +858,9 @@ function SkillCard({
                 <Share2 className={isMobile ? "w-3.5 h-3.5" : "w-4 h-4"} />
               </button>
             </>
+          )}
+          {onExport && (
+            <ExportButton onExport={onExport} exporting={exporting} isMobile={isMobile} />
           )}
           <button
             onClick={() => setExpanded(!expanded)}
@@ -750,6 +900,8 @@ function MySkillsContent({
   onEdit,
   onDelete,
   onShare,
+  onExport,
+  exportingId,
   onCreate,
   onRemoveAdded,
   removingId,
@@ -770,6 +922,8 @@ function MySkillsContent({
   onEdit: (skill: Skill) => void;
   onDelete: (id: string) => void;
   onShare: (skill: Skill) => void;
+  onExport: (id: string, name: string) => void;
+  exportingId: string | null;
   onCreate: () => void;
   onRemoveAdded: (publicSkillId: string) => void;
   removingId: string | null;
@@ -888,6 +1042,8 @@ function MySkillsContent({
                 onEdit={() => onEdit(skill)}
                 onDelete={() => onDelete(skill.id)}
                 onShare={() => onShare(skill)}
+                onExport={() => onExport(skill.id, skill.name)}
+                exporting={exportingId === skill.id}
                 isMobile={isMobile}
                 isSelected={selectedSkillIds.has(skill.id)}
                 onToggleSelect={() => onToggleSelect(skill.id)}
@@ -934,6 +1090,8 @@ function MySkillsContent({
                 skill={skill}
                 onRemove={() => onRemoveAdded(skill.public_skill_id)}
                 removing={removingId === skill.public_skill_id}
+                onExport={() => onExport(skill.id, skill.name)}
+                exporting={exportingId === skill.id}
                 isMobile={isMobile}
                 isSelected={selectedSkillIds.has(skill.id)}
                 onToggleSelect={() => onToggleSelect(skill.id)}
@@ -951,6 +1109,8 @@ function AddedSkillCard({
   skill,
   onRemove,
   removing,
+  onExport,
+  exporting,
   isMobile,
   isSelected,
   onToggleSelect,
@@ -958,6 +1118,8 @@ function AddedSkillCard({
   skill: AddedSkill;
   onRemove: () => void;
   removing?: boolean;
+  onExport?: () => void;
+  exporting?: boolean;
   isMobile?: boolean;
   isSelected?: boolean;
   onToggleSelect?: () => void;
@@ -1021,6 +1183,9 @@ function AddedSkillCard({
               <MinusCircle className={isMobile ? "w-3.5 h-3.5" : "w-4 h-4"} />
             )}
           </button>
+          {onExport && (
+            <ExportButton onExport={onExport} exporting={exporting} isMobile={isMobile} />
+          )}
           <button
             onClick={() => setExpanded(!expanded)}
             className={`rounded-lg text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-tertiary))] hover:text-[hsl(var(--text-primary))] transition-colors ${isMobile ? "p-1.5" : "p-2"}`}
@@ -1046,9 +1211,40 @@ function AddedSkillCard({
           <div className={`markdown-content bg-[hsl(var(--bg-tertiary))] rounded-xl ${isMobile ? "p-3 text-xs" : "p-4 text-sm"}`}>
             <LazyMarkdown>{skill.instructions}</LazyMarkdown>
           </div>
+          <div className="mt-3">
+            <SkillResourcesSection skillId={skill.id} readOnly isMobile={isMobile} />
+          </div>
         </div>
       )}
     </div>
+  );
+}
+
+// Export (download zip) button shared by user and added skill cards
+function ExportButton({
+  onExport,
+  exporting,
+  isMobile,
+}: {
+  onExport: () => void;
+  exporting?: boolean;
+  isMobile?: boolean;
+}) {
+  const { t } = useTranslation(["skills"]);
+  return (
+    <button
+      onClick={onExport}
+      disabled={exporting}
+      className={`rounded-lg text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-tertiary))] hover:text-[hsl(var(--text-primary))] transition-colors disabled:opacity-50 ${isMobile ? "p-1.5" : "p-2"}`}
+      title={t("skills:export.button")}
+      aria-label={t("skills:export.button")}
+    >
+      {exporting ? (
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+      ) : (
+        <Download className={isMobile ? "w-3.5 h-3.5" : "w-4 h-4"} />
+      )}
+    </button>
   );
 }
 

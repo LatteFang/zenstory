@@ -10,7 +10,6 @@ Handles all entity-related operations:
 - Plot list
 - Storyline list
 - Golden finger list
-- Event timeline
 """
 import json
 
@@ -27,13 +26,13 @@ from models.material_models import (
     Chapter,
     Character,
     CharacterRelationship,
-    EventTimeline,
     GoldenFinger,
     Plot,
     Story,
     StoryLine,
     WorldView,
 )
+from services.material.stories_service import story_in_novel
 from utils.logger import get_logger
 
 from .helpers import _get_novel_or_404
@@ -41,7 +40,6 @@ from .schemas import (
     ChapterDetailResponse,
     CharacterListItem,
     CharacterRelationshipItem,
-    EventTimelineItem,
     GoldenFingerListItem,
     PlotListItem,
     StoryLineListItem,
@@ -177,11 +175,7 @@ async def get_stories(
     _get_novel_or_404(session, novel_id, current_user.id)
 
     # 获取剧情列表
-    stories = session.exec(
-        select(Story).where(Story.story_line_id.in_(
-            select(StoryLine.id).where(StoryLine.novel_id == novel_id)
-        ))
-    ).all()
+    stories = session.exec(select(Story).where(story_in_novel(novel_id))).all()
 
     return [
         {
@@ -385,6 +379,7 @@ def get_storylines(
         story_counts = session.exec(
             select(Story.story_line_id, func.count(Story.id))
             .where(Story.story_line_id.in_(storyline_ids))
+            .where(story_in_novel(novel_id))
             .group_by(Story.story_line_id)
         ).all()
         story_counts_dict = dict(story_counts)
@@ -470,54 +465,6 @@ def get_golden_fingers(
         ))
 
     return result
-
-
-# ==================== Timeline Endpoints ====================
-
-@router.get("/{novel_id}/timeline", response_model=list[EventTimelineItem])
-def get_event_timeline(
-    novel_id: int,
-    current_user: User = Depends(get_current_active_user),
-    session: Session = Depends(get_session),
-):
-    """
-    Get event timeline for a novel.
-
-    Returns all timeline events with chapter and plot information via JOIN query.
-    """
-    # Verify novel ownership and soft delete check
-    _get_novel_or_404(session, novel_id, current_user.id)
-
-    # JOIN query: EventTimeline + Chapter + Plot
-    stmt = (
-        select(
-            EventTimeline,
-            Chapter.title.label("chapter_title"),
-            Plot.description.label("plot_description")
-        )
-        .join(Chapter, EventTimeline.chapter_id == Chapter.id)
-        .outerjoin(Plot, EventTimeline.plot_id == Plot.id)
-        .where(EventTimeline.novel_id == novel_id)
-        .order_by(EventTimeline.rel_order.asc())
-    )
-
-    results = session.exec(stmt).all()
-
-    return [
-        EventTimelineItem(
-            id=event.id,
-            novel_id=event.novel_id,
-            chapter_id=event.chapter_id,
-            chapter_title=chapter_title,
-            plot_id=event.plot_id,
-            plot_description=plot_description,
-            rel_order=event.rel_order,
-            time_tag=event.time_tag,
-            uncertain=event.uncertain,
-            created_at=event.created_at,
-        )
-        for event, chapter_title, plot_description in results
-    ]
 
 
 __all__ = ["router"]

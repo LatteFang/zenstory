@@ -71,7 +71,6 @@
     "plots": "情节点",
     "storylines": "故事线",
     "goldenfingers": "金手指",
-    "timeline": "时间线",
     "chapterNumber": "章节号",
     "wordCount": "字数",
     "summary": "摘要",
@@ -103,14 +102,8 @@
     "keyFactions": "关键势力",
     "specialRules": "特殊规则",
     "worldviewItem": "世界观设定",
-    "timelineEvent": "时间线事件",
     "eventDescription": "事件描述",
-    "relatedChapter": "相关章节",
-    "relatedPlot": "相关情节",
     "significance": "重要性",
-    "sequence": "序号",
-    "timeTag": "时间标签",
-    "uncertain": "不确定",
     "noData": "暂无数据",
     "leader": "领袖",
     "territory": "领地",
@@ -118,7 +111,8 @@
     "coreConflict": "核心冲突",
     "chapterLabel": "章节",
     "idLabel": "ID",
-    "timeLabel": "时间"
+    "timeLabel": "时间",
+    "notEnabled": "未启用"
   },
   "quota": {
     "uploadTitle": "开通会员即可使用素材库",

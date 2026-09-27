@@ -3,6 +3,7 @@
 import json
 from typing import Any
 
+from sqlalchemy import or_
 from sqlmodel import Session, select
 
 from models.material_models import (
@@ -120,7 +121,9 @@ def format_storyline_to_markdown(storyline: StoryLine, session: Session, novel_t
 
     # Get stories under this storyline
     stories = session.exec(
-        select(Story).where(Story.story_line_id == storyline.id)
+        select(Story)
+        .where(Story.story_line_id == storyline.id)
+        .where(or_(Story.novel_id.is_(None), Story.novel_id == storyline.novel_id))
     ).all()
     stories_text = ""
     for story in stories:

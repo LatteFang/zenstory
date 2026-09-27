@@ -55,6 +55,8 @@ class MaterialListItem(BaseModel):
     status: str | None  # Latest job status (pending/processing/completed/completed_with_errors/failed)
     error_message: str | None = None
     chapters_count: int
+    # Effective decomposition stages recorded at flow start (see MaterialDetailResponse).
+    enabled_stages: dict[str, bool] | None = None
 
 
 class MaterialDetailResponse(BaseModel):
@@ -70,8 +72,16 @@ class MaterialDetailResponse(BaseModel):
     chapters_count: int
     characters_count: int
     story_lines_count: int
+    plots_count: int
+    stories_count: int
+    relationships_count: int
     golden_fingers_count: int
     has_world_view: bool
+    # Effective decomposition stages of the latest job, keyed by
+    # chapter_summaries/plots/characters/meta/synopsis/stories/storylines/relationships.
+    # Older snapshots lack "storylines" (then "stories" covered both).
+    # None for jobs created before the snapshot existed (UI keeps legacy behavior).
+    enabled_stages: dict[str, bool] | None = None
 
 
 class LibrarySummaryItem(BaseModel):
@@ -166,20 +176,6 @@ class GoldenFingerListItem(BaseModel):
     created_at: datetime
 
 
-class EventTimelineItem(BaseModel):
-    """Event timeline item."""
-    id: int
-    novel_id: int
-    chapter_id: int
-    chapter_title: str
-    plot_id: int
-    plot_description: str | None
-    rel_order: int
-    time_tag: str | None
-    uncertain: bool
-    created_at: datetime
-
-
 # ==================== Search Schemas ====================
 
 class MaterialSearchResult(BaseModel):
@@ -268,7 +264,6 @@ __all__ = [
     "StoryLineListItem",
     "WorldViewResponse",
     "GoldenFingerListItem",
-    "EventTimelineItem",
     # Search
     "MaterialSearchResult",
     # Preview

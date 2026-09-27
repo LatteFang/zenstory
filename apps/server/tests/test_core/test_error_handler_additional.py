@@ -50,3 +50,41 @@ async def test_general_exception_handler_returns_500_payload():
 
     assert response.status_code == 500
     assert b'"detail":"ERR_INTERNAL_SERVER_ERROR"' in response.body
+
+
+@pytest.mark.asyncio
+async def test_http_exception_handler_preserves_headers():
+    from fastapi import HTTPException
+
+    from core.error_handler import http_exception_handler
+
+    response = await http_exception_handler(
+        _request(),
+        HTTPException(status_code=429, detail="Rate limit exceeded.", headers={"Retry-After": "3600"}),
+    )
+
+    assert response.status_code == 429
+    assert response.headers["retry-after"] == "3600"
+    assert response.body == b'{"detail":"Rate limit exceeded."}'
+
+
+@pytest.mark.asyncio
+async def test_http_exception_handler_without_headers():
+    from fastapi import HTTPException
+
+    from core.error_handler import http_exception_handler
+
+    response = await http_exception_handler(_request(), HTTPException(status_code=404, detail="nope"))
+
+    assert response.status_code == 404
+    assert "retry-after" not in response.headers
+
+
+@pytest.mark.asyncio
+async def test_api_exception_handler_preserves_headers():
+    response = await api_exception_handler(
+        _request(),
+        APIException(error_code=ErrorCode.AUTH_TOKEN_EXPIRED, status_code=401, headers={"X-Custom-Header": "v"}),
+    )
+
+    assert response.headers["x-custom-header"] == "v"

@@ -86,16 +86,27 @@
       "toggleFailed": "Failed to toggle key status",
       "nameRequired": "Name is required"
     },
-    "emptyState": "Create an API key, then share the link and key with your AI agent (Claude Code, OpenClaw, etc.) — it will auto-discover and connect to your workspace.",
-    "agentPromptZh": "请先阅读 {{skillUrl}} 了解我的小说写作平台 API，然后用以下 API Key 接入：\nAPI Key: {{apiKey}}\n请求头: X-Agent-API-Key: {{apiKey}}\n\n接入后请先调用 GET {{skillUrl}} 验证连接。",
-    "agentPromptEn": "Read {{skillUrl}} to learn about my novel writing platform API, then connect with this API key:\nAPI Key: {{apiKey}}\nHeader: X-Agent-API-Key: {{apiKey}}\n\nAfter connecting, verify by calling GET {{skillUrl}}.",
-    "copyPrompt": "Copy prompt for AI",
-    "copiedPrompt": "Copied!",
+    "emptyState": "Create an API key and sign in with the zenstory CLI — your AI agent (Claude Code, Codex, OpenClaw, etc.) can then read and write your novel projects directly.",
     "testConnection": "Test Connection",
     "testing": "Testing...",
     "testSuccess": "API Key is valid and active.",
     "testFailed": "Connection failed: {{error}}",
-    "hintBar": "Share the SKILL.md link and your API key with your AI agent — it will auto-connect."
+    "hintBar": "Sign in from your terminal; don’t paste your API key into an AI chat. You can disable or regenerate keys at any time.",
+    "createdNextSteps": "Run these commands in your terminal to connect (don’t paste the key into an AI chat):",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyKey": "Copy API key",
+    "copyPrefix": "Copy key prefix",
+    "connectGuide": {
+      "title": "Use zenstory from your AI coding agent",
+      "description": "Install the zenstory CLI and skill, and agents like Claude Code, Codex and OpenClaw can read and write your novel projects directly. Requires Node.js 20 or later.",
+      "step1": "Create an API key (read-only or read/write)",
+      "step2": "Sign in from your terminal, then paste the key when prompted — it is stored only on your machine",
+      "step2Hint": "Paste the key when prompted (input is hidden, so it stays out of your shell history).",
+      "step3": "Install the zenstory skill for your agent",
+      "step3Hint": "Installs for Claude Code by default; add --target codex or --target openclaw for other agents.",
+      "otherAgents": "Other AI agents can read the integration guide directly:"
+    }
   },
   "subscription": {
     "usage": "Usage",

@@ -14,7 +14,6 @@ from .plots_service import PlotsService
 from .relationships_service import RelationshipsService
 from .stats_service import StatsService
 from .stories_service import StoriesService
-from .timeline_service import TimelineService
 from .world_view_service import WorldViewService
 
 __all__ = [
@@ -28,6 +27,5 @@ __all__ = [
     "GoldenFingerService",
     "RelationshipsService",
     "StatsService",
-    "TimelineService",
     "WorldViewService",
 ]

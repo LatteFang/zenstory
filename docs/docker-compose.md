@@ -43,7 +43,7 @@ docker compose exec server python scripts/migrate_skills.py --db-url sqlite:////
 | 语音输入 | `TENCENT_SECRET_ID`、`TENCENT_SECRET_KEY` |
 | Google 登录 | 后端 `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`、`GOOGLE_REDIRECT_URI`、`FRONTEND_URL`；前端（`web.environment`）`VITE_GOOGLE_OAUTH_ENABLED=true` |
 | 素材库拆解 | 另行运行 Prefect server 与 worker（见 `apps/server/prefect.yaml`），并给套餐打开素材库权限 |
-| 外部 Agent 接入（Agent API） | `API_BASE_URL=http://你的服务器:8000/api/v1`（后端地址，不是 5173）；设置页复制的提示词写的是 `https://api.zenstory.ai/skill.md`，发给 Agent 前换成 `http://你的服务器:8000/skill.md` |
+| 外部 Agent 接入（Agent API / zenstory CLI） | `API_BASE_URL=https://你的服务器/api/v1`（后端地址，不是 5173，会写进 `/skill.md`）。设置页按前端 `VITE_API_BASE_URL` 给出 `npx zenstory login --api-base <后端地址>/api/v1` 与 `<后端地址>/skill.md`；用户在终端运行后按提示粘贴 Key。CLI 只接受 https（`localhost` / `127.0.0.1` / `::1` 例外），局域网 http 部署需要先在前面加一层 TLS 反向代理 |
 | Pro 套餐、兑换码 | `python scripts/seed_subscription_plans.py` 创建 Pro 套餐；`REDEMPTION_CODE_HMAC_SECRET`（至少 32 字符） |
 
 ## 生产部署（PostgreSQL + Redis）

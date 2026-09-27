@@ -35,6 +35,7 @@ from models.material_models import (
     WorldView,
 )
 from services.material.ingestion_jobs_service import IngestionJobsService
+from services.material.stories_service import story_in_novel
 from utils.logger import get_logger
 
 from .helpers import _get_novel_or_404
@@ -121,6 +122,7 @@ def get_materials(
             status=job.status if job else None,
             error_message=job.error_message if job else None,
             chapters_count=chapters_count,
+            enabled_stages=IngestionJobsService.get_enabled_stages(job),
         ))
 
     return result
@@ -157,6 +159,18 @@ def get_material_detail(
             .where(StoryLine.novel_id == novel_id)
             .scalar_subquery()
             .label("story_lines_count"),
+            select(func.count(Plot.id))
+            .where(Plot.chapter_id.in_(select(Chapter.id).where(Chapter.novel_id == novel_id)))
+            .scalar_subquery()
+            .label("plots_count"),
+            select(func.count(Story.id))
+            .where(story_in_novel(novel_id))
+            .scalar_subquery()
+            .label("stories_count"),
+            select(func.count(CharacterRelationship.id))
+            .where(CharacterRelationship.novel_id == novel_id)
+            .scalar_subquery()
+            .label("relationships_count"),
             select(func.count(GoldenFinger.id))
             .where(GoldenFinger.novel_id == novel_id)
             .scalar_subquery()
@@ -195,8 +209,12 @@ def get_material_detail(
         chapters_count=int(detail_row.chapters_count or 0),
         characters_count=int(detail_row.characters_count or 0),
         story_lines_count=int(detail_row.story_lines_count or 0),
+        plots_count=int(detail_row.plots_count or 0),
+        stories_count=int(detail_row.stories_count or 0),
+        relationships_count=int(detail_row.relationships_count or 0),
         golden_fingers_count=int(detail_row.golden_fingers_count or 0),
         has_world_view=int(detail_row.worldview_count or 0) > 0,
+        enabled_stages=IngestionJobsService.get_enabled_stages(latest_job),
     )
 
 
@@ -228,11 +246,7 @@ def get_material_summary(
             .scalar_subquery()
             .label("plots_count"),
             select(func.count(Story.id))
-            .where(
-                Story.story_line_id.in_(
-                    select(StoryLine.id).where(StoryLine.novel_id == novel_id)
-                )
-            )
+            .where(story_in_novel(novel_id))
             .scalar_subquery()
             .label("stories_count"),
             select(func.count(StoryLine.id))

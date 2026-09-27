@@ -251,6 +251,17 @@ class FileVersionService:
         """Get a specific version by ID."""
         return session.get(FileVersion, version_id)
 
+    def get_version_by_number(
+        self, session: Session, file_id: str, version_number: int
+    ) -> FileVersion | None:
+        """Get a file's version by its per-file version number."""
+        return session.exec(
+            select(FileVersion).where(
+                FileVersion.file_id == file_id,
+                FileVersion.version_number == version_number,
+            )
+        ).first()
+
     def get_latest_version(
         self, session: Session, file_id: str
     ) -> FileVersion | None:

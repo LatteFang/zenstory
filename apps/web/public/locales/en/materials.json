@@ -71,7 +71,6 @@
     "plots": "Plots",
     "storylines": "Story Lines",
     "goldenfingers": "Cheat Abilities",
-    "timeline": "Timeline",
     "chapterNumber": "Chapter",
     "wordCount": "Words",
     "summary": "Summary",
@@ -103,14 +102,8 @@
     "keyFactions": "Key Factions",
     "specialRules": "Special Rules",
     "worldviewItem": "Worldbuilding Settings",
-    "timelineEvent": "Timeline Event",
     "eventDescription": "Event Description",
-    "relatedChapter": "Related Chapter",
-    "relatedPlot": "Related Plot",
     "significance": "Significance",
-    "sequence": "Sequence",
-    "timeTag": "Time Tag",
-    "uncertain": "Uncertain",
     "noData": "No Data",
     "leader": "Leader",
     "territory": "Territory",
@@ -118,7 +111,8 @@
     "coreConflict": "Core Conflict",
     "chapterLabel": "Chapter",
     "idLabel": "ID",
-    "timeLabel": "Time"
+    "timeLabel": "Time",
+    "notEnabled": "Not enabled"
   },
   "quota": {
     "uploadTitle": "Upgrade to unlock the Materials Library",

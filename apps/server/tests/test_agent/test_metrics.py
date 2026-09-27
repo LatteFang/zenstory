@@ -291,8 +291,7 @@ class TestAgentServiceMetrics:
         mock_message_manager.build_system_prompt.return_value = "system"
         mock_message_manager.save_messages = AsyncMock()
         mock_skill_injector = MagicMock()
-        mock_skill_injector.build_skill_catalog.return_value = []
-        mock_skill_injector.build_skill_reference.return_value = []
+        mock_skill_injector.build_skill_catalog.return_value = None
 
         with (
             patch("agent.service.SessionLoader", return_value=mock_loader),

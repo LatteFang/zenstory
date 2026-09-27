@@ -138,8 +138,8 @@ test.describe('Chat input compact layout', () => {
     await skillRow.hover()
     await skillRow.getByTitle('使用此技能').click()
 
-    const selectedSkillRail = page.getByTestId('chat-skill-trigger-row')
-    await expect(selectedSkillRail).toContainText(trigger)
+    const selectedSkillRail = page.getByTestId('chat-selected-skill-row')
+    await expect(selectedSkillRail).toContainText(skillName)
     await expect(chatInput).toBeVisible()
     await expect(sendButton).toBeVisible()
 

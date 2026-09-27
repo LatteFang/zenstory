@@ -29,7 +29,7 @@ class UserSkill(SQLModel, table=True):
     name: str = Field(max_length=100, description="Display name of the skill")
     description: str | None = Field(
         default=None,
-        max_length=500,
+        max_length=1024,
         description="Brief description of what the skill does"
     )
 
@@ -44,6 +44,14 @@ class UserSkill(SQLModel, table=True):
     instructions: str = Field(
         sa_column=Column(Text),
         description="Instructions to inject into system prompt"
+    )
+
+    # 标准 SKILL.md frontmatter 的其余字段（license / compatibility / allowed_tools / metadata），
+    # JSON 对象。allowed_tools 只存储与再导出，没有运行时效果。
+    skill_metadata: str = Field(
+        default="{}",
+        sa_column=Column(Text, nullable=False, server_default="{}"),
+        description="JSON object of standard SKILL.md frontmatter extras"
     )
 
     # Status

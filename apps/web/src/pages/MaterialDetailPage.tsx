@@ -19,12 +19,12 @@ import {
   ChevronDown,
   GitBranch,
   Users,
-  Clock,
   Loader2,
 } from "../components/icons";
 import { materialsApi } from "../lib/materialsApi";
 import type {
   MaterialNovel,
+  MaterialEnabledStages,
   MaterialChapter,
   MaterialCharacter,
   MaterialStory,
@@ -33,7 +33,6 @@ import type {
   MaterialCharacterRelationship,
   MaterialGoldenFinger,
   MaterialWorldView,
-  MaterialEventTimeline,
 } from "../lib/materialsApi";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import { materialsConfig } from "../config/materials";
@@ -55,8 +54,7 @@ type TreeItemType =
   | "plot"
   | "storyline"
   | "relationship"
-  | "goldenfinger"
-  | "timeline";
+  | "goldenfinger";
 
 interface TreeItem {
   id: string;
@@ -64,6 +62,28 @@ interface TreeItem {
   title: string;
   children?: TreeItem[];
   data?: unknown;
+  /** Folder whose decomposition stage was not enabled and that has no data: muted, not expandable. */
+  disabled?: boolean;
+}
+
+/**
+ * Whether a decomposition stage ran for this material. Jobs created before the
+ * enabled-stage snapshot existed report null, which keeps the legacy behavior
+ * (treat every stage as enabled).
+ */
+function isStageEnabled(
+  enabledStages: MaterialEnabledStages | null | undefined,
+  stage: keyof MaterialEnabledStages,
+) {
+  return enabledStages?.[stage] !== false;
+}
+
+/**
+ * A folder is greyed out only when its stage is off AND it holds no data: a job
+ * retried after a stage was switched off may still own data from earlier runs.
+ */
+function isFolderDisabled(stageEnabled: boolean, dataCount: number | undefined) {
+  return !stageEnabled && !(dataCount && dataCount > 0);
 }
 
 export default function MaterialDetailPage() {
@@ -162,14 +182,6 @@ export default function MaterialDetailPage() {
     staleTime: 30 * 1000,
   });
 
-  // Fetch timeline
-  const { data: timeline = [], refetch: refetchTimeline, isFetching: isFetchingTimeline } = useQuery({
-    queryKey: ["material-timeline", novelId],
-    queryFn: () => materialsApi.getTimeline(novelId!),
-    enabled: false,
-    staleTime: 30 * 1000,
-  });
-
   // Loading states mapping
   const loadingStates: Record<string, boolean> = {
     chapters: isFetchingChapters,
@@ -180,7 +192,6 @@ export default function MaterialDetailPage() {
     relationships: isFetchingRelationships,
     goldenfingers: isFetchingGoldenFingers,
     worldview: isFetchingWorldview,
-    timeline: isFetchingTimeline,
   };
 
   // Trigger load function
@@ -196,7 +207,6 @@ export default function MaterialDetailPage() {
       relationships: refetchRelationships,
       goldenfingers: refetchGoldenFingers,
       worldview: refetchWorldview,
-      timeline: refetchTimeline,
     };
 
     const refetchFolder = refetchByFolder[folderId];
@@ -211,6 +221,17 @@ export default function MaterialDetailPage() {
   // Build tree structure - folders always visible, children lazy loaded
   const buildTree = (): TreeItem[] => {
     const tree: TreeItem[] = [];
+    const enabledStages = material?.enabled_stages;
+    const charactersEnabled = isStageEnabled(enabledStages, "characters");
+    const storiesEnabled = isStageEnabled(enabledStages, "stories");
+    // Older snapshots have no `storylines` key: storylines followed `stories` then.
+    const storylinesEnabled = isStageEnabled(
+      enabledStages,
+      enabledStages?.storylines === undefined ? "stories" : "storylines",
+    );
+    const plotsEnabled = isStageEnabled(enabledStages, "plots");
+    const relationshipsEnabled = isStageEnabled(enabledStages, "relationships");
+    const metaEnabled = isStageEnabled(enabledStages, "meta");
 
     // Chapters folder - always show
     tree.push({
@@ -230,6 +251,7 @@ export default function MaterialDetailPage() {
       id: "characters",
       type: "folder",
       title: t("materials:detail.characters"),
+      disabled: isFolderDisabled(charactersEnabled, material?.characters_count),
       children: characters.map((character) => ({
         id: character.id,
         type: "character",
@@ -243,6 +265,7 @@ export default function MaterialDetailPage() {
       id: "stories",
       type: "folder",
       title: t("materials:detail.stories"),
+      disabled: isFolderDisabled(storiesEnabled, material?.stories_count),
       children: stories.map((story) => ({
         id: story.id,
         type: "story",
@@ -260,6 +283,7 @@ export default function MaterialDetailPage() {
       id: "plots",
       type: "folder",
       title: t("materials:detail.plots"),
+      disabled: isFolderDisabled(plotsEnabled, material?.plots_count),
       children: plots.map((plot) => ({
         id: String(plot.id),
         type: "plot",
@@ -273,6 +297,7 @@ export default function MaterialDetailPage() {
       id: "storylines",
       type: "folder",
       title: t("materials:detail.storylines"),
+      disabled: isFolderDisabled(storylinesEnabled, material?.story_lines_count),
       children: storylines.map((storyline) => ({
         id: String(storyline.id),
         type: "storyline",
@@ -286,6 +311,7 @@ export default function MaterialDetailPage() {
         id: "relationships",
         type: "folder",
         title: t("materials:detail.relationships"),
+        disabled: isFolderDisabled(relationshipsEnabled, material?.relationships_count),
         children: relationships.map((rel) => ({
           id: String(rel.id),
           type: "relationship",
@@ -300,6 +326,7 @@ export default function MaterialDetailPage() {
       id: "goldenfingers",
       type: "folder",
       title: t("materials:detail.goldenfingers"),
+      disabled: isFolderDisabled(metaEnabled, material?.golden_fingers_count),
       children: goldenFingers.map((gf) => ({
         id: String(gf.id),
         type: "goldenfinger",
@@ -313,25 +340,13 @@ export default function MaterialDetailPage() {
       id: "worldview",
       type: "folder",
       title: t("materials:detail.worldview"),
+      disabled: isFolderDisabled(metaEnabled, material?.has_world_view ? 1 : 0),
       children: worldview ? [{
         id: String(worldview.id),
         type: "worldview",
         title: t("materials:detail.worldviewItem"),
         data: worldview,
       }] : [],
-    });
-
-    // Timeline folder - always show
-    tree.push({
-      id: "timeline",
-      type: "folder",
-      title: t("materials:detail.timeline"),
-      children: timeline.map((event) => ({
-        id: String(event.id),
-        type: "timeline",
-        title: event.time_tag || `#${event.rel_order}`,
-        data: event,
-      })),
     });
 
     return tree;
@@ -377,6 +392,7 @@ export default function MaterialDetailPage() {
   };
 
   const handleItemClick = (item: TreeItem) => {
+    if (item.disabled) return;
     if (item.type === "folder") {
       toggleFolder(item.id);
     } else {
@@ -527,6 +543,7 @@ interface FileTreeProps {
 }
 
 function FileTree({ items, selectedId, expandedFolders, onItemClick, loadingStates, level = 0 }: FileTreeProps) {
+  const { t } = useTranslation(["materials"]);
   const getIcon = (type: TreeItemType, isExpanded: boolean) => {
     switch (type) {
       case "folder":
@@ -553,8 +570,6 @@ function FileTree({ items, selectedId, expandedFolders, onItemClick, loadingStat
         return <Users className="w-4 h-4 text-pink-500" />;
       case "goldenfinger":
         return <Zap className="w-4 h-4 text-yellow-500" />;
-      case "timeline":
-        return <Clock className="w-4 h-4 text-teal-500" />;
       default:
         return <File className="w-4 h-4 text-[hsl(var(--text-tertiary))]" />;
     }
@@ -563,7 +578,8 @@ function FileTree({ items, selectedId, expandedFolders, onItemClick, loadingStat
   return (
     <div className="space-y-1">
       {items.map((item) => {
-        const isExpanded = expandedFolders.has(item.id);
+        const isDisabled = Boolean(item.disabled);
+        const isExpanded = !isDisabled && expandedFolders.has(item.id);
         const isSelected = selectedId === item.id;
         const hasChildren = item.children && item.children.length > 0;
 
@@ -571,14 +587,19 @@ function FileTree({ items, selectedId, expandedFolders, onItemClick, loadingStat
           <div key={item.id}>
             <button
               onClick={() => onItemClick(item)}
+              disabled={isDisabled}
+              aria-disabled={isDisabled || undefined}
               className={`w-full flex items-center gap-2 px-2 py-2.5 rounded-lg text-sm transition-colors ${
-                isSelected
+                isDisabled
+                  ? "cursor-not-allowed text-[hsl(var(--text-tertiary))]"
+                  : isSelected
                   ? "bg-[hsl(var(--accent-primary)/0.1)] text-[hsl(var(--accent-primary))]"
                   : "hover:bg-[hsl(var(--bg-tertiary))] text-[hsl(var(--text-primary))] active:bg-[hsl(var(--bg-hover))]"
               }`}
               style={{ paddingLeft: `${level * 12 + 8}px` }}
             >
-              {item.type === "folder" && (
+              {item.type === "folder" && isDisabled && <span className="shrink-0 w-3.5" />}
+              {item.type === "folder" && !isDisabled && (
                 <span className="shrink-0">
                   {isExpanded ? (
                     <ChevronDown className="w-3.5 h-3.5" />
@@ -589,6 +610,11 @@ function FileTree({ items, selectedId, expandedFolders, onItemClick, loadingStat
               )}
               <span className="shrink-0">{getIcon(item.type, isExpanded)}</span>
               <span className="truncate flex-1 text-left">{item.title}</span>
+              {isDisabled && (
+                <span className="shrink-0 text-xs text-[hsl(var(--text-tertiary))]">
+                  {t("materials:detail.notEnabled")}
+                </span>
+              )}
               {item.type === "folder" && loadingStates[item.id] && (
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-[hsl(var(--accent-primary))]" />
               )}
@@ -1092,61 +1118,6 @@ function ContentDetail({ item }: ContentDetailProps) {
               {t("materials:detail.specialRules")}
             </h3>
             <MarkdownContent content={worldview.special_rules} />
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (item.type === "timeline") {
-    const event = item.data as MaterialEventTimeline;
-    return (
-      <div className="max-w-3xl">
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-5 h-5 text-teal-500" />
-            <h2 className="text-2xl font-bold text-[hsl(var(--text-primary))]">
-              {t("materials:detail.timelineEvent")}
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-[hsl(var(--text-secondary))]">
-              {t("materials:detail.sequence")}: {event.rel_order}
-            </span>
-            {event.uncertain && (
-              <span className="inline-block px-2 py-0.5 rounded-full bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))] text-xs font-medium">
-                {t("materials:detail.uncertain")}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {event.time_tag && (
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-[hsl(var(--text-secondary))] mb-2">
-              {t("materials:detail.timeTag")}
-            </h3>
-            <p className="text-sm text-[hsl(var(--text-primary))]">
-              {event.time_tag}
-            </p>
-          </div>
-        )}
-
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold text-[hsl(var(--text-secondary))] mb-2">
-            {t("materials:detail.relatedChapter")}
-          </h3>
-          <p className="text-sm text-[hsl(var(--text-primary))]">
-            {event.chapter_title}
-          </p>
-        </div>
-
-        {event.plot_description && (
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-[hsl(var(--text-secondary))] mb-2">
-              {t("materials:detail.relatedPlot")}
-            </h3>
-            <MarkdownContent content={event.plot_description} />
           </div>
         )}
       </div>

@@ -14,7 +14,6 @@ import {
   type MaterialCharacterRelationship,
   type MaterialGoldenFinger,
   type MaterialWorldView,
-  type MaterialEventTimeline,
   type MaterialTreeNode,
   type LibrarySummaryItem,
   type MaterialEntityType,
@@ -696,51 +695,8 @@ describe('materialsApi', () => {
     })
   })
 
-  describe('getTimeline', () => {
-    it('returns event timeline', async () => {
-      const mockTimeline: MaterialEventTimeline[] = [
-        {
-          id: 1,
-          novel_id: 1,
-          chapter_id: 1,
-          chapter_title: 'Chapter 1',
-          plot_id: 1,
-          plot_description: 'First event',
-          rel_order: 0,
-          time_tag: 'Day 1',
-          uncertain: false,
-          created_at: '2024-01-01T00:00:00Z',
-        },
-      ]
-      mockApiGet.mockResolvedValue(mockTimeline)
-
-      const result = await materialsApi.getTimeline('novel-1')
-
-      expect(result).toEqual(mockTimeline)
-      expect(mockApiGet).toHaveBeenCalledWith('/api/v1/materials/novel-1/timeline')
-    })
-
-    it('returns timeline with uncertain events', async () => {
-      const mockTimeline: MaterialEventTimeline[] = [
-        {
-          id: 1,
-          novel_id: 1,
-          chapter_id: 1,
-          chapter_title: 'Chapter 1',
-          plot_id: 1,
-          plot_description: null,
-          rel_order: 0,
-          time_tag: null,
-          uncertain: true,
-          created_at: '2024-01-01T00:00:00Z',
-        },
-      ]
-      mockApiGet.mockResolvedValue(mockTimeline)
-
-      const result = await materialsApi.getTimeline('novel-1')
-
-      expect(result).toEqual(mockTimeline)
-    })
+  it('no longer exposes the unused timeline endpoint', () => {
+    expect('getTimeline' in materialsApi).toBe(false)
   })
 
   describe('Material Bridge APIs', () => {

@@ -5,7 +5,7 @@
 - #4  正文含奇数个 ``` 围栏时真实 </file> 被误判为代码块字面量
 - #20 edit_file 的 failed_edits / partial_success / warnings 被整体丢弃
 - #33 多 agent 协作时 usage 被覆盖而非累加（适配器侧）
-- #36 [使用技能: X] 控制标记进入用户可见正文并落库
+- 技能用量改由 load_skill 工具结果驱动 skill_matched，适配器不再解析/剥离任何文本标记
 """
 
 import json
@@ -551,104 +551,79 @@ async def test_usage_missing_on_later_agent_keeps_previous_total():
     assert adapter.get_last_message_metadata()["usage"] == {"total_tokens": 120}
 
 
-# ------------------------------------------------------------------ 缺陷 #36 --
+# ------------------------------------------------ 技能用量来自 load_skill --
+
+
+def _load_skill_result(skill_id: str, skill_name: str, *, status: str = "success") -> WorkflowStreamEvent:
+    if status == "success":
+        payload = {
+            "status": "success",
+            "data": {
+                "skill_id": skill_id,
+                "skill_name": skill_name,
+                "source": "user",
+                "instructions": "先强化钩子。",
+                "resources": [],
+            },
+        }
+    else:
+        payload = {"status": "error", "error": "未找到已启用的技能"}
+    return WorkflowStreamEvent(
+        type=StreamEventType.TOOL_RESULT,
+        data={
+            "tool_use_id": f"call-{skill_id}",
+            "name": "load_skill",
+            "result": {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}]},
+        },
+    )
 
 
 @pytest.mark.asyncio
-async def test_skill_marker_is_stripped_from_visible_text():
-    """[使用技能: X] 不得出现在下发/落库的正文里，但技能匹配仍要生效。"""
+async def test_load_skill_result_emits_skill_matched_once_per_skill():
     adapter = _make_adapter()
     events = await _drive(
         adapter,
         [
-            _text_event("[使用技能: 悬念大师]\n\n夜色渐深，"),
-            _text_event("风穿过长街。"),
+            _load_skill_result("s-1", "悬念大师"),
+            _load_skill_result("s-1", "悬念大师"),
+            _load_skill_result("s-2", "节奏控"),
             _message_end(),
         ],
     )
 
-    assert _chat(events) == "夜色渐深，风穿过长街。"
-    # 技能检测仍基于原始文本
-    assert "[使用技能: 悬念大师]" in adapter._accumulated_text
+    matched = [e.data for e in events if e.type == EventType.SKILL_MATCHED]
+    assert matched == [
+        {"skill_id": "s-1", "skill_name": "悬念大师", "matched_trigger": "load_skill"},
+        {"skill_id": "s-2", "skill_name": "节奏控", "matched_trigger": "load_skill"},
+    ]
+    # skill_matched 紧跟在对应的 tool_result 之后、done 之前
+    assert events[-1].type == EventType.DONE
 
 
 @pytest.mark.asyncio
-async def test_skill_marker_split_across_deltas_is_stripped():
-    """标记被 delta 拆开时也要剥干净。"""
+async def test_failed_load_skill_does_not_emit_skill_matched():
+    adapter = _make_adapter()
+    events = await _drive(adapter, [_load_skill_result("s-1", "悬念大师", status="error"), _message_end()])
+
+    assert not [e for e in events if e.type == EventType.SKILL_MATCHED]
+
+
+@pytest.mark.asyncio
+async def test_bracket_text_is_passed_through_verbatim():
+    """适配器不再解析或剥离任何「技能标记」：模型输出的文本原样下发，一个字都不丢。"""
     adapter = _make_adapter()
     events = await _drive(
         adapter,
         [
             _text_event("[使用技"),
-            _text_event("能: 悬念大师]"),
-            _text_event("正文开始。"),
-            _message_end(),
-        ],
-    )
-
-    assert _chat(events) == "正文开始。"
-
-
-@pytest.mark.asyncio
-async def test_text_starting_with_bracket_is_not_swallowed():
-    """开头是别的方括号内容时必须原样放行，一个字都不能丢。"""
-    adapter = _make_adapter()
-    events = await _drive(
-        adapter,
-        [
-            _text_event("[第一章] 夜色"),
+            _text_event("能: 悬念大师]\n夜色"),
             _text_event("渐深。"),
             _message_end(),
         ],
     )
 
-    assert _chat(events) == "[第一章] 夜色渐深。"
-
-
-@pytest.mark.asyncio
-async def test_incomplete_skill_marker_is_released_at_stream_end():
-    """标记开了头却没闭合（流被截断）时，缓冲文本必须在结束时放行。"""
-    adapter = _make_adapter()
-    events = await _drive(adapter, [_text_event("[使用技能: 悬念")])
-
-    assert _chat(events) == "[使用技能: 悬念"
-
-
-@pytest.mark.asyncio
-async def test_skill_marker_stripping_survives_file_capture():
-    """标记后紧跟 <file> 正文时，标记剥离不能影响文件捕获。"""
-    adapter = _make_adapter()
-    adapter._save_file_content = AsyncMock(return_value=True)
-    adapter.set_pending_file_write("f-1", "draft", "第一章")
-
-    events = await _drive(
-        adapter,
-        [
-            _text_event("[使用技能: 悬念大师]"),
-            _text_event("<file>夜色渐深。</file>写好了。"),
-            _message_end(),
-        ],
-    )
-
-    adapter._save_file_content.assert_awaited_once_with("f-1", "夜色渐深。")
-    assert _chat(events) == "写好了。"
-
-
-@pytest.mark.asyncio
-async def test_second_agent_marker_is_also_stripped():
-    """MESSAGE_END 之后换 agent，新 agent 开头的标记同样要剥离。"""
-    adapter = _make_adapter()
-    events = await _drive(
-        adapter,
-        [
-            _text_event("[使用技能: 悬念大师]第一段。"),
-            _message_end(),
-            _text_event("[使用技能: 节奏控]第二段。"),
-            _message_end(),
-        ],
-    )
-
-    assert _chat(events) == "第一段。第二段。"
+    assert _chat(events) == "[使用技能: 悬念大师]\n夜色渐深。"
+    assert not [e for e in events if e.type == EventType.SKILL_MATCHED]
 
 
 # --------------------------------------------------- 缺陷 #3（端到端护栏） --
@@ -920,3 +895,65 @@ async def test_truncated_overwrite_guard_covers_agent_boundary_path(
     assert warning_index >= 0, "没有把本次未保存的原因说给用户和模型听"
     assert boundary_index >= 0, "第二个 agent 的叙述被文件捕获吞掉了：边界没有收尾"
     assert warning_index < boundary_index, "收尾没有发生在 agent 边界上，而是被拖到了流结束"
+
+
+@pytest.mark.asyncio
+async def test_selected_skills_are_not_announced_again_by_load_skill():
+    """显式选择的技能在流开头已发过 skill_matched，之后 load_skill 它不再重复发。"""
+    adapter = StreamAdapter(StreamAdapterConfig(project_id="p", matched_skill_ids=("s-1",)))
+    events = await _drive(
+        adapter,
+        [_load_skill_result("s-1", "悬念大师"), _load_skill_result("s-2", "节奏控"), _message_end()],
+    )
+
+    matched = [e.data["skill_id"] for e in events if e.type == EventType.SKILL_MATCHED]
+    assert matched == ["s-2"]
+
+
+@pytest.mark.asyncio
+async def test_skill_tool_results_sent_to_client_omit_full_content():
+    """浏览器只拿技能名/路径/大小；完整方法与资源正文只给模型（不经过适配器）。"""
+    load_payload = {
+        "status": "success",
+        "data": {
+            "skill_id": "s-1",
+            "skill_name": "悬念大师",
+            "source": "user",
+            "instructions": "机密方法" * 100,
+            "resources": [{"path": "references/a.md", "size": 3}],
+        },
+    }
+    read_payload = {
+        "status": "success",
+        "data": {"skill_name": "悬念大师", "path": "references/a.md", "content": "机密正文"},
+    }
+
+    def _result(name: str, payload: dict) -> WorkflowStreamEvent:
+        return WorkflowStreamEvent(
+            type=StreamEventType.TOOL_RESULT,
+            data={
+                "tool_use_id": f"call-{name}",
+                "name": name,
+                "result": {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}]},
+            },
+        )
+
+    events = await _drive(
+        _make_adapter(),
+        [_result("load_skill", load_payload), _result("read_skill_resource", read_payload), _message_end()],
+    )
+
+    results = {e.data["tool_name"]: e.data["data"] for e in events if e.type == EventType.TOOL_RESULT}
+    assert results["load_skill"] == {
+        "skill_id": "s-1",
+        "skill_name": "悬念大师",
+        "source": "user",
+        "instructions_chars": 400,
+        "resources": [{"path": "references/a.md", "size": 3}],
+    }
+    assert results["read_skill_resource"] == {
+        "skill_name": "悬念大师",
+        "path": "references/a.md",
+        "size": len("机密正文".encode()),
+    }
+    assert "机密" not in json.dumps([e.data for e in events], ensure_ascii=False)

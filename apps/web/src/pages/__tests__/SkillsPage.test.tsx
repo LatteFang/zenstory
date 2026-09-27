@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SkillsPage from '../SkillsPage'
 import { ApiError } from '../../lib/apiClient'
@@ -107,6 +107,12 @@ vi.mock('../../lib/api', () => ({
     update: vi.fn(),
     delete: vi.fn(),
     batchUpdate: vi.fn(),
+    importSkill: vi.fn(),
+    exportSkill: vi.fn(),
+    listResources: vi.fn(),
+    getResourceContent: vi.fn(),
+    upsertResource: vi.fn(),
+    deleteResource: vi.fn(),
   },
   publicSkillsApi: {
     list: vi.fn(),
@@ -114,6 +120,10 @@ vi.mock('../../lib/api', () => ({
     add: vi.fn(),
     remove: vi.fn(),
   },
+}))
+
+vi.mock('../../lib/toast', () => ({
+  toast: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
 }))
 
 // Mock react-markdown to avoid complexity
@@ -142,6 +152,7 @@ vi.spyOn(console, 'error').mockImplementation(() => {})
 vi.spyOn(console, 'log').mockImplementation(() => {})
 
 import { skillsApi, publicSkillsApi } from '../../lib/api'
+import { toast } from '../../lib/toast'
 
 // Test data fixtures
 const mockUserSkills: Skill[] = [
@@ -571,6 +582,132 @@ describe('SkillsPage', () => {
       await waitFor(() => {
         expect(skillsApi.create).toHaveBeenCalled()
         expect(screen.getByTestId('upgrade-modal')).toBeInTheDocument()
+      })
+    })
+  })
+
+  // ========================================
+  // 5b. Import / Export / Resources
+  // ========================================
+  describe('Import, export and resources', () => {
+    const openMySkills = async () => {
+      render(<SkillsPage />)
+      await userEvent.click(screen.getByRole('button', { name: /my skills/i }))
+      await waitFor(() => {
+        expect(screen.getByText('Writing Assistant')).toBeInTheDocument()
+      })
+    }
+
+    it('imports a skill package and shows returned warnings', async () => {
+      vi.mocked(skillsApi.importSkill).mockResolvedValueOnce({
+        skill: { ...mockUserSkills[0], id: 'imported-1', name: 'Imported Skill' },
+        warnings: ['scripts/run.py: scripts are not supported', 'assets/logo.png: unsupported file type'],
+      })
+
+      render(<SkillsPage />)
+
+      const file = new File(['zip-bytes'], 'my-skill.zip', { type: 'application/zip' })
+      await userEvent.upload(screen.getByTestId('skill-import-input'), file)
+
+      await waitFor(() => {
+        expect(skillsApi.importSkill).toHaveBeenCalledWith(file)
+      })
+      const result = await screen.findByTestId('skill-import-result')
+      expect(result).toHaveTextContent('scripts/run.py: scripts are not supported')
+      expect(result).toHaveTextContent('assets/logo.png: unsupported file type')
+      // Imported skill list is refreshed
+      await waitFor(() => {
+        expect(skillsApi.mySkills).toHaveBeenCalled()
+      })
+    })
+
+    it('rejects unsupported import file types before calling the API', async () => {
+      render(<SkillsPage />)
+
+      const file = new File(['x'], 'tool.exe', { type: 'application/octet-stream' })
+      await userEvent.upload(screen.getByTestId('skill-import-input'), file, { applyAccept: false })
+
+      expect(skillsApi.importSkill).not.toHaveBeenCalled()
+      expect(toast.error).toHaveBeenCalledWith('skills:import.invalidType')
+    })
+
+    it('exports a skill as zip', async () => {
+      vi.mocked(skillsApi.exportSkill).mockResolvedValueOnce(undefined)
+      await openMySkills()
+
+      const exportButtons = screen.getAllByRole('button', { name: 'skills:export.button' })
+      await userEvent.click(exportButtons[0])
+
+      expect(skillsApi.exportSkill).toHaveBeenCalledWith('skill-1', 'Writing Assistant')
+    })
+
+    it('shows resources read-only for added skills', async () => {
+      vi.mocked(skillsApi.listResources).mockResolvedValue({
+        resources: [{ path: 'references/guide.md', size: 120, updated_at: '2024-01-01T00:00:00Z' }],
+      })
+      vi.mocked(skillsApi.getResourceContent).mockResolvedValue({
+        path: 'references/guide.md',
+        content: '# Guide',
+      })
+      await openMySkills()
+
+      const addedCard = screen.getByText('Plot Twist Generator').closest('.group') as HTMLElement
+      await userEvent.click(within(addedCard).getByTitle('Expand'))
+
+      const section = await within(addedCard).findByTestId('skill-resources-section')
+      expect(skillsApi.listResources).toHaveBeenCalledWith('added-1')
+      expect(within(section).queryByText('resources.add')).not.toBeInTheDocument()
+      expect(within(section).queryByRole('button', { name: 'resources.delete' })).not.toBeInTheDocument()
+
+      await userEvent.click(within(section).getByText('references/guide.md'))
+      const textarea = await within(section).findByRole('textbox', { name: 'resources.content' })
+      expect(textarea).toHaveValue('# Guide')
+      expect(textarea).toHaveAttribute('readonly')
+      expect(within(section).queryByText('resources.saveFile')).not.toBeInTheDocument()
+    })
+
+    it('hides the resources section for added skills without resources', async () => {
+      vi.mocked(skillsApi.listResources).mockResolvedValue({ resources: [] })
+      await openMySkills()
+
+      const addedCard = screen.getByText('Plot Twist Generator').closest('.group') as HTMLElement
+      await userEvent.click(within(addedCard).getByTitle('Expand'))
+
+      await waitFor(() => {
+        expect(skillsApi.listResources).toHaveBeenCalledWith('added-1')
+      })
+      expect(within(addedCard).queryByTestId('skill-resources-section')).not.toBeInTheDocument()
+    })
+
+    it('validates resource path prefix and extension before saving own skill resources', async () => {
+      vi.mocked(skillsApi.listResources).mockResolvedValue({ resources: [] })
+      vi.mocked(skillsApi.upsertResource).mockResolvedValue({})
+      await openMySkills()
+
+      await userEvent.click(screen.getAllByRole('button', { name: 'Edit Skill' })[0])
+      const section = await screen.findByTestId('skill-resources-section')
+      await userEvent.click(within(section).getByText('resources.add'))
+
+      const pathInput = within(section).getByRole('textbox', { name: 'resources.path' })
+      const contentInput = within(section).getByRole('textbox', { name: 'resources.content' })
+      await userEvent.type(contentInput, 'notes')
+
+      await userEvent.clear(pathInput)
+      await userEvent.type(pathInput, 'notes/a.md')
+      await userEvent.click(within(section).getByText('resources.saveFile'))
+      expect(within(section).getByRole('alert')).toHaveTextContent('resources.errors.prefix')
+
+      await userEvent.clear(pathInput)
+      await userEvent.type(pathInput, 'references/run.py')
+      await userEvent.click(within(section).getByText('resources.saveFile'))
+      expect(within(section).getByRole('alert')).toHaveTextContent('resources.errors.extension')
+      expect(skillsApi.upsertResource).not.toHaveBeenCalled()
+
+      await userEvent.clear(pathInput)
+      await userEvent.type(pathInput, 'references/notes.md')
+      await userEvent.click(within(section).getByText('resources.saveFile'))
+      await waitFor(() => {
+        expect(skillsApi.upsertResource).toHaveBeenCalledWith('skill-1', 'references/notes.md', 'notes')
       })
     })
   })

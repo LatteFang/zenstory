@@ -7,9 +7,10 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from sqlalchemy import and_, or_
 from sqlmodel import Session, select
 
-from models.material_models import Plot, Story, StoryLine, StoryPlotLink
+from models.material_models import Chapter, Plot, Story, StoryLine, StoryPlotLink
 
 
 def _serialize_json(value: Any) -> str | None:
@@ -21,17 +22,33 @@ def _serialize_json(value: Any) -> str | None:
     return json.dumps(value)
 
 
+def story_in_novel(novel_id: int):
+    """SQL condition: the story belongs to ``novel_id``.
+
+    Legacy rows without ``novel_id`` still resolve through their storyline.
+    """
+    return or_(
+        Story.novel_id == novel_id,
+        and_(
+            Story.novel_id.is_(None),
+            Story.story_line_id.in_(select(StoryLine.id).where(StoryLine.novel_id == novel_id)),
+        ),
+    )
+
+
 class StoriesService:
     """Story aggregation service using SQLModel patterns."""
 
-    def upsert_story(self, session: Session, _novel_id: int, story_data: dict) -> int:
-        """Upsert a story. Returns story ID."""
+    def upsert_story(self, session: Session, novel_id: int, story_data: dict) -> int:
+        """Upsert a story within one novel (matched on title + synopsis). Returns story ID."""
         title = story_data.get("title")
         synopsis = story_data.get("synopsis")
 
-        # Check for existing story
+        # Check for existing story in the same novel only
         statement = select(Story).where(
-            Story.title == title, Story.synopsis == synopsis
+            Story.novel_id == novel_id,
+            Story.title == title,
+            Story.synopsis == synopsis,
         )
         existing = session.exec(statement).first()
 
@@ -48,6 +65,7 @@ class StoriesService:
 
         # Create new story
         new_story = Story(
+            novel_id=novel_id,
             title=title,
             synopsis=synopsis,
             core_objective=story_data.get("core_objective"),
@@ -63,13 +81,35 @@ class StoriesService:
     def attach_plots_to_story(
         self, session: Session, story_id: int, plot_ids: list[int]
     ) -> int:
-        """Attach plots to a story. Returns count of links created."""
+        """Attach plots to a story. Returns count of links created.
+
+        ``plot_ids`` come from the LLM, so they are validated: unknown plots, plots
+        from another novel (when the story has ``novel_id``) and plots already linked
+        to the story (re-runs) are skipped.
+        """
+        story = session.get(Story, story_id)
+        if not story:
+            return 0
+        linked = set(
+            session.exec(select(StoryPlotLink.plot_id).where(StoryPlotLink.story_id == story_id)).all()
+        )
         count = 0
-        for order_index, plot_id in enumerate(plot_ids):
+        for order_index, raw_plot_id in enumerate(plot_ids):
+            try:
+                plot_id = int(raw_plot_id)
+            except (TypeError, ValueError):
+                continue
+            if plot_id in linked:
+                continue
             plot = session.get(Plot, plot_id)
             if not plot:
                 continue
+            if story.novel_id is not None:
+                chapter = session.get(Chapter, plot.chapter_id)
+                if not chapter or chapter.novel_id != story.novel_id:
+                    continue
 
+            linked.add(plot_id)
             link = StoryPlotLink(
                 story_id=story_id,
                 plot_id=plot_id,
@@ -98,11 +138,14 @@ class StoriesService:
     def attach_stories_to_storyline(
         self, session: Session, storyline_id: int, story_ids: list[int]
     ) -> int:
-        """Attach stories to a storyline. Returns count of updated stories."""
+        """Attach stories of the storyline's novel to it. Returns count of updated stories."""
+        storyline = session.get(StoryLine, storyline_id)
+        if not storyline:
+            return 0
         updated = 0
         for sid in story_ids:
             story = session.get(Story, sid)
-            if story:
+            if story and story.novel_id == storyline.novel_id:
                 story.story_line_id = storyline_id
                 session.add(story)
                 updated += 1

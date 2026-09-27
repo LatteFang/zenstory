@@ -15,6 +15,7 @@ const mockAgentStreamState = vi.hoisted(() => ({
 }))
 
 const sendSteeringMessageMock = vi.hoisted(() => vi.fn())
+const startStreamMock = vi.hoisted(() => vi.fn())
 
 const capturedMessageInputProps = vi.hoisted(() => ({
   props: null as Record<string, unknown> | null,
@@ -112,7 +113,7 @@ vi.mock('../../hooks/useChatStreaming', () => ({
 vi.mock('../../hooks/useAgentStream', () => ({
   useAgentStream: () => ({
     state: {},
-    startStream: vi.fn(),
+    startStream: startStreamMock,
     cancel: vi.fn(),
     reset: vi.fn(),
     isStreaming: mockAgentStreamState.isStreaming,
@@ -234,5 +235,33 @@ describe('round3 #24 ChatPanel.handleSteer 必须把失败抛回调用方', () =
     mockAgentStreamState.sessionId = null
     await renderAndGetSteer()
     expect(capturedMessageInputProps.props?.canSteer).toBe(false)
+  })
+})
+
+describe('ChatPanel.handleSendMessage 透传显式选择的技能', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    capturedMessageInputProps.props = null
+    mockAgentStreamState.isStreaming = false
+    mockAgentStreamState.sessionId = null
+  })
+
+  it('把 MessageInput 传来的技能 id 放进 selected_skill_ids', async () => {
+    render(<ChatPanel />)
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-message-input')).toBeInTheDocument()
+    })
+    const onSend = capturedMessageInputProps.props?.onSend as (
+      message: string,
+      selectedSkillIds?: string[],
+    ) => Promise<void>
+
+    await onSend('写下一章', ['skill-a', 'skill-b'])
+    expect(startStreamMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ message: '写下一章', selected_skill_ids: ['skill-a', 'skill-b'] }),
+    )
+
+    await onSend('不选技能', [])
+    expect(startStreamMock.mock.lastCall?.[0].selected_skill_ids).toBeUndefined()
   })
 })

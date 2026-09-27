@@ -15,6 +15,7 @@ from typing import Any
 from prefect import get_run_logger, task
 
 from config.material_settings import material_settings as settings
+from config.material_settings import resolve_enabled_stages, warn_explicitly_dropped_stages
 from flows.database_session import get_prefect_db_session
 from flows.pipelines.helpers import ProgressPublisher, ResultBuilder
 
@@ -94,6 +95,35 @@ class StageExecutor:
         self.correlation_id = correlation_id
         self.logger = get_run_logger()
         self.publisher = ProgressPublisher(correlation_id, self.logger)
+        # 所有阶段门控统一读取生效后的阶段集合（已应用依赖约束）
+        self.stages = resolve_enabled_stages(settings)
+
+    def record_enabled_stages(self) -> dict[str, bool]:
+        """记录本次运行的阶段：INFO 日志 + 写入 IngestionJob.stage_progress["enabled_stages"]。
+
+        每次流程启动（含断点恢复 / 重试）调用一次；失败只记 warning，不影响流程。
+        写入的快照语义是"该阶段可能产出过数据"：与该小说此前任一次运行的快照
+        按阶段取 OR（见 IngestionJobsService.set_enabled_stages），因此部署后
+        关闭某阶段再重试，不会把之前已产出数据的阶段标成"未启用"。
+
+        Returns:
+            本次运行实际生效的阶段（未合并历史快照）。
+        """
+        snapshot = self.stages.as_snapshot()
+        self.logger.info("[阶段开关] novel_id=%s %s", self.novel_id, self.stages.describe())
+        warn_explicitly_dropped_stages(self.stages, self.logger, f"novel_id={self.novel_id}")
+        try:
+            from services.material.ingestion_jobs_service import IngestionJobsService
+
+            with get_prefect_db_session() as session:
+                svc = IngestionJobsService()
+                job = svc.get_latest_by_novel(session, self.novel_id)
+                if job:
+                    svc.set_enabled_stages(session, job.id, snapshot)
+                    session.commit()
+        except Exception as e:
+            self.logger.warning(f"[阶段开关] 写入阶段快照失败: {e}")
+        return snapshot
 
     def execute_stage1(self) -> dict[str, Any]:
         """
@@ -354,7 +384,7 @@ class StageExecutor:
         Returns:
             Future对象（并行模式）或 None
         """
-        if not settings.ENABLE_ENTITY_EXTRACTION:
+        if not self.stages.meta:
             return None
 
         # 检查是否已完成
@@ -480,13 +510,9 @@ class StageExecutor:
         stage2b_cp = self.checkpoint_manager.get_checkpoint("stage2b")
         stage2c_cp = self.checkpoint_manager.get_checkpoint("stage2c")
 
-        stage2a_needed = (
-            settings.ENABLE_NOVEL_SYNOPSIS
-            or settings.ENABLE_STORY_AGGREGATION
-            or settings.ENABLE_STORYLINE_GENERATION
-        )
-        stage2b_needed = settings.ENABLE_RELATIONSHIP_EXTRACTION
-        stage2c_needed = settings.ENABLE_ENTITY_EXTRACTION
+        stage2a_needed = self.stages.story_flow_needed
+        stage2b_needed = self.stages.relationships
+        stage2c_needed = self.stages.characters
 
         stage2a_done = (not stage2a_needed) or bool(
             stage2a_cp and getattr(stage2a_cp, "stage_status", None) == "completed"
@@ -523,11 +549,11 @@ class StageExecutor:
         else:
             self.logger.info("[阶段2-剧情] 子流已完成，跳过执行")
 
-        if not stage2c_done and settings.ENABLE_ENTITY_EXTRACTION:
+        if not stage2c_done and self.stages.characters:
             self.logger.info("[阶段2-角色] 子流未完成，并行执行 character_entity_build_flow")
             character_entity_future = _task_run_character_entity_build.submit(self.novel_id, self.correlation_id)  # 【修复】传递关联ID
         else:
-            if not settings.ENABLE_ENTITY_EXTRACTION:
+            if not self.stages.characters:
                 self.logger.info("[阶段2-角色] 角色提取功能未启用，跳过执行")
             else:
                 self.logger.info("[阶段2-角色] 子流已完成，跳过执行")

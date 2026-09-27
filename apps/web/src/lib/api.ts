@@ -30,7 +30,7 @@ import type {
   VersionComparison,
   VersionContentResponse,
 } from "../types";
-import { api, ApiError, tryRefreshToken, getAccessToken, getApiBase } from "./apiClient";
+import { api, ApiError, apiErrorFromPayload, tryRefreshToken, getAccessToken, getApiBase } from "./apiClient";
 import { resolveApiErrorMessage } from "./errorHandler";
 import { getLocale } from "./i18n-helpers";
 import { logger } from "./logger";
@@ -1259,6 +1259,43 @@ export const fileApi = {
 };
 
 /**
+ * Authenticated raw fetch for skill package endpoints that cannot go through
+ * the JSON-only `api` client (multipart upload, zip download).
+ * Retries once after a token refresh on 401 and throws ApiError on failure.
+ */
+async function fetchSkillPackage(endpoint: string, init: RequestInit = {}): Promise<Response> {
+  const doFetch = async (isRetry = false): Promise<Response> => {
+    const accessToken = getAccessToken();
+    const response = await fetch(`${getApiBase()}${endpoint}`, {
+      ...init,
+      headers: {
+        "Accept-Language": localStorage.getItem("zenstory-language") || "zh",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+    });
+    if (response.status === 401 && !isRetry) {
+      const refreshed = await tryRefreshToken();
+      if (refreshed) {
+        return doFetch(true);
+      }
+    }
+    return response;
+  };
+
+  const response = await doFetch();
+  if (!response.ok) {
+    let errorData: unknown = null;
+    try {
+      errorData = await response.json();
+    } catch {
+      // Could not parse error response
+    }
+    throw apiErrorFromPayload(response.status, errorData);
+  }
+  return response;
+}
+
+/**
  * Skills API endpoints.
  *
  * Provides CRUD operations for user-defined AI prompt templates (skills).
@@ -1451,6 +1488,93 @@ export const skillsApi = {
     return api.post<{ success: boolean; updated_count: number; message: string }>(
       "/api/v1/skills/batch-update",
       { skill_ids: skillIds, action }
+    );
+  },
+
+  /**
+   * Import a skill package (.zip with SKILL.md + references/assets, or a bare .md).
+   *
+   * Scripts and unsupported files are dropped by the server and reported in `warnings`.
+   *
+   * @param file - The .zip or .md file selected by the user
+   * @returns Promise resolving to the created skill and import warnings
+   */
+  importSkill: async (file: globalThis.File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetchSkillPackage("/api/v1/skills/import", {
+      method: "POST",
+      body: formData,
+    });
+    return response.json() as Promise<import("../types").ImportSkillResponse>;
+  },
+
+  /**
+   * Export a skill (own or added) as a standard skill zip and trigger a browser download.
+   *
+   * @param id - Skill id as returned by GET /skills (UserSkill.id or UserAddedSkill.id)
+   * @param skillName - Used for the fallback filename `<name>.zip`
+   */
+  exportSkill: async (id: string, skillName: string): Promise<void> => {
+    const response = await fetchSkillPackage(`/api/v1/skills/${id}/export`);
+
+    let filename = `${skillName}.zip`;
+    const disposition = response.headers.get("Content-Disposition");
+    if (disposition) {
+      const rfc5987Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+      const standardMatch = disposition.match(/filename="?([^";]+)"?/i);
+      if (rfc5987Match) {
+        filename = decodeURIComponent(rfc5987Match[1]);
+      } else if (standardMatch) {
+        filename = standardMatch[1];
+      }
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  },
+
+  /**
+   * List the resource files bundled with a skill (own or added).
+   */
+  listResources: async (id: string) => {
+    return api.get<{ resources: import("../types").SkillResource[] }>(
+      `/api/v1/skills/${id}/resources`
+    );
+  },
+
+  /**
+   * Read one resource file's text content.
+   */
+  getResourceContent: async (id: string, path: string) => {
+    return api.get<import("../types").SkillResourceContent>(
+      `/api/v1/skills/${id}/resources/content?path=${encodeURIComponent(path)}`
+    );
+  },
+
+  /**
+   * Create or replace a resource file (own skills only).
+   */
+  upsertResource: async (id: string, path: string, content: string) => {
+    return api.put<unknown>(`/api/v1/skills/${id}/resources`, {
+      path,
+      content,
+    });
+  },
+
+  /**
+   * Delete a resource file (own skills only).
+   */
+  deleteResource: async (id: string, path: string) => {
+    return api.delete<unknown>(
+      `/api/v1/skills/${id}/resources?path=${encodeURIComponent(path)}`
     );
   },
 };

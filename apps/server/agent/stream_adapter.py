@@ -8,8 +8,7 @@ Reuses StreamProcessor for handling <file> markers in text content.
 import asyncio
 import contextlib
 import os
-import re
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterable
 from dataclasses import dataclass
 from typing import Any
 
@@ -62,19 +61,6 @@ STREAM_FILE_SAVE_TIMEOUT_S = _get_positive_float_env(
     "AGENT_STREAM_FILE_SAVE_TIMEOUT_S",
     15.0,
 )
-STREAM_SKILL_USAGE_RECORD_TIMEOUT_S = _get_positive_float_env(
-    "AGENT_STREAM_SKILL_USAGE_RECORD_TIMEOUT_S",
-    5.0,
-)
-
-# Regex pattern for skill usage marker: [使用技能: xxx]
-SKILL_USAGE_PATTERN = re.compile(r"\[使用技能:\s*(.+?)\]")
-
-# [使用技能: X] 是纯控制信号（用来发 skill_matched 事件），不属于用户可见正文。
-# 模型被要求写在回复最开头，但 delta 可能把它拆成 "[使用技" + "能: 悬念大师]"
-# 两段，所以要在流头部缓冲一小段再判定。下面是标记的固定前缀与缓冲上限。
-SKILL_MARKER_HEAD = "[使用技能:"
-SKILL_MARKER_MAX_BUFFER = 64
 
 
 def is_folder_file_type(raw: Any) -> bool:
@@ -94,6 +80,8 @@ class StreamAdapterConfig:
     user_id: str | None = None
     # Whether to process <file> markers in text content
     process_file_markers: bool = True
+    # 流开头已发过 skill_matched 的技能（显式选择），load_skill 它们时不再重复发
+    matched_skill_ids: tuple[str, ...] = ()
 
 
 @dataclass
@@ -151,12 +139,8 @@ class StreamAdapter:
         self._last_message_stop_reason: str | None = None
         self._last_message_usage: dict[str, Any] | None = None
 
-        # Accumulate text content for skill usage detection
-        self._accumulated_text: str = ""
-        # 技能标记剥离：缓冲每个 agent 回复开头的少量文本，直到能判定它是不是
-        # [使用技能: X]（该标记不能进入用户可见正文与落库的会话历史）
-        self._skill_marker_buf: str = ""
-        self._skill_marker_scan_done: bool = False
+        # 本次流里已发过 skill_matched 的技能（load_skill 重复调用只发一次）
+        self._matched_skill_ids: set[str] = set(self.config.matched_skill_ids)
         # Fatal stream error flag (e.g. file content persistence failure)
         self._fatal_stream_error = False
 
@@ -176,9 +160,7 @@ class StreamAdapter:
         self._current_tool_calls.clear()
         self._last_message_stop_reason = None
         self._last_message_usage = None
-        self._accumulated_text = ""
-        self._skill_marker_buf = ""
-        self._skill_marker_scan_done = False
+        self._matched_skill_ids = set(self.config.matched_skill_ids)
         self._fatal_stream_error = False
 
     # usage 键别名 → 规范键。Chat Completions 用 prompt/completion，
@@ -338,12 +320,6 @@ class StreamAdapter:
                 with contextlib.suppress(Exception):
                     await aclose()
 
-        # 先放行技能标记缓冲里扣着的文本（它在时间上早于下面的收尾），
-        # 再收尾 <file> 状态，顺序不能颠倒。
-        if not self._fatal_stream_error:
-            async for sse_event in self._release_skill_marker_buffer():
-                yield sse_event
-
         # Flush pending <file> state when upstream stream ends unexpectedly.
         if (
             not self._fatal_stream_error
@@ -372,15 +348,6 @@ class StreamAdapter:
         # Fatal stream errors should not be followed by done.
         if self._fatal_stream_error:
             return
-
-        # Detect and record skill usage from accumulated text
-        skill_usage = await self._detect_and_record_skill_usage()
-        if skill_usage:
-            yield skill_matched_event(
-                skill_id=skill_usage["skill_id"],
-                skill_name=skill_usage["skill_name"],
-                matched_trigger=skill_usage["matched_trigger"],
-            )
 
         # Emit done event
         yield done_event()
@@ -482,13 +449,6 @@ class StreamAdapter:
             self._last_message_usage = self._merge_usage(
                 self._last_message_usage, data.get("usage")
             )
-
-            # 技能标记剥离缓冲按 agent 边界收口：本轮扣住的文本必须在这里放行，
-            # 同时重置扫描状态，让下一个 agent 的开头也能被检查。
-            async for sse_event in self._release_skill_marker_buffer():
-                yield sse_event
-            self._skill_marker_buf = ""
-            self._skill_marker_scan_done = False
 
             # Agent boundary. MESSAGE_END marks the end of ONE agent's turn; the
             # same StreamAdapter/StreamProcessor is reused across the whole
@@ -629,6 +589,7 @@ class StreamAdapter:
             # 全失败的 edit_file 仍要把 data 发出去：failed_edits 是用户判断
             # 「哪几处没改成、为什么」的唯一依据，丢掉它卡片就是空白的。
             emit_data = result_data if (status == "success" or edit_all_failed) else None
+            emit_data = self._client_safe_skill_payload(tool_name, emit_data)
 
             # Emit tool_result event
             yield tool_result_event(
@@ -656,6 +617,18 @@ class StreamAdapter:
             if tool_name == "edit_file":
                 async for event in self._handle_edit_file_result(result_data):
                     yield event
+
+            # 技能用量来自 load_skill 工具调用（用量记录在工具内完成），这里只发前端事件；
+            # 同一技能在一次流里只发一次。
+            if tool_name == "load_skill" and status == "success" and isinstance(result_data, dict):
+                skill_id = str(result_data.get("skill_id") or "")
+                if skill_id and skill_id not in self._matched_skill_ids:
+                    self._matched_skill_ids.add(skill_id)
+                    yield skill_matched_event(
+                        skill_id=skill_id,
+                        skill_name=str(result_data.get("skill_name") or ""),
+                        matched_trigger="load_skill",
+                    )
         except Exception as exc:
             log_with_context(
                 logger,
@@ -672,6 +645,37 @@ class StreamAdapter:
                 error=f"Malformed tool_result payload: {type(exc).__name__}",
                 tool_use_id=tool_use_id or None,
             )
+
+    @staticmethod
+    def _client_safe_skill_payload(tool_name: str, data: Any) -> Any:
+        """
+        技能工具结果发给前端前瘦身：完整方法/资源正文只给模型（模型拿的是工具原始输出，
+        不经过这里），浏览器卡片只需要技能名、路径和大小。
+        """
+        if not isinstance(data, dict):
+            return data
+        if tool_name == "load_skill":
+            resources = data.get("resources")
+            instructions = data.get("instructions")
+            return {
+                "skill_id": data.get("skill_id"),
+                "skill_name": data.get("skill_name"),
+                "source": data.get("source"),
+                "instructions_chars": len(instructions) if isinstance(instructions, str) else 0,
+                "resources": [
+                    {"path": item.get("path"), "size": item.get("size")}
+                    for item in resources
+                    if isinstance(item, dict)
+                ] if isinstance(resources, list) else [],
+            }
+        if tool_name == "read_skill_resource":
+            content = data.get("content")
+            return {
+                "skill_name": data.get("skill_name"),
+                "path": data.get("path"),
+                "size": len(content.encode("utf-8")) if isinstance(content, str) else 0,
+            }
+        return data
 
     async def _handle_langgraph_tool_result(
         self,
@@ -822,21 +826,6 @@ class StreamAdapter:
         Yields:
             SSE events (content or file_content)
         """
-        # Accumulate text for skill usage detection.
-        # 注意：这里保留**原始**文本（含 [使用技能: X] 标记），技能匹配事件仍基于
-        # 它检测；被剥离的只是下发给前端 / 落库的对话正文。
-        if text:
-            self._accumulated_text += text
-
-        released = self._strip_skill_marker_prefix(text)
-        if not released:
-            return
-
-        async for sse_event in self._emit_conversation_text(released):
-            yield sse_event
-
-    async def _emit_conversation_text(self, text: str) -> AsyncIterator[SSEEvent]:
-        """把一段（已剥离控制标记的）文本按 <file> 协议路由成 SSE 事件。"""
         if not self.config.process_file_markers:
             # No file marker processing, just emit content
             if text:
@@ -847,70 +836,6 @@ class StreamAdapter:
         result: StreamResult = self._stream_processor.process_content(text)
 
         async for sse_event in self._emit_stream_result(result):
-            yield sse_event
-
-    def _strip_skill_marker_prefix(self, text: str) -> str:
-        """剥离回复开头的 [使用技能: X] 控制标记，返回可以下发的文本。
-
-        标记可能被 delta 拆开（"[使用技" + "能: 悬念大师]"），所以在判定出结果
-        之前先把开头的文本扣在 _skill_marker_buf 里；一旦确定开头不可能是该标记
-        （或缓冲超过上限、标记不完整），立刻把缓冲原样放行，绝不丢字。
-        """
-        if self._skill_marker_scan_done:
-            return text
-
-        self._skill_marker_buf += text
-        buffered = self._skill_marker_buf
-        candidate = buffered.lstrip()
-        if not candidate:
-            # 仅有空白：继续等（超过上限时按下面的兜底放行）
-            if len(buffered) <= SKILL_MARKER_MAX_BUFFER:
-                return ""
-            return self._release_skill_marker_scan()
-
-        if not (
-            candidate.startswith(SKILL_MARKER_HEAD)
-            or SKILL_MARKER_HEAD.startswith(candidate)
-        ):
-            # 开头不是标记，也不可能是标记的前缀 -> 立即放行
-            return self._release_skill_marker_scan()
-
-        match = SKILL_USAGE_PATTERN.match(candidate)
-        if match:
-            self._skill_marker_scan_done = True
-            self._skill_marker_buf = ""
-            skill_name = match.group(1).strip()
-            log_with_context(
-                logger,
-                20,  # INFO
-                "Stripped skill usage marker from conversation text",
-                skill_name=skill_name,
-                project_id=self.config.project_id,
-            )
-            # 标记独占一行，剥离后紧跟的换行/空白也一并去掉，避免气泡以空行开头
-            return candidate[match.end():].lstrip()
-
-        if len(buffered) > SKILL_MARKER_MAX_BUFFER:
-            # 像标记开头但迟迟不闭合：不再扣着，原样放行
-            return self._release_skill_marker_scan()
-
-        return ""
-
-    def _release_skill_marker_scan(self) -> str:
-        """结束标记扫描并交还已缓冲的文本。"""
-        buffered = self._skill_marker_buf
-        self._skill_marker_buf = ""
-        self._skill_marker_scan_done = True
-        return buffered
-
-    async def _release_skill_marker_buffer(self) -> AsyncIterator[SSEEvent]:
-        """流/agent 结束时把仍扣在技能标记缓冲里的文本放行，防止内容丢失。"""
-        if self._skill_marker_scan_done or not self._skill_marker_buf:
-            return
-        pending = self._release_skill_marker_scan()
-        if not pending:
-            return
-        async for sse_event in self._emit_conversation_text(pending):
             yield sse_event
 
     async def _emit_stream_result(self, result: StreamResult) -> AsyncIterator[SSEEvent]:
@@ -1226,215 +1151,12 @@ class StreamAdapter:
         """Get content buffer for LLM history."""
         return self._stream_processor.get_history_buffer()
 
-    async def _detect_and_record_skill_usage(self) -> dict[str, str] | None:
-        """
-        Detect skill usage markers in accumulated text and record to database.
-
-        Parses [使用技能: xxx] markers and records usage statistics.
-        """
-        if not self._accumulated_text:
-            return None
-
-        # Only check the first 500 characters for skill marker
-        text_to_check = self._accumulated_text[:500]
-        match = SKILL_USAGE_PATTERN.search(text_to_check)
-
-        if not match:
-            return None
-
-        skill_name = match.group(1).strip()
-        if not skill_name:
-            return None
-
-        log_with_context(
-            logger,
-            20,  # INFO
-            "Detected skill usage marker",
-            skill_name=skill_name,
-            project_id=self.config.project_id,
-        )
-
-        # Record skill usage
-        return await self._record_skill_usage(skill_name)
-
-    async def _record_skill_usage(self, skill_name: str) -> dict[str, str] | None:
-        """
-        Record skill usage to database.
-
-        Looks up skill by name from builtin, user, and added skills,
-        then records usage to skill_usage table.
-
-        Args:
-            skill_name: Name of the skill that was used
-        """
-        if not self.config.project_id:
-            log_with_context(
-                logger,
-                30,  # WARNING
-                "Cannot record skill usage: no project_id",
-                skill_name=skill_name,
-            )
-            return None
-
-        try:
-            return await asyncio.wait_for(
-                asyncio.to_thread(self._record_skill_usage_sync, skill_name),
-                timeout=STREAM_SKILL_USAGE_RECORD_TIMEOUT_S,
-            )
-        except TimeoutError:
-            log_with_context(
-                logger,
-                40,  # ERROR
-                "Timed out while recording skill usage",
-                skill_name=skill_name,
-                timeout_s=STREAM_SKILL_USAGE_RECORD_TIMEOUT_S,
-            )
-            return None
-        except Exception as e:
-            log_with_context(
-                logger,
-                40,  # ERROR
-                "Failed to record skill usage",
-                skill_name=skill_name,
-                error=str(e),
-                error_type=type(e).__name__,
-            )
-            return None
-
-    def _record_skill_usage_sync(self, skill_name: str) -> dict[str, str] | None:
-        """Record skill usage using a fresh sync DB session."""
-        from sqlmodel import select
-
-        from database import create_session, get_session, is_postgres
-        from models import PublicSkill, UserAddedSkill
-        from services.skill_usage_service import record_skill_usage
-
-        from .skills.loader import get_builtin_skills
-        from .skills.user_skill_service import get_user_skills
-
-        if not is_postgres:
-            session_gen = get_session()
-            session = next(session_gen)
-            try:
-                return self._record_skill_usage_with_session(
-                    session,
-                    skill_name,
-                    select,
-                    PublicSkill,
-                    UserAddedSkill,
-                    record_skill_usage,
-                    get_builtin_skills,
-                    get_user_skills,
-                )
-            finally:
-                with contextlib.suppress(StopIteration):
-                    next(session_gen)
-
-        with create_session() as session:
-            return self._record_skill_usage_with_session(
-                session,
-                skill_name,
-                select,
-                PublicSkill,
-                UserAddedSkill,
-                record_skill_usage,
-                get_builtin_skills,
-                get_user_skills,
-            )
-
-    def _record_skill_usage_with_session(
-        self,
-        session,
-        skill_name: str,
-        select_fn,
-        public_skill_model,
-        user_added_skill_model,
-        record_skill_usage_fn,
-        get_builtin_skills_fn,
-        get_user_skills_fn,
-    ) -> dict[str, str] | None:
-        """Resolve a skill and persist usage with the provided session."""
-        skill_id = None
-        skill_source = "builtin"
-        matched_trigger = "AI选择"
-
-        # Resolve in the same precedence the injector/explicit resolver use:
-        # a user's own skill (or an added public skill) that shares a builtin's
-        # display name is the one that was actually injected, so it must win.
-        # Builtin is the last-resort fallback.
-        if not skill_id and self.config.user_id:
-            user_skills = get_user_skills_fn(session, self.config.user_id)
-            for skill in user_skills:
-                if skill.name == skill_name:
-                    skill_id = skill.id
-                    skill_source = "user"
-                    break
-
-        if not skill_id and self.config.user_id:
-            added_stmt = (
-                select_fn(user_added_skill_model, public_skill_model)
-                .join(public_skill_model, user_added_skill_model.public_skill_id == public_skill_model.id)
-                .where(
-                    user_added_skill_model.user_id == self.config.user_id,
-                    user_added_skill_model.is_active,
-                    public_skill_model.status == "approved",
-                )
-            )
-            for added, public in session.exec(added_stmt).all():
-                display_name = added.custom_name or public.name
-                if display_name == skill_name:
-                    skill_id = public.id
-                    skill_source = "added"
-                    break
-
-        # Builtin is the last-resort fallback (a user/added skill of the same
-        # display name would have matched above and correctly won).
-        if not skill_id:
-            for skill in get_builtin_skills_fn():
-                if skill.name == skill_name:
-                    skill_id = skill.id
-                    skill_source = "builtin"
-                    break
-
-        if not skill_id:
-            log_with_context(
-                logger,
-                30,  # WARNING
-                "Skill not found for usage recording",
-                skill_name=skill_name,
-            )
-            return None
-
-        record_skill_usage_fn(
-            session=session,
-            project_id=self.config.project_id,
-            skill_id=skill_id,
-            skill_name=skill_name,
-            skill_source=skill_source,
-            matched_trigger=matched_trigger,
-            confidence=1.0,
-            user_id=self.config.user_id,
-        )
-
-        log_with_context(
-            logger,
-            20,  # INFO
-            "Skill usage recorded",
-            skill_name=skill_name,
-            skill_id=skill_id,
-            skill_source=skill_source,
-        )
-        return {
-            "skill_id": skill_id,
-            "skill_name": skill_name,
-            "matched_trigger": matched_trigger,
-        }
-
 
 def create_stream_adapter(
     project_id: str = "",
     user_id: str | None = None,
     process_file_markers: bool = True,
+    matched_skill_ids: Iterable[str] | None = None,
 ) -> StreamAdapter:
     """
     Factory function to create a StreamAdapter.
@@ -1443,6 +1165,7 @@ def create_stream_adapter(
         project_id: Project ID for logging
         user_id: User ID for logging
         process_file_markers: Whether to process <file> markers
+        matched_skill_ids: Skills already announced via skill_matched (explicitly selected)
 
     Returns:
         Configured StreamAdapter instance
@@ -1451,6 +1174,7 @@ def create_stream_adapter(
         project_id=project_id,
         user_id=user_id,
         process_file_markers=process_file_markers,
+        matched_skill_ids=tuple(str(item) for item in (matched_skill_ids or []) if item),
     )
     return StreamAdapter(config)
 

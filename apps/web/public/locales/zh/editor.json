@@ -82,6 +82,8 @@
     "builtinSkill": "内置",
     "userSkill": "自定义",
     "useSkill": "使用此技能",
+    "skillSelected": "已选用于下一条消息",
+    "skillSelectionFull": "每条消息最多选择 {{max}} 个技能",
     "batchSelect": "批量选择",
     "batchSelected": "已选 {{count}} 项",
     "batchImport": "批量添加",

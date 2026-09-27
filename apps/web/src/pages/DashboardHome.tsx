@@ -29,7 +29,6 @@ import { onboardingPersonaApi, type PersonaRecommendation } from "../lib/onboard
 import { buildTodayActionPlan, type TodayActionPlanItem } from "../lib/dashboardActionPlan";
 import type { ActivationGuideResponse } from "../types/writingStats";
 import { dashboardOnboardingFlags } from "../config/dashboardOnboarding";
-import { AgentConnectionCard } from "../components/dashboard/AgentConnectionCard";
 
 const SUPPORTED_PROJECT_TYPES: ProjectType[] = ["novel", "short", "screenplay"];
 
@@ -752,11 +751,6 @@ export default function DashboardHome() {
             </button>
           </div>
         )}
-      </div>
-
-      {/* Agent Connection Card */}
-      <div className="mb-7">
-        <AgentConnectionCard />
       </div>
 
       {/* Recent Projects Section */}

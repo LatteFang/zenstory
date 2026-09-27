@@ -16,6 +16,7 @@ from prefect import flow, get_run_logger
 from prefect.task_runners import ConcurrentTaskRunner
 
 from config.material_settings import material_settings as settings
+from config.material_settings import resolve_enabled_stages
 from flows.atomic_tasks.entities.character_tasks_v2 import (
     extract_character_mentions_task,
 )
@@ -104,6 +105,7 @@ def chapter_extraction_flow(
     """
     logger = get_run_logger()
     flow_start = _def_now()
+    stages = resolve_enabled_stages(settings)
 
     # 全局失败集合，避免未定义
     failed_chapters: list[int] = []
@@ -148,7 +150,7 @@ def chapter_extraction_flow(
         # ========================================
 
         summaries_count = 0
-        if settings.ENABLE_CHAPTER_SUMMARIES:
+        if stages.chapter_summaries:
             logger.info("任务1: 并行生成 %d 个章节摘要", len(chapter_ids))
 
             # 按并发上限分批提交，避免一次性堆积
@@ -268,7 +270,7 @@ def chapter_extraction_flow(
         # ========================================
 
         plots_count = 0
-        if settings.ENABLE_PLOT_EXTRACTION:
+        if stages.plots:
             logger.info("任务2: 并行提取 %d 个章节的情节点", len(chapter_ids))
 
             # 按并发上限分批提交
@@ -363,7 +365,7 @@ def chapter_extraction_flow(
 
         mentions_extracted = False
         failed_mention_chapters: list[int] = []
-        if settings.ENABLE_ENTITY_EXTRACTION:
+        if stages.characters:
             logger.info("任务3: 并行提取 %d 个章节的角色提及", len(chapter_ids))
 
             # 提取角色提及（轻量级，仅本章信息）

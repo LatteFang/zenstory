@@ -69,6 +69,11 @@ class ErrorCode:
     FILE_CONTENT_TOO_LONG = "ERR_FILE_CONTENT_TOO_LONG"
     VECTOR_SEARCH_UNAVAILABLE = "ERR_VECTOR_SEARCH_UNAVAILABLE"
 
+    # ==================== Skill Package Errors ====================
+
+    SKILL_PACKAGE_INVALID = "ERR_SKILL_PACKAGE_INVALID"
+    SKILL_PACKAGE_TOO_LARGE = "ERR_SKILL_PACKAGE_TOO_LARGE"
+
     # ==================== Version Errors (5000-5999) ====================
 
     VERSION_NOT_FOUND = "ERR_VERSION_NOT_FOUND"
@@ -187,6 +192,8 @@ ERROR_MESSAGES = {
         "ERR_FILE_TOO_LARGE": "文件过大",
         "ERR_FILE_CONTENT_TOO_LONG": "文件内容过长",
         "ERR_VECTOR_SEARCH_UNAVAILABLE": "向量搜索服务不可用",
+        "ERR_SKILL_PACKAGE_INVALID": "技能包格式无效",
+        "ERR_SKILL_PACKAGE_TOO_LARGE": "技能包或资源文件超出大小限制",
 
         "ERR_VERSION_NOT_FOUND": "版本不存在",
         "ERR_VERSION_NO_VERSIONS_FOUND": "未找到文件的版本",
@@ -279,6 +286,8 @@ ERROR_MESSAGES = {
         "ERR_FILE_TOO_LARGE": "File is too large",
         "ERR_FILE_CONTENT_TOO_LONG": "File content is too long",
         "ERR_VECTOR_SEARCH_UNAVAILABLE": "Vector search service unavailable",
+        "ERR_SKILL_PACKAGE_INVALID": "Invalid skill package",
+        "ERR_SKILL_PACKAGE_TOO_LARGE": "Skill package or resource exceeds size limits",
 
         "ERR_VERSION_NOT_FOUND": "Version not found",
         "ERR_VERSION_NO_VERSIONS_FOUND": "No versions found for this file",

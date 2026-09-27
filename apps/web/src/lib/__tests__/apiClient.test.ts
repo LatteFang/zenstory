@@ -317,6 +317,45 @@ describe('apiClient', () => {
       const error = new ApiError(500, 'Internal Server Error')
       expect(error.message).toBe('Internal Server Error')
     })
+
+    it('appends the server reason after the localized headline for skill package errors', async () => {
+      const { ApiError } = await import('../apiClient')
+      const error = new ApiError(400, 'ERR_SKILL_PACKAGE_INVALID', undefined, '资源路径不合法：references/../x.md')
+      expect(error.message).toBe('Translated: ERR_SKILL_PACKAGE_INVALID: 资源路径不合法：references/../x.md')
+      expect(error.errorCode).toBe('ERR_SKILL_PACKAGE_INVALID')
+      expect(error.detailText).toBe('资源路径不合法：references/../x.md')
+    })
+
+    it('does not append string details for other error codes', async () => {
+      const { ApiError } = await import('../apiClient')
+      const error = new ApiError(404, 'ERR_NOT_FOUND', undefined, 'Skill not found')
+      expect(error.message).toBe('Translated: ERR_NOT_FOUND')
+      expect(error.detailText).toBe('Skill not found')
+    })
+  })
+
+  describe('apiErrorFromPayload', () => {
+    it('keeps string error_detail as detailText and object error_detail as details', async () => {
+      const { apiErrorFromPayload } = await import('../apiClient')
+
+      const tooLarge = apiErrorFromPayload(413, {
+        detail: 'ERR_SKILL_PACKAGE_TOO_LARGE',
+        error_code: 'ERR_SKILL_PACKAGE_TOO_LARGE',
+        error_detail: '单个资源文件不能超过 64 KiB',
+      })
+      const conflict = apiErrorFromPayload(409, {
+        error_code: 'ERR_RESOURCE_CONFLICT',
+        error_detail: { reason: 'stale_write' },
+      })
+      const unparsable = apiErrorFromPayload(502, null)
+
+      expect(tooLarge.status).toBe(413)
+      expect(tooLarge.message).toBe('Translated: ERR_SKILL_PACKAGE_TOO_LARGE: 单个资源文件不能超过 64 KiB')
+      expect(tooLarge.details).toBeUndefined()
+      expect(conflict.details).toEqual({ reason: 'stale_write' })
+      expect(conflict.detailText).toBeUndefined()
+      expect(unparsable.message).toBe('API error: 502')
+    })
   })
 
   describe('apiCall', () => {
@@ -533,6 +572,24 @@ describe('apiClient', () => {
       vi.stubGlobal('fetch', mockFetch)
 
       await expect(apiCall('/api/v1/test')).rejects.toThrow('Translated: ERR_QUOTA_PROJECTS_EXCEEDED')
+    })
+
+    it('surfaces the skill package reason on resource PUT errors', async () => {
+      vi.resetModules()
+      const { apiCall } = await import('../apiClient')
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({
+          detail: 'ERR_SKILL_PACKAGE_INVALID',
+          error_code: 'ERR_SKILL_PACKAGE_INVALID',
+          error_detail: '资源路径必须以 references/ 或 assets/ 开头',
+        }),
+      }))
+
+      await expect(
+        apiCall('/api/v1/skills/s1/resources', { method: 'PUT', body: '{}' })
+      ).rejects.toThrow('Translated: ERR_SKILL_PACKAGE_INVALID: 资源路径必须以 references/ 或 assets/ 开头')
     })
 
     it('exposes backend errorCode on ApiError', async () => {

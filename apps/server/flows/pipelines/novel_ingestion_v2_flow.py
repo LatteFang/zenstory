@@ -45,6 +45,7 @@ from prefect import flow, get_run_logger
 from prefect.task_runners import ConcurrentTaskRunner
 
 from config.material_settings import material_settings as settings
+from config.material_settings import resolve_enabled_stages
 from flows.database_session import get_prefect_db_session
 from flows.utils.helpers import (
     calculate_checksum,
@@ -144,14 +145,15 @@ def _resume_from_stage2(
         elif isinstance(resume_cp.checkpoint_data, dict):
             cp_data = resume_cp.checkpoint_data
 
+    stages = resolve_enabled_stages(settings)
     story_done = (
-        (not settings.ENABLE_NOVEL_SYNOPSIS or cp_data.get("synopsis_generated")) and
-        (not settings.ENABLE_STORY_AGGREGATION or cp_data.get("stories_saved", 0) > 0 or cp_data.get("stories_count", 0) > 0) and
-        (not settings.ENABLE_STORYLINE_GENERATION or cp_data.get("storylines_saved", 0) > 0 or cp_data.get("storylines_count", 0) > 0)
+        (not stages.synopsis or cp_data.get("synopsis_generated")) and
+        (not stages.stories or cp_data.get("stories_saved", 0) > 0 or cp_data.get("stories_count", 0) > 0) and
+        (not stages.storylines or cp_data.get("storylines_saved", 0) > 0 or cp_data.get("storylines_count", 0) > 0)
     )
 
     relationship_done = (
-        (not settings.ENABLE_RELATIONSHIP_EXTRACTION or cp_data.get("relationships_count", 0) > 0) and
+        (not stages.relationships or cp_data.get("relationships_count", 0) > 0) and
         (not settings.ENABLE_NEO4J_STORAGE or cp_data.get("neo4j_persisted") is True or (
             cp_data.get("neo4j_total_batches", 0) > 0 and cp_data.get("neo4j_batches_completed", 0) >= cp_data.get("neo4j_total_batches", 0)
         ))

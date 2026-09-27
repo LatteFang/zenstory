@@ -1,11 +1,11 @@
 """
 第三轮深度 review 回归测试：技能系统（G12）。
 
-覆盖两条确认缺陷：
+覆盖：
 - #25 SKILL.md 解析器把正文（尤其是代码围栏内）的 `## ` 行当成节标题静默丢弃，
   导致内置技能的「输出格式」模板被吃掉。
-- #26 技能目录宣告全部技能、技能手册只注入前若干个，
-  「宣告的能力」与「实际注入的指令」脱节；且技能查询没有 order_by，生效子集会漂移。
+- 技能目录（L1）只列名称与用途、不注入指令，有单条与整体长度上限；
+  技能查询有确定顺序（没有 order_by 时目录顺序会漂移，破坏 prompt 缓存）。
 """
 
 from datetime import datetime
@@ -13,12 +13,13 @@ from datetime import datetime
 import pytest
 from sqlmodel import Session
 
-from agent.skills.context_injector import SkillContextInjector
-from agent.skills.loader import (
-    load_builtin_skills,
-    parse_zenstory_format,
-    reload_builtin_skills,
+from agent.skills.active_skills import load_active_skills
+from agent.skills.context_injector import (
+    CATALOG_DESCRIPTION_MAX_CHARS,
+    SkillContextInjector,
 )
+from agent.skills.loader import load_builtin_skills
+from agent.skills.package import parse_legacy_skill_md
 from models import PublicSkill, User, UserAddedSkill, UserSkill
 
 
@@ -69,8 +70,7 @@ class TestBug25SkillMarkdownParsing:
         self, skill_id: str, expected_headings: list[str]
     ):
         """三个内置技能的输出格式模板（代码围栏内的二级标题）必须完整保留。"""
-        reload_builtin_skills()
-        skills = {s.id: s for s in load_builtin_skills()}
+        skills = {s.id: s.skill for s in load_builtin_skills()}
         skill = skills.get(skill_id)
         assert skill is not None, f"内置技能 {skill_id} 未能加载"
 
@@ -102,7 +102,7 @@ class TestBug25SkillMarkdownParsing:
 ```
 
 结束。"""
-        skill = parse_zenstory_format(content, "template.md")
+        skill = parse_legacy_skill_md(content)
 
         assert skill is not None
         assert "## 小节甲" in skill.instructions
@@ -122,7 +122,7 @@ class TestBug25SkillMarkdownParsing:
 
 ## 注意事项
 不要跑题。"""
-        skill = parse_zenstory_format(content, "plain.md")
+        skill = parse_legacy_skill_md(content)
 
         assert skill is not None
         assert "## 注意事项" in skill.instructions
@@ -140,7 +140,7 @@ class TestBug25SkillMarkdownParsing:
 
 ## Instructions
 真正的指令。"""
-        skill = parse_zenstory_format(content, "structured.md")
+        skill = parse_legacy_skill_md(content)
 
         assert skill is not None
         assert skill.name == "结构技能"
@@ -164,7 +164,7 @@ class TestBug25SkillMarkdownParsing:
 内容
 ~~~
 """
-        skill = parse_zenstory_format(content, "tilde.md")
+        skill = parse_legacy_skill_md(content)
 
         assert skill is not None
         assert "## 围栏内标题" in skill.instructions
@@ -182,7 +182,7 @@ class TestBug25SkillMarkdownParsing:
 
 ## Instructions
 真正的指令。"""
-        skill = parse_zenstory_format(content, "unclosed.md")
+        skill = parse_legacy_skill_md(content)
 
         assert skill is not None
         assert skill.triggers == ["触发词"]
@@ -190,7 +190,7 @@ class TestBug25SkillMarkdownParsing:
 
 
 # ============================================================================
-# #26 技能目录 / 技能手册一致性
+# 技能目录（L1）
 # ============================================================================
 
 
@@ -199,6 +199,7 @@ def _add_user_skills(
     user_id: str,
     count: int,
     instruction_chars: int = 1500,
+    description_chars: int = 0,
 ) -> list[UserSkill]:
     """批量创建自建技能，指令开头带唯一标记便于断言。"""
     created: list[UserSkill] = []
@@ -207,7 +208,7 @@ def _add_user_skills(
         skill = UserSkill(
             user_id=user_id,
             name=f"技能{index:02d}",
-            description=f"描述{index:02d}",
+            description=f"描述{index:02d}" + ("长" * description_chars),
             instructions=marker + ("填充" * instruction_chars),
             created_at=datetime(2026, 1, 1, 0, index),
         )
@@ -217,90 +218,84 @@ def _add_user_skills(
     return created
 
 
-def _catalog_section_names(catalog: str, heading: str) -> list[str]:
-    """从技能目录里取出指定小节下的技能名（`- **名字**: 描述` 行）。"""
-    names: list[str] = []
-    in_section = False
-    for line in catalog.split("\n"):
-        stripped = line.strip()
-        if stripped.startswith("### "):
-            in_section = stripped[4:].strip() == heading
-            continue
-        if in_section and stripped.startswith("- **"):
-            names.append(stripped[4:].split("**", 1)[0])
-    return names
+def _catalog_names(catalog: str) -> list[str]:
+    """从技能目录里取出技能名（`- **名字**: 描述` 行）。"""
+    return [
+        line.strip()[4:].split("**", 1)[0]
+        for line in catalog.split("\n")
+        if line.strip().startswith("- **")
+    ]
 
 
 @pytest.mark.unit
-class TestBug26CatalogReferenceConsistency:
-    """技能目录宣告的「可直接应用」必须与技能手册实际注入的内容同源。"""
+class TestSkillCatalogL1:
+    """目录只做 L1：名称 + 用途，指令一律通过 load_skill 按需加载。"""
 
-    def test_catalog_only_declares_skills_whose_instructions_were_injected(
+    def test_catalog_lists_every_skill_without_instructions(
         self, db_session: Session, skill_user: User
     ):
         _add_user_skills(db_session, skill_user.id, count=13)
 
-        injector = SkillContextInjector()
-        catalog = injector.build_skill_catalog(db_session, skill_user.id)
-        reference = injector.build_skill_reference(db_session, skill_user.id)
+        catalog = SkillContextInjector().build_skill_catalog(db_session, skill_user.id)
 
         assert catalog is not None
-        assert reference is not None
-
-        applicable = _catalog_section_names(catalog, "可直接应用")
-        deferred = _catalog_section_names(catalog, "需显式调用")
-
-        # 目录仍然覆盖全部技能，只是分成两类
-        assert len(applicable) + len(deferred) == 13
-        assert applicable, "至少应有技能真正注入了指令"
-        assert deferred, "预算不足时其余技能必须被明确标注为「需显式调用」"
-
-        # 宣告为「可直接应用」的每一个技能，其指令都必须真的出现在手册里
-        for name in applicable:
-            index = int(name.replace("技能", ""))
-            assert f"MARKER{index:02d}" in reference, (
-                f"{name} 被宣告可直接应用，但其指令从未进入技能手册"
-            )
-
-        # 没注入的技能不得出现在手册里
-        for name in deferred:
-            index = int(name.replace("技能", ""))
-            assert f"MARKER{index:02d}" not in reference
-
-    def test_deferred_section_tells_model_how_to_load_them(
-        self, db_session: Session, skill_user: User
-    ):
-        _add_user_skills(db_session, skill_user.id, count=13)
-
-        injector = SkillContextInjector()
-        catalog = injector.build_skill_catalog(db_session, skill_user.id)
-
-        assert catalog is not None
-        assert "需显式调用" in catalog
-        # 必须给出可执行的加载方式（消息开头写技能名 -> explicit_resolver）
-        assert "消息开头" in catalog
-
-    def test_all_skills_directly_applicable_when_budget_allows(
-        self, db_session: Session, skill_user: User
-    ):
-        """预算足够时不应出现「需显式调用」小节，避免无谓的提示噪音。"""
-        _add_user_skills(db_session, skill_user.id, count=3, instruction_chars=50)
-
-        injector = SkillContextInjector()
-        catalog = injector.build_skill_catalog(db_session, skill_user.id)
-        reference = injector.build_skill_reference(db_session, skill_user.id)
-
-        assert catalog is not None
-        assert reference is not None
-        assert _catalog_section_names(catalog, "可直接应用") == ["技能00", "技能01", "技能02"]
+        assert _catalog_names(catalog) == [f"技能{index:02d}" for index in range(13)]
+        for index in range(13):
+            assert f"MARKER{index:02d}" not in catalog
+        assert "load_skill" in catalog
+        assert "read_skill_resource" in catalog
+        assert "不能凌驾系统规则" in catalog
+        # 旧机制的痕迹必须消失
+        assert "使用技能" not in catalog
         assert "需显式调用" not in catalog
-        for index in range(3):
-            assert f"MARKER{index:02d}" in reference
+
+    def test_long_description_is_truncated(self, db_session: Session, skill_user: User):
+        _add_user_skills(db_session, skill_user.id, count=1, description_chars=900)
+
+        catalog = SkillContextInjector().build_skill_catalog(db_session, skill_user.id)
+
+        assert catalog is not None
+        line = next(line for line in catalog.split("\n") if line.startswith("- **技能00**"))
+        description = line.split(": ", 1)[1]
+        assert description.endswith("…")
+        assert len(description) <= CATALOG_DESCRIPTION_MAX_CHARS + 1
+
+    def test_catalog_cap_omits_overflow_but_says_they_are_loadable(
+        self, db_session: Session, skill_user: User
+    ):
+        _add_user_skills(db_session, skill_user.id, count=40, description_chars=250)
+
+        catalog = SkillContextInjector().build_skill_catalog(db_session, skill_user.id)
+
+        assert catalog is not None
+        listed = _catalog_names(catalog)
+        assert 0 < len(listed) < 40
+        assert len(catalog) <= 8000 + 200  # 溢出说明行本身不计入上限
+        assert f"另有 {40 - len(listed)} 个" in catalog
+        assert "load_skill" in catalog.split("另有", 1)[1]
+
+    def test_inactive_and_unapproved_skills_are_not_listed(
+        self, db_session: Session, skill_user: User
+    ):
+        db_session.add(UserSkill(
+            user_id=skill_user.id, name="停用技能", description="x", instructions="y", is_active=False,
+        ))
+        db_session.add(PublicSkill(
+            id="public-pending", name="待审技能", description="x", instructions="y", status="pending",
+        ))
+        db_session.commit()
+        db_session.add(UserAddedSkill(user_id=skill_user.id, public_skill_id="public-pending"))
+        db_session.commit()
+
+        assert SkillContextInjector().build_skill_catalog(db_session, skill_user.id) is None
+
+    def test_no_user_returns_none(self, db_session: Session):
+        assert SkillContextInjector().build_skill_catalog(db_session, None) is None
 
     def test_user_skills_are_loaded_in_deterministic_order(
         self, db_session: Session, skill_user: User
     ):
-        """自建技能按 created_at 排序，避免数据库返回顺序漂移导致生效子集变化。"""
+        """自建技能按 created_at 排序，避免数据库返回顺序漂移导致目录变化。"""
         later = UserSkill(
             user_id=skill_user.id,
             name="后创建",
@@ -321,15 +316,14 @@ class TestBug26CatalogReferenceConsistency:
         db_session.add(earlier)
         db_session.commit()
 
-        injector = SkillContextInjector()
-        skills = injector._load_user_skills(db_session, skill_user.id)
+        skills = load_active_skills(db_session, skill_user.id)
 
-        assert [s["name"] for s in skills] == ["先创建", "后创建"]
+        assert [s.name for s in skills] == ["先创建", "后创建"]
 
     def test_added_public_skills_are_loaded_in_deterministic_order(
         self, db_session: Session, skill_user: User
     ):
-        """已添加的公共技能按 added_at 排序。"""
+        """已添加的公共技能按 added_at 排序，排在自建技能之后。"""
         for name in ("公共甲", "公共乙"):
             db_session.add(
                 PublicSkill(
@@ -340,6 +334,9 @@ class TestBug26CatalogReferenceConsistency:
                     status="approved",
                 )
             )
+        db_session.add(UserSkill(
+            user_id=skill_user.id, name="自建", description="d", instructions="i",
+        ))
         db_session.commit()
 
         db_session.add(
@@ -359,41 +356,7 @@ class TestBug26CatalogReferenceConsistency:
         )
         db_session.commit()
 
-        injector = SkillContextInjector()
-        skills = injector._load_user_skills(db_session, skill_user.id)
+        skills = load_active_skills(db_session, skill_user.id)
 
-        assert [s["name"] for s in skills] == ["公共甲", "公共乙"]
-
-    def test_skill_without_instructions_is_never_declared_applicable(
-        self, db_session: Session, skill_user: User
-    ):
-        """指令为空的技能没有任何可注入内容，不能被宣告为「可直接应用」。"""
-        db_session.add(
-            UserSkill(
-                user_id=skill_user.id,
-                name="空技能",
-                description="没有指令",
-                instructions="   ",
-                created_at=datetime(2026, 1, 1),
-            )
-        )
-        db_session.add(
-            UserSkill(
-                user_id=skill_user.id,
-                name="正常技能",
-                description="有指令",
-                instructions="MARKER-OK 正常的指令内容",
-                created_at=datetime(2026, 1, 2),
-            )
-        )
-        db_session.commit()
-
-        injector = SkillContextInjector()
-        catalog = injector.build_skill_catalog(db_session, skill_user.id)
-        reference = injector.build_skill_reference(db_session, skill_user.id)
-
-        assert catalog is not None
-        assert reference is not None
-        assert _catalog_section_names(catalog, "可直接应用") == ["正常技能"]
-        assert "空技能" in _catalog_section_names(catalog, "需显式调用")
-        assert "MARKER-OK" in reference
+        assert [s.name for s in skills] == ["自建", "公共甲", "公共乙"]
+        assert [s.source for s in skills] == ["user", "added", "added"]

@@ -1,6 +1,6 @@
 {
   "title": "技能管理",
-  "description": "管理你的 AI 写作技能，自定义触发词和指令",
+  "description": "管理你的 AI 写作技能：写清它做什么、什么时候用，AI 会按需加载",
   "create": "创建技能",
   "mySkillsTab": "我的技能",
   "discoverTab": "发现技能",
@@ -52,12 +52,12 @@
     "name": "技能名称",
     "namePlaceholder": "输入技能名称",
     "description": "描述",
-    "descriptionPlaceholder": "简要描述这个技能的用途",
+    "descriptionPlaceholder": "写清它做什么、什么时候该用——AI 靠这段描述决定何时加载这个技能",
     "triggers": "触发词",
     "triggersPlaceholder": "创建角色, 新建人物",
-    "triggersHint": "多个触发词用逗号分隔",
+    "triggersHint": "仅作你自己整理技能的标签，不影响 AI 何时使用这个技能；多个用逗号分隔",
     "instructions": "指令内容",
-    "instructionsPlaceholder": "当用户触发此技能时，AI 将遵循这些指令...",
+    "instructionsPlaceholder": "AI 加载这个技能时会按这些方法执行...",
     "instructionsHint": "支持 Markdown 格式，如标题、列表、代码块等"
   },
   "deleteConfirm": {
@@ -76,8 +76,7 @@
     "days7": "最近 7 天",
     "days30": "最近 30 天",
     "days90": "最近 90 天",
-    "totalTriggers": "总触发次数",
-    "avgConfidence": "平均置信度",
+    "totalUses": "总使用次数",
     "builtinCount": "内置技能",
     "userCount": "自定义技能",
     "topSkills": "最常用技能",
@@ -91,5 +90,52 @@
     "createDescription": "你已达到当前套餐可创建的自定义技能上限。可前往订阅页升级，或先查看套餐对比后再决定。",
     "upgradePrimary": "查看升级方案",
     "upgradeSecondary": "查看套餐对比"
+  },
+  "import": {
+    "button": "导入",
+    "hint": "导入技能包（.zip）或 SKILL.md",
+    "invalidType": "仅支持导入 .zip 或 .md 文件",
+    "tooLarge": "文件超过 1 MB 导入上限",
+    "failed": "导入失败，请稍后重试",
+    "successTitle": "技能已导入",
+    "success": "已导入「{{name}}」。",
+    "warningsTitle_one": "跳过了 {{count}} 个文件",
+    "warningsTitle_other": "跳过了 {{count}} 个文件",
+    "warningsTitle": "跳过了 {{count}} 个文件",
+    "done": "完成"
+  },
+  "export": {
+    "button": "导出为 zip",
+    "failed": "导出失败，请稍后重试"
+  },
+  "resources": {
+    "title": "资源文件",
+    "count_one": "{{count}} 个文件",
+    "count_other": "{{count}} 个文件",
+    "count": "{{count}} 个文件",
+    "hint": "AI 可按需读取的文本参考文件。路径需以 references/ 或 assets/ 开头，支持 .md .txt .json .yaml .yml .csv。",
+    "empty": "暂无资源文件",
+    "add": "添加文件",
+    "view": "查看文件",
+    "edit": "编辑文件",
+    "delete": "删除 {{path}}",
+    "confirmDelete": "确认删除",
+    "close": "关闭编辑器",
+    "path": "文件路径",
+    "pathPlaceholder": "references/example.md",
+    "content": "文件内容",
+    "saveFile": "保存文件",
+    "saving": "保存中...",
+    "saveFirst": "先保存技能，才能添加资源文件。",
+    "errors": {
+      "prefix": "路径必须以 references/ 或 assets/ 开头",
+      "invalidPath": "路径无效",
+      "extension": "仅支持 .md .txt .json .yaml .yml .csv 文件",
+      "exists": "该路径的文件已存在",
+      "tooLarge": "文件内容超过 64 KB",
+      "loadFailed": "资源文件加载失败",
+      "saveFailed": "文件保存失败",
+      "deleteFailed": "文件删除失败"
+    }
   }
 }

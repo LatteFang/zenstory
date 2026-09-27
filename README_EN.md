@@ -44,7 +44,7 @@ ZenStory Workbench is a place to write fiction in the browser. Outlines, chapter
 - **One router, four specialist agents**: the router reads only your message and picks one of five paths; then the Planner, Hook Designer, Writer and Quality Reviewer take turns. Once the Writer's output in a turn reaches 500+ characters and it has written to a file, the reviewer is called automatically. The reviewer has no file-editing tools and sends problems back for a rewrite.
 - **Every edit from the chat leaves a version**: each edit the in-app AI makes to a file saves a version, and the edit card in chat has a one-click Undo. Your own saves record a version only when the text length changes by more than 10 characters. When an AI reply finishes normally, the whole project gets a snapshot.
 - **Each turn carries the right material**: within a budget of about 6,000 tokens the AI gets the four AI Memory fields (Project Summary, Writing Style, Current Phase, Notes; long ones are shortened), the project's file list, the file you are editing, the previous chapter and a few recently edited files from the same folder, and recently edited characters and lore.
-- **Other agents can plug in**: generate an API key in Settings, send the prompt to an agent such as Claude Code or OpenClaw, and it can read and write your projects.
+- **Other agents can plug in**: generate an API key in Settings, sign in with `npx zenstory login` and install the skill with `npx zenstory skill install`, and agents such as Claude Code, Codex or OpenClaw can read and write your projects.
 
 ## What's in the workbench
 
@@ -96,7 +96,7 @@ The skill names are Chinese in the product; the file ids are given here.
 | Character | 创建角色 `create-character` |
 | Worldbuilding | 世界观设定 `worldbuilding` |
 
-Each skill is a Markdown file in [`apps/server/agent/skills/builtin/`](apps/server/agent/skills/builtin/) with its trigger words and the instructions the AI receives. Add a skill under Skills → Discover, then use it: type `/` in the input box and pick it, or start your message with the skill's name or trigger followed by a space or punctuation (for example 「钩子设计：给这章换个结尾」), and that message follows the skill. If you name none, the AI may apply a skill by itself, but each turn carries the full instructions of only a few enabled skills (about 4,000 characters in total); the rest take effect only when you name them at the start of a message. You can write your own skills too; shared skills go public after an admin approves them.
+Each skill is a `SKILL.md` in the open Agent Skills format ([`apps/server/agent/skills/builtin/`](apps/server/agent/skills/builtin/)) describing what it is for and the method the AI should follow, optionally with `references/` files. Add a skill under Skills → Discover, then use it: each turn the AI sees only the names and purposes of your enabled skills and loads a skill’s full method when your request matches it; you can also type `/` in the input box or click a skill in the sidebar to attach it to that message as a chip (up to 3). You can write your own skills, or import and export them as `.zip` / `.md` packages; scripts inside a package are never executed and are dropped on import with a warning. Shared skills go public after an admin approves them.
 
 ### Versions, snapshots and export
 
@@ -109,7 +109,7 @@ Each skill is a Markdown file in [`apps/server/agent/skills/builtin/`](apps/serv
 
 ### Material library and inspiration library
 
-- **Material library**: upload a reference novel as TXT (up to 300,000 characters) and the backend extracts per-chapter summaries, plot points for each chapter, character profiles, cross-chapter arcs and storylines, the world setting, and cheat abilities (金手指, the protagonist's special edge). The AI does not browse the library on its own; attach entries to the chat or import them into the project (see the [FAQ](#does-the-ai-consult-my-material-library-automatically)). On the hosted service the material library is a Pro feature.
+- **Material library**: upload a reference novel as TXT (up to 300,000 characters) and by default the backend extracts per-chapter summaries, a whole-book synopsis, character profiles, the world setting, and cheat abilities (金手指, the protagonist's special edge). Per-chapter plot points and what is built on them (cross-chapter arcs and storylines, character relationships) are off by default; enable them with the `MATERIAL_ENABLE_*` flags (see `apps/server/.env.example`). Each chapter's full text is still sent twice, for the summary and for character extraction (three times with plot points on). The AI does not browse the library on its own; attach entries to the chat or import them into the project (see the [FAQ](#does-the-ai-consult-my-material-library-automatically)). On the hosted service the material library is a Pro feature.
 - **Inspiration library**: complete project templates, either published by the admins or submitted by users and approved by an admin. Use This Template creates a new project with a copy of every file in the template.
 
 ### Also
@@ -175,7 +175,7 @@ The writing agents use DeepSeek `deepseek-v4-flash` and need only that key. Othe
 | Voice input | `TENCENT_SECRET_ID`, `TENCENT_SECRET_KEY` |
 | Google sign-in | backend `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `FRONTEND_URL`; frontend `VITE_GOOGLE_OAUTH_ENABLED=true` |
 | Material-library decomposition | a separate Prefect server and worker (see [`apps/server/prefect.yaml`](apps/server/prefect.yaml)), and the material library enabled on the plan |
-| Connecting outside agents | `API_BASE_URL=http://your-server:8000/api/v1` (the backend address); the prompt copied from Settings points at `https://api.zenstory.ai/skill.md`, so change it to `http://your-server:8000/skill.md` before sending it |
+| Connecting outside agents | `API_BASE_URL=https://your-server/api/v1` (the backend address, written into `/skill.md`). Settings derives `npx zenstory login --api-base <backend>/api/v1` and `<backend>/skill.md` from the frontend's `VITE_API_BASE_URL`; the CLI only accepts https, except for `localhost` / `127.0.0.1` |
 | Redemption codes | `REDEMPTION_CODE_HMAC_SECRET` (32+ characters), with the Pro plan created first |
 
 </details>
@@ -263,25 +263,27 @@ Export Manuscript merges them into one TXT in the same order. It starts like thi
 
 ### Connecting Claude Code
 
-After you create a key under Settings → Agent, a dialog shows a prompt to send to your agent (in an English UI; the key is replaced with a placeholder here; if you self-host, first change both URLs to your server as in the table above):
+Create a key under Settings → Agent, then run this in your own terminal (Node.js 20+):
 
-```text
-Read https://api.zenstory.ai/skill.md to learn about my novel writing platform API, then connect with this API key:
-API Key: eg_……
-Header: X-Agent-API-Key: eg_……
-
-After connecting, verify by calling GET https://api.zenstory.ai/skill.md.
+```bash
+npx zenstory login           # paste the key at "Paste API key:" (hidden input, kept out of shell history)
+npx zenstory skill install   # installs the skill for Claude Code; add --target codex / --target openclaw for others
+npx zenstory whoami          # check login state and read/write scopes
 ```
 
-`skill.md` (the English version is at `/skill.md?lang=en`) spells out the five steps for continuing a chapter:
+If you self-host, add `--api-base https://your-server/api/v1` to the login command (Settings shows the command with it filled in). Don't paste the key into an AI chat; if you already did, regenerate it under Settings → Agent.
 
-```text
-1. GET  /agent/projects/{id}/files?file_type=draft&fields=id,title  → List drafts
-2. GET  /agent/files/{file_id}                                        → Read current content
-3. GET  /agent/projects/{id}/writing-context?file_id={file_id}     → Get relevant context
-4. POST /agent/projects/{id}/search  query="character relationships"  → Search character relations
-5. PUT  /agent/files/{file_id}                                        → Update draft content
+With the skill installed, the agent works through the `zenstory` CLI. The skill's workflow for continuing a chapter:
+
+```bash
+zenstory files list <projectId> --type draft --fields id,title --json          # list drafts
+zenstory context <projectId> --file <chapterId> --query "what happens next" --json   # relevant context
+zenstory files get <chapterId> --fields updated_at --json                      # note updated_at
+zenstory files get <chapterId> -o "$dir/<chapterId>.md"                        # into a mktemp -d directory
+zenstory files put <chapterId> --content-file "$dir/<chapterId>.md" --if-updated-at <updated_at>   # write back
 ```
+
+Other agents can read `https://api.zenstory.ai/skill.md` directly (English: `/skill.md?lang=en`) for the HTTP API.
 
 Step 1 with that key returns the chapters above, in the file-tree order:
 
@@ -298,7 +300,7 @@ Step 1 with that key returns the chapters above, in the file-tree order:
 }
 ```
 
-The agent writes with its own model; ZenStory stores the manuscript and assembles context. What it writes back in step 5 replaces the whole file and leaves no version in the history, so use Export Manuscript to keep a copy of the current draft before letting it revise.
+The agent writes with its own model; ZenStory stores the manuscript and assembles context. `files put` replaces the whole file, so it is guarded: it refuses when you edited the file in the browser meanwhile (`updated_at` changed), requires `--allow-shrink` when the new text is under half the old length, and the server records a version in the history (when the per-file version quota is used up, the content is still saved without a version) — undo a bad write with `zenstory files versions <chapterId>` and `zenstory files rollback <chapterId> <n> --yes`. As a second net, the previous server copy is also saved to `~/.cache/zenstory/backups/` before writing. Projects created from the CLI get the same default folders as in the web app, and `--order` puts new chapters in place.
 
 ## FAQ
 
