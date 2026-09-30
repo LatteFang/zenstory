@@ -107,6 +107,8 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Describe Character Appearance in Fiction](https://zenstory.ai/oh-story/describe-character-appearance) — Choose visible traits through viewpoint and attention rather than listing features. Includes an original scene and before-and-after descriptions.
 - [How to Write Interior Monologue That Changes a Choice](https://zenstory.ai/oh-story/write-interior-monologue) — Separate observations, guesses, memories and decisions in interior monologue. Includes an original cancellation scene and knowledge checks.
 - [Too Much Dialogue in Your Novel? What to Keep](https://zenstory.ai/oh-story/fix-too-much-dialogue-in-a-novel) — Diagnose repeated information and conversational results rather than counting lines. Preserve key responses with a worked instrument-loan example.
+- [How to Write Romance After the Couple Gets Together](https://zenstory.ai/oh-story/write-romance-after-the-couple-gets-together) — Move beyond the confession with shared plans, individual goals, and new disagreements. Includes an original example and a choice worksheet.
+- [How to Write a Family Reconciliation Scene](https://zenstory.ai/oh-story/write-a-family-reconciliation-scene) — Ground family reconciliation in the conflict and both viewpoints, then show changes in judgment and daily life. Includes an original scene and worksheet.
 
 ### Choose and write a genre / 题材与类型写法
 - [Choose and write a genre](https://zenstory.ai/guides/genres) — Choose a genre and learn the story patterns it needs.
@@ -272,6 +274,10 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [AI Video Camera Drift: Lock or Time the Move](https://zenstory.ai/drama-skills/stop-unwanted-ai-video-camera-drift) — Wanted a still camera but got a push or orbit? Check accepted motion, resolve prompt conflicts and specify framing, allowed action and hold intervals.
 - [Fix Deformed Hands in AI Video](https://zenstory.ai/drama-skills/fix-deformed-hands-in-ai-video) — Locate hand defects in references, motion and object contact. Reduce competing fine actions while preserving required technique and story facts.
 - [Fix Slow Actions in AI Video](https://zenstory.ai/drama-skills/fix-slow-actions-in-ai-video) — Separate deliberate waiting, delayed starts and stretched motion. Plan beats within the accepted duration and select usable footage from actual results.
+- [How to Write Negative Prompts for AI Video](https://zenstory.ai/drama-skills/write-negative-prompts-for-ai-video) — Tie exclusions to the shot’s actual states, text, and sound requirements. Includes a before-and-after example and a reference-image check.
+- [How to Direct Multiple Characters in AI Video](https://zenstory.ai/drama-skills/direct-multiple-characters-in-ai-video) — Avoid identical reactions in group shots. Use character goals, knowledge timing, and framing. Includes an original rehearsal scene and attention worksheet.
+- [How to Plan a One-Take AI Video Scene](https://zenstory.ai/drama-skills/write-a-one-take-ai-video-scene) — Plan a continuous scene with clear space, actions, sound, and an ending. Includes an original farewell, prompt, timing checks, and when to split.
+- [How to Write AI Video Prompts for Empty Shots](https://zenstory.ai/drama-skills/write-ai-video-establishing-and-empty-shots) — Give empty shots a purpose in place, waiting, or aftermath. Distinguish location references from footage, with a cinema example and sound boundaries.
 
 ### Interactive stories and games / 互动故事与游戏
 - [Interactive stories and games](https://zenstory.ai/guides/interactive-games) — Turn a novel into player actions, branching stories, and a playable game.
@@ -311,6 +317,8 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Analyze Gameplay References](https://zenstory.ai/novel-to-game/analyze-gameplay-references) — Analyze references by actions, loops, pressure and mastery. Use an original adaptation worksheet to state what to borrow, omit and test.
 - [Balance Game Numbers by Comparing Strategies](https://zenstory.ai/novel-to-game/balance-game-numbers-by-comparing-strategies) — Define what breaks a tradeoff, compare strategies from the same start, then change the situation. Includes repair costs and deadline calculations.
 - [Too Many Game Stats? Keep Those That Affect Choices](https://zenstory.ai/novel-to-game/reduce-unused-game-stats) — Audit generation, spending, rule checks and feedback. Separate strategic resources, story facts and history with a repair-commission example.
+- [How to Stop Game Characters Knowing Secrets Too Early](https://zenstory.ai/novel-to-game/stop-characters-knowing-secrets-too-early) — Separate facts, player knowledge, and character knowledge. Use a private-note example to check disclosure, inference, and merged branches.
+- [How to Design a Second Playthrough for a Story Game](https://zenstory.ai/novel-to-game/design-a-second-playthrough-for-a-story-game) — Choose replay for another route, new judgment, or a different strategy. Keep real tradeoffs and knowledge boundaries without compulsory randomness.
 
 ### Video scripts and editing / 视频解说与剪辑
 - [Video scripts and editing](https://zenstory.ai/guides/video-recaps) — Write narration from footage, edit a story, and finish audio and subtitles.
@@ -333,6 +341,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Keep AI Edit Revisions Local](https://zenstory.ai/video-recap/revise-one-part-of-ai-edit) — Locate feedback by shot, sentence and time range, and record what this revision keeps. Includes a change list to prevent a small edit becoming a remake.
 - [How to Dub an English Video into Chinese](https://zenstory.ai/video-recap/translate-an-english-video-into-chinese) — Verify the English transcript and sentence translations before dubbing into the original windows. Includes an original demo and current workflow limits.
 - [Fix Automatic Subtitle Errors in a Video Recap](https://zenstory.ai/video-recap/fix-automatic-subtitle-errors) — Correct names and negation against actual speech. Separate narration, dialogue and burned text, then choose the right subtitle source and clock.
+- [How to Make a Video with Original Audio and No Voiceover](https://zenstory.ai/video-recap/make-a-video-with-original-audio-and-no-voiceover) — Choose processed source audio, copying an adopted track, or pairing a new picture with a locked mix. Includes an operation request and listening checks.
 
 
 ## Workbench docs
