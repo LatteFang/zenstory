@@ -16072,8 +16072,8 @@
           "en": "Turn the Story Map into Actionable Excerpt Notes"
         },
         "body": {
-          "zh": "交给剪辑前，每一段至少写清：\n\n1. 来源文件和原片位置；\n2. 它在共同问题里承担的任务；\n3. 这段具体改变了什么；\n4. 必须听完的台词、看完的动作或落地的反应；\n5. 入点为何可以从这里开始，出点为何可以在这里结束；\n6. 与前后来源是因果、对照、递进还是时间跨越。\n\n选择完成后，先只按片段顺序复述一遍故事。如果必须不断补充“其实之前……”才能听懂，说明前提被删掉了；如果每换一个文件就重新介绍人物和背景，说明素材还没有真正进入同一主线。随后再处理旁白、原声和字幕，避免用解释掩盖选段问题。",
-          "en": "Before handing the plan to an editor, specify at least six things for every excerpt:\n\n1. The source file and location in the original.\n2. Its job within the shared question.\n3. The specific change it creates.\n4. The line that must finish, the action that must complete, or the reaction that must land.\n5. Why the in point can begin here and the out point can end here.\n6. Whether it relates to adjacent sources through cause and effect, comparison, progression, or a time jump.\n\nAfter selecting the excerpts, retell the story using only their order. If you must keep adding “what actually happened earlier was...” for it to make sense, you removed a premise. If every change of file reintroduces the people and background, the sources have not yet joined one main line. Address voice-over, original audio, and captions afterward so explanation does not conceal a selection problem."
+          "zh": "交给剪辑前，每一段至少写清：\n\n1. 来源文件和原片位置；\n2. 它在共同问题里承担的任务；\n3. 这段具体改变了什么；\n4. 必须听完的台词、看完的动作或落地的反应；\n5. 入点为何可以从这里开始，出点为何可以在这里结束；\n6. 与前后来源是因果、对照、递进还是时间跨越。\n\n选择完成后，先只按片段顺序复述一遍故事。如果必须不断补充“其实之前……”才能听懂，说明前提被删掉了；如果每换一个文件就重新介绍人物和背景，说明素材还没有真正进入同一主线。随后再处理旁白、原声和字幕，避免用解释掩盖选段问题。\n\n如果选出的素材同时有横屏和竖屏，剪切前先比较[等比留边与裁切的取舍](/video-recap/combine-landscape-and-portrait-videos)，确认每段必须看见的人脸、手部动作和结果不会丢失。",
+          "en": "Before handing the plan to an editor, specify at least six things for every excerpt:\n\n1. The source file and location in the original.\n2. Its job within the shared question.\n3. The specific change it creates.\n4. The line that must finish, the action that must complete, or the reaction that must land.\n5. Why the in point can begin here and the out point can end here.\n6. Whether it relates to adjacent sources through cause and effect, comparison, progression, or a time jump.\n\nAfter selecting the excerpts, retell the story using only their order. If you must keep adding “what actually happened earlier was...” for it to make sense, you removed a premise. If every change of file reintroduces the people and background, the sources have not yet joined one main line. Address voice-over, original audio, and captions afterward so explanation does not conceal a selection problem.\n\nIf the selected clips mix landscape and portrait footage, compare [fitting with padding and cropping](/video-recap/combine-landscape-and-portrait-videos) before cutting so essential faces, hand actions, and outcomes remain visible."
         }
       },
       {
@@ -27683,7 +27683,7 @@
       "en"
     ],
     "published_on": "2026-09-29",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "zh": "小说怎么让读者在乎输赢：具体投入与情感代价",
       "en": "How to Make Readers Care About the Outcome"
@@ -27741,8 +27741,8 @@
           "en": "Repair events that fail to create investment"
         },
         "body": {
-          "zh": "**目标很大但投入抽象**：补此前实际付出与生活细节，不继续提高奖金或伤亡数。**配角只等主角拯救**：让对方有自己的要求和行动，甚至拒绝主角的办法。\n\n**转折只有解释**：让新事实改变下一步选择，别在结尾补一句“这对她意义重大”。**主角介入纯靠巧合**：检查为什么是这个人、为什么是现在、为什么此前没解决，补已建立的能力或关系。\n\n最后分开检查两件事：人物有没有完成任务；读者等待的生活或关系变化有没有被回应。失败结局也可以回应投入，例如承认损失、保住一项关系或改变继续追求的方式。情感代价不要求每个故事都沉重。",
-          "en": "If the goal is grand but investment abstract, show earlier effort and lived detail rather than raising prizes or casualty counts. If a supporting character only awaits rescue, give them a request, action or refusal.\n\nIf a turning point exists only in explanation, make its information affect the next choice. For a coincidental intervention, ask why this person, why now and why the problem remained unresolved; use established capability or relationships.\n\nCheck task completion separately from the life or relationship change readers await. Failure can still answer investment through acknowledged loss, a preserved bond or a changed way of pursuing the goal. Emotional stakes need not make every story grim."
+          "zh": "**目标很大但投入抽象**：补此前实际付出与生活细节，不继续提高奖金或伤亡数。**配角只等主角拯救**：让对方有自己的要求和行动，甚至拒绝主角的办法。\n\n**转折只有解释**：让新事实改变下一步选择，别在结尾补一句“这对她意义重大”。**主角介入纯靠巧合**：检查为什么是这个人、为什么是现在、为什么此前没解决，补已建立的能力或关系。\n\n最后分开检查两件事：人物有没有完成任务；读者等待的生活或关系变化有没有被回应。失败结局也可以回应投入，例如承认损失、保住一项关系或改变继续追求的方式。情感代价不要求每个故事都沉重。\n\n当结果是一场告别或无法挽回的失去时，可接着看[怎样写具体失去与人物反应](/oh-story/write-a-sad-scene-in-fiction)，把这里建立的投入落到场景里的日常变化与回应。",
+          "en": "If the goal is grand but investment abstract, show earlier effort and lived detail rather than raising prizes or casualty counts. If a supporting character only awaits rescue, give them a request, action or refusal.\n\nIf a turning point exists only in explanation, make its information affect the next choice. For a coincidental intervention, ask why this person, why now and why the problem remained unresolved; use established capability or relationships.\n\nCheck task completion separately from the life or relationship change readers await. Failure can still answer investment through acknowledged loss, a preserved bond or a changed way of pursuing the goal. Emotional stakes need not make every story grim.\n\nWhen the outcome is a farewell or an irreversible loss, see [writing a sad scene through a specific loss and response](/oh-story/write-a-sad-scene-in-fiction) to carry that investment into a changed routine and a character response."
         }
       }
     ],
