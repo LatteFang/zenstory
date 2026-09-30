@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs'
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { finalizeSite, vercelConfig } from '../build-site-layout.mjs'
@@ -109,4 +109,62 @@ test('domain finalizer rejects contaminated shell metadata before generating fil
       assert.equal(existsSync(join(dir, '_app')), false)
     }
   } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('sitemap lastmod follows each page dateModified, not publication, other nodes or build time', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'site-lastmod-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  const render = (route, nodes) => {
+    const path = route === '/' ? 'org-home' : route.slice(1)
+    mkdirSync(join(dir, path), { recursive: true })
+    const html = `<html><script type="application/ld+json">${JSON.stringify({ '@graph': nodes })}</script><p>Original content</p></html>`
+    const file = join(dir, path, 'index.html')
+    writeFileSync(file, html)
+    utimesSync(file, new Date('2030-01-01'), new Date('2030-01-01'))
+    return html
+  }
+  render('/', [{ '@type': 'Organization', url: 'https://zenstory.ai/', dateModified: '2026-01-01' }])
+  const article = { '@type': 'Article', url: 'https://zenstory.ai/oh-story/example', datePublished: '2024-02-01', dateModified: '2026-02-28' }
+  const original = render('/oh-story/example', [article, { ...article, url: 'https://example.com/elsewhere', dateModified: '2020-01-01' }])
+  render('/zh/oh-story/example', [{ ...article, url: 'https://zenstory.ai/zh/oh-story/example', dateModified: '2026-03-01' }])
+  render('/compare/example', [{ '@type': 'TechArticle', url: 'https://zenstory.ai/compare/example', dateModified: '2025-06-02' }])
+  render('/docs/example', [{ '@type': 'TechArticle', url: 'https://zenstory.ai/docs/example', datePublished: '2024-01-01' }])
+  const build = () => {
+    writeFileSync(join(dir, 'index.html'), '<html><head><title>App</title></head><body><div id="root"></div></body></html>')
+    finalizeSite(dir)
+    return readFileSync(join(dir, '_site/sitemap.xml'), 'utf8')
+  }
+  const first = build()
+  assert.ok(first.includes('<loc>https://zenstory.ai/oh-story/example</loc><lastmod>2026-02-28</lastmod>'))
+  assert.ok(first.includes('<loc>https://zenstory.ai/zh/oh-story/example</loc><lastmod>2026-03-01</lastmod>'))
+  assert.ok(first.includes('<loc>https://zenstory.ai/compare/example</loc><lastmod>2025-06-02</lastmod>'))
+  assert.match(first, /<loc>https:\/\/zenstory\.ai\/docs\/example<\/loc><\/url>/)
+  assert.equal((first.match(/<lastmod>/g) ?? []).length, 3)
+  assert.doesNotMatch(first, /2030-01-01|2024-02-01|2020-01-01|2026-01-01/)
+  assert.equal(readFileSync(join(dir, 'oh-story/example/index.html'), 'utf8'), original)
+  assert.equal(build(), first, 'rebuilding unchanged pages preserves every sitemap date')
+  render('/oh-story/example', [{ ...article, dateModified: '2026-03-02' }])
+  const updated = build()
+  assert.ok(updated.includes('<loc>https://zenstory.ai/oh-story/example</loc><lastmod>2026-03-02</lastmod>'))
+  assert.ok(updated.includes('<loc>https://zenstory.ai/zh/oh-story/example</loc><lastmod>2026-03-01</lastmod>'))
+  assert.doesNotMatch(readFileSync(join(dir, '_app/sitemap.xml'), 'utf8'), /lastmod/)
+})
+
+test('sitemap rejects impossible or conflicting editorial modification dates', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'site-lastmod-invalid-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  mkdirSync(join(dir, 'org-home'))
+  mkdirSync(join(dir, 'oh-story/example'), { recursive: true })
+  writeFileSync(join(dir, 'org-home/index.html'), '<html>Home</html>')
+  const node = { '@type': 'Article', url: 'https://zenstory.ai/oh-story/example' }
+  for (const nodes of [
+    [{ ...node, dateModified: '2026-02-30' }],
+    [{ ...node, dateModified: '2026-13-01' }],
+    [{ ...node, dateModified: 'today' }],
+    [{ ...node, dateModified: '2026-01-01' }, { ...node, dateModified: '2026-01-02' }],
+  ]) {
+    writeFileSync(join(dir, 'index.html'), '<html><head></head><body><div id="root"></div></body></html>')
+    writeFileSync(join(dir, 'oh-story/example/index.html'), `<script type="application/ld+json">${JSON.stringify({ '@graph': nodes })}</script>`)
+    assert.throws(() => finalizeSite(dir), /Invalid page dateModified|Conflicting page dateModified/)
+  }
 })
