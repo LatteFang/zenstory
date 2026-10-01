@@ -17311,7 +17311,7 @@
       "en"
     ],
     "published_on": "2026-09-26",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "zh": "AI图片局部修改提示词怎么写：写清改哪里、留下什么",
       "en": "How to Write Prompts for Targeted AI Image Edits: What to Change and Keep"
@@ -17370,7 +17370,7 @@
         },
         "body": {
           "zh": "先看目标是否完成：伞是否消失、遮挡区域是否连续、是否残留孤立投影。再看原本不想改的地方：人物是否换了脸，布袋是否被一起抹去，椅脚是否变形，构图是否裁切。\n\n| 观察到的差异 | 下一次请求 |\n|---|---|\n| 目标物删掉，投影仍留着 | 指明残留投影区域；保护本次正确补出的椅面 |\n| 邻近物件被误删 | 回到仍保留该物件的合适基底，缩小目标说明 |\n| 补出的纹理与透视不接 | 点明接缝和纹理方向，不重新设计整张背景 |\n| 人物特征同时漂移 | 重新选基底并明确人物保持项，必要时换用支持所需编辑范围的工具 |\n| 新版已满意，又出现额外改动要求 | 先说明新增范围，避免旧要求与新要求互相覆盖 |\n\n具体采用哪种编辑工具、是否有区域选择能力，要以你实际使用的工具为准。本页的文字不能替代区域选取，也不承诺任何模型能严格锁住未选像素。",
-          "en": "First check whether the intended change happened: is the umbrella gone, is the occluded area continuous, and is there any isolated shadow left? Then inspect details you did not want to change: did the person’s face drift, was the bag erased too, is a bench leg distorted, or has the crop changed?\n\n| Difference you observe | What to request next |\n|---|---|\n| The object is gone, but its shadow remains | Point to the remaining shadow and preserve the correctly reconstructed bench |\n| A nearby object was removed by mistake | Return to a suitable base that still contains it and narrow the target description |\n| Reconstructed texture or perspective does not align | Identify the seam and texture direction; do not redesign the whole background |\n| The person’s features also drifted | Choose the base again and state the preservation constraints; if needed, use a tool that supports the required edit scope |\n| The new version was accepted, then an extra change is requested | State the added scope first so old and new instructions do not overwrite each other |\n\nChoose an editing tool and region-selection method based on the tool you actually use. Wording cannot replace region selection or guarantee that a model will lock every unselected pixel."
+          "en": "First check whether the intended change happened: is the umbrella gone, is the occluded area continuous, and is there any isolated shadow left? Then inspect details you did not want to change: did the person’s face drift, was the bag erased too, is a bench leg distorted, or has the crop changed?\n\n| Difference | Next request |\n|---|---|\n| The object is gone, but its shadow remains | Point to the remaining shadow and preserve the correctly reconstructed bench |\n| A nearby object was removed by mistake | Return to a suitable base that still contains it and narrow the target description |\n| Reconstructed texture or perspective does not align | Identify the seam and texture direction; do not redesign the whole background |\n| The person’s features also drifted | Choose the base again and state the preservation constraints; if needed, use a tool that supports the required edit scope |\n| The new version was accepted, then an extra change is requested | State the added scope first so old and new instructions do not overwrite each other |\n\nChoose an editing tool and region-selection method based on the tool you actually use. Wording cannot replace region selection or guarantee that a model will lock every unselected pixel."
         }
       },
       {
@@ -23112,7 +23112,7 @@
       "en"
     ],
     "published_on": "2026-09-29",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "zh": "AI视频场景不一致怎么办：固定布局，再换机位",
       "en": "How to Keep Locations Consistent Across AI Video Shots"
@@ -23137,8 +23137,8 @@
           "en": "Separate layout, view and temporary state"
         },
         "body": {
-          "zh": "drama-skills 的场景空镜方法先保持地理与固定锚点，再选择观察方向。问题常出在把“同一间店，反向镜头”写成一段全新装饰提示词，模型就会重新设计房间。\n\n以下修车店是原创制作示例，不是实测生成结果。\n\n| 要固定的层次 | 示例 | 换镜时能否改变 |\n|---|---|---|\n| 场景布局 | 入口通向中间通道，工作台沿东墙，唯一后门在北墙，窗在西墙 | 不随机位改动 |\n| 观察方向 | 从入口向北看；从后门向南看 | 可以换，但相对布局要能对上 |\n| 临时状态 | 傍晚、窗外下雨、台灯开启、两辆车停在通道边 | 有剧情原因时变化，需前后衔接 |\n| 构图 | 中景、低机位、竖屏 | 可调整，不借此搬门窗 |\n\n先使用房间自身的东、西、入口与后门确定关系，再转换成某一视角的画面左右。否则“左边有窗”换个机位后容易被误当成另一个左边。",
-          "en": "drama-skills’ location-reference method preserves geography and fixed anchors before choosing a view. A common failure is to describe the reverse angle as a fresh decorative scene, effectively asking for a new room.\n\nThis bike shop is an original production example, not a measured generation result.\n\n| Layer | Example | Can it change between shots? |\n|---|---|---|\n| Layout | Entrance opens onto a central aisle; bench on east wall; one rear door on north wall; window on west wall | Not merely because the camera moves |\n| View | From entrance facing north; from rear door facing south | Yes, while preserving the room |\n| State | Rainy evening, desk lamp on, two bikes beside the aisle | With a story reason and continuity |\n| Framing | Medium shot, low camera, vertical frame | Yes, without relocating structures |\n\nUse room-relative directions and named anchors first, then translate them into screen directions for each view. “Window on the left” alone becomes ambiguous when the camera turns."
+          "zh": "drama-skills 的场景空镜方法先保持地理与固定锚点，再选择观察方向。问题常出在把“同一间店，反向镜头”写成一段全新装饰提示词，模型就会重新设计房间。\n\n以下修车店是原创制作示例，不是实测生成结果。\n\n| 要固定的层次 | 示例与变更条件 |\n|---|---|\n| 场景布局 | 示例：入口通向中间通道，工作台沿东墙，唯一后门在北墙，窗在西墙；换镜条件：不随机位改动 |\n| 观察方向 | 示例：从入口向北看；从后门向南看；换镜条件：可以换，但相对布局要能对上 |\n| 临时状态 | 示例：傍晚、窗外下雨、台灯开启、两辆车停在通道边；换镜条件：有剧情原因时变化，需前后衔接 |\n| 构图 | 示例：中景、低机位、竖屏；换镜条件：可调整，不借此搬门窗 |\n\n先使用房间自身的东、西、入口与后门确定关系，再转换成某一视角的画面左右。否则“左边有窗”换个机位后容易被误当成另一个左边。",
+          "en": "drama-skills’ location-reference method preserves geography and fixed anchors before choosing a view. A common failure is to describe the reverse angle as a fresh decorative scene, effectively asking for a new room.\n\nThis bike shop is an original production example, not a measured generation result.\n\n| Layer | Example and change |\n|---|---|\n| Layout | Example: Entrance opens onto a central aisle; bench on east wall; one rear door on north wall; window on west wall; Between shots: Not merely because the camera moves |\n| View | Example: From entrance facing north; from rear door facing south; Between shots: Yes, while preserving the room |\n| State | Example: Rainy evening, desk lamp on, two bikes beside the aisle; Between shots: With a story reason and continuity |\n| Framing | Example: Medium shot, low camera, vertical frame; Between shots: Yes, without relocating structures |\n\nUse room-relative directions and named anchors first, then translate them into screen directions for each view. “Window on the left” alone becomes ambiguous when the camera turns."
         }
       },
       {
@@ -30518,7 +30518,7 @@
       "en"
     ],
     "published_on": "2026-09-29",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "zh": "短剧对白中途怎么切画面：保留一句完整声音",
       "en": "How to Cut Away During Continuous Dialogue"
@@ -30554,8 +30554,8 @@
           "en": "Record speech and picture intervals separately"
         },
         "body": {
-          "zh": "| 区间 | 采用画面 | 采用声音 | 叙事作用 |\n|---|---|---|---|\n| 台词开始 | 管理员与钥匙 | 管理员完整原句开始 | 建立说话人与交接 |\n| “明天”之后 | 承包人的手停下 | 同一句继续，不重启 | 读到条件引起的迟疑 |\n| 原句结束 | 承包人看向管理员 | 保留原句语尾与必要停顿 | 为追问留空间 |\n| 追问开始 | 有依据的回应镜 | 承包人自己的原句 | 明确责任仍需协商 |\n\n这张表是原创设计，没有实测秒数。实际剪辑先定位真实发声，再标画面时刻；源素材时间与成片时间分别记，截取或换镜后重新核对。\n\n同一句只能开始一次、结束一次。切到听者时可以是画外延续，不能让两段各自重复整句，也不能把画内对白暗中改成内心旁白。",
-          "en": "| Interval | Picture | Sound | Purpose |\n|---|---|---|---|\n| Line begins | Administrator and keys | Original line starts | Establish speaker and handoff |\n| After tomorrow | Contractor’s hand stops | Same line continues | Show hesitation caused by the condition |\n| Line ends | Contractor looks up | Complete ending and needed pause | Prepare a question |\n| Question begins | Relevant response view | Contractor’s own line | Responsibility remains negotiable |\n\nThis is a plan without measured seconds. Locate actual speech before marking picture timing. Keep source and output times distinct and recheck after trimming.\n\nThe line starts and ends once. It may continue off-screen, but separate segments must not each restart it or silently turn dialogue into inner narration."
+          "zh": "| 区间 | 画面、声音与作用 |\n|---|---|\n| 台词开始 | 采用画面：管理员与钥匙；采用声音：管理员完整原句开始；叙事作用：建立说话人与交接 |\n| “明天”之后 | 采用画面：承包人的手停下；采用声音：同一句继续，不重启；叙事作用：读到条件引起的迟疑 |\n| 原句结束 | 采用画面：承包人看向管理员；采用声音：保留原句语尾与必要停顿；叙事作用：为追问留空间 |\n| 追问开始 | 采用画面：有依据的回应镜；采用声音：承包人自己的原句；叙事作用：明确责任仍需协商 |\n\n这张表是原创设计，没有实测秒数。实际剪辑先定位真实发声，再标画面时刻；源素材时间与成片时间分别记，截取或换镜后重新核对。\n\n同一句只能开始一次、结束一次。切到听者时可以是画外延续，不能让两段各自重复整句，也不能把画内对白暗中改成内心旁白。",
+          "en": "| Interval | Picture and sound |\n|---|---|\n| Line begins | Picture: Administrator and keys; Sound: Original line starts; Purpose: Establish speaker and handoff |\n| After tomorrow | Picture: Contractor’s hand stops; Sound: Same line continues; Purpose: Show hesitation caused by the condition |\n| Line ends | Picture: Contractor looks up; Sound: Complete ending and needed pause; Purpose: Prepare a question |\n| Question begins | Picture: Relevant response view; Sound: Contractor’s own line; Purpose: Responsibility remains negotiable |\n\nThis is a plan without measured seconds. Locate actual speech before marking picture timing. Keep source and output times distinct and recheck after trimming.\n\nThe line starts and ends once. It may continue off-screen, but separate segments must not each restart it or silently turn dialogue into inner narration."
         }
       },
       {
@@ -30632,7 +30632,7 @@
       "en"
     ],
     "published_on": "2026-09-29",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "zh": "单场景短剧分镜怎么做：用策略改变画面",
       "en": "How to Storyboard a Single-Room Short Drama"
@@ -30668,8 +30668,8 @@
           "en": "Make movement express a changed strategy"
         },
         "body": {
-          "zh": "| 一轮行动 | 对方回应 | 空间或物件变化 | 局面 |\n|---|---|---|---|\n| 制作人把文件推近 | 顾梨不接，提出取衣服 | 文件停在桌面边界 | 合作条件仍被拒 |\n| 制作人挡在衣柜前 | 顾梨转向助理说明所有权 | 注意从签字转到钥匙 | 助理必须决定是否开柜 |\n| 助理开柜 | 制作人要求留作抵押 | 顾梨取出衣服，站到门侧 | 是否离开成为下一选择 |\n\n动作变化来自策略，不需要三人每轮一起起身。注意转向钥匙时可选手部或保持三人关系的画面；是否切镜看观众要读哪项变化。\n\n若已定剧本中没有抵押要求，下游分镜不能临时发明。本表为原创开发示例，实际分镜只落实已接受的事实与对白。",
-          "en": "| Action | Response | Spatial or object change | Situation |\n|---|---|---|---|\n| Producer pushes the document closer | Gu refuses and requests her costume | Paper remains at the table boundary | Terms still rejected |\n| Producer blocks the wardrobe | Gu addresses the assistant about ownership | Attention shifts to the key | Assistant must decide |\n| Assistant unlocks it | Producer requests a deposit | Gu takes the costume and moves toward the door | Departure becomes a choice |\n\nMovement follows strategy; everyone need not stand each round. Attention to the key may use an insert or a view preserving all three relationships.\n\nA storyboard cannot invent a deposit demand absent from its approved script. This table is an original development example; actual shots realize accepted facts and dialogue."
+          "zh": "| 一轮行动 | 回应与局面变化 |\n|---|---|\n| 制作人把文件推近 | 对方回应：顾梨不接，提出取衣服；空间或物件变化：文件停在桌面边界；局面：合作条件仍被拒 |\n| 制作人挡在衣柜前 | 对方回应：顾梨转向助理说明所有权；空间或物件变化：注意从签字转到钥匙；局面：助理必须决定是否开柜 |\n| 助理开柜 | 对方回应：制作人要求留作抵押；空间或物件变化：顾梨取出衣服，站到门侧；局面：是否离开成为下一选择 |\n\n动作变化来自策略，不需要三人每轮一起起身。注意转向钥匙时可选手部或保持三人关系的画面；是否切镜看观众要读哪项变化。\n\n若已定剧本中没有抵押要求，下游分镜不能临时发明。本表为原创开发示例，实际分镜只落实已接受的事实与对白。",
+          "en": "| Action | Response and change |\n|---|---|\n| Producer pushes the document closer | Response: Gu refuses and requests her costume; Spatial or object change: Paper remains at the table boundary; Situation: Terms still rejected |\n| Producer blocks the wardrobe | Response: Gu addresses the assistant about ownership; Spatial or object change: Attention shifts to the key; Situation: Assistant must decide |\n| Assistant unlocks it | Response: Producer requests a deposit; Spatial or object change: Gu takes the costume and moves toward the door; Situation: Departure becomes a choice |\n\nMovement follows strategy; everyone need not stand each round. Attention to the key may use an insert or a view preserving all three relationships.\n\nA storyboard cannot invent a deposit demand absent from its approved script. This table is an original development example; actual shots realize accepted facts and dialogue."
         }
       },
       {
@@ -31891,7 +31891,7 @@
       "en"
     ],
     "published_on": "2026-09-29",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "zh": "视频边框和Logo怎么加：先锁音画，再检查遮挡",
       "en": "How to Add a Video Frame and Logo Without Obstruction"
@@ -31927,8 +31927,8 @@
           "en": "Reserve space for content"
         },
         "body": {
-          "zh": "| 图层 | 本例的位置与作用 | 需要避开的内容 |\n|---|---|---|\n| 轻薄边框 | 沿画布边缘建立栏目识别 | 不能盖住手部移到边缘的操作 |\n| 栏目名 | 上方已留的标题区 | 不覆盖收音机盖上的关键标记 |\n| Logo | 创作者确认的角落位置 | 与解说字幕、指示箭头错开 |\n| 解说字幕 | 按实际台词与阅读宽度排 | 留出拆件近景的关键区域 |\n\n这些位置是本项目布局选择，不是所有平台的固定安全区。用实际画幅看开头、近景、亮背景、暗背景和长字幕，必要时缩减边框或移动 Logo。\n\n不要只拿一张空背景试排版。收音机在后半段移动到右下，原本看似空的角落会变成关键动作区；这时改包装位置，比遮住操作更合适。",
-          "en": "| Layer | Role in this example | Avoid |\n|---|---|---|\n| Light frame | Identity around the canvas edge | Hands moving toward the edge |\n| Program title | Reserved upper title region | Important marks on the radio cover |\n| Logo | Creator-approved corner | Captions and instruction arrows |\n| Narration captions | Actual speech and reading width | Important areas in repair close-ups |\n\nThese positions belong to the example, not a universal platform safe area. Inspect opening, close-up, bright, dark and long-caption frames in the actual aspect ratio.\n\nDo not design against an empty background alone. The radio moves into the lower-right corner later, making a previously empty logo position important action space. Move or reduce packaging to retain the instruction."
+          "zh": "| 图层 | 位置、作用与避让 |\n|---|---|\n| 轻薄边框 | 本例的位置与作用：沿画布边缘建立栏目识别；需要避开的内容：不能盖住手部移到边缘的操作 |\n| 栏目名 | 本例的位置与作用：上方已留的标题区；需要避开的内容：不覆盖收音机盖上的关键标记 |\n| Logo | 本例的位置与作用：创作者确认的角落位置；需要避开的内容：与解说字幕、指示箭头错开 |\n| 解说字幕 | 本例的位置与作用：按实际台词与阅读宽度排；需要避开的内容：留出拆件近景的关键区域 |\n\n这些位置是本项目布局选择，不是所有平台的固定安全区。用实际画幅看开头、近景、亮背景、暗背景和长字幕，必要时缩减边框或移动 Logo。\n\n不要只拿一张空背景试排版。收音机在后半段移动到右下，原本看似空的角落会变成关键动作区；这时改包装位置，比遮住操作更合适。",
+          "en": "| Layer | Role and limits |\n|---|---|\n| Light frame | Role in this example: Identity around the canvas edge; Avoid: Hands moving toward the edge |\n| Program title | Role in this example: Reserved upper title region; Avoid: Important marks on the radio cover |\n| Logo | Role in this example: Creator-approved corner; Avoid: Captions and instruction arrows |\n| Narration captions | Role in this example: Actual speech and reading width; Avoid: Important areas in repair close-ups |\n\nThese positions belong to the example, not a universal platform safe area. Inspect opening, close-up, bright, dark and long-caption frames in the actual aspect ratio.\n\nDo not design against an empty background alone. The radio moves into the lower-right corner later, making a previously empty logo position important action space. Move or reduce packaging to retain the instruction."
         }
       },
       {
@@ -32005,7 +32005,7 @@
       "en"
     ],
     "published_on": "2026-09-29",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "zh": "视频片尾黑屏怎么处理：最后一镜与片尾卡分开检查",
       "en": "How to Replace an Unintended Black Video Tail"
@@ -32041,8 +32041,8 @@
           "en": "Place the card in an explicit interval"
         },
         "body": {
-          "zh": "| 本例区间 | 内容 | 必须保住 |\n|---|---|---|\n| 零至九秒 | 已锁定的教程画面与包装 | 不重排操作、不改旁白 |\n| 九至十秒 | 栏目片尾卡 | 旁白末句与已定混音继续完整播放 |\n| 十秒以后 | 本例没有交付内容 | 不凭空增加黑帧或静音尾巴 |\n\n这是本文虚构十秒母版的安排，不是建议所有片尾都做一秒。片尾时长应跟可读文案、声音和已接受的交付要求一起决定；需要延长母版时先重定时间线，而非让合成器暗中补时长。\n\n用帧区间交接时，明确起点包含、终点不包含。三十帧每秒的本例中，片尾覆盖输出帧 270 到 300 之前，避免前景层与片尾层重叠一帧或漏一帧。",
-          "en": "| Example interval | Content | Preserve |\n|---|---|---|\n| 0–9 seconds | Locked tutorial and packaging | Action order and narration |\n| 9–10 seconds | Program endcard | Complete final words and adopted mix |\n| After 10 seconds | No accepted content | No invented black or silent extension |\n\nThis is a fictional ten-second master, not a one-second recommendation for all cards. Set duration with reading needs, audio and delivery requirements. If extension is necessary, revise the timeline instead of expecting hidden padding.\n\nFor frame handoff, include the start and exclude the end. At 30 fps, this card occupies output frames 270 through 299. Explicit bounds prevent a missing or duplicated boundary frame."
+          "zh": "| 本例区间 | 内容与保持项 |\n|---|---|\n| 零至九秒 | 内容：已锁定的教程画面与包装；必须保住：不重排操作、不改旁白 |\n| 九至十秒 | 内容：栏目片尾卡；必须保住：旁白末句与已定混音继续完整播放 |\n| 十秒以后 | 内容：本例没有交付内容；必须保住：不凭空增加黑帧或静音尾巴 |\n\n这是本文虚构十秒母版的安排，不是建议所有片尾都做一秒。片尾时长应跟可读文案、声音和已接受的交付要求一起决定；需要延长母版时先重定时间线，而非让合成器暗中补时长。\n\n用帧区间交接时，明确起点包含、终点不包含。三十帧每秒的本例中，片尾覆盖输出帧 270 到 300 之前，避免前景层与片尾层重叠一帧或漏一帧。",
+          "en": "| Example interval | Content and limits |\n|---|---|\n| 0–9 seconds | Content: Locked tutorial and packaging; Preserve: Action order and narration |\n| 9–10 seconds | Content: Program endcard; Preserve: Complete final words and adopted mix |\n| After 10 seconds | Content: No accepted content; Preserve: No invented black or silent extension |\n\nThis is a fictional ten-second master, not a one-second recommendation for all cards. Set duration with reading needs, audio and delivery requirements. If extension is necessary, revise the timeline instead of expecting hidden padding.\n\nFor frame handoff, include the start and exclude the end. At 30 fps, this card occupies output frames 270 through 299. Explicit bounds prevent a missing or duplicated boundary frame."
         }
       },
       {
@@ -50976,6 +50976,148 @@
       "/oh-story/character-dialogue",
       "/oh-story/fix-too-much-dialogue-in-a-novel",
       "/oh-story/clear-character-names-and-pronouns"
+    ]
+  },
+  {
+    "owner": "drama-skills",
+    "slug": "stop-unwanted-voiceover-and-dialogue-in-ai-video",
+    "topic": "ai-video",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "AI视频乱加旁白或台词怎么办：把允许的发声写完整",
+      "en": "How to Stop Unwanted Voiceover and Dialogue in AI Video"
+    },
+    "seo_title": {
+      "zh": "AI视频乱加旁白和台词怎么改｜ZenStory",
+      "en": "Stop Unwanted Voiceover in AI Video | ZenStory"
+    },
+    "description": {
+      "zh": "按说话人、声源、语言、原句和底声写完整声音时间线。附有对白与无对白两份原创提示词，保住既定音效，不把去旁白误做全片静音。",
+      "en": "Write a complete sound timeline with speakers, exact lines and ambience. Two original prompts preserve approved sound while excluding unwanted voices."
+    },
+    "answer": {
+      "zh": "先核对剧本允许哪些发声，再把这些事件按顺序写进一条完整声音时间线。每句标明说话人、声源性质、实际语言和逐字原句；句间与句后回到已定环境声或静默。作者已经确认不需要的旁白、新台词、语气词或重复发声，再在末尾集中说明，不把整条音轨静音当成保留对白的修法。",
+      "en": "Check which sounds the script permits, then place those events in one complete timeline. Give each line its speaker, source, spoken language and exact text; between and after lines, return to established ambience or silence. Consolidate the creator’s confirmed exclusions at the end. Muting the entire track is not a way to preserve required dialogue."
+    },
+    "sections": [
+      {
+        "id": "locate-the-added-voice",
+        "heading": {
+          "zh": "先找多出的声音出现在哪一层",
+          "en": "Locate the added voice"
+        },
+        "body": {
+          "zh": "先对原生成素材回听，再对剪辑后的成片回听。不要只看字幕：字幕没写出的语气词可能仍在音频里，自动转写也可能把正确原句识别错。\n\n| 听到的问题 | 先查哪里 |\n|---|---|\n| 原素材已有旁白或新台词 | 生成提示词的完整声音时间线与本场已定声音。 |\n| 角色先加“嗯、啊”才读原句 | 发声是否要求从原文首字开始；这些非语言或语气发声是否本就允许。 |\n| 同一句说两次 | 单镜原句是否被重复抄进多个段落；相邻镜是否都从句首开始。 |\n| 原素材正确，成片才多声音 | 剪辑、旁白轨、重复音频片段与声音落点。 |\n\n本页解决擅自新增的人声。语种错了另查语种与原句指南；正确声音配到错误嘴部，另查口型指南。不要因问题发生在成片，就一律重生成正确原素材。",
+          "en": "Listen to generated source footage before the edited output. Subtitles alone cannot reveal a filler audible in the track, and automatic transcription may misrecognize correct speech.\n\n| Audible problem | First check |\n|---|---|\n| Source contains added narration or dialogue | Its complete sound timeline and the scene’s established sounds. |\n| A filler precedes the approved line | Whether speech begins with the first original word and whether fillers were permitted. |\n| One line occurs twice | Repeated text in the prompt or adjacent shots both starting from its beginning. |\n| Source is correct; output adds speech | Edit tracks, narration, duplicated segments and placement. |\n\nThis page addresses unapproved voices. Spoken-language errors and wrong-mouth animation have separate guides. Do not regenerate correct source merely because an error appears in the final edit."
+        }
+      },
+      {
+        "id": "write-the-whole-sound-timeline",
+        "heading": {
+          "zh": "写允许的声音，再写已确认的排除项",
+          "en": "Write permitted sounds and confirmed exclusions"
+        },
+        "body": {
+          "zh": "Drama Skills 的 motion-recipe 对同轨声音要求：列全本镜对白、旁白、画外声、必要非语言发声和音效，逐字原句只在单镜可复制正文中出现一次，事件外回到已定底声或静默。视觉段按时点引用声音事件，不再抄一遍原句。\n\n每项人声至少回答：谁、从哪里、用什么语言、说哪一句、何时开始与结束。叹气、笑声、吸气与重叠说话只有本场确实选择时才加入；不是所有片段都要禁止它们。\n\n同一镜前面写“无对白”，后面又安排人物说话，是相互矛盾的目标。只说“不要旁白”也没有交代应保住哪些对白或音效。末尾总结本镜实际层次，把作者已经确认不要的新增声音合并说明一次，不扩大成一套通用禁令。",
+          "en": "For sound generated with picture, Drama Skills’ motion recipe lists all dialogue, narration, off-screen speech, needed nonverbal events and effects. Exact lines appear once in the copyable shot text. Outside those events, retain declared ambience or silence; the visual section refers to sound events without repeating their words.\n\nEach voice event needs speaker, source, language, exact line, and beginning/end. Include sighs, laughter, breaths or overlap when the scene chooses them rather than prohibiting them universally.\n\n“No dialogue” followed by a speaking action contradicts itself. “No voiceover” alone also fails to identify required speech and effects. Summarize the actual layers at the end and consolidate only the creator’s confirmed exclusions."
+        }
+      },
+      {
+        "id": "complete-spoken-prompt",
+        "heading": {
+          "zh": "完整示例一：保留店员的原句，不让模型加解说",
+          "en": "Complete example one: keep the clerk’s line"
+        },
+        "body": {
+          "zh": "原创纸面场景：打印店柜台，店员孟茹把一册样册交给顾言。她的画内普通话对白是“这本先给你核对。”顾言本镜不说话。已定声音只有连续低风扇声、这句对白，以及接册时的轻微纸张摩擦；作者已确认不要旁白、新台词、额外语气词、重复句或配乐。时长尚待按实际发声、交接与收尾核定，没有生成或回听结果。\n\n下面是可按角色和场景事实接入的指令候选，没有假称已存在参考图或录音：\n\n> 固定双人中景，孟茹在柜台后，顾言在柜台前，一册样册由孟茹持有。开头两人保持当前位置，连续低风扇声已经存在。\n>\n> 孟茹把样册放到柜台交接位置，顾言先等待。她完成放置后进行声音事件A：孟茹画内对白，实际说话语言为普通话，逐字说“这本先给你核对。”发声从这句首字开始，到末字结束。顾言在事件A期间听，不发声，嘴唇闭合；视觉段不重复这一句。\n>\n> 事件A结束后，顾言才接起样册，孟茹松手。保留接册所产生的轻微纸张摩擦声，风扇底声继续。结尾样册在顾言手中，孟茹双手已空，两人都不再发声。声音层只有本句画内对白、风扇底声和所述纸声；不加入旁白、新台词、额外语气词、重复句或配乐。\n\n原句不是旁白，不用改成旁白来避开口型。末尾也不能再加一个“他终于拿到样册”的解说。交接完成不表示顾言已经核对内容；影片只到接册这一拍。\n\n英文提示词正文也可以保留普通话原句；下面的译文仅供英文读者理解，不能当第二条要发声的台词加入生成指令。",
+          "en": "Original paper scene: printing-shop clerk Meng Ru hands one sample booklet to Gu Yan across a counter. Meng’s visible dialogue is the Mandarin line shown below. Gu does not speak. Established sound consists only of a continuous low fan, that line and slight paper friction during receipt. The creator excludes narration, new lines, extra fillers, repeats and music. Duration still needs actual speech, handoff and ending checks; no footage or listening result exists.\n\nThis candidate can be adapted to established character and location facts. It claims no existing reference image or recording:\n\n> Fixed two-person medium shot. Meng Ru is behind the counter, Gu Yan in front, and Meng holds one sample booklet. Start in these positions with the established low fan ambience.\n>\n> Meng places the booklet at the counter’s handoff position while Gu waits. After placing it, sound event A begins: Meng Ru, visible dialogue, spoken Mandarin, verbatim “这本先给你核对。” Speech begins with its first word and ends with its last. Gu listens without vocalizing, lips closed. The visual segment does not repeat that line.\n>\n> After event A finishes, Gu takes the booklet and Meng releases it. Keep slight paper friction from the handoff and continuous fan ambience. End with the booklet in Gu’s hands and Meng’s hands empty; neither vocalizes again. Sound layers are this visible line, fan ambience and the stated paper sound. Add no narration, new lines, extra fillers, repeats or music.\n\nThe line means “This copy is for you to check first.” This explanatory translation is outside the generation instruction and is not a second spoken line. An English prompt body can retain the Mandarin original.\n\nThe line is dialogue, not narration; relabeling it to avoid mouth animation changes the scene. Do not append narration announcing successful receipt. Receiving the booklet does not mean Gu has checked its contents."
+        }
+      },
+      {
+        "id": "complete-silent-prompt",
+        "heading": {
+          "zh": "完整示例二：另一已定无对白版本，仍保留环境与纸声",
+          "en": "Complete example two: a separately chosen no-dialogue version"
+        },
+        "body": {
+          "zh": "如果作者另选的剧本版本本就没有台词，同一交接也可以只有环境与动作声音。这是制作前明确采用的另一版本，不是修掉额外旁白时顺便删除原本要求的店员对白：\n\n> 固定双人中景，起点仍是孟茹在柜台后持一册样册、顾言在柜台前等待。全镜只有连续低风扇底声和接册时的轻微纸张摩擦声。两人全程不发声，嘴唇闭合。\n>\n> 孟茹把样册放到交接位置，顾言随后接起，孟茹松手。纸声只跟这次实际接册发生；动作前后风扇底声继续，不补声音空缺。结尾样册在顾言手中、孟茹双手空着，保留这一状态。全镜无对白、旁白、画外说话、额外人声或配乐，保留已定风扇声与纸声。\n\n“无对白”与“全片静音”不同。本例没有叹气或笑声；若你的剧本需要它们，明确由谁在哪一拍发出，不照抄本例的排除项。提示词语言、实际说话语言与字幕文字分别决定。",
+          "en": "If the creator separately adopts a script without dialogue, the same transfer can use ambience and action sound alone. Choose that version before production rather than deleting required speech while repairing added narration:\n\n> Fixed two-person medium shot. Meng holds one sample booklet behind the counter; Gu waits in front. Throughout, retain only the continuous low fan and slight paper friction during receipt. Neither person vocalizes; both keep lips closed.\n>\n> Meng places the booklet at the handoff position. Gu then takes it and Meng releases it. Paper sound follows this actual handoff; before and after it, fan ambience continues without filling the gap with another sound. End with the booklet in Gu’s hands and Meng’s hands empty, holding that state. No dialogue, narration, off-screen speech, other voices or music; retain the declared fan and paper sounds.\n\nNo dialogue is different from a muted film. This version has no sigh or laughter. Where a script needs those events, state who produces them and when instead of copying this exclusion set. Prompt language, actual spoken language and subtitle text are separate decisions."
+        }
+      },
+      {
+        "id": "listen-and-repair-the-output",
+        "heading": {
+          "zh": "生成后回听，修改提示词不等于已经删掉声音",
+          "en": "Listen after generation and repair the right layer"
+        },
+        "body": {
+          "zh": "从头到尾回听这句有没有多出的开头、尾句、重复或换人，再看接册时有没有让顾言跟说。对照的是实际音频，不是字幕里看起来正确的原句。记录错误发生在原素材还是后期，再只改对应段落或声音轨。\n\n若多余旁白和正确对白已经混在同一条音轨，直接静音会一起删掉它们。要采用重出、独立配音或后期处理，先确认实际工具能执行所需方案，处理后回听输出。套件剪辑工具的声音说明不会自动把文字要求变成静音、声音桥或替换音轨。\n\n模型可能仍产生额外发声，文字约束不是成功证明。无新增声音之外，还要保留完整原句、正确说话者、必要音效与本场结尾；修复不能以丢失原要求为代价。",
+          "en": "Listen from beginning to end for added prefixes, endings, repeats or changed speakers; then inspect whether Gu speaks along during receipt. Compare actual audio rather than correct-looking subtitles. Locate the error in source or post-production and change the affected segment or track.\n\nIf unwanted narration shares a track with required dialogue, muting removes both. For regeneration, separate dubbing or post-production, confirm that the actual tool can perform the chosen treatment, then listen to its output. The suite’s edit sound notes do not automatically execute muting, bridges or track replacement.\n\nWording does not prove successful exclusion. Preserve the full required line, correct speaker, needed effects and intended ending as well as removing additions."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "写“不要旁白”就够了吗？",
+          "en": "Is “no voiceover” enough?"
+        },
+        "a": {
+          "zh": "还要说明允许的对白、音效、底声与事件间状态。否则它没有交代应保住什么。按本场已定声音写完整时间线，生成后回听。",
+          "en": "Also specify permitted dialogue, effects, ambience and intervals. State what to retain in a complete timeline, then listen to the result."
+        }
+      },
+      {
+        "q": {
+          "zh": "能不能把原视频静音解决？",
+          "en": "Can muting the source solve it?"
+        },
+        "a": {
+          "zh": "只有作者确实选择不要原声音轨、并另有已确认的声音方案时才这样处理。若仍要保留同轨对白或音效，全部静音会删掉所需内容。",
+          "en": "Only when the creator chooses to discard the source track and has an adopted replacement. Whole-track muting also removes dialogue or effects that must remain."
+        }
+      }
+    ],
+    "skill": {
+      "name": "short-drama-video-prompts",
+      "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/SKILL.md",
+      "text": {
+        "zh": "用 $short-drama-video-prompts 修本镜擅自新增发声的声音段。附本场剧本、逐字台词、说话人、声源、语种、已定底声/音效与实际多出的声音位置。要求原句单镜出现一次、事件外回归底声、只合并已确认排除项，视觉与终点保持；不得声称改提示词已经修好成片。",
+        "en": "Use $short-drama-video-prompts with the scene script, exact lines, speakers, source types, languages, ambience/effects and observed additions. Ask for one occurrence of each line, established sound between events and only confirmed exclusions. Preserve visuals and ending; a prompt revision is not a repaired film."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "完整声音时间线与逐字原句",
+          "en": "Complete sound timeline and exact lines"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/references/motion-recipe.md"
+      },
+      {
+        "label": {
+          "zh": "声音性质、说话人与跨镜连续",
+          "en": "Sound source, speaker and shot continuity"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/references/camera-audio-continuity.md"
+      },
+      {
+        "label": {
+          "zh": "实际声音处理与回听",
+          "en": "Actual sound treatment and listening"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-edit/references/sound-and-subtitles.md"
+      }
+    ],
+    "related": [
+      "/drama-skills/fix-wrong-spoken-language-in-ai-video",
+      "/drama-skills/ai-video-lip-sync",
+      "/drama-skills/write-negative-prompts-for-ai-video"
     ]
   }
 ]

@@ -344,6 +344,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Fix Cropped Characters in AI Video](https://zenstory.ai/drama-skills/fix-cropped-characters-in-ai-video) — Separate reference cropping, movement out of frame and later aspect-ratio changes. A counter scene keeps the head, important hands and accepted action visible.
 - [How to Fix Repeated Actions in AI Video](https://zenstory.ai/drama-skills/fix-repeated-actions-in-ai-video) — Distinguish intended repetition, generation rebound and repeated edits. A cup-placement example defines contact, release, final hold and usable footage.
 - [How to Fix Wrong Eyelines in AI Video](https://zenstory.ai/drama-skills/fix-wrong-eyelines-in-ai-video) — Separate body direction, gaze target and camera position. A counter-scene brief moves attention from a person to a blue circle while preserving other states.
+- [How to Stop Unwanted Voiceover and Dialogue in AI Video](https://zenstory.ai/drama-skills/stop-unwanted-voiceover-and-dialogue-in-ai-video) — Write a complete sound timeline with speakers, exact lines and ambience. Two original prompts preserve approved sound while excluding unwanted voices.
 
 ### Interactive stories and games / 互动故事与游戏
 - [Interactive stories and games](https://zenstory.ai/guides/interactive-games) — Turn a novel into player actions, branching stories, and a playable game.
