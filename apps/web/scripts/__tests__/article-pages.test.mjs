@@ -136,9 +136,10 @@ test('craft articles render free-form sections, one language per URL, and Chines
   for (const lang of LANGS) {
     const [found] = entry(urlIn(lang, bilingualRoute))
     assert.ok(found?.[1].includes(`hreflang="zh" href="${urlIn('zh', bilingualRoute)}"`))
+    assert.ok(found?.[1].includes(`<lastmod>${fixtureBilingual.updated_on}</lastmod>`))
   }
   const [zhOnlyEntry] = entry(urlIn('zh', zhOnlyRoute))
-  assert.equal(zhOnlyEntry?.[1], '')
+  assert.equal(zhOnlyEntry?.[1], `<lastmod>${fixtureZhOnly.updated_on}</lastmod>`)
   assert.equal(entry(urlIn('en', zhOnlyRoute)).length, 0)
 })
 
@@ -171,6 +172,14 @@ test('published craft articles are listed in llms.txt and render in every langua
           assert.ok(/^\/(?:zh(?:\/|$)|docs(?:\/|$)|privacy-policy|terms-of-service|llms\.txt|brand\/|org\/|favicon\.svg)/.test(href), `${route} (zh) links off the Chinese site: ${href}`)
         }
       }
+    }
+  }
+  writeFileSync(join(out, 'index.html'), readFileSync(join(webRoot, 'index.html'), 'utf8'))
+  finalizeSite(out)
+  const siteMap = readFileSync(join(out, '_site/sitemap.xml'), 'utf8')
+  for (const a of articles) {
+    for (const lang of a.langs) {
+      assert.ok(siteMap.includes(`<loc>${urlIn(lang, `/${a.owner}/${a.slug}`)}</loc><lastmod>${a.updated_on}</lastmod>`), `${a.slug} (${lang}) modification date`)
     }
   }
 })

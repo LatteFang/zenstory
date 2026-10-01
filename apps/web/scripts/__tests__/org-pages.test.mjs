@@ -182,6 +182,7 @@ test('task guides render one language per URL with hreflang pairs, primary sourc
     for (const lang of LANGS) {
       const entry = matches(siteMap, new RegExp(`<url><loc>${urlIn(lang, route).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</loc>(.*?)</url>`, 'g'))
       assert.equal(entry.length, 1, `${route} (${lang}) must appear once in the sitemap`)
+      assert.ok(entry[0][1].includes(`<lastmod>${guides.find((guide) => `/${guide.owner}/${guide.slug}` === route).checked_on}</lastmod>`))
       assert.ok(entry[0][1].includes(`<xhtml:link rel="alternate" hreflang="en" href="${urlIn('en', route)}"/>`))
       assert.ok(entry[0][1].includes(`<xhtml:link rel="alternate" hreflang="zh-CN" href="${urlIn('zh', route)}"/>`))
       assert.ok(entry[0][1].includes(`<xhtml:link rel="alternate" hreflang="zh" href="${urlIn('zh', route)}"/>`))
