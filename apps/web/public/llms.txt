@@ -371,6 +371,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Design Puzzles for a Story Game](https://zenstory.ai/novel-to-game/design-puzzles-for-a-story-game) — Fix the answer and rules, then connect visible clues to a real action. Includes a complete symbol-order puzzle, wrong answers, and an unread-clue route.
 - [How to Design Crafting in a Story Game](https://zenstory.ai/novel-to-game/design-crafting-in-a-story-game) — Define crafting conditions, consumed materials, retained tools, and output ownership. Includes a complete prop-room route and failure cases.
 - [Game Story Changes After Loading a Save: How to Fix It](https://zenstory.ai/novel-to-game/fix-story-state-after-loading-a-save) — Diagnose lost choices, duplicate rewards and leaked knowledge after loading. Includes a complete save/load path and version-compatibility checks.
+- [How to Fix a Game Button That Does Nothing](https://zenstory.ai/novel-to-game/fix-a-game-button-that-does-nothing) — A highlighted button does not prove an action happened. Separate missing input, rule rejection and hidden results with an original diagnostic path.
 
 ### Video scripts and editing / 视频解说与剪辑
 - [Video scripts and editing](https://zenstory.ai/guides/video-recaps) — Write narration from footage, edit a story, and finish audio and subtitles.

@@ -29287,7 +29287,7 @@
       "en"
     ],
     "published_on": "2026-09-29",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "zh": "游戏画面太暗怎么办：保住夜景里的可读层",
       "en": "How to Fix a Game Screen That Is Too Dark"
@@ -29323,8 +29323,8 @@
           "en": "Inspect four layers of the actual screen"
         },
         "body": {
-          "zh": "| 可读层 | 本例要看清 | 失败时修什么 |\n|---|---|---|\n| 人物轮廓与朝向 | 管理员面对哪排架子 | 主体与背景分离，保留方向线索 |\n| 关键器物与交互点 | 标签、手推车与可取物区域 | 局部光与形状，不只加发光框 |\n| 正文与选项 | 当前请求、查看或搬走 | 文本底层、字号与对比 |\n| 结果与危险 | 架子不稳、零件已转移 | 动作与文字或声音辅助 |\n\n这些层是检查用途，不要求全画面一样亮。灯外的空库房可以继续暗，关键按钮却不能随着夜景一起失读。颜色提示旁边补形状、文字、位置或动作，避免危险只有一小片红色。",
-          "en": "| Layer | What must be visible | Repair focus |\n|---|---|---|\n| Character and orientation | Which shelves the clerk faces | Separation and direction cues |\n| Objects and interaction | Labels, trolley and pickup area | Local light and shape |\n| Text and choices | Current request and actions | Text backing, size and contrast |\n| Results and danger | Unstable shelving or moved parts | Action plus text or sound |\n\nThese are functional checks, not a demand for uniform brightness. Empty space can remain dark while a necessary control stays readable. Add shape, wording, position or movement to color signals so danger is not conveyed by a small red patch alone."
+          "zh": "| 可读层 | 检查与修法 |\n|---|---|\n| 人物轮廓与朝向 | **本例要看清：** 管理员面对哪排架子；**失败时修什么：** 主体与背景分离，保留方向线索 |\n| 关键器物与交互点 | **本例要看清：** 标签、手推车与可取物区域；**失败时修什么：** 局部光与形状，不只加发光框 |\n| 正文与选项 | **本例要看清：** 当前请求、查看或搬走；**失败时修什么：** 文本底层、字号与对比 |\n| 结果与危险 | **本例要看清：** 架子不稳、零件已转移；**失败时修什么：** 动作与文字或声音辅助 |\n\n这些层是检查用途，不要求全画面一样亮。灯外的空库房可以继续暗，关键按钮却不能随着夜景一起失读。颜色提示旁边补形状、文字、位置或动作，避免危险只有一小片红色。",
+          "en": "| Layer | Check and repair |\n|---|---|\n| Character and orientation | **Must be visible:** Which shelves the clerk faces; **Repair focus:** Separation and direction cues |\n| Objects and interaction | **Must be visible:** Labels, trolley and pickup area; **Repair focus:** Local light and shape |\n| Text and choices | **Must be visible:** Current request and actions; **Repair focus:** Text backing, size and contrast |\n| Results and danger | **Must be visible:** Unstable shelving or moved parts; **Repair focus:** Action plus text or sound |\n\nThese are functional checks, not a demand for uniform brightness. Empty space can remain dark while a necessary control stays readable. Add shape, wording, position or movement to color signals so danger is not conveyed by a small red patch alone."
         }
       },
       {
@@ -29336,6 +29336,17 @@
         "body": {
           "zh": "若角色融进货架，先比较轮廓和背景，不立刻把正文卡片全部提亮。若标签读不出，增加局部照明或单独查看的表达；若按钮对比不足，修按钮与底层关系，不必改变整个库房。\n\n暗调确实是核心体验时，记录哪几处允许暗、哪些信息不能失去，以及可选的亮度或高对比方案。替代方案应继续表达同一危险、行动与结果，不能“高对比”后把暗处的秘密直接全部公开。\n\n从输入前到输入后一起看：搬走零件的动作、架子状态与新路线要被读到。单帧轮廓清晰，不证明动画过程或操作反馈可读。不要通过更强辉光掩盖错误状态。",
           "en": "If a character merges into shelving, compare silhouette and background rather than brightening every text card. If labels disappear, improve local light or an inspection view. If controls lack contrast, repair their relationship to the backing instead of changing the entire warehouse.\n\nFor a deliberately dark experience, record permitted darkness, essential information and a brightness or contrast fallback. The alternative must preserve danger and outcomes without revealing secrets that should remain concealed.\n\nInspect before and after input. Moving parts, changed shelving and the new route must register. A readable still does not prove animation or feedback works. Stronger glow cannot conceal an incorrect state."
+        }
+      },
+      {
+        "id": "complete-night-art-brief",
+        "heading": {
+          "zh": "可复制的修改说明：夜班库房保留暗处，也看得清",
+          "en": "A copyable revision brief for the night warehouse"
+        },
+        "body": {
+          "zh": "沿用管理员找错放零件的原例，这份纸面说明只修改夜景可读性。演示选择竖屏390×844，实际项目继承自己已批准的目标视口；下面没有生成画面或运行候选。\n\n> **本场目标**：让玩家在夜班库房中找到并辨认错放零件。夜色保留时间与探索压力，不以全黑按钮考验玩家视力。\n>\n> **当前修改范围**：保货架布局、工作灯、手推车、管理员身份与现有交互规则。只修失读的轮廓、标签、文字底层与结果信号，不换场景或增加物件。\n>\n> **第一眼的焦点**：正在检查的货架与灯照到的标签。管理员的朝向指向这排架子；轮廓与身后货架用局部明暗分开。灯外的未探索区域继续较暗，不把所有货架一起提亮。\n>\n> **器物与标签**：工作灯照明覆盖当前标签和取物区域，手推车轮廓可辨。标签使用本项目已定文字，文字层与背景有清楚关系，不用一圈辉光代替可读标签。尚未发现的标签不因这次调亮全部公开。\n>\n> **正文与操作**：当前请求、查看与搬走选项放在稳定的文字底层上，按实际尺寸读和点；不再用小灰字贴深色纹理。压缩重复背景，不缩字来硬塞完整历史。账册仍由玩家主动打开。\n>\n> **结果与危险**：只表现游戏实际提交的状态。若本次已转移零件，更新原位置与实际落点，并给简短文字；若还没搬，保原位置，不先播“完成”。架子不稳的已定提示有形状、动作或文字辅助，不只靠红色。\n>\n> **高对比选择**：强化当前人物、器物、正文与结果层的分离，保相同位置、行动与知情边界；不把未探索暗处变成所有线索都已发现。\n>\n> **验收方式**：在项目目标视口、正常显示亮度实际查看标签、选择和结果；再用静音或低动效表达走同一动作，确认必要信息仍有可读渠道。纸面文字不是已完成验证。\n\n交给构建者时，将这段作为 ART_DIRECTION 中本场的修改说明，补上真实目标平台、已接受资产与本轮命中的问题。若问题实际来自错误结果，先交规则负责人处理；加灯和亮框不能使未执行的搬运成为已完成。",
+          "en": "This paper brief retains the clerk’s search for misplaced parts and revises night-scene readability only. It chooses a portrait 390×844 viewport for illustration; real projects inherit their approved target. No picture or candidate has been produced.\n\n> **Scene goal:** Let players find and recognize misplaced parts during a warehouse night shift. Preserve night and exploration pressure without making controls nearly invisible.\n>\n> **Scope:** Retain shelf layout, work lamp, trolley, clerk identity and interaction rules. Repair unreadable silhouettes, labels, text backing and result signals rather than changing the scene or adding objects.\n>\n> **First focus:** The inspected shelves and illuminated label. The clerk faces that row, with local value separation from shelving behind. Unexplored areas outside the lamp remain darker; do not brighten every shelf.\n>\n> **Objects and labels:** Light the current label and pickup region; retain a readable trolley silhouette. Use approved label wording and a clear text/background relationship rather than a glow ring. Increased readability does not reveal every undiscovered label.\n>\n> **Reading and controls:** Place the current request and inspect/move choices on stable backing, readable and usable at actual size. Remove small gray text over dark texture. Compress repeated context rather than shrinking the complete history. Players open the ledger on demand.\n>\n> **Results and danger:** Show committed state only. If parts were transferred, update old position and actual destination with concise text. If no move occurred, retain the original position rather than showing completion. Supplement an established unstable-shelf warning with shape, movement or text, not red alone.\n>\n> **High-contrast option:** Strengthen separation of characters, objects, reading and results while preserving location, actions and knowledge limits. Do not turn unexplored darkness into discovered clues.\n>\n> **Review:** At the target viewport and normal display brightness, actually inspect a label, choose an action and read its result. Check the same action muted or with reduced motion, retaining readable essential information. This text is not verification evidence.\n\nPlace the passage in ART_DIRECTION as this scene’s revision, adding the real platform, accepted assets and diagnosed fault. Incorrect results belong with rule owners first; light and highlighting cannot complete an unperformed move."
         }
       },
       {
@@ -29377,6 +29388,13 @@
           "en": "Brightness choices and readable layers"
         },
         "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-art-direction/references/art-direction-method.md"
+      },
+      {
+        "label": {
+          "zh": "目标视口、明度继承与运行验证",
+          "en": "Target viewport, inherited brightness and runtime review"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-build/references/build-brief-contract.md"
       }
     ],
     "related": [
@@ -29394,7 +29412,7 @@
       "en"
     ],
     "published_on": "2026-09-29",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "zh": "古风游戏美术怎么定：时代、画法与人物分开选",
       "en": "How to Define an Ancient-Fantasy Game Art Style"
@@ -29430,8 +29448,8 @@
           "en": "Locate the layer a piece of feedback addresses"
         },
         "body": {
-          "zh": "| 反馈 | 先看哪里 | 本例可改 | 不自动改变 |\n|---|---|---|---|\n| 太旧 | 泛黄、静态陈列、古画媒介 | 换更清晰的二维笔触与构图 | 时代器物与空间 |\n| 太现代 | 服装、广告式背景、摄影语法 | 恢复世界中的衣装与河岸环境 | 整屏明度 |\n| 太真实 | 毛孔、摄影质感、三维材质 | 调整笔触与轮廓理想化 | 人物年龄 |\n| 太幼态 | 比例、面部与行为气质 | 调整成熟度 | 整个世界时代 |\n\n“现代人喜欢”不是一项可直接执行的材质指令。补问具体不满意的画面层，再比较修订。避免一次反馈同时换服装、人物年龄、背景和调色，导致无法判断什么改善。",
-          "en": "| Feedback | Inspect first | Possible revision | Do not automatically change |\n|---|---|---|---|\n| Too old | Yellowing, display-like composition, medium | Clearer illustration and staging | Period objects and space |\n| Too modern | Clothing, advertising backgrounds, photography | Restore world-specific dress and riverbank | Global brightness |\n| Too realistic | Pores, photographic or 3D materials | Revise brushwork and silhouette | Character age |\n| Too childlike | Proportions, face and behavior | Increase maturity | The whole setting’s period |\n\nAppealing to modern players is not an executable material instruction. Locate the disliked layer, then compare a focused revision. Changing clothing, age, background and color at once obscures what helped."
+          "zh": "| 反馈 | 定位与本例改法 |\n|---|---|\n| 太旧 | **先看哪里：** 泛黄、静态陈列、古画媒介；**本例可改：** 换更清晰的二维笔触与构图；**不自动改变：** 时代器物与空间 |\n| 太现代 | **先看哪里：** 服装、广告式背景、摄影语法；**本例可改：** 恢复世界中的衣装与河岸环境；**不自动改变：** 整屏明度 |\n| 太真实 | **先看哪里：** 毛孔、摄影质感、三维材质；**本例可改：** 调整笔触与轮廓理想化；**不自动改变：** 人物年龄 |\n| 太幼态 | **先看哪里：** 比例、面部与行为气质；**本例可改：** 调整成熟度；**不自动改变：** 整个世界时代 |\n\n“现代人喜欢”不是一项可直接执行的材质指令。补问具体不满意的画面层，再比较修订。避免一次反馈同时换服装、人物年龄、背景和调色，导致无法判断什么改善。",
+          "en": "| Feedback | Diagnosis and revision |\n|---|---|\n| Too old | **Inspect first:** Yellowing, display-like composition, medium; **Possible revision:** Clearer illustration and staging; **Do not automatically change:** Period objects and space |\n| Too modern | **Inspect first:** Clothing, advertising backgrounds, photography; **Possible revision:** Restore world-specific dress and riverbank; **Do not automatically change:** Global brightness |\n| Too realistic | **Inspect first:** Pores, photographic or 3D materials; **Possible revision:** Revise brushwork and silhouette; **Do not automatically change:** Character age |\n| Too childlike | **Inspect first:** Proportions, face and behavior; **Possible revision:** Increase maturity; **Do not automatically change:** The whole setting’s period |\n\nAppealing to modern players is not an executable material instruction. Locate the disliked layer, then compare a focused revision. Changing clothing, age, background and color at once obscures what helped."
         }
       },
       {
@@ -29443,6 +29461,17 @@
         "body": {
           "zh": "先做一张会进入实际游玩的目标图：河运柜台前有人提交船票，玩家需要读票、看见角色朝向，并找到核验动作。留出正文与选项的空间，目标图就同时检验世界、画法和信息层级。\n\n写少量可观察条件：木桥与纸卷符合已定世界；人物朝向来人；票据位置可辨；二维笔触一致；文字区域不被装饰挤占。再写明确反例，例如摄影棚几何背景、真人毛孔或错误时代服装。\n\n不是每个界面都需要另外做一张海报。高风险方向先通过一个代表性游玩时刻，再把已接受的识别锚点与表现方式传给角色、场景和道具资产。",
           "en": "Create a target frame for actual play: someone presents a shipping ticket at a counter, and the player must inspect it, read character orientation and find the verification action. Reserve room for text and choices so the frame tests setting, medium and hierarchy together.\n\nUse a few observable conditions: established bridge and paper objects, clear orientation, visible ticket placement, consistent illustration and unobstructed text. Record concrete counterexamples such as a geometric studio backdrop, photographic pores or incorrect dress.\n\nEvery screen does not need another poster. Resolve the risky direction in one representative playable moment, then propagate accepted identity anchors and visual treatment to assets."
+        }
+      },
+      {
+        "id": "complete-period-art-brief",
+        "heading": {
+          "zh": "可复制的美术方向：明亮的水城河运柜台",
+          "en": "A copyable direction for the river-city counter"
+        },
+        "body": {
+          "zh": "沿用虚构水城的原例，这份候选说明采用明亮二维插画和成熟理想化人物。它是一个代表性游玩画面的方向，不是整部游戏已经完成的 ART_DIRECTION，也没有生成或批准目标图。\n\n> **世界**：保木桥、纸卷、船票和本作既定礼制。柜台与河岸来自这个世界，不换现代广告背景或摄影棚；虚构世界不借此宣称符合某个真实朝代。\n>\n> **媒介**：明亮二维叙事插画，笔触与物件边缘清楚。水城的历史感通过空间、器物和人物关系表现，不通过整屏泛黄、旧纸污渍或暗角表现。\n>\n> **人物**：成年角色保持本作已定身份、服饰与发式，以成熟理想化轮廓和二维笔触呈现，不用真人毛孔与摄影皮肤，不因“太真实”反馈把年龄改小。\n>\n> **代表画面**：河运柜台前有人提交船票。演示选用竖屏390×844；柜台和递票关系占主图，票据位置是当前焦点，木桥或河岸背景从属于这项动作，不抢阅读区。人物朝向彼此，票据由同一已定对象持有，不为画面漂亮改归属。\n>\n> **文本与操作空间**：为本轮读票说明与核验动作留稳定区域。目标图清楚给出票据载体，真实票文由界面按已定内容显示；原例没有给逐字票号，不凭空编造。完整河运历史放按需页，不塞进每个选项。\n>\n> **输入前后**：提交票据只呈现游戏已确认的提交状态，核验结果另读取规则实际结果；不能靠角色点头、绿色印章或“通过”装饰替规则提前批准。后续资产保持同一身份、柜台布局和画法，让玩家辨认发生了哪项变化。\n>\n> **本方向的反例**：现代摄影棚几何背景；错误世界服装；真人毛孔；幼态比例；泛黄暗调吞掉票据与正文。每项拒绝对应一个已选方向，不同时推翻另外两轴。\n>\n> **进入制作前**：先把一张真实目标图放到本场会用的界面，在项目目标视口检查递票关系、文字留白与操作焦点，交作者判断方向。图未出现或尚被否决，就保文字方案与未验证项，停同方向扩批。\n\n这份说明把三项选择接到同一实际用途，便于比较“太旧”或“太真实”到底指哪一层。若真实反馈只命中笔触，先改媒介表现，保服装、人物年龄与游戏规则；本例的画法是作者选择，不是市场热门程度的结论。",
+          "en": "This candidate direction retains the fictional river city and chooses bright 2D illustration with mature idealized characters. It specifies one representative playing frame, not a completed whole-game ART_DIRECTION. No target picture has been generated or approved.\n\n> **World:** Preserve wooden bridges, paper scrolls, tickets and established customs. Counter and riverbank belong to this setting rather than a modern advertising stage. The fictional world makes no claim about a particular historical dynasty.\n>\n> **Medium:** Bright 2D narrative illustration with clear brushwork and object edges. Period character comes from space, objects and relationships rather than uniform yellowing, paper stains or vignetting.\n>\n> **People:** Retain accepted adult identities, clothing and hair, using mature idealized silhouettes and 2D treatment. Avoid photographic pores and skin; “too realistic” does not authorize younger ages.\n>\n> **Representative frame:** A ticket is submitted at the river-shipping counter. The illustrative viewport is portrait 390×844. Counter and handoff dominate the picture, with the ticket as the current focus. Bridge or riverbank stays secondary to reading. People face each other, and the ticket remains with its established holder.\n>\n> **Reading and controls:** Reserve stable space for current ticket information and the checking action. The target picture establishes its carrier; the interface displays approved text. The original example provides no exact ticket number, so invent none. Full shipping history belongs on demand.\n>\n> **Before and after input:** Show the submitted-ticket state only when confirmed by the game, then read validation results from rules. A nod, green stamp or decorative pass label must not approve it early. Later assets retain identity, counter layout and medium so the change is recognizable.\n>\n> **Counterexamples:** Modern studio geometry, wrong-world clothing, photographic pores, childlike proportions, and yellow/dark treatment obscuring ticket and prose. Reject each against its selected axis without simultaneously abandoning the others.\n>\n> **Before production expands:** Place a real target picture in its intended interface and inspect handoff, reading space and control focus at the project viewport. The creator judges the direction. If the picture is absent or rejected, retain the text and unresolved risk while stopping expansion of that direction.\n\nThe three choices serve one concrete use, making “too old” or “too realistic” feedback easier to locate. Revise brushwork first when that alone is criticized, preserving clothing, age and rules. This medium is a creator choice rather than a market-popularity finding."
         }
       },
       {
@@ -29484,6 +29513,13 @@
           "en": "Calibrating period-inspired art"
         },
         "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-art-direction/references/art-direction-method.md"
+      },
+      {
+        "label": {
+          "zh": "批准方向到实际界面的保真",
+          "en": "Preserving approved direction in the actual interface"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-build/references/build-brief-contract.md"
       }
     ],
     "related": [
@@ -45691,6 +45727,156 @@
       "/video-recap/keep-audio-when-changing-video",
       "/video-recap/add-a-brand-frame-to-video",
       "/video-recap/fix-a-video-export-with-no-sound"
+    ]
+  },
+  {
+    "owner": "novel-to-game",
+    "slug": "fix-a-game-button-that-does-nothing",
+    "topic": "interactive-games",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "游戏按钮点了没反应怎么办：输入、条件与结果分别查",
+      "en": "How to Fix a Game Button That Does Nothing"
+    },
+    "seo_title": {
+      "zh": "游戏按钮点了没反应怎么办：输入、条件与结果分别查",
+      "en": "How to Fix a Game Button That Does Nothing"
+    },
+    "description": {
+      "zh": "按钮亮了不等于行动生效。分清输入未到达、规则拒绝和结果未显示，附完整原创定位路径与交给AI的修订说明。",
+      "en": "A highlighted button does not prove an action happened. Separate missing input, rule rejection and hidden results with an original diagnostic path."
+    },
+    "answer": {
+      "zh": "先在实际候选中复现一次，分别确认真实输入有没有到达这项行动、当前条件是否允许提交，以及已提交结果有没有显示给玩家。按钮变色或截图存在都不能代替状态变化证据。合法输入没提交，交构建者修接入；规则有依据地拒绝，就说明当前原因；状态已改变但画面没更新，修对应表现，不重新结算一遍。",
+      "en": "Reproduce the issue in the actual candidate. Check whether real input reaches the action, current conditions allow submission, and committed results appear to the player. Highlighting and screenshots do not prove a state change. Repair missing input wiring, explain a justified refusal, or update presentation without applying the action again."
+    },
+    "sections": [
+      {
+        "id": "record-the-attempt",
+        "heading": {
+          "zh": "先记一次完整的点击前后",
+          "en": "Record one complete attempt"
+        },
+        "body": {
+          "zh": "记当前候选、实际运行环境和输入方式，再记录点击前的位置、持物、许可与任务状态。只选一项已经知道预期效果的动作，正常操作一次，看玩家画面与可观察状态怎样变化。\n\n若按钮只闪一下，仍不能判断行动是否进入规则。若状态已经改变而没有提示，也不能判断为完全没执行。优先使用项目已有状态或事件记录；只有确实看不出结果时，再请构建者补最小观察手段，不要求每个游戏建立一套新调试系统。\n\n桌面鼠标点通，不自动证明目标手机触摸也通。按产品简报里已批准的目标平台与输入测试；其他运行环境可以提供定位证据，但未覆盖的目标输入要明确留下。",
+          "en": "Record the candidate, actual runtime and input method, then the location, held items, permissions and task state before the attempt. Choose one action with an established expected effect, use its normal input once and observe picture and state changes.\n\nA brief highlight does not establish that the rule received an action. A changed state without a message does not mean nothing executed. Use existing state or event observations first; request a minimal observation only when results cannot otherwise be determined.\n\nA desktop mouse success does not establish phone touch input. Test the platform and input approved in the product brief. Other runtimes may help diagnosis while leaving target-specific coverage explicitly unresolved."
+        }
+      },
+      {
+        "id": "three-failures",
+        "heading": {
+          "zh": "分清哪一层没有发生",
+          "en": "Distinguish three different failures"
+        },
+        "body": {
+          "zh": "| 观察到的事实 | 修改方向 |\n|---|---|\n| 点击后未形成目标行动，状态和事件均未变 | 请构建者核对这项控件实际连接的动作与目标输入；视觉按下效果不等于动作已接入。 |\n| 行动到达，但条件检查拒绝，状态未变 | 对照已定许可、持物、位置或任务状态；条件确实不满足时展示当前原因，条件读取错时修规则读取。 |\n| 规则已经提交结果，画面或文字仍旧 | 更新读取这项已提交结果的表现；不要为刷新画面再扣资源、再移动物件。 |\n\n真正缺少观察时，结论是待定位，不是凭按钮颜色猜原因。若还在等待一个实际执行过程，按真实阶段显示进行中；不要一点击便提前写成功。\n\n本页处理已显示动作在运行时没有按预期响应。玩家不知道下一步、合法推进路已消失，见[卡关排查](/novel-to-game/fix-a-story-game-that-cannot-progress)；是否应该显示灰色选项，见[锁定选项](/novel-to-game/design-locked-options-in-a-story-game)。",
+          "en": "| Observed fact | Repair direction |\n|---|---|\n| Input creates no intended action; state and events remain unchanged | Ask the builder to inspect the control’s actual action connection and target input. A pressed appearance does not establish wiring. |\n| Action arrives but a condition rejects it; state remains unchanged | Compare approved permission, items, location and task state. Explain a valid refusal or repair an incorrect condition read. |\n| Rules commit the result but picture or text stays old | Update presentation from the committed result without charging resources or moving objects again. |\n\nWith insufficient observation, keep the cause unresolved rather than guessing from color. If real execution is still underway, show its actual stage instead of announcing success on the initial click.\n\nThis page addresses an already-displayed action failing to respond correctly at runtime. For unclear next steps or missing legal routes, see [progression diagnosis](/novel-to-game/fix-a-story-game-that-cannot-progress). For displaying unavailable actions, see [locked choices](/novel-to-game/design-locked-options-in-a-story-game)."
+        }
+      },
+      {
+        "id": "complete-button-example",
+        "heading": {
+          "zh": "原创完整路径：贴海报按钮只有按下效果",
+          "en": "Original complete path: a poster button only changes appearance"
+        },
+        "body": {
+          "zh": "这是虚构定位案例，没有真实候选或测试结论。游戏让玩家布置社区演出大厅。初态：玩家在大厅，场地方已经允许在指定空墙贴这一张海报，玩家持有海报与一份胶带，海报尚未贴。已定“贴海报”行动检查位置、许可、持物与墙面空位；成功消耗这份胶带，把同一张海报从玩家手中移到墙上，标记本项布置完成。本例行动即时完成，不设等待动画或时间成本。\n\n**假设问题定位**：玩家点击“贴海报”，按钮变色后恢复，墙面仍空，海报与胶带仍在手，本项未完成。继续查看这个候选实际接入情况，发现按钮只有视觉按下效果，未连接已实现的贴海报行动。这个发现是本纸面案例选定的故障，不是看到变色就能推断的通用原因。\n\n**修订范围与完整复核方案**：\n\n1. 保留大厅、许可、胶带成本和同一张海报。构建者把实际按钮输入连接到已有行动，点击时按当前状态检查，再由原规则提交；不另造一条“按钮专用”结算。\n2. 从上述初态实际点击一次。成功时胶带从1变0，海报离手并出现在指定墙面，本项完成。玩家同时能读到“海报已贴好”，不是只有内部变量变化。\n3. 在这份已完成状态再次点旧按钮，不能再消耗胶带、复制海报或重发完成事件；反馈说明这一张已经贴好。它不代表其他布置项目全部完成。\n4. 回到同一初态，只把本次贴墙许可设为未取得，再执行同一输入。原规则应拒绝，胶带与海报保留、墙面仍空、本项未完成；显示“先向场地方申请”。这一条验证接入没有绕过原权限。\n5. 按已定重开规则恢复本例初态：海报与一份胶带重新在手、墙面为空、许可有效、本项未完成。再走成功路径，确认重开恢复的也是当前设计，不沿用已完成画面。\n\n实际修复后记录真实候选、输入和结果；纸面方案不能写成已测试通过。若定位发现规则已提交，只是墙图没更新，第1步应改为修表现读取，第2步仍核同一组结果，不能再次调用贴海报去“刷新”。",
+          "en": "This fictional case has no candidate or test findings. A game asks the player to prepare a community performance hall. Initially the player is there, the venue has approved one poster on a designated empty wall, the player holds that poster and one tape unit, and nothing is posted. The approved action checks location, permission, items and wall availability. Success consumes the tape, transfers the same poster to the wall and completes this task. Execution is immediate in this example, without a waiting animation or time cost.\n\n**Assumed diagnosis:** Clicking “Put up poster” briefly changes the button appearance. Wall, items and task remain unchanged. Inspecting the fictional candidate’s integration reveals only a pressed visual treatment, with no connection to the implemented poster action. This is the case’s chosen fault, not a cause inferred merely from highlighting.\n\n**Repair scope and complete review plan:**\n\n1. Retain the hall, permission, tape cost and one poster. Connect actual control input to the existing action, checking current state before the original rules commit. Do not create a separate button-only settlement.\n2. Use real input once from the initial state. Tape becomes zero, the poster leaves the player and appears on its wall, and this task completes. Show “Poster put up” as readable feedback.\n3. Repeat the old input after completion. It must not consume more tape, duplicate the poster or repeat the completion event. Explain that this poster is already up without claiming all preparation tasks are done.\n4. Restore the same initial state except remove posting permission. The same input must be refused: tape and poster remain, wall stays empty and task remains incomplete. Show “Ask the venue for permission first.” This checks that input integration did not bypass authority.\n5. Restart under this example’s approved rule: restore the poster, one tape unit, empty wall, valid permission and incomplete task. Follow the success path again, with current state rather than the previous completion picture.\n\nAfter repair, record real candidate, inputs and results; this plan does not establish a pass. If diagnosis instead finds a committed state with a stale wall image, repair presentation reading in step 1. Keep the same outcome checks without invoking the action again to refresh the picture."
+        }
+      },
+      {
+        "id": "report-to-builder",
+        "heading": {
+          "zh": "把“没反应”写成AI能定位的反馈",
+          "en": "Give the AI a reproducible report"
+        },
+        "body": {
+          "zh": "不要只说“按钮坏了，全部重做”。给出当前候选、运行环境、复现初态、一次输入、预期变化和实际变化；能提供的现有状态或事件记录随报告附上。再注明已定故事与规则不能顺带修改。\n\n本例可写：“大厅中的贴海报按钮有按下效果，但海报仍在手、胶带仍为1、墙仍空、布置未完成。请定位输入是否连接既有贴海报行动、条件是否误拒或已提交结果是否未显示。只修定位到的接入/读取节点，保许可和成本；修后重放此路径、缺许可反例及重开。当前只是问题描述，不能先填写PASS。”\n\n这个描述允许真实定位结果改变修法，不指定引擎类名、监听函数或供应商API。需要改行动效果或许可规则时，先说明它是设计变更，再处理版本与存档兼容；不要把规则改宽当按钮修好了。",
+          "en": "Provide the candidate, runtime, reproducible initial state, one input, expected change and actual change, plus available observations. Specify which story and rule decisions must remain.\n\nFor this case: “The hall’s poster button presses visually, but the player retains the poster and one tape unit, the wall stays empty and the task remains incomplete. Locate missing action wiring, incorrect rejection or hidden committed results. Repair only the identified integration/read node, preserving permission and cost. Replay this path, the missing-permission counterexample and restart. This report is not evidence of a PASS.”\n\nThe report allows findings to determine the repair without prescribing engine classes, handler names or vendor APIs. Changing effects or permissions is a design change requiring version/save consideration, not proof that a button was repaired."
+        }
+      },
+      {
+        "id": "verify-after-repair",
+        "heading": {
+          "zh": "修后证明真实输入改变了游戏",
+          "en": "Verify real input and its effect after repair"
+        },
+        "body": {
+          "zh": "从干净启动，经真实输入到本例设计结果，再重开。用当前候选的实际运行路径看状态与玩家反馈是否一致，不以鼠标悬停、静态截图或按钮出现代替输入证据。\n\ngame-build 负责提供可运行候选和最小可观察状态；正式候选的 game-qa 按既有权威验证入口完成实际路径并记录结果。文本白盒里的行动能走通，只证明那层规则，不能宣称目标手机、触摸、引擎输入和整段游玩都已通过。\n\n若还有缺口，写清输入方式、运行环境与未完成项。一次修订针对定位到的问题，避免同时重写故事、换美术和改全部按钮。",
+          "en": "Follow clean start, real input, the designed result and restart in the current candidate. Compare state with player feedback. Hovering, screenshots and a visible button do not substitute for input evidence.\n\ngame-build supplies the runnable candidate and minimal observations. For a production candidate, game-qa uses its existing authoritative verification entry and records the actual path. A working text whitebox proves its modeled rules rather than phone touch, engine input or the whole playing experience.\n\nRecord remaining input/runtime gaps. Keep the revision on the diagnosed fault rather than also rewriting story, replacing art and changing every control."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "按钮变色了，为什么还不能算点击成功？",
+          "en": "Why is highlighting insufficient evidence?"
+        },
+        "a": {
+          "zh": "变色只显示一种视觉响应；还要看目标行动是否到达、是否合法提交及结果是否可读。三层可能分别出问题。",
+          "en": "It demonstrates a visual response. Establish action arrival, a valid submission and a readable result; the three can fail separately."
+        }
+      },
+      {
+        "q": {
+          "zh": "把条件检查关掉，按钮能用就算修好了吗？",
+          "en": "Is removing condition checks a valid repair?"
+        },
+        "a": {
+          "zh": "不算原规则的修复。许可、持物或成本属于设计，合法输入应生效，非法输入应按原规则拒绝。若确实想改规则，作为设计变更明确决定。",
+          "en": "It changes the design. Legal input should work while illegal input remains rejected under the approved rules. Decide any intended rule change explicitly."
+        }
+      }
+    ],
+    "skill": {
+      "name": "game-build",
+      "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-build/SKILL.md",
+      "text": {
+        "zh": "在已安装 Novel to Game 的宿主中，请用 $game-build 定位当前候选中这个按钮的输入、条件读取与表现更新。提供复现初态和预期/实际结果，只修命中的节点，保已有规则与故事；准备原故障路径、相邻拒绝路径和重开观察。正式候选再由 $game-qa 使用既有验证入口记录真实结果，不预填通过。",
+        "en": "In a host with Novel to Game installed, use $game-build to locate this candidate’s input, condition reading and presentation update. Supply a reproducible state and expected/actual results. Repair only the identified node while preserving rules and story. Prepare the original path, neighboring refusal and restart observations. For production, $game-qa records real results through the existing verification entry without a prefilled pass."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "行动、前置条件与权威提交",
+          "en": "Actions, conditions and authoritative submission"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-build/references/playable-model-contract.md"
+      },
+      {
+        "label": {
+          "zh": "真实输入与目标运行环境",
+          "en": "Real input and target runtime"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-build/references/build-brief-contract.md"
+      },
+      {
+        "label": {
+          "zh": "故障重放与相邻反例",
+          "en": "Failure replay and neighboring counterexamples"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-qa/references/test-design-method.md"
+      },
+      {
+        "label": {
+          "zh": "输入接收与实际结果的反馈",
+          "en": "Input acceptance and actual-result feedback"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-art-direction/references/art-direction-method.md"
+      }
+    ],
+    "related": [
+      "/novel-to-game/fix-a-story-game-that-cannot-progress",
+      "/novel-to-game/design-locked-options-in-a-story-game",
+      "/novel-to-game/readable-gameplay-feedback",
+      "/novel-to-game/choose-buttons-or-free-text-input"
     ]
   }
 ]
