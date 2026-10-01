@@ -222,6 +222,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Shorten an Overlong Novel Chapter Without Losing Its Story](https://zenstory.ai/oh-story/shorten-an-overlong-novel-chapter) — Check length and required beats, then remove redundant explanation and process. Compare a complete scene before and after with the skill’s one-pass workflow.
 - [How to Keep Multiple AI Novel Projects Separate](https://zenstory.ai/oh-story/keep-multiple-ai-novels-separate) — Separate manuscripts, settings and progress. Follow a two-book switch with explicit paths and scope; an active-book selector is not session isolation.
 - [How to Fix Inconsistent Prose Style in an AI Novel](https://zenstory.ai/oh-story/fix-inconsistent-ai-novel-prose-style) — Resolve rhythm, viewpoint, dialogue and emotion separately. A rainy-night revision preserves story facts and knowledge while restoring the book’s voice.
+- [How to Stop AI Fiction from Adding Unwanted Characters](https://zenstory.ai/oh-story/stop-ai-fiction-from-adding-unwanted-characters) — Define this chapter’s cast, facts and stopping point. Distinguish incidental people from plot-changing additions, with a workshop example and local repair.
 
 ### Book covers / 小说封面
 - [Book covers](https://zenstory.ai/guides/book-covers) — Plan cover art and lettering, then check upload crops and thumbnail readability.
@@ -272,6 +273,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Control Suspense with Audience Information](https://zenstory.ai/drama-skills/control-suspense-with-audience-information) — Separate identity, sound and evidence reveals. Plan what viewers know now with an original visitor scene, avoiding hidden essentials or premature disclosure.
 - [How to Add Sound Effects at the Right Moment in a Video](https://zenstory.ai/drama-skills/add-sound-effects-to-video) — Locate action and original audio, then place the cue in cut-local time. Follow a door-knock example with cue arithmetic and actual mixing boundaries.
 - [How to Fix Cropped Characters in AI Video](https://zenstory.ai/drama-skills/fix-cropped-characters-in-ai-video) — Separate reference cropping, movement out of frame and later aspect-ratio changes. A counter scene keeps the head, important hands and accepted action visible.
+- [How to Fix Repeated Actions in AI Video](https://zenstory.ai/drama-skills/fix-repeated-actions-in-ai-video) — Distinguish intended repetition, generation rebound and repeated edits. A cup-placement example defines contact, release, final hold and usable footage.
 
 ### Storyboards and AI video / 分镜与 AI 视频
 - [Storyboards and AI video](https://zenstory.ai/guides/ai-video) — Plan shots, keep characters consistent, and improve generated footage.

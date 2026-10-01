@@ -22202,7 +22202,7 @@
       "en"
     ],
     "published_on": "2026-09-29",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "en": "How to Playtest a Novel-to-Game Adaptation",
       "zh": "如何测试小说改编游戏"
@@ -22249,8 +22249,8 @@
           "en": "Original failure: the picture resets but state does not"
         },
         "body": {
-          "zh": "纸面故障示例：失败后回到温室入口，背包却保留钥匙，任务日志仍写“检查完成”。第二次进入可以跳过调查开阀，说明重开只恢复了画面。\n\n报告写“失败→重开后钥匙仍在玩家背包，调查标记仍为已完成”，附两处状态和对应画面。修复要回到完整初态：物件、资源、人物知情与任务阶段，不能只删日志里的“完成”。\n\n再跑一条没有出示记录的相邻路线，检查园丁是否错误说出文件细节。生成对白读得自然，也不能覆盖规则未允许的知识；只查看 happy path 会漏掉这种分支污染。",
-          "en": "Paper failure example: restart returns the picture to the entrance, but the key remains in inventory and the log still says inspection is complete. The second run skips investigation and operates a valve.\n\nReport the exact failure-to-restart sequence with retained-key and inspection-state evidence. Restore objects, resources, knowledge and quest stage, not merely the displayed word “complete.”\n\nThen test a neighboring route without showing the record. The gardener must not reveal its contents. Fluent generated dialogue cannot authorize knowledge that rules withheld; a happy path alone misses this contamination."
+          "zh": "纸面故障示例：失败后回到温室入口，背包却保留钥匙，任务日志仍写“检查完成”。第二次进入可以跳过调查开阀，说明重开只恢复了画面。下面为此原创温室补一套明确的教学初态与顺序，不是skill默认数值，也不是已经跑过的游戏。\n\n初态：水量6单位，钥匙由园丁保管，玩家未检查管线，园丁不知道旧记录内容。本例必须先检查、借钥匙再开阀；错误顺序耗掉3单位并失败，正确顺序耗2单位并完成浇水。查看旧记录不等于向园丁出示。\n\n| 重放步骤 | 要核对的结果 |\n|---|---|\n| 启动，检查管线，借钥匙 | 检查完成、钥匙在玩家处，水量仍为6。 |\n| 按本例错误顺序开阀 | 水量变3、进入失败，园丁仍不知旧记录。 |\n| 从失败选择重开 | 回温室入口，水量6、钥匙归园丁、未检查、未出示。 |\n| 不检查、不借钥匙直接尝试开阀 | 因前置未满足拒绝，不消耗水，不生成成功结果。 |\n| 再检查、借钥匙，按正确顺序开阀 | 水量变4，完成浇水；不出示记录时园丁仍不能说出内容。 |\n\n若第三步背包与检查标记仍保留，记录“失败→重开后钥匙仍在玩家背包，调查标记仍为已完成”，附实际初态、输入、终态及对应画面。修复回到完整初态：物件、资源、知情与任务阶段，不能只删日志里的“完成”。\n\n修后重放这条故障与拒绝路径，再用不出示记录的成功路线作相邻反例。二者共享温室初态，分别检验重开后的前置与角色知识。自然对白不是权限：园丁说出未获知文件内容仍是失败。实际候选的规则、输入和数字必须来自它自己的批准设计；本文表格只能说明如何选检查，不能替它填PASS。",
+          "en": "Paper failure: restart returns the picture to the greenhouse entrance, but the inventory retains the key and the log says inspection is complete. The second run skips investigation and operates a valve. The following explicit teaching state and sequence belong to this original example, not skill defaults or a game already tested.\n\nInitial state: six water units, key held by the gardener, pipes uninspected and record contents unknown to the gardener. This design requires inspection and borrowing before valve operation. The wrong valve sequence spends three units and fails; the correct sequence spends two and waters the plants. Reading the record is not showing it to the gardener.\n\n| Replay step | Expected result |\n|---|---|\n| Launch, inspect pipes, borrow key | Inspection complete, key with player, six water units remain. |\n| Use the example’s wrong valve sequence | Three units remain; failure occurs; record contents stay unknown to the gardener. |\n| Restart from failure | Entrance restored, six units, key with gardener, uninspected and unshown. |\n| Attempt operation without inspection or borrowing | Reject unmet prerequisites without water consumption or a success outcome. |\n| Inspect and borrow again, then use the correct sequence | Four units remain and watering succeeds; without showing the record, the gardener still cannot reveal its contents. |\n\nIf step three retains the key and inspection flag, report the exact failure-to-restart fault with actual initial state, inputs, final state and the corresponding view. Repair object custody, resources, knowledge and quest stage rather than deleting the displayed word “complete.”\n\nReplay the failure and rejection path after repair, then the unshown-record success route as an adjacent countercase. Both share the greenhouse initial state but check restored prerequisites and character knowledge separately. Fluent dialogue grants no permission: revealing an unseen document remains a failure. The actual candidate’s rules, inputs and quantities must come from its own approved design. This worksheet explains choosing checks and cannot fill in a PASS for it."
         }
       },
       {
@@ -26565,7 +26565,7 @@
       "en"
     ],
     "published_on": "2026-09-29",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "zh": "同人小说开头怎么写：熟悉的人物遇到新问题",
       "en": "How to Write a Fanfiction Opening"
@@ -26601,8 +26601,8 @@
           "en": "Enter through a current task"
         },
         "body": {
-          "zh": "冗长开头：先介绍雾港地理、邮局组织、两人过往，再到第三章说今天收了一封退信。\n\n改法：乔雨在退信栏划掉一行，阿岚把船钥匙放到柜台：“港口封了。明早还送吗？”乔雨把信从退件篮拿回来：“这封不能退。”随后通过收件人叫错一个旧称呼，让本篇规则第一次产生可见后果。\n\n开场兑现熟悉人物的习惯，同时提出新目标：封港前送到这封信。角色不能只在标题或结尾出现；若本篇主要看两人的合作，新配角出场先服务当前任务，别用数章与承诺无关的支线挡住他们。",
-          "en": "An overloaded opening explains the harbor, postal organization and relationship history before revealing a returned letter in chapter three.\n\nInstead, Qiao crosses out a return entry. A Lan places boat keys on the counter: “Harbor’s closed. Still delivering tomorrow?” Qiao removes one envelope from the return basket: “This one cannot go back.” A recipient later using the wrong old nickname gives the new rule its first visible consequence.\n\nThe opening delivers a familiar habit while creating a fresh objective: deliver before closure. Promised characters should participate early. New supporting characters should serve that task rather than delaying it with unrelated chapters."
+          "zh": "冗长开头：先介绍雾港地理、邮局组织、两人过往，再到第三章说今天收了一封退信。\n\n下面保留原创虚构原作的乔雨“不拆信”与阿岚“负责夜航”，但港口此刻已经封闭，不能再把目标写成封港前出航。本篇新增规则仍是退信使收件人失去一件记忆。为把规则落到眼前，作者在本例增加一位此前信件已被退回的收件人，与当前尚未退回的信分开：\n\n> 乔雨在退信栏划掉一行。阿岚把船钥匙放上柜台：“港口封了。明早还送吗？”\n>\n> “这封不能退。”乔雨从篮中取回信，封口仍没有打开。\n>\n> 门口的陈婶叫阿岚“小舟”。阿岚抬起头：“你从前不是这样叫我。”\n>\n> 陈婶指向退件栏。“昨日我的那封退了。我记得你的脸，可那个叫法想不起来了。”\n>\n> 乔雨看过昨日的退件记录，握住当前信。“这封还没退。不能让收件人也少记一件事。”\n>\n> 阿岚看了眼柜台上的船钥匙。“船走不了。先查陆路。”\n>\n> “先查。”乔雨将当前信放入随身邮袋，扣好袋口。阿岚拿来路线图，二人从港口以外的路开始找。\n\n陈婶与她的退信是本例新增的场景方案，不宣称真实作品里本来有这一人物。本段先用她的具体反应呈现作者已定的虚构规则，未把乔雨手中未退的信写成已经抹去记忆；也不把称呼变化当作现实中的记忆判断。\n\n开场的结果是两人保住未退的信，并开始找封港后的送达办法，尚未查成路线或送到收件人。乔雨不拆信，阿岚的夜航能力受封港条件限制；熟悉人物的习惯影响行动，新配角服务当前任务。开篇有停点与后续期待，无须立刻解决整场冒险。",
+          "en": "An overloaded opening explains the harbour, postal organisation and history before revealing a returned letter in chapter three.\n\nKeep the invented canon’s Qiao Yu, who never opens letters, and A Lan, who sails at night. The harbour is already closed, so delivery before closure is no longer a possible objective. The new fictional rule remains that returned letters erase one recipient memory. This example’s author adds a recipient whose letter was returned earlier, distinct from the current unreturned envelope:\n\n> Qiao crossed out a return entry. A Lan put boat keys on the counter. “Harbour’s closed. Still delivering tomorrow?”\n>\n> “This one cannot go back.” Qiao took the envelope from the basket without opening its seal.\n>\n> At the doorway, Mrs Chen called A Lan “Little Boat.” He looked up. “That isn’t what you used to call me.”\n>\n> She pointed at the return register. “Mine was returned yesterday. I know your face, but I can’t remember the other name.”\n>\n> Qiao checked yesterday’s return entry and held the current envelope. “This one hasn’t been returned. We can’t let its recipient lose a memory too.”\n>\n> A Lan looked at the boat keys. “We can’t sail. Check the land routes first.”\n>\n> “First, check.” Qiao put the current envelope in her mailbag and fastened it. A Lan brought a map; they began looking beyond the harbour.\n\nMrs Chen and her letter are new local scene choices, not claims about a real franchise. Her reaction presents the author’s established fictional rule; the current unreturned letter has caused no memory loss. A changed nickname is not offered as a real-world memory assessment.\n\nThe opening ends with the unreturned letter protected and the partners beginning to seek delivery after closure. They have not found a route or reached the recipient. Qiao’s principle matters, while closure limits A Lan’s sailing. Familiar characters drive the task and the new role serves it. The opening can establish a stopping point and expectation without completing the adventure."
         }
       },
       {
@@ -26613,7 +26613,7 @@
         },
         "body": {
           "zh": "| 信息 | 是否需要开场交代 | 放法 |\n|---|---|---|\n| 乔雨不拆信 | 用当下行为确认 | 封口受损时换外封，不打开内页 |\n| 阿岚会夜航 | 可暂不解释履历 | 他直接指出封港后的路线限制 |\n| 故事发生在终局后 | 需要定位 | 用简短时间说明或已改变的物件 |\n| 退信会抹去记忆 | 必需的新规则 | 从本次退信的后果与判断说明建立 |\n| 整个港口的历史 | 本场无需求 | 等相关地点或人物改变行动时补 |\n\n这些投放方式是本例选择。面向没读过原作的人时，可以增加必要背景，但仍贴近当前问题；别把百科入口当开篇唯一形式。",
-          "en": "| Information | Opening need | Delivery |\n|---|---|---|\n| Qiao never opens letters | Confirm through action | Replace an outer cover without opening the contents |\n| A Lan sails at night | Biography can wait | Let him identify the route restriction |\n| Set after the canon ending | Establish the timeline | A short marker or changed object |\n| Returns erase memories | Essential new rule | A consequence and the decision it causes |\n| Entire harbor history | Not needed here | Introduce when it changes action |\n\nThese are choices for this example. Add necessary context for readers unfamiliar with canon, but attach it to the immediate problem rather than making an encyclopedia the only entry point."
+          "en": "| Information | Opening treatment |\n|---|---|\n| Qiao never opens letters | Confirm through action: replace an outer cover without opening the contents. |\n| A Lan sails at night | Biography can wait; let him identify the route restriction. |\n| Set after the canon ending | Establish the timeline through a short marker or changed object. |\n| Returns erase memories | Essential new rule: show a consequence and the decision it causes. |\n| Entire harbor history | Not needed here; introduce when it changes action. |\n\nThese are choices for this example. Add necessary context for readers unfamiliar with canon, but attach it to the immediate problem rather than making an encyclopedia the only entry point."
         }
       },
       {
@@ -49180,6 +49180,241 @@
       "/drama-skills/stop-unwanted-ai-video-camera-drift",
       "/drama-skills/vertical-storyboarding",
       "/drama-skills/reference-image-roles"
+    ]
+  },
+  {
+    "owner": "oh-story",
+    "slug": "stop-ai-fiction-from-adding-unwanted-characters",
+    "topic": "revision",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "AI写小说乱加人物怎么办：分清现场细节与改变剧情的新角色",
+      "en": "How to Stop AI Fiction from Adding Unwanted Characters"
+    },
+    "seo_title": {
+      "zh": "AI写小说乱加人物怎么办｜ZenStory",
+      "en": "Stop AI Fiction Adding Unwanted Characters | ZenStory"
+    },
+    "description": {
+      "zh": "用本章人物、已知事实和停笔点限制新增角色，区分一次性路人与改变剧情的新人。附修理间案例与局部回退方法。",
+      "en": "Define this chapter’s cast, facts and stopping point. Distinguish incidental people from plot-changing additions, with a workshop example and local repair."
+    },
+    "answer": {
+      "zh": "先说明本章哪些人物在场、哪些人物只能被提及，以及本次允许新增什么。新角色若改变权限、信息或既定结果，就不是补一句描写。核对细纲、人物卡和当前状态后，修掉未经授权的行动链；不要仅替换名字，留下新人带来的钥匙和答案。",
+      "en": "Specify who is present, who may only be mentioned and what additions this task permits. A new character who changes access, knowledge or the planned outcome is more than descriptive detail. Compare the outline, character cards and current state, then repair the unauthorised action chain rather than renaming its newcomer while keeping the invented key or answer."
+    },
+    "sections": [
+      {
+        "id": "classify-the-addition",
+        "heading": {
+          "zh": "不是所有路人都要删，先看新增人物做了什么",
+          "en": "Classify what the newcomer changes"
+        },
+        "body": {
+          "zh": "Oh Story的新增物规则分三类：微连接、一次性路人和现场细节可直接写；具名配角、关系与后续承诺等写了要报；改变主线、真相、既定决定或发生冲突的内容先问作者。判断不能只看有没有名字。\n\n| 新增内容 | 需要核对的影响 |\n|---|---|\n| 街边路人经过 | 是否只是现场细节，还是替主角递交关键证据。 |\n| 新配角留下联系方式 | 后续章是否需要知道此人、关系与承诺。 |\n| 突然到场的专家解决难题 | 是否改变原定过程、权限或结果。 |\n\n作者可以进一步限定本章不新增人物；这是当前任务的范围，优先执行。反过来，也不要把方法误读为全书永远不能出现新人。角色是否需要存在，最终服务作者选定的故事。",
+          "en": "Oh Story separates additions into three levels: incidental connections, one-off passersby and local detail can be written directly; named supporting characters, relationships and future obligations need declaration; changes to the main plot, truth, established decisions or conflicting commitments require the author’s decision first. A name alone does not determine the level.\n\n| Addition | Check its effect |\n|---|---|\n| Someone passing in the street | Is this local texture, or do they deliver decisive evidence? |\n| A new supporting character leaves contact details | Will later chapters need this person, relationship or promise? |\n| An expert arrives and solves the problem | Does this change the approved process, access or outcome? |\n\nAn author may further restrict this chapter to its established cast. That current scope applies. The method does not mean a book can never introduce anyone new; characters serve the author’s chosen story."
+        }
+      },
+      {
+        "id": "load-the-current-cast",
+        "heading": {
+          "zh": "把在场、未到场和允许提及分开写",
+          "en": "Separate presence, absence and permissible mentions"
+        },
+        "body": {
+          "zh": "写指定章时读取完整细纲和本章相关状态，明确人物卡、已发生事实和本章停点。只写“不要加人”仍可能让AI给旧人物添加一段突然到场的经历，或把未接到电话的人写成已经知情。\n\n可以附一张本章范围卡：实际在场的人；其他人的位置与已知内容；允许的提及或联络；本次必须发生和不得提前发生的事件。它是本文的编辑卡，不替代本书细纲或追踪文件。材料不足先补事实，不靠新角色填空。",
+          "en": "For a specified chapter, load the full outline and relevant current state, with character cards, occurred facts and the stopping point. “Add nobody” can still leave AI inventing an existing character’s sudden arrival or treating an unanswered call as knowledge received.\n\nAn editorial scope card can identify people actually present, others’ locations and knowledge, allowed mentions or contact, and events that must happen or remain pending. It does not replace the book’s outline or tracking files. Missing facts need clarification rather than a new character to fill the gap."
+        }
+      },
+      {
+        "id": "complete-workshop-repair",
+        "heading": {
+          "zh": "完整示例：删掉大师，也删掉他凭空给出的权限",
+          "en": "Complete example: remove the expert and the access he invented"
+        },
+        "body": {
+          "zh": "原创本章：袁禾与石宁在修理间检查旧画框；物主龚叔不在场，尚未同意换底座。停点是二人确认需要询问物主，不进行更换。这次作者限定只写二人现场检查。\n\n错误候选突然写“赵师傅推门进来，递出仓库钥匙，替龚叔答应换底座”。只把赵师傅改名为石宁，仍保留凭空得到的钥匙和许可，问题没有解决。可以回到获准的检查：\n\n> 袁禾把画框平放在桌上，手指停在松动的底座旁。\n>\n> “这里也要换。”石宁说。\n>\n> “龚叔只让我们检查。”袁禾取出记录纸，“把裂口记下来，问他愿不愿意换。”\n>\n> 石宁拿起笔，画出裂口的位置。“还是先报两种方案？”\n>\n> “好。保留底座怎么修、换掉怎么做，分开给他看。”\n>\n> 两人写完记录，把画框留在桌上，没有拆下底座。\n\n正文停在检查与方案记录：龚叔仍未答复，仓库钥匙没有被新增，底座未换。下一章是否联络、得到哪个选择，由作者后续安排；本例不把记录计划写成已经获得同意。\n\n请求可以写：“只修这一检查段，删除赵师傅及他带来的钥匙、代理许可与更换结果；保留袁禾/石宁检查并决定询问物主，不改其他章节，不替龚叔作答。”",
+          "en": "Original chapter: Yuan He and Shi Ning inspect an old picture frame in the workshop. Owner Gong is absent and has not approved replacing its base. The scene stops with their decision to ask him; replacement does not occur. The author limits this passage to the two inspectors.\n\nA faulty candidate invents Master Zhao entering with a storeroom key and approval on Gong’s behalf. Renaming Zhao as Shi preserves the invented access and permission, so it does not repair the problem. Return to the approved inspection:\n\n> Yuan laid the frame flat on the table and stopped beside its loose base.\n>\n> “This needs replacing too,” Shi said.\n>\n> “Gong only asked us to inspect it.” Yuan took out the record sheet. “Mark the crack and ask whether he wants replacement.”\n>\n> Shi drew its position. “Should we offer two plans?”\n>\n> “Yes. Show repairing the existing base and replacing it separately.”\n>\n> They finished the record and left the frame on the table without removing its base.\n\nThe passage ends with inspection and options recorded. Gong has not replied, no storeroom key has appeared, and the base is unchanged. Contact and a later decision belong to the author’s next plan; a proposal is not permission received.\n\nA request can say: “Repair only this inspection passage. Remove Zhao and the key, proxy approval and replacement outcome he introduced. Keep Yuan and Shi’s inspection and decision to ask the owner. Change no other chapters and do not answer for Gong.”"
+        }
+      },
+      {
+        "id": "trace-later-effects",
+        "heading": {
+          "zh": "查新人带来的后续事实，别只搜索人名",
+          "en": "Trace the addition’s effects rather than only its name"
+        },
+        "body": {
+          "zh": "先比对实际改动，再查新增人物给出的信息、物件、权限、关系和承诺有没有进入后文。若只有当前草稿用了它，修相关段落即可；若已经影响后章，按受影响范围修复，并通过既有追踪流程保持事实一致。\n\n“写了要报”不等于报告中提一下就自动成立，仍需核对是否冲突。可保留的配角正常建档，越界的主线决定回到作者；无须为删除一位新人把整本书改写。",
+          "en": "Compare actual changes, then trace information, objects, access, relationships and promises the addition supplied. If only the current draft uses them, repair that passage. If later chapters depend on them, revise the affected scope and reconcile facts through the existing tracking workflow.\n\nDeclaration does not automatically validate an addition; conflicts still need review. Keep and document a legitimate supporting character, return an unauthorised plot decision to the author, and avoid rewriting the whole book to remove one newcomer."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "人物没有名字，就不算改变剧情吗？",
+          "en": "Can an unnamed person change the plot?"
+        },
+        "a": {
+          "zh": "也能。路人递出关键证据、代为答应或解决难题，同样可能改变事实与结果，按功能和后续影响判断。",
+          "en": "Yes. A passerby who provides decisive evidence, consent or a solution can change facts and outcomes. Judge function and later effects."
+        }
+      }
+    ],
+    "skill": {
+      "name": "story-long-write",
+      "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/SKILL.md",
+      "text": {
+        "zh": "用 $story-long-write 核对指定章的新增人物，附细纲、人物卡、实际在场与停点。区分现场细节、需申报的配角和需作者决定的主线变化；局部修掉越界人物及其产生的事实，不把删名当成完整修复。",
+        "en": "Use $story-long-write with the chapter outline, character cards, actual cast and stopping point. Distinguish local detail, declarable supporting roles and author-level plot decisions. Repair both the unauthorised character and their effects."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "本章状态筛选、新增物核对与处置",
+          "en": "Chapter state selection, addition review and disposition"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/workflow-chapter.md"
+      },
+      {
+        "label": {
+          "zh": "任务范围、人物材料与新增申报",
+          "en": "Task scope, character materials and addition declarations"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/writer-prompt-fallback.md"
+      }
+    ],
+    "related": [
+      "/oh-story/ai-novel-writing-prompts",
+      "/oh-story/ai-fiction-consistency-check",
+      "/oh-story/stop-ai-fiction-from-revealing-future-plot"
+    ]
+  },
+  {
+    "owner": "drama-skills",
+    "slug": "fix-repeated-actions-in-ai-video",
+    "topic": "short-drama",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "AI视频动作反复重来怎么办：写清完成状态，再查可用片段",
+      "en": "How to Fix Repeated Actions in AI Video"
+    },
+    "seo_title": {
+      "zh": "AI视频动作重复怎么修｜ZenStory",
+      "en": "Fix Repeated Actions in AI Video | ZenStory"
+    },
+    "description": {
+      "zh": "区分提示词反复动作、生成回弹与剪辑重复，写清接触、松手和完成后保持。附放杯子例与可用区间判断。",
+      "en": "Distinguish intended repetition, generation rebound and repeated edits. A cup-placement example defines contact, release, final hold and usable footage."
+    },
+    "answer": {
+      "zh": "先判断重复发生在动作计划、原始生成片还是剪辑时间线。对只需完成一次的动作，写清起点、接触、到位、松手及完成后状态，再看实际视频是否达成。若已有完整可用区间，可以评估剪短；缺关键动作时回上游补素材，不能只靠“不要循环”。",
+      "en": "Locate repetition in the action plan, original generation or edit timeline. For an action intended once, define start, contact, placement, release and the state afterward, then inspect actual footage. A complete usable interval may be shortened; missing action needs new material rather than only “do not loop.”"
+    },
+    "sections": [
+      {
+        "id": "locate-the-repeat",
+        "heading": {
+          "zh": "先看原片，分清三种重复",
+          "en": "Distinguish three sources of repetition"
+        },
+        "body": {
+          "zh": "| 看到的重复 | 先找原因 |\n|---|---|\n| 人物本来就在试探或反复擦拭 | 可能符合剧本，不默认删掉。 |\n| 原片放下杯子后又拿起，违背终点 | 检查动作顺序、完成状态与生成回弹。 |\n| 原片正常，成片同一动作出现两遍 | 检查是否重复选入素材或重叠了同一表演。 |\n\n记录实际发生的时间与动作。不要因为最后一帧看似正确，就忽略中途重来的过程。若重复有叙事职责，例如人物犹豫着递出又收回，就保留已确认的过程，而不是强制每镜只有一个动词。",
+          "en": "| Repetition | First check |\n|---|---|\n| A character deliberately tests or wipes repeatedly | It may be scripted behaviour rather than a defect. |\n| The source places a cup then picks it up against the endpoint | Check ordered motion, completion and generation rebound. |\n| Source is correct but the edit shows the action twice | Check duplicate material selection or repeated performance coverage. |\n\nRecord when and how it happens. A correct-looking last frame does not excuse a repeated middle. Preserve purposeful repetition, such as offering something and withdrawing it, rather than imposing one verb per shot."
+        }
+      },
+      {
+        "id": "give-the-action-an-end",
+        "heading": {
+          "zh": "写清到位后做什么，而不是只说“自然地放下”",
+          "en": "Define what happens after completion"
+        },
+        "body": {
+          "zh": "视频运动方法按起点、先后动作、接触与已确认终点写实现，动作数量本身不是质量指标。持续的支撑与持物关系应可见，不能让“最后放好”跳过松手，也不能为了拉满时长让人物重新做一遍。\n\n完成后可以停留、观察或转入已经确认的反应。不要临时添加喝水、递杯、走出房间来填时间。若动作和必需对白确实装不下，请分镜调整时长或拆镜，不在视频提示词阶段删掉台词或改终点。",
+          "en": "The motion method implements a start, ordered actions, contact and accepted endpoint. Action count itself is not a quality metric. Support and possession must remain visible: “finally placed” cannot skip release, and filling duration cannot justify repeating the action.\n\nAfter completion, the subject may remain, observe or perform an accepted reaction. Do not invent drinking, handing over the cup or leaving to fill time. If required action and dialogue cannot fit, request storyboard duration or shot changes instead of deleting words or changing the endpoint in the video prompt."
+        }
+      },
+      {
+        "id": "complete-cup-placement",
+        "heading": {
+          "zh": "完整示例：杯子落稳、手松开，之后不再拿起",
+          "en": "Complete example: place, release and remain"
+        },
+        "body": {
+          "zh": "原创纸面镜头采用已明确选择的文生视频：何琳右手持蓝色陶瓷杯，桌上白杯垫空着。五秒固定中景，目标是杯子放到杯垫后松手；末尾杯子由杯垫支撑，右手停在桌边，没有对白或饮水动作。正文候选可以写：\n\n> 室内木桌旁，成年女子何琳穿米色衬衫，右手持一只蓝色陶瓷杯，杯底在白色杯垫上方，左手停在桌边。固定平视中景覆盖双手、杯子和杯垫，保持五秒不运镜。她将杯子向下移到杯垫中央，杯底接触杯垫并放稳后，右手手指才松开；右手撤到桌边停住。此后杯子一直由杯垫支撑，手不再接触或拿起杯子，直到本镜结束。动作平稳，完成后的停留用于让观众看清已经放下。只有安静室内底声，无对白、画外音与配乐；全镜不生成非画内字幕、caption或对白文字叠加。\n\n五秒是本例已选时长，不是任何模型的默认值。若换图生视频，真实起始帧应仍是手持杯、杯垫空着；不能拿已经放好杯子的图片当本镜起点。终点一致也要看中途是不是重新举杯，提示词本身不证明视频正确。\n\n假设检查一条实际素材发现：1.20秒接触、1.80秒松手、1.80—3.00秒稳定，3.20秒又拿起。若0—3.00秒已完整覆盖必要动作与反应，可把三秒可用段作为剪短候选；这些秒数仅为教学假设，不是本页实测。若缺必需台词、反应或接镜条件，就不能这样截。",
+          "en": "Original paper shot uses explicitly chosen text-to-video: He Lin holds a blue ceramic cup in her right hand above an empty white coaster. A five-second fixed medium shot ends after she places and releases it. The coaster supports the cup and her right hand rests by the table; there is no speech or drinking. A candidate is:\n\n> Indoors beside a wooden table, adult He Lin wears a cream shirt and holds one blue ceramic cup in her right hand, its base above an empty white coaster. Her left hand rests at the table edge. Hold an eye-level medium shot showing both hands, cup and coaster for five seconds without camera movement. She lowers the cup to the coaster’s centre. Once its base contacts the coaster and sits steadily, her right fingers release it; her hand withdraws to rest by the table. The coaster supports the cup thereafter. She does not touch or lift it again before the shot ends. Use steady motion and a final hold so viewers can read that placement is complete. Include only quiet room ambience, no dialogue, voice-over or music, and no non-diegetic subtitles, captions or dialogue overlays at any point.\n\nFive seconds is this shot’s chosen duration, not a universal model default. For image-to-video, the actual start frame should still show the held cup and empty coaster, not the completed placement. Inspect the middle for another lift even if the endpoint looks right; a prompt does not prove correct footage.\n\nSuppose an actual clip inspection finds contact at 1.20 seconds, release at 1.80, stability until 3.00 and another lift at 3.20. If 0–3.00 already contains the required action and reaction, propose that three-second usable interval. These numbers are teaching assumptions, not measurements made by this page. Missing dialogue, reaction or continuity would make that cut unsuitable."
+        }
+      },
+      {
+        "id": "choose-edit-or-regenerate",
+        "heading": {
+          "zh": "剪短还是重做，要看信息是否完整",
+          "en": "Choose trimming or regeneration by completeness"
+        },
+        "body": {
+          "zh": "生成素材方法要求逐段记录实际时长、可用区间和缺陷，重复表演与动作回弹都是检查项。已完整承载信息可以评估缩短；关键动作缺失则列出缺口并请求补素材。剪短后要复核声音、下一镜起点和成片时长，不能只看裁掉了重复。\n\n反馈上游时说清在哪一刻重新拿起、希望末尾保持什么。修后比较同一段实际画面，不把某一次模型失误当成所有模型必然循环的规律。纸面提示词、计划区间与真实产物分别核实。",
+          "en": "Generated-footage methods record actual duration, usable intervals and defects, including repeated performance and action rebound. Shortening is an option when information is complete; missing required action needs explicit gaps and additional material. After trimming, recheck sound, the next shot’s start and final duration rather than merely confirming repetition is gone.\n\nTell upstream when the second lift occurs and what should remain at the end. Compare the same portion of the new actual clip rather than treating one failure as a universal model rule. Verify the paper prompt, planned interval and real output separately."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "动作只出现一次就一定更好吗？",
+          "en": "Is performing an action once always better?"
+        },
+        "a": {
+          "zh": "不是。剧本要求的反复与犹豫可以保留；要修的是违背已确认过程或终点的重复，不按动词数量判断。",
+          "en": "No. Preserve scripted repetition and hesitation. Repair repetition that contradicts the accepted process or endpoint, rather than counting verbs."
+        }
+      }
+    ],
+    "skill": {
+      "name": "short-drama-video-prompts",
+      "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/SKILL.md",
+      "text": {
+        "zh": "用 $short-drama-video-prompts 检查重复动作，附已确认镜头及实际原片时间点。保留合法反复，写清一次动作的接触、到位、松手与终点保持；缺动作回上游补，完整片段的剪短交剪辑核对，不以提示词代替产物证明。",
+        "en": "Use $short-drama-video-prompts with the accepted shot and source-clip timestamps. Preserve purposeful repetition; specify contact, placement, release and endpoint holding. Missing action needs upstream material, while trimming complete footage requires editing review."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "有序动作、支撑关系与只读终点",
+          "en": "Ordered action, support relationships and accepted endpoints"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/references/motion-recipe.md"
+      },
+      {
+        "label": {
+          "zh": "完成后留时间与超载修订",
+          "en": "Time for completion and overload revision"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/references/performance-action-timing.md"
+      },
+      {
+        "label": {
+          "zh": "重复表演、可用区间与补素材",
+          "en": "Repeated performance, usable intervals and replacement footage"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-edit/references/generated-footage.md"
+      }
+    ],
+    "related": [
+      "/drama-skills/fix-slow-actions-in-ai-video",
+      "/drama-skills/choose-ai-video-in-and-out-points",
+      "/drama-skills/fix-floating-props-in-ai-video"
     ]
   }
 ]
