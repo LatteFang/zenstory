@@ -47682,5 +47682,267 @@
       "/oh-story/match-a-book-cover-to-your-story",
       "/oh-story/fix-ai-book-cover-text"
     ]
+  },
+  {
+    "owner": "oh-story",
+    "slug": "shorten-an-overlong-novel-chapter",
+    "topic": "revision",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "小说章节太长怎么删：先去重复，保住选择与结果",
+      "en": "How to Shorten an Overlong Novel Chapter Without Losing Its Story"
+    },
+    "seo_title": {
+      "zh": "小说章节太长怎么删｜ZenStory",
+      "en": "Shorten an Overlong Novel Chapter | ZenStory"
+    },
+    "description": {
+      "zh": "章节超过目标，先核统计与必要情节点，再删重复解释和无作用过程。附完整删前删后场景及真实skill的一次压缩流程。",
+      "en": "Check length and required beats, then remove redundant explanation and process. Compare a complete scene before and after with the skill’s one-pass workflow."
+    },
+    "answer": {
+      "zh": "先确认本章目标范围、当前统计和必须完成的内容，再找重复信息、重复解释与没有独立作用的过程。优先删冗余，保留关键判断、选择、对白、后果和承接。真实长篇流程会对超长稿安排一次净删压缩并复检；仍过长时由作者决定长度或结构，不反复改短到剧情断裂。",
+      "en": "Confirm the target range, consistent count and required content. Find redundant information, explanation and process before cutting, preserving judgement, choice, dialogue, consequences and handoff. The long-form workflow calls for one removal-only compression pass and recheck; if still overlong, the author decides length or structure instead of repeatedly shrinking away the story."
+    },
+    "sections": [
+      {
+        "id": "check-length-and-purpose",
+        "heading": {
+          "zh": "先确认超了多少，也确认这一章要完成什么",
+          "en": "Confirm length and the chapter’s job"
+        },
+        "body": {
+          "zh": "用同一种统计口径记当前长度与作者要求的范围，不混用字节、字符和不同工具的字数。先排除重复粘贴，再把必要情节点与实际正文逐项对照。不能只按“删百分之二十”处理一整章。\n\n| 需要保住 | 为什么不能只留结论 |\n|---|---|\n| 判断依据 | 否则人物像凭空知道答案。 |\n| 关键选择与对白 | 读者要看见人物如何承担这一步。 |\n| 结果、代价和承接 | 后文依赖它们，删掉就换了剧情。 |\n\n若目标范围本身与已定内容不合，先列取舍；不要把关键段删掉后再用一条新秘密补吸引力。字数不足是另一种问题，可看[缺失情节点的核对](/oh-story/ai-novel-word-count)。",
+          "en": "Use one counting method for current length and the author’s range; do not mix bytes, characters and different tools’ word counts. Check for pasted duplication, then match required beats to the draft. A blanket “cut twenty percent” cannot assess the whole chapter.\n\n| Preserve | Why it matters |\n|---|---|\n| Basis for judgement | Otherwise the character knows an answer without evidence. |\n| Choice and important dialogue | Readers need to experience the decision. |\n| Result, cost and handoff | Later scenes depend on these facts. |\n\nIf the range conflicts with the planned content, present the tradeoff. Do not delete the key scene and invent a secret to restore interest. For the opposite problem, use [missing-beat diagnosis](/oh-story/ai-novel-word-count)."
+        }
+      },
+      {
+        "id": "remove-redundant-content",
+        "heading": {
+          "zh": "按功能删，不把所有慢写都当冗余",
+          "en": "Cut by function rather than equating slowness with waste"
+        },
+        "body": {
+          "zh": "先标出同一事实重复说明、动作后又总结一遍情绪、开头重述上一章已知内容等位置。删除测试要同时看信息、语气、关系、节奏和阅读体验。作者有意的反复或停顿仍可保留，不能只因句子没有新剧情就删。\n\n所引writing-craft按作用分配详略：关键变化可展开，普通过场可压缩，同类并列项也不必平均写满。但它是技法候选，服从本书文风；日常陪伴、气氛和关系体验本身也可能是这一章的交付。\n\n当前长篇流程对超字采用一次净删、零新语义的压缩。不要借删短之机改说话者、换决定、提前揭答案或另加心理。需要重新分章、删情节点或改变结尾时，先把结构选择交作者，另定范围。",
+          "en": "Mark repeated facts, emotional summaries repeating an action and unnecessary retelling of the previous chapter. A deletion test includes information, tone, relationships, rhythm and experience. Intentional repetition or pauses can stay; a sentence need not advance plot to serve the book.\n\nThe cited writing-craft reference allocates detail by function: develop important changes, compress ordinary transitions and avoid equal treatment of every parallel item. These are options subordinate to the book’s style. Companionship, atmosphere and relational experience can themselves be the chapter’s purpose.\n\nThe current long-form workflow uses a removal-only pass with no new meaning for excess length. Do not change speakers or decisions, reveal answers earlier or invent thoughts while cutting. Splitting chapters, dropping beats or changing the ending requires a separate author decision and scope."
+        }
+      },
+      {
+        "id": "complete-cut-example",
+        "heading": {
+          "zh": "删减示例：核单场景保住依据与发车决定",
+          "en": "Cut example: keep the checking evidence and dispatch decision"
+        },
+        "body": {
+          "zh": "以下为原创发货场景。许葵负责核单，既定内容是同事告知已装车，她向司机核对编号，核单后签名允许发车。这里只展示一段删减，不用短例冒充整章字数已达标。\n\n**删前：**\n\n> 许葵翻开发货清单，找到那只蓝箱。蓝箱列在清单上，她已经在清单上找到了它。\n>\n> 同事指向门边：“司机已经装车了，你去问他。”\n>\n> 许葵看了看同事，又看了看门边。她知道现在必须去门边，去问那个司机。她走到门边，向司机核对箱号。\n>\n> “是这只。”司机拿出交接单。许葵核了编号，在清单上签下名字：“那就发车。”\n>\n> 于是，许葵终于完成核对。这次核对让她明白，每一份清单都需要认真核对。\n\n**本例选择删去重复确认、重复去向和末尾泛化总结；不增加新句：**\n\n> 许葵翻开发货清单，找到那只蓝箱。\n>\n> 同事指向门边：“司机已经装车了，你去问他。”\n>\n> 她走到门边，向司机核对箱号。\n>\n> “是这只。”司机拿出交接单。许葵核了编号，在清单上签下名字：“那就发车。”\n\n删后仍有清单、同事告知、去问司机、交接单、核编号和签名许可。没有把“核对后允许发车”删成“她签了字”，也没凭空加实物开箱检查。句间主语仍清楚，场景停在发车许可，不宣称货物已经到达。\n\n若本书把“看同事、看门边”的停顿写成有意义的犹疑，就检查它在前后文的作用，而非套用本例必删。本例选的是核单过程，不替所有慢动作裁决。",
+          "en": "This original dispatch scene has Xu Kui check paperwork. Established beats: a colleague says loading is complete; she asks the driver about the number, checks it and signs permission to leave. This is a passage example, not a claim about an entire chapter meeting its target.\n\n**Before:**\n\n> Xu Kui opened the dispatch list and found the blue crate. It was listed there; she had already found it on the list.\n>\n> Her colleague pointed to the door. “The driver has loaded it. Ask him.”\n>\n> Xu Kui looked at her colleague, then the door. She knew she now had to go to the door and ask that driver. She went to the door and checked the crate number with him.\n>\n> “That one.” The driver produced the handover sheet. Xu Kui checked the number and signed the list. “You can leave.”\n>\n> Finally, Xu Kui had completed the check. This check taught her that every list needed careful checking.\n\n**This version removes repeated confirmation, destination and generic closing commentary, adding no sentences:**\n\n> Xu Kui opened the dispatch list and found the blue crate.\n>\n> Her colleague pointed to the door. “The driver has loaded it. Ask him.”\n>\n> She went to the door and checked the crate number with him.\n>\n> “That one.” The driver produced the handover sheet. Xu Kui checked the number and signed the list. “You can leave.”\n\nThe list, colleague’s statement, driver enquiry, handover sheet, number check and permission remain. Checking before permission has not become merely signing, and no physical inspection is invented. The subject stays clear. Permission to depart is not arrival at the destination.\n\nIf the original book uses the look between colleague and door as meaningful hesitation, assess its context rather than copying this deletion. This example emphasises checking, without banning slow actions elsewhere."
+        }
+      },
+      {
+        "id": "one-pass-and-recheck",
+        "heading": {
+          "zh": "删完一轮，重新读完整章节",
+          "en": "After one pass, read the whole chapter again"
+        },
+        "body": {
+          "zh": "给执行者的任务可写：\n\n> 只检查并删去本章已确认的重复信息和无作用解释。保持全部既定情节点、人物选择、关键原话、知情范围和章尾结果，零新语义，不重写成另一个故事。先标候选删除处及理由，按确认范围删一轮，报告实际长度；复读整章和前后承接。若仍超过范围，说明差额与不能再删的内容，提出接受长度或调整细纲/目标的选择。\n\n`story-long-write`的单章检查会给超长稿一次压缩所需的删除范围，修改后复检；它并不自动替作者判断每句剧情价值。净删不代表直接截断文件末尾，也不保证一轮一定达标。\n\n最后查主语、时间、证据、对白回应和结果是否还连得上。不要看到字数减少就省掉情节点检查；已经完成必要内容而仍过长时，保留这个事实，由作者决定下一步。",
+          "en": "Give the operator this task:\n\n> Identify and remove only confirmed redundant information and purposeless explanation. Preserve established beats, decisions, key lines, knowledge boundaries and ending, with no new meaning. Mark candidate deletions and reasons first, cut within the agreed scope once and report actual length. Reread the whole chapter and its handoffs. If still outside range, report the gap and content that cannot safely go, offering acceptance or an outline/target revision.\n\n`story-long-write` chapter checking supplies a deletion range for an overlong draft, followed by rechecking the changed file. It does not decide every sentence’s story value automatically. A removal-only pass is not truncating the file’s ending and need not meet the range in one attempt.\n\nReview subject, time, evidence, replies and result. A lower count does not replace checking required beats. If necessary content remains overlong, preserve that finding for the author’s next decision."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "可以直接让AI删到某个数字吗？",
+          "en": "Can I just ask AI to cut to a number?"
+        },
+        "a": {
+          "zh": "先给具体范围和保留项，判断冗余。若达到数字必须改变情节点或结果，就需要结构取舍，不能只截尾或反复删短。",
+          "en": "Supply the range and preservation requirements, then assess redundancy. If reaching the number requires changing beats or results, make a structural decision rather than truncating or repeatedly shrinking."
+        }
+      },
+      {
+        "q": {
+          "zh": "删短之后一定会更好读吗？",
+          "en": "Is a shorter chapter always more readable?"
+        },
+        "a": {
+          "zh": "不是。必要的判断、交流和情绪体验被删掉，可能更难读。比较完整场景作用和前后承接，再看实际长度。",
+          "en": "No. Removing judgement, communication or emotional experience can make it harder to read. Compare the scene’s function and handoffs before its count."
+        }
+      }
+    ],
+    "skill": {
+      "name": "story-long-write",
+      "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/SKILL.md",
+      "text": {
+        "zh": "用 /story-long-write（Codex 用 $story-long-write）检查并按明确范围修这章，提供目标长度、正文、细纲和必须保留的事实。超长先定位冗余，按本书文风净删一轮再复检，不用删情节点或新增解释凑数字。",
+        "en": "Use /story-long-write, or $story-long-write in Codex, to inspect and revise the specified chapter with its length range, draft, outline and preserved facts. Diagnose redundancy, remove once in the book’s style and recheck without dropping beats or adding explanation to hit a number."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "超长稿一次净删与复检",
+          "en": "One removal-only pass and recheck for excess length"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/workflow-chapter.md"
+      },
+      {
+        "label": {
+          "zh": "详略、并列项与场景过程",
+          "en": "Selective detail, parallel items and scene development"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/writing-craft.md"
+      },
+      {
+        "label": {
+          "zh": "作者文风、事实与修改范围",
+          "en": "Author style, facts and revision scope"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/style-resolution.md"
+      },
+      {
+        "label": {
+          "zh": "实际超长检查与压缩范围",
+          "en": "Actual excess-length check and compression ranges"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/scripts/storyctl.py"
+      }
+    ],
+    "related": [
+      "/oh-story/ai-novel-word-count",
+      "/oh-story/web-serial-pacing",
+      "/oh-story/over-edited-prose"
+    ]
+  },
+  {
+    "owner": "oh-story",
+    "slug": "make-a-novel-character-relationship-map",
+    "topic": "characters-and-dialogue",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "小说人物关系图怎么整理：目标、边界与变化",
+      "en": "How to Build a Useful Character Relationship Map for a Novel"
+    },
+    "seo_title": {
+      "zh": "小说人物关系图怎么整理｜ZenStory",
+      "en": "Build a Novel Character Relationship Map | ZenStory"
+    },
+    "description": {
+      "zh": "不只画亲友线：把双方目标、条件和知情写在关系旁，附四人旧书集市关系图、完整场景与写后更新示例。",
+      "en": "Map goals, conditions and knowledge as well as social ties. Follow a four-person book-fair map, complete scene and concrete relationship updates."
+    },
+    "answer": {
+      "zh": "先只列本段剧情需要的重要人物，再给每条关系写双方想要什么、能提供什么、有什么条件和目前谁知道。亲友、同事或敌人只是起点；用具体事件确认变化，标清未完成计划。关系图是作者的规划工具，不替代正文，也不自动让所有人物互通信息。",
+      "en": "Start with important people needed for this stretch of story. Label what each side wants, offers and conditions, plus current knowledge. Family, colleagues or enemies are starting labels; events establish changes, while pending plans stay distinct. A relationship map supports planning without replacing prose or automatically sharing information."
+    },
+    "sections": [
+      {
+        "id": "what-the-map-is-for",
+        "heading": {
+          "zh": "关系图要帮你决定下一场怎么写",
+          "en": "Use the map to choose the next scene"
+        },
+        "body": {
+          "zh": "把所有人物都连起来，容易只剩一张拥挤通讯录。先问本段哪些关系会影响人物选择，再画这些线。共同目标不等于意见全相同，敌对也不等于每次见面都争吵。\n\n所引character-relations区分冲突、联盟、亲密和权威，并强调人物自身目标与关系变化。依据style-resolution，作者与本书的选择优先；不用为了“有考验”给每条线强加背叛。\n\n[人物设定集](/oh-story/story-bible-template)保存身份与当前事实；[群像写法](/oh-story/ensemble-cast)处理多人的叙事作用。本页聚焦一张能读出条件和下一步的关系图，不给每个人重写履历。",
+          "en": "Connecting everyone can produce a crowded address book. Map the relationships affecting choices in this stretch. A shared goal need not mean identical views, and rivals need not argue at every encounter.\n\nThe cited character-relations reference distinguishes conflict, alliance, intimacy and authority, emphasising personal goals and relational change. style-resolution gives the author and book priority; a relationship need not acquire a betrayal merely to satisfy a generic test rule.\n\nA [story bible](/oh-story/story-bible-template) stores identity and current facts; [ensemble writing](/oh-story/ensemble-cast) addresses narrative roles. This page focuses on a map of conditions and next steps rather than another biography for everyone."
+        }
+      },
+      {
+        "id": "label-the-lines",
+        "heading": {
+          "zh": "人物连线旁边写什么",
+          "en": "Label the relationships with usable information"
+        },
+        "body": {
+          "zh": "一条线可用这份手工模板：\n\n> **两人及截至位置**：[A、B，截至哪章或哪场]  \n> **双方目标与可提供内容**：[各自想要什么，不合并成一方的目标]  \n> **已有约定与边界**：[已经说定什么、仍未答应什么]  \n> **知情与误判**：[各自真正知道的内容及来源]  \n> **下一步与变化证据**：[等待什么，发生后凭哪段正文更新]\n\n箭头可标单向请求或承诺，双向线可标已确认合作。含义写在图例里；虚线或“待确认”只是这张手工图的约定，不是skill固定字段。不要把作者计划下一场会和解，提前记成双方已经和解。\n\n不必给每条线打好感分。故事真正需要数值时再定体系；一次帮忙可能改变信任或事项进度，也可能只是履行已有约定。",
+          "en": "A hand-made relationship label can record:\n\n> **People and story cutoff:** [A and B, through which chapter or scene]  \n> **Goals and offers:** [what each wants and can provide]  \n> **Agreements and boundaries:** [confirmed terms and unanswered requests]  \n> **Knowledge and mistakes:** [what each actually knows and its source]  \n> **Next step and evidence:** [what remains pending and which passage confirms change]\n\nAn arrow can mark a one-way request or promise, while a two-way line marks confirmed cooperation. Define the legend. Dashed lines or “pending” are manual conventions, not native skill fields. A planned reconciliation is not an accomplished one.\n\nEvery line need not have an affection score. Define numbers only if the story needs them. One helpful act can affect trust or task progress, or simply fulfil an existing agreement."
+        }
+      },
+      {
+        "id": "book-fair-map-example",
+        "heading": {
+          "zh": "完整示例：四人合办旧书集市",
+          "en": "Complete example: four people organise a used-book fair"
+        },
+        "body": {
+          "zh": "原创旧书集市故事中，周南负责按时开门；叶桑提供藏书借展，并已说明不出售；唐禾负责海报，想用扉页但未获同意；陆音借出运输小车，周南已答应周五晚归还。四人不必互相都有新关系。写本场前，画三条起作用的线：\n\n> 周南 ↔ 叶桑：合办；借展书不出售，现场标识待确认。  \n> 唐禾 → 叶桑：想用扉页做海报，等待答复。  \n> 周南 → 陆音：承诺周五晚还车，具体时刻待定。\n\n本例箭头表示请求或承诺，双向表示已确认合作。接着把要确认的三件事写成连续场景：\n\n> 周南把两张标签放到桌上：“借展和待售分两边，照这两种贴，行吗？”\n>\n> 叶桑将“借展”放在三本旧书旁：“这三本只摆给人看。扉页也别拍进去。”\n>\n> 唐禾放下准备扫描的手机：“那我画普通书脊，不用这些书上的字。”\n>\n> “这个可以。”叶桑把三本书收在一起。周南在清单上划出借展区，唐禾在海报草稿上写下“普通书脊”。\n>\n> 陆音翻开日历：“周五三点装，晚上八点车还我。周六我要用。”\n>\n> 周南把两个时刻记进运输计划：“照这个来。我送还以后告诉你。”\n\n写后更新：周南与叶桑的借展标识已确认；唐禾的扉页请求被拒，普通书脊方案被接受并记入草稿；周南与陆音的还车时刻已确认。书还没展出、海报还没画完、车还没实际归还，不能把计划勾成已完成。三点八点与书脊方案是本例具体安排，不是通用情节要求。",
+          "en": "In this original used-book-fair story, Zhou Nan wants to open on time. Ye Sang lends collection books and has said they are not for sale. Tang He designs the poster and wants to use a flyleaf without approval. Lu Yin lends a transport cart, which Zhou Nan has promised to return Friday evening. Not every pair needs another relationship. Map three active lines before the scene:\n\n> Zhou Nan ↔ Ye Sang: confirmed cooperation; display-only books, signage pending.  \n> Tang He → Ye Sang: flyleaf request awaiting an answer.  \n> Zhou Nan → Lu Yin: Friday-evening return promised, exact time pending.\n\nHere arrows indicate requests or promises; the two-way line indicates cooperation. Write the three decisions as one continuous scene:\n\n> Zhou Nan put two labels on the table. “Separate loan displays from stock for sale. Can we use these?”\n>\n> Ye Sang placed “Display only” beside three old books. “These are for looking at. Don’t photograph their flyleaves either.”\n>\n> Tang He put down the phone ready for scanning. “Then I’ll draw ordinary book spines without words from these books.”\n>\n> “That’s fine.” Ye Sang gathered the three books. Zhou Nan marked a display-only area on the list; Tang He wrote “ordinary book spines” on the poster draft.\n>\n> Lu Yin opened the calendar. “Load at three on Friday. Return the cart by eight that evening. I need it Saturday.”\n>\n> Zhou Nan recorded both times in the transport plan. “Agreed. I’ll tell you when I’ve returned it.”\n\nUpdate the confirmed signage, rejected flyleaf request and accepted spine proposal, plus agreed cart-return time. Exhibition, finished poster and actual return remain pending. Three and eight o’clock and the spine design are concrete example choices rather than universal plot requirements."
+        }
+      },
+      {
+        "id": "keep-the-map-current",
+        "heading": {
+          "zh": "写完再更新，不把未来当成现在",
+          "en": "Update after the event without turning plans into facts"
+        },
+        "body": {
+          "zh": "标明截至章或场，留下变化对应的正文位置。人物有了新条件就改那条线，未受影响的关系仍保留。秘密只记录在实际知道它的人旁边；作者看过全图，不代表人物也看过。\n\n关系图可以用纸、表格或画图工具制作，形式服从你找信息的习惯。手工模板不是Oh Story的固定文件协议，也不替代工作区已有的状态管理。给AI的简报可写：\n\n> 只整理截至本场的人物关系，不续写正文。列出双方目标、已确认约定、待答请求和各自知情来源，用简图与短表呈现。已有事实保留，未发生的计划另标；不要给每条关系补背叛或自动加好感。指出下一场真正需要确认的事项。\n\n当图越来越复杂，按当前剧情筛出相关人物，再回总图核跨线影响。精简视图是少显示，不是删除已发生的故事事实。",
+          "en": "Record the chapter or scene cutoff and the passage confirming a change. Update the affected line while retaining other relationships. Place secrets only beside characters who actually know them; the author’s view of the full map does not give it to the cast.\n\nUse paper, a table or a drawing tool according to how you find information. This manual template is not an Oh Story file protocol or a replacement for workspace state management. Give AI this brief:\n\n> Organise relationships through this scene without drafting prose. Show both sides’ goals, confirmed agreements, pending requests and knowledge sources in a simple map and short table. Keep established facts and label future plans separately. Add no automatic betrayal or affection increase. Identify what the next scene genuinely needs to resolve.\n\nFor a crowded map, filter to people relevant to the current plot, then check cross-line effects against the full view. Showing less does not delete story facts."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "是不是每两个人都要连线？",
+          "en": "Should every pair be connected?"
+        },
+        "a": {
+          "zh": "不用。只画影响当前故事的关系，其他事实可留人物卡；不为画满网络新增事件。",
+          "en": "No. Map relationships affecting the current story; keep other facts on character cards without inventing events to fill the network."
+        }
+      },
+      {
+        "q": {
+          "zh": "关系图能代替人物设定集吗？",
+          "en": "Can the map replace a story bible?"
+        },
+        "a": {
+          "zh": "不能。它帮助看关系条件和变化，身份、经历、能力与权威事实仍放在既定位置，并互相核对。",
+          "en": "No. It exposes relationship conditions and changes; identity, history, abilities and authoritative facts remain in their established places."
+        }
+      }
+    ],
+    "skill": {
+      "name": "story-long-write",
+      "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/SKILL.md",
+      "text": {
+        "zh": "用 /story-long-write（Codex 用 $story-long-write）只整理或规划这段人物关系，附本书设定、截至位置和实际事件。要求简图、双向目标、边界与待办，不自动建全书或续写正文，也不把手工图例当原生状态格式。",
+        "en": "Use /story-long-write, or $story-long-write in Codex, only to organise or plan these relationships, supplying settings, story cutoff and actual events. Request a map, goals on both sides, boundaries and pending decisions without starting the book or drafting prose; manual labels are not native state fields."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "关系类型、人物目标与关系线",
+          "en": "Relationship types, personal goals and relationship arcs"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/character-relations.md"
+      },
+      {
+        "label": {
+          "zh": "本书选择与事实边界优先",
+          "en": "Book choices and factual boundaries take priority"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/style-resolution.md"
+      }
+    ],
+    "related": [
+      "/oh-story/story-bible-template",
+      "/oh-story/ensemble-cast",
+      "/oh-story/character-motivation"
+    ]
   }
 ]
