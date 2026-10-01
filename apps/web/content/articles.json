@@ -4416,6 +4416,17 @@
         }
       },
       {
+        "id": "brief-explanation-option",
+        "heading": {
+          "zh": "同一规则也能用短说明，别为藏设定硬造对白",
+          "en": "The same rule with brief explanation, without forced dialogue"
+        },
+        "body": {
+          "zh": "保留闻夏、蓝晶、末班车和“片段画面声音被收取、概括与技能保留”的既定事实。下面是行动版的另一份候选，展示短说明与动作可以共存，不是追加一次缴纳：\n\n> 临川成年居民每月缴一段自选记忆，欠缴过不了公共车站闸门。被取走的是那一刻的画面与声音，不是经历的概括，也不是学会的技能。\n>\n> 闻夏的闸门屏上还显示“本月未缴”，末班车已经进站。她按提示把蓝晶贴上额角，选中母亲教她系鞋带的那一刻。屏上变成“本月已缴”，绿灯亮起，她穿过闸口，把蓝晶放回口袋。\n>\n> 鞋带在这时散开了。她蹲下重新系好，仍记得母亲教过自己，却想不起母亲当时说的那句话。\n\n两句说明提前给出“失去什么、保留什么”，读者不用误猜她会丧失系鞋带能力；动作仍把缴纳、放行和余下生活落到现场。若本书更想让读者与人物同步发现，可用前面的行动版，再按理解需要放回一句说明。选择的是本书的信息节奏，不是“出现旁白就失败”。\n\n也不用为了让两个居民念出规则，临时加一个故意不懂常识的人。确有外地人询问、家人劝选另一段记忆或工作人员解释故障时，对话才有现场理由；当前例子没有这些事件，不为换载体补进去。\n\n本文两个候选都没有写闻夏上车，也没有解释百年前战争的全部制度史。后续需要战争背景时再取用既定内容，不能因一次过闸就推断她已经赶上车。",
+          "en": "Retain Wen Xia, the crystal, the last train and the established distinction: the selected moment’s image and sound are removed; summary knowledge and skills remain. This is an alternative to the action version, not a second payment.\n\n> Adult residents of Linchuan paid one chosen memory each month. An unpaid month blocked the public-station gates. What disappeared was the moment’s image and sound, not knowledge of the experience or an acquired skill.\n>\n> Wen Xia’s gate still read “This month unpaid,” and the last train had arrived. Following the prompt, she pressed the crystal to her temple and chose the moment her mother taught her to tie her shoes. The display changed to “Paid” and the light turned green. Wen crossed the gate and returned the crystal to her pocket.\n>\n> Her lace had come loose. She knelt and tied it again. She still knew her mother had taught her, but could not recall the words spoken at that moment.\n\nThe opening explanation establishes what is lost and what remains, so readers need not guess that she loses the skill. Payment, admission and ordinary life still occur in the scene. A book favoring discovery can use the preceding action version and restore a brief explanation where comprehension needs it. The choice concerns information rhythm rather than treating narration as failure.\n\nDo not add a resident who inexplicably forgets common knowledge just to make two people recite rules. A visitor’s actual question, a relative’s attempt to influence the selected memory or a worker explaining a fault could justify dialogue. Those events are absent here and need not be invented to change the carrier.\n\nNeither version puts Wen on the train or explains the entire war-era institution. Draw on established history when later passages need it; gate admission does not prove she caught the train."
+        }
+      },
+      {
         "id": "anchors",
         "heading": {
           "zh": "删解释时别删掉读者锚点",
@@ -13373,6 +13384,17 @@
         }
       },
       {
+        "id": "complete-viewpoint-continuation",
+        "heading": {
+          "zh": "完整续接：同一错误怎样交给不同视角",
+          "en": "Complete continuation: one mistake through different viewpoints"
+        },
+        "body": {
+          "zh": "沿用上面的失谱事件。以下前两段是同一时刻的两个候选版本，择一使用；第三段演示从赵文场景明确切到沈嘉。不是把三段连续拼成一次事件。\n\n**候选一，沈嘉的第一人称：**\n\n> 赵文从蓝文件夹里抽出去年的节目单。我翻到下一页，还是节目单，昨晚写下速度记号的总谱一张也没有。\n>\n> “我可能拿错夹子了，回家找。”我把夹子合上，没再坚持总谱就在这里。\n>\n> 赵文说：“我先带大家热身。找到以后，先发第一页。”我应了一声，拿起包出了排练厅。\n\n“我”此刻已经看见拿错的证据，不能为了悬念继续假装总谱确实在柜里。赵文的安排通过她的回答出现，不直接写她心中已经原谅。\n\n**候选二，赵文的第三人称有限：**\n\n> 赵文抽出第一张纸，看见去年的赞助名单。她把夹子递给沈嘉，沈嘉连翻了两页，合上它：“我可能拿错夹子了，回家找。”\n>\n> “我先带大家热身。找到以后，先发第一页。”赵文等她应下，才转向已落座的乐手：“先不拿谱，做刚才那组热身。”\n>\n> 沈嘉拿包出去。赵文把节目单收回蓝夹子，没有把它当成能继续排练的总谱。\n\n这里的赵文听到了找谱计划，看见了离开；她仍不知道总谱实际放在哪儿，也不能替沈嘉认定事故原因。\n\n**明确换场，第三人称有限贴沈嘉：**\n\n> 回到家，沈嘉先打开昨晚放文件夹的书桌抽屉。总谱压在另一只蓝夹子里，她翻到标过速度的第一页，拍下来发给赵文：“找到了，我带回来。”\n>\n> 回复很快到了：“收到第一页，先排这一段。你路上别再换夹子。”\n>\n> 沈嘉把总谱合好放进包里，又打开包看了一次，才关上抽屉出门。\n\n这一场确实找到了总谱，也确实发送并收到回应；还没有写她抵达排练厅，更没有证明整场排练赶回原定进度。切换带来的是找谱行动和她对疏忽的处理，不要求每次换视角都揭一个更大的秘密。",
+          "en": "Use the missing-score event above. The first two passages are alternative versions of the same moment; choose one. The third demonstrates a clear scene change from Zhao Wen to Shen Jia rather than three consecutive accounts of one event.\n\n**Option one, Shen Jia in first person:**\n\n> Zhao Wen pulled last year’s program from the blue folder. I turned the next page: another program. Not one sheet carried the tempo marks I had made last night.\n>\n> “I may have taken the wrong folder. I’ll look at home.” I closed it and stopped insisting the score was here.\n>\n> “I’ll lead the warm-up,” Zhao said. “When you find it, send the first page.” I agreed, picked up my bag and left the rehearsal room.\n\nThe narrator now sees evidence of the mix-up. Concealing that recognition would manufacture suspense. Zhao’s response supplies her plan without claiming access to forgiveness in her mind.\n\n**Option two, Zhao Wen in third-person limited:**\n\n> Zhao Wen drew out the first sheet and saw last year’s sponsor list. She handed the folder to Shen Jia, who turned two pages and closed it. “I may have taken the wrong folder. I’ll look at home.”\n>\n> “I’ll lead the warm-up. When you find it, send the first page.” Once Shen agreed, Zhao turned to the seated musicians. “No scores yet. The warm-up we just did.”\n>\n> Shen took her bag and left. Zhao returned the programs to the blue folder rather than treating them as a score they could rehearse from.\n\nZhao hears the search plan and sees the departure. She still does not know where the score actually is or what caused the mix-up.\n\n**Clear scene change, third-person limited close to Shen Jia:**\n\n> At home, Shen opened the desk drawer where she had left the folders the previous evening. The score lay inside another blue folder. She turned to the first page with her tempo marks, photographed it and sent it to Zhao. “Found it. I’m bringing it back.”\n>\n> The reply arrived quickly: “First page received. We’ll rehearse that section. Don’t switch folders on the way.”\n>\n> Shen closed the score and put it in her bag. She opened the bag to check once more before shutting the drawer and leaving.\n\nThe score is found; the page is sent and acknowledged. Shen has not yet reached rehearsal, and the full session has not regained its schedule. The new view contributes her search and response to the mistake without requiring every switch to reveal a larger secret."
+        }
+      },
+      {
         "id": "switch",
         "heading": {
           "zh": "有限视角切换的三个检查",
@@ -21868,8 +21890,8 @@
       "en": "Connect a character’s past to a present choice, then decide what the reader needs now. Includes an original scene, a reveal plan and revision checks."
     },
     "answer": {
-      "zh": "先写人物今天必须作出的选择，再找出让这个选择变难的一段过去。人物卡可以记完整经历，正文只放读者理解当下行动所需的部分；其余等到新压力出现时再揭示。背景的作用是改变人物怎么做事，而不是替他列一份履历。",
-      "en": "Start with a choice the character must make today, then identify a past experience that makes it difficult. Keep the full history in your character notes; reveal only what readers need to understand the present action. Save the rest for a pressure that makes it matter."
+      "zh": "先分清人物完整经历和正文此刻需要的背景。可以从今天的选择、习惯、关系或人物正在感受的地方生活反查过去，再决定用短说明、对白还是回忆。背景不只是让选择变难，也能解释技能、兴趣和已经建立的信任；不要把每个人都压成一段创伤履历。",
+      "en": "Separate the full character history from what the passage needs now. Work back from a present choice, habit, relationship or experience of a place, then choose brief explanation, dialogue or a flashback. History can explain skills, interests and established trust as well as difficulty; it need not reduce every character to a wound."
     },
     "sections": [
       {
@@ -21879,8 +21901,8 @@
           "en": "Separate your character history from its use in the story"
         },
         "body": {
-          "zh": "Oh Story 的角色方法把经历分成过去、现在和未来。写背景时，可以把这三项连起来：过去发生了什么，留下哪种习惯；现在遇到什么事，这种习惯有什么帮助和代价；未来哪次选择会检验它。\n\n| 项目 | 记录 |\n|---|---|\n| 过去 | 原创人物：社区修车师傅罗宁: 年轻时答应替朋友检修刹车，却因赶工漏查，朋友摔伤; 正文用途: 解释他为什么不肯接受“先骑走，明天再修” |\n| 现在 | 原创人物：社区修车师傅罗宁: 他必须在交租前完成大客户订单，但一位学生来修失灵的刹车; 正文用途: 让责任与生计真正冲突 |\n| 未来 | 原创人物：社区修车师傅罗宁: 订单来不及全部完成，他要主动告知客户并承担损失; 正文用途: 检验他能否用诚实处理责任，而非靠独自硬扛 |\n\n朋友的姓名、当年的学校和每次争执可以记在作者笔记里。若它们不影响当前选择，不必在人物第一次出场时一起交代。",
-          "en": "Oh Story’s character method connects past, present and future. Record the event, the habit it left, the help and cost of that habit today, and a later choice that tests it.\n\n| Item | Record |\n|---|---|\n| Past | Original character: Luo Ning, a bicycle mechanic: He rushed a friend’s brake repair and missed a fault; the friend was injured; Story use: Explains his refusal to let someone ride an unsafe bike |\n| Present | Original character: Luo Ning, a bicycle mechanic: A large order must be finished before rent is due; a student arrives with failed brakes; Story use: Puts responsibility in conflict with income |\n| Future | Original character: Luo Ning, a bicycle mechanic: He must tell the customer he cannot finish every bike on time and accept the loss; Story use: Tests whether he can take responsibility honestly rather than shoulder everything alone |\n\nThe friend’s school and every old argument can stay in your notes. They need not arrive with the character’s first appearance."
+          "zh": "Oh Story 的角色方法把经历分成过去、现在和未来。写背景时，可以把这三项连起来：过去发生了什么，留下哪种习惯；现在遇到什么事，这种习惯有什么帮助和代价；未来哪次选择会检验它。\n\n| 项目 | 记录 |\n|---|---|\n| 过去 | 原创人物：社区修车师傅罗宁: 年轻时答应替朋友检修刹车，却因赶工漏查，朋友摔伤; 正文用途: 解释他为什么不肯接受“先骑走，明天再修” |\n| 现在 | 原创人物：社区修车师傅罗宁: 他必须在交租前完成大客户订单，但一位学生来修失灵的刹车; 正文用途: 让责任与生计真正冲突 |\n| 未来 | 原创人物：社区修车师傅罗宁: 订单来不及全部完成，他要主动告知客户并承担损失; 正文用途: 检验他能否用诚实处理责任，而非靠独自硬扛 |\n\n朋友的姓名、当年的学校和每次争执可以记在作者笔记里。若它们不影响当前选择，不必在人物第一次出场时一起交代。\n\n“过去—现在—未来”帮助整理成因、当下关系和后续作用，是作者规划方式，不是要求三段都进正文。学徒时练出的耐心、一起完成过的普通工作、持续的兴趣也能留下习惯；本例选事故来解释刹车检查，不因此要求其他习惯也来自同一事故。",
+          "en": "Oh Story’s character method connects past, present and future. Record the event, the habit it left, the help and cost of that habit today, and a later choice that tests it.\n\n| Item | Record |\n|---|---|\n| Past | Original character: Luo Ning, a bicycle mechanic: He rushed a friend’s brake repair and missed a fault; the friend was injured; Story use: Explains his refusal to let someone ride an unsafe bike |\n| Present | Original character: Luo Ning, a bicycle mechanic: A large order must be finished before rent is due; a student arrives with failed brakes; Story use: Puts responsibility in conflict with income |\n| Future | Original character: Luo Ning, a bicycle mechanic: He must tell the customer he cannot finish every bike on time and accept the loss; Story use: Tests whether he can take responsibility honestly rather than shoulder everything alone |\n\nThe friend’s school and every old argument can stay in your notes. They need not arrive with the character’s first appearance.\n\nPast, present and future organize causes, current relationships and later use in the writer’s plan; all three need not appear in the passage. Apprenticeship, ordinary work done together and lasting interests also shape habits. The accident explains this brake check without owning every other trait."
         }
       },
       {
@@ -21892,6 +21914,17 @@
         "body": {
           "zh": "下面是为本文设计的虚构片段。\n\n**背景先行：**\n\n> 罗宁曾经因为疏忽害朋友受伤。从那以后，他对每辆自行车都格外认真，哪怕损失收入也不愿冒险。\n\n这段信息明确，但如果接着再讲事故经过，眼前的订单就会停下来。可以先让旧经历作用于当前行动：\n\n> 学生把五块钱放在台上。“能骑回家就行，明天再修。”\n> 罗宁转了半圈前轮，捏住刹把，轮子还在走。他把钥匙留在台上。\n> “别骑这辆回去。要留店修吗？钱先拿回去。”\n> 学生说自己可以走回家，把钥匙推向他：“那明天我来取。”罗宁这才把钥匙放进标着学生姓名的暂存袋。\n> 手机又响起来，大客户问最后六辆车装好了没有。罗宁没接，先往学生车的刹车线上套了一枚红签。\n\n学生抱怨他小题大做时，可以用一句具体背景补足理解：“上回有人这么说，我就让他骑走了。”事故详情留到学生追问或旧友真正出场时。并非任何背景都必须藏起来；若读者已经无法理解人物在怕什么，直接交代必要事实比持续卖关子更好。\n\n罗宁没接客户电话只是这段的停点，不证明客户已经同意延期。若继续写表中的未来检验，可以让他回电说明剩余六辆的进度，客户实际接受四辆先交、两辆延期；本例再登记双方已约定的扣款，而不是用“他负责了”跳过对方回应。钥匙暂存和明天取车的约定也不证明修理已经完成。",
           "en": "This fictional passage is original to the article.\n\n**History first:**\n\n> Luo Ning once injured a friend through a careless repair. Since then, he inspected every bike thoroughly, even when it cost him money.\n\nThe information is clear, but a full accident account here would stop the order in progress. Let the history work through an action first:\n\n> The student put a small bill on the bench. “Just enough to get home. You can fix it tomorrow.”\n> Luo Ning spun the front wheel and squeezed the brake. The wheel kept turning. He left the bike key on the bench.\n> “Don’t ride this one home. Want to leave it for repair? Keep the money.”\n> The student said he could walk home and pushed the key over. “I’ll collect it tomorrow.” Only then did Luo place the key in a custody bag marked with the student’s name.\n> His phone rang again: the customer wanted the last six bikes. He let it ring and tied a red tag to the student’s brake cable.\n\nWhen the student protests, one line may supply enough history: “The last time someone said that, I let him ride away.” Save the fuller account for a question or encounter that needs it. If readers cannot understand what he fears, give them the necessary fact plainly rather than prolonging a mystery.\n\nLeaving the customer’s call unanswered is the passage’s stopping point, not agreement to a delay. To develop the planned future test, have Luo call back with the six-bike status, the customer actually accept four first and two later, and the story record any agreed deduction. “He took responsibility” cannot replace that reply. Key custody and a collection plan likewise do not establish a completed repair."
+        }
+      },
+      {
+        "id": "complete-follow-through",
+        "heading": {
+          "zh": "把后续选择写出来：客户是否真的接受延期",
+          "en": "Write the later choice: does the customer accept the delay?"
+        },
+        "body": {
+          "zh": "沿用罗宁留修学生车后的场景。下面把原表中的未来检验展开成一个候选续段：最后六辆客户车中四辆装好，两辆仍待完成；延期扣款在这段交流中才由双方明确约定。它不是上段“没接电话”自动产生的结果。\n\n> 罗宁把学生车的红签挂好，拨回客户电话：“最后六辆，现在装好了四辆。另两辆今天交不了，能改到明天下午吗？”\n>\n> “我今天就要用。”客户说。\n>\n> 罗宁没有许诺“马上全交”。“四辆今天按原时间送到。剩下两辆如果你同意等，我明天下午三点交；延期的两辆，每辆从这次尾款里扣十块。”\n>\n> 客户停了一会儿：“四辆先送。两辆明天三点，扣二十，写到交车单上。”\n>\n> 罗宁在单子上写下四辆今天交、两辆明日三点交，把二十元扣款也写上，拍给客户。对方回复“按这个”，他才把这张单子夹在待交四辆车的标记旁。\n\n旧事故影响了他不肯让学生骑走，也让他这次选择直说实际进度。过去解释选择；对方的需求、拒绝和新约定仍有自己的分量，不能只写一句“客户理解了他”。\n\n这段完成的是双方确认交车安排和扣款，还没有完成四辆送达、另外两辆修完或交租。是否获得客户长期信任，要看后面是否履约；不靠一次坦白立即换全部认可。原场景的学生车也仍处于留修状态，不被这通电话顺便修好。",
+          "en": "Continue after Luo Ning accepts the student’s bike. This candidate develops the future test in the original table: four of the customer’s last six bikes are assembled and two remain unfinished. The deduction becomes an actual agreement in this conversation, not a consequence automatically produced by ignoring the earlier call.\n\n> Luo tied the red tag to the student’s bike and called the customer back. “Four of the last six are assembled. I can’t deliver the other two today. Could they come tomorrow afternoon?”\n>\n> “I need them today,” the customer said.\n>\n> Luo did not promise immediate completion. “The four will arrive at the original time. If you can wait for the other two, I’ll deliver them at three tomorrow and deduct ten yuan per delayed bike from this payment.”\n>\n> After a pause: “Send the four first. Two tomorrow at three, twenty deducted. Put it on the delivery sheet.”\n>\n> Luo wrote today’s four, tomorrow’s two and the twenty-yuan deduction on the sheet and sent a photo. Only after the customer replied “Agreed” did he place it with the four bikes marked for delivery.\n\nThe old accident affects both his refusal to let the student ride and his refusal to hide the order’s status. History explains a choice while the customer retains a need, objection and actual agreement. “The customer understood him” would skip that exchange.\n\nThe arrangement and deduction are confirmed. The four bikes have not yet arrived, the other two are not finished and rent has not been paid. Long-term trust depends on later delivery rather than being awarded for one admission. The student’s bike remains awaiting repair."
         }
       },
       {
@@ -21961,6 +21994,13 @@
           "en": "Exposition and narrative choices"
         },
         "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/style-craft.md"
+      },
+      {
+        "label": {
+          "zh": "背景表达服从本书文风",
+          "en": "Backstory expression follows the book"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/style-resolution.md"
       }
     ],
     "related": [
