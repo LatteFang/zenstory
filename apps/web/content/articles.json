@@ -26040,8 +26040,8 @@
           "en": "Test whether the character remembers opposite histories"
         },
         "body": {
-          "zh": "试玩至少比较一条守约路径与一条违约路径：角色有没有不同反应，可用行动是否一致地改变，结局能不能指出具体原因。再检查未作过承诺的路径，不能凭空出现“你又失约了”。\n\n如果送同一种礼物可以覆盖多数真实局面，先查它为何通吃：是不是所有问题都只读总分，没读事实？如果数字变化玩家看不懂，补人物回应或世界反馈，不必把整套变量摊到界面上。\n\n平衡与人物魅力需要结合真实试玩判断。机器可以发现门槛不可达或状态串线，不能证明所有玩家都觉得关系自然。优先修改失败节点，不因一条反馈重写所有角色。",
-          "en": "Compare a kept-promise path with a broken one: do responses differ, do available actions change consistently, and can the ending identify the cause? Add a path with no promise so it cannot accuse the player of breaking one.\n\nIf one repeated gift solves most situations, check whether every problem reads only a total and ignores facts. If changes are unclear, add character or world feedback without exposing every variable.\n\nBalance and character appeal require actual play. Automated checks can expose unreachable thresholds or leaked states, not prove universal naturalness. Repair the failed node before rewriting every character."
+          "zh": "试玩至少比较一条守约路径与一条违约路径：角色有没有不同反应，可用行动是否一致地改变，结局能不能指出具体原因。再检查未作过承诺的路径，不能凭空出现“你又失约了”。\n\n如果送同一种礼物可以覆盖多数真实局面，先查它为何通吃：是不是所有问题都只读总分，没读事实？如果数字变化玩家看不懂，补人物回应或世界反馈，不必把整套变量摊到界面上。\n\n平衡与人物魅力需要结合真实试玩判断。机器可以发现门槛不可达或状态串线，不能证明所有玩家都觉得关系自然。优先修改失败节点，不因一条反馈重写所有角色。\n\n**完整路径：3分不能替岑青作决定**\n\n纸面例初态：熟悉度1，没有公开承诺，作品仍由岑青决定。玩家持有供协作查看的方案副本，这不授予公开权。两项独立协作是搬材料、整理工具，每项完成的首次各加1；重复点击同一项不再加分。共同修复入口要求熟悉度3且没有未处理的公开违约，进入后仍需实际开工。\n\n1. **守约路径。**首次公开请求到来时，玩家对岑青说：“发布前先给你看。”她回答：“草图也先问我。”承诺成立。两项协作实际完成，熟悉度1＋1＋1＝3。下一次展览方要素材，玩家选“先把请求给岑青看”，没有先发布。她说：“可以一起修这件。草图先给你看，别发出去。”玩家获私阅草图，公共发布许可仍没有；共同修复入口可用，但尚未开始工作。这次回应读取了守约与协作，不靠旁白说好感涨了。\n2. **违约路径，同样完成两项协作。**先作相同承诺，完成两项协作后，未经询问公开方案；事件记录这次违约。岑青实际看到展览页上的这一版，认出未经她确认的方案，才提出异议。熟悉度仍3，她说：“你说过先给我看。以后别代我发。”玩家选“我再搬一次材料”，她答：“材料不是这件事的解释。”已完成协作不再加分，违约和撤回代发权限仍在，共同修复入口不因数字够而开启。若剧情允许修复关系，另写更正、解释和她的选择，本文不自动记成原谅。\n3. **无承诺反例。**从干净初态完成两项协作，但从未答应代发。玩家直接问：“下次展览要不要公开这份？”岑青回答：“先把要发的版本给我看。”没有凭空出现“你又失约”；这只是待定请求，既没公开、也没授予代发许可。没有公开违约，数值达到3时共同修复入口可用，发布仍要单独决定。\n\n三条路径只用各自实际历史，不能在无承诺路径读到另一条违约。选择、回应、权限和未完成事项都要同时核；这里只说明规则与对白安排，没有冒充已经试玩过的游戏或证实角色魅力。",
+          "en": "Compare a kept-promise path with a broken one: do responses differ, do available actions change consistently, and can the ending identify the cause? Add a path with no promise so it cannot accuse the player of breaking one.\n\nIf one repeated gift solves most situations, check whether every problem reads only a total and ignores facts. If changes are unclear, add character or world feedback without exposing every variable.\n\nBalance and character appeal require actual play. Automated checks can expose unreachable thresholds or leaked states, not prove universal naturalness. Repair the failed node before rewriting every character.\n\n**Complete paths: a score of three cannot decide for Cen**\n\nPaper starting state: familiarity one, no publication promise, and Cen controls her work. The player holds a plan copy for collaboration, which grants no publication authority. The distinct collaborations are moving materials and sorting tools. Each adds one only upon its first completion; repeat clicks add nothing. Shared repair requires familiarity three and no unresolved publication breach, and opening the activity is not starting the work.\n\n1. **Kept-promise path:** at the first publication request, the player tells Cen, “I’ll show you before anything goes out.” She replies, “Ask about sketches too.” The promise is made. Both collaborations are actually completed: 1+1+1 = 3. When the exhibition next requests material, the player selects “Show Cen the request first,” without publishing. She says, “We can repair this together. You can see the sketch first. Don’t publish it.” Private viewing is granted; publication is not. Shared repair is available but has not begun. The response reads conduct and collaboration instead of merely announcing a higher affinity.\n2. **Breach path, with the same two collaborations:** make that promise, finish both collaborations, then publish the plan without asking. The event records the breach. Cen actually sees this version on the exhibition page and recognizes the plan she did not approve, then objects. Familiarity remains three. She says, “You said I would see it first. Don’t post for me again.” The player selects “Move the materials once more.” She replies, “Materials don’t explain this.” Repeating completed collaboration adds no score. The breach and withdrawn representation remain; the shared-repair gate stays closed despite sufficient familiarity. If the story permits repair, write correction, explanation and her decision separately, without automatic forgiveness.\n3. **No-promise counterexample:** complete both collaborations from a clean start without promising to publish for her. Ask, “Do you want this included in the next exhibition?” Cen replies, “Show me the version you want to send first.” No invented “You broke your promise again” appears. The request is pending, with neither publication nor representation permission granted. Without a publication breach and at familiarity three, shared repair is available; publication remains a separate decision.\n\nEach path reads only its own occurred history. The no-promise path cannot import another path’s breach. Check choices, replies, authority and unfinished work together. These are rule and dialogue arrangements, not a claim of an executed playtest or proven character appeal."
         }
       }
     ],
@@ -27965,7 +27965,7 @@
       "en"
     ],
     "published_on": "2026-09-29",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "zh": "游戏随机性怎么设计：运气不能替玩家作决定",
       "en": "How to Design Randomness Around Player Decisions"
@@ -28001,8 +28001,8 @@
           "en": "Compare choices in two real situations"
         },
         "body": {
-          "zh": "| 局面 | 玩家能看到 | 方案甲 | 方案乙 |\n|---|---|---|---|\n| 风弱、乘客赶时间 | 风旗平缓，燃料足够 | 直接航线更快 | 遮风路线较慢 |\n| 风强、燃料偏低 | 风旗绷紧，燃料不足以硬顶 | 直接航线不适合当前预算 | 遮风路线更稳，但需要解释延迟 |\n\n本例不提供跨游戏通用概率或倍率。先用项目自己的规则演算两条路线，确认局面变化确实改变合适的选择。\n\n出发后也可有新信息，但要留合理回应空间。若玩家直到失败才知道随机规则，且下次无法调整，就只有不可理解的惩罚。",
-          "en": "| Situation | Visible information | Direct route | Sheltered route |\n|---|---|---|---|\n| Weak wind, urgent passenger | Calm flag; enough fuel | Faster | Slower |\n| Strong wind, little fuel | Tight flag; insufficient fuel for resistance | Unsuitable for this budget | Safer but requires explaining delay |\n\nThese are example rules, not universal odds or multipliers. Calculate both routes using the project’s actual values and confirm that the situation changes the suitable choice.\n\nNew information after departure can work if players retain a response. A rule discovered only through failure, with no way to adapt, creates unintelligible punishment."
+          "zh": "| 局面 | 路线比较 |\n|---|---|\n| 风弱、乘客赶时间 | 可见：风旗平缓，燃料足够；直航：直接航线更快；遮风：遮风路线较慢 |\n| 风强、燃料偏低 | 可见：风旗绷紧，燃料不足以硬顶；直航：直接航线不适合当前预算；遮风：遮风路线更稳，但需要解释延迟 |\n\n本例不提供跨游戏通用概率或倍率。先用项目自己的规则演算两条路线，确认局面变化确实改变合适的选择。\n\n出发后也可有新信息，但要留合理回应空间。若玩家直到失败才知道随机规则，且下次无法调整，就只有不可理解的惩罚。\n\n**完整演算：相同任务，两种风况**\n\n这是沿用小渡船设定的纸面规则例，没有运行真实游戏。出发时间为18:00，乘客与家人约在18:12见面。风况在出发前已由风旗显示，本次航程不另抽一次风；所有用量和耗时都是本例选定规则。\n\n- **弱风初态：燃料6。**直航耗2、用10分钟；遮风耗3、用15分钟。玩家先看到风旗与两条路线预算，选择直航。结算燃料6−2＝4，抵达时间18:10；乘客下船，能在约定前到达岸边。这里没替他写已经见到家人。\n- **强风初态：燃料4。**直航需要5、用12分钟，当前燃料不够；遮风耗3、用15分钟。玩家选择“走遮风路线，预计18:15到”，乘客答“明白，我会晚到”，没有因此改写家人的约定。结算4−3＝1，18:15到岸；人已经送达，但赶上18:12的目标没有完成，后续可以处理迟到的关系影响。\n- **同一强风初态的反例：硬选直航。**出发前检查不满足5燃料，拒绝并显示“现有4，需要5；可改选遮风”。船仍在原岸，时间仍18:00、燃料仍4。不能先扣5变成负数，也不能抽出额外燃料让错误选择偷偷成功。\n\n弱风直航满足赶时间，强风则必须重新看预算；遮风没有被写成任何局面都最优。若项目希望强风下也能准时，需要先修改来源、路线或任务安排并承认是新设计，不能只在结算句里把15分钟变成12分钟。\n\n真正实现后，以同一初态和同一风况比较策略，再换代表风况。可复现的演算只检查规则与反馈；玩家是否在乎迟到、选择是否有趣，仍要观察实际候选中的反应。",
+          "en": "| Situation | Route comparison |\n|---|---|\n| Weak wind, urgent passenger | Visible: Calm flag; enough fuel. Direct: Faster. Sheltered: Slower |\n| Strong wind, little fuel | Visible: Tight flag; insufficient fuel for resistance. Direct: Unsuitable for this budget. Sheltered: Safer but requires explaining delay |\n\nThese are example rules, not universal odds or multipliers. Calculate both routes using the project’s actual values and confirm that the situation changes the suitable choice.\n\nNew information after departure can work if players retain a response. A rule discovered only through failure, with no way to adapt, creates unintelligible punishment.\n\n**Complete calculation: one task, two wind conditions**\n\nThis is a paper rule example using the established ferry, not a run of a real game. Departure is at 18:00; the passenger has arranged to meet family at 18:12. The flag reveals wind before departure and this crossing does not draw it again. Costs and durations are chosen example rules.\n\n- **Weak wind, six fuel initially:** direct costs two and takes ten minutes; sheltered costs three and takes fifteen. After seeing the flag and both budgets, the player chooses direct. Fuel becomes 6−2 = 4; arrival is 18:10. The passenger disembarks before the appointment, but a meeting with family has not been shown.\n- **Strong wind, four fuel initially:** direct requires five and takes twelve minutes; sheltered costs three and takes fifteen. The player selects “Take the sheltered route; arrive about 18:15.” The passenger replies, “Understood. I’ll be late.” This does not change the family’s appointment. Fuel becomes 4−3 = 1 and arrival is 18:15. Transport succeeds, but the 18:12 target does not; later scenes may respond to that lateness.\n- **Counterexample from the same strong-wind start:** force the direct route. A pre-departure check refuses it: “Four fuel available; five needed. You can choose sheltered.” The ferry stays at its original bank, time remains 18:00 and fuel four. Do not deduct into a negative balance or randomly supply fuel to make the invalid choice succeed.\n\nDirect meets the urgency under weak wind; strong wind requires a fresh budget judgment. Sheltered is not universally best. If the project wants an on-time strong-wind option, revise supply, route or task arrangement as a new design rather than silently making fifteen minutes twelve in the result.\n\nIn an implementation, compare strategies from the same initial state and wind, then vary representative conditions. Reproducible calculation checks rules and feedback. Whether players care about lateness or enjoy the choice requires observation in the actual candidate."
         }
       },
       {
@@ -49914,6 +49914,131 @@
       "/oh-story/narrative-point-of-view",
       "/oh-story/fix-inconsistent-ai-novel-prose-style",
       "/oh-story/stop-ai-fiction-from-revealing-future-plot",
+      "/oh-story"
+    ]
+  },
+  {
+    "owner": "oh-story",
+    "slug": "write-a-dual-male-lead-novel",
+    "topic": "genres",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "双男主长篇怎么写：外部目标与关系一起推进",
+      "en": "How to Write a Dual Male Lead Novel"
+    },
+    "seo_title": {
+      "zh": "双男主长篇怎么写｜ZenStory",
+      "en": "Write a Dual Male Lead Novel | ZenStory"
+    },
+    "description": {
+      "zh": "先定两人的目标差异与外部任务，再写合作、误判和公开选择。附戏团名单纠错场面，关系变化有行动依据，不靠固定性格或每章撒糖。",
+      "en": "Connect two distinct goals to an external plot. A theater-credit scene shows cooperation, public choices and costs without fixed roles or affection quotas."
+    },
+    "answer": {
+      "zh": "先让两人各自有想完成和不愿牺牲的事，再用同一外部任务逼出合作、取舍与关系变化。主线给相处一个必须发生的理由，关系又改变解决任务的方法。不要只给两人分配冷与热，也不要把一次维护直接写成所有矛盾已经解决。",
+      "en": "Give each lead a goal and something he will not sacrifice, then use a shared external task to produce cooperation, trade-offs and relationship change. The plot makes interaction necessary; the relationship changes how the task is handled. Opposite temperaments alone are insufficient, and one act of support does not settle every conflict."
+    },
+    "sections": [
+      {
+        "id": "two-goals-one-pressure",
+        "heading": {
+          "zh": "先写两个人要什么，再写他们为何同处",
+          "en": "Write two goals and a reason they must interact"
+        },
+        "body": {
+          "zh": "Oh Story的长篇双男主题材卡把外部压力、不同目标与互相误读连在一起。关系不只是插在主线间隙的糖，主线也不能把两人的反应吞掉。\n\n原创戏团故事：余澈负责今晚入场安排，想按时开门，不愿向观众作无法兑现的承诺；沈弈负责演出名单，想改正导师被漏记的贡献，不愿把别人的劳动算到自己名下。他们需要交同一份最终名单，但余澈担心重做耽误入场，沈弈担心按错稿印出后更难纠正。\n\n| 人物 | 本场真正的取舍 |\n|---|---|\n| 余澈 | 接受核实与通知成本，还是把争议留到散场以后。 |\n| 沈弈 | 提交可核对记录，还是只要求对方相信自己；改正名字后仍要承担排版。 |\n\n两人都不是来替对方完成全部工作的工具。性格差异可以从证据观、公开范围和处理时间压力的方法显现，不必固定成一个永远冷、另一个永远闹。",
+          "en": "Oh Story’s long-form dual-lead card connects external pressure, different goals and misreading. Affection need not be a decoration between plot beats, and the external plot must leave room for each man’s response.\n\nOriginal theater story: Yu Che handles tonight’s admission. He wants doors opened on time and will not promise spectators something the team cannot deliver. Shen Yi handles credits. He wants his mentor’s omitted contribution corrected and will not accept someone else’s work under his name. They must deliver one final list. Yu fears redoing it will delay admission; Shen fears a wrong printed version will be harder to correct.\n\n| Lead | This scene’s actual trade-off |\n|---|---|\n| Yu | Accept verification and notification costs, or defer the dispute until after the show. |\n| Shen | Supply checkable records rather than demand belief; still handle layout after correction. |\n\nNeither man exists to do all the other’s work. Differences can emerge through evidence, disclosure and handling time pressure, rather than fixed cold-versus-rowdy personalities."
+        }
+      },
+      {
+        "id": "carry-both-lines",
+        "heading": {
+          "zh": "同一件事要改变任务，也改变关系",
+          "en": "Let one event change the task and the relationship"
+        },
+        "body": {
+          "zh": "写大纲时，先说明一次事件之后任务到了哪里，两人因此怎样重新判断对方。关系变化可以是开始愿意合作、明确拒绝一种控制、撤回误判或在公开场合支持一个选择，不必每章都有告白。\n\n| 阶段 | 外部事件与关系承接 |\n|---|---|\n| 前期 | 同交名单时暴露分歧；余澈原以为沈弈在抢功，核对记录后修正这个判断。 |\n| 中期 | 两人合作补遗漏，却仍对能否公开私人材料有分歧；拒绝越界后改用获准记录，合作没有靠牺牲一人的底线维持。 |\n| 后期 | 正式场合按核实贡献分署；余澈承担通知，沈弈承担改稿，彼此维护来自真实选择。 |\n\n这是本例的长篇方向，不是已经写完的三段剧情。正式开写只交当前章的发生、禁止发生和停点，不让AI一次把后面的公开选择、亲密关系与结局全写完。\n\n题材卡建议主线与关系都保持变化，但不把它变成每章配额。按本书细纲和文风安排缓冲、独处和日常；过去发生的帮助要被后来回应，而不是用新增危机强行凑两个“变化”。",
+          "en": "When outlining, state where an event leaves the task and how the leads reassess each other. Change can mean willingness to cooperate, rejecting control, withdrawing a mistaken judgment or publicly supporting a choice. A confession every chapter is unnecessary.\n\n| Phase | Plot and relationship |\n|---|---|\n| Early | Joint credit delivery exposes disagreement. Yu initially reads Shen as claiming credit; checking the record revises that judgment. |\n| Middle | Cooperation corrects omissions but disagreement remains over private material. Refusing unauthorized disclosure leads them to permitted records instead of preserving cooperation by sacrificing a boundary. |\n| Late | Verified contributions receive the proper credits in a formal setting. Yu handles notification and Shen revision; mutual support follows actual choices. |\n\nThis is the example’s long-form direction, not three completed stretches of story. Drafting receives only the current chapter’s required events, prohibitions and stopping point, rather than writing later public support, intimacy and the ending at once.\n\nThe card recommends movement in plot and relationship without becoming a per-chapter quota. Use this book’s outline and style for recovery, solitude and everyday scenes. Earlier help should receive later responses, rather than inventing crises to fill two change boxes."
+        }
+      },
+      {
+        "id": "complete-theater-credit-scene",
+        "heading": {
+          "zh": "完整场面：先核名单，再承担更正",
+          "en": "Complete scene: check credits and take responsibility for correction"
+        },
+        "body": {
+          "zh": "原创本章设定：开门前还有二十分钟，名单尚未印发，桌上旧稿仍是内部文件。导师确有贡献，沈弈带来的是本项目先前已经确认的记录；本场允许观众知道这些记录，但不揭示中期的私人材料。导演有权批准入场安排，两名主角不能自行宣布无限延后。\n\n> 余澈把名单推到沈弈面前：“这一版能交吗？”\n>\n> 沈弈没签。他在自己名字旁画了一条线，把那页排练记录压在名单边上。\n>\n> “这一段是谁改的，你看日期。”\n>\n> 余澈对照两份记录，指尖停在导师签名下：“是我看错了。我去叫导演确认。”\n>\n> 沈弈把笔拿起来：“确认后我改版。别说已经印了，它还在这儿。”\n>\n> 导演看完记录，划去错列的署名，补上导师贡献，并批准入场推迟十分钟。\n>\n> 余澈拿起手机，把更正后的入场时间发给门口同事：“通知我来。名单是我们这边没核全，别让观众去找他。”\n>\n> 门口同事回复：“收到，按新时间通知。”\n>\n> 沈弈看了他一眼，把更正稿放回键盘旁：“那我把这版交清楚。改完一起核，不要替我说已经好了。”\n>\n> “好。”余澈在旧稿上写了“作废”，收进文件夹。沈弈开始改排版。\n\n这场已经完成记录核对、导演更正，门口同事收到新时间；同事通知观众、排版、印发和演出仍未完成。两人从互相疑虑走到具体分工，但沈弈仍要求不替他宣布完成，余澈也没有得到包办他工作的许可。\n\n关系推进不靠旁白宣布“从此信任”。余澈承认误判并承担通知，沈弈接受这项分工但保留自己的边界。下一章继承新时间、更正署名和未完成的排版，不把旧错误复活，也不把此处直接接成全部和解或恋爱确认。",
+          "en": "Original chapter setup: doors are due to open in twenty minutes. Credits have not been printed or distributed; the old draft is internal. The mentor really contributed, and Shen brings records already confirmed in this fictional project. Readers may see these records here, but not the middle arc’s private material. The director approves admission changes; neither lead can announce an unlimited delay.\n\n> Yu pushed the list toward Shen. “Can this version go?”\n>\n> Shen did not sign. He marked the entry beside his own name and placed a rehearsal record against the list.\n>\n> “Check the date. Who revised this passage?”\n>\n> Yu compared the records. His finger stopped beneath the mentor’s signature. “I read it wrong. I’ll ask the director to confirm.”\n>\n> Shen picked up the pen. “After confirmation, I revise the layout. Don’t say it’s printed. It’s still here.”\n>\n> The director checked the record, removed the mistaken credit, added the mentor’s contribution, and approved opening ten minutes later.\n>\n> Yu sent the revised admission time to the colleague at the entrance. “I’ll handle the notice. We failed to check the list. Don’t send spectators to him.”\n>\n> The entrance colleague replied, “Received. I’ll notify people using the new time.”\n>\n> Shen glanced at him and set the corrected draft by the keyboard. “Then I deliver this version properly. We check together when it’s revised. Don’t say it’s finished for me.”\n>\n> “Agreed.” Yu marked the old draft “void” and filed it away. Shen began the layout revision.\n\nVerification and the director’s correction are complete, and the entrance colleague has received the new time. Audience notification, layout, printing and the performance are not complete. The men move from suspicion to concrete cooperation, but Shen still refuses completion claims made for him; Yu has no permission to manage all his work.\n\nThe relationship advances without narration declaring permanent trust. Yu admits his mistaken reading and takes the notification cost. Shen accepts that division while keeping a boundary. The next chapter inherits the new time, corrected credit and unfinished layout. Do not revive the old error or jump to complete reconciliation or confirmed romance."
+        }
+      },
+      {
+        "id": "keep-their-own-choices",
+        "heading": {
+          "zh": "检查两人是否都还有选择",
+          "en": "Check that both leads retain choices"
+        },
+        "body": {
+          "zh": "试着删去其中一人：另一人是否仍能完成相同故事，只少了几句暧昧？如果是，补独立目标、筹码或必须由他决定的事，不用增加一次牺牲来证明重要。\n\n交换两人的关键台词，看它们是否还完全成立。若余澈的入场承诺、沈弈的贡献边界都消失，只剩“嘴硬但心软”，人物需要具体理由，而不是更多口头禅。保护也应保留对方决定，不把替他发言、抢他的工作当成默认甜点。\n\n长篇推进看本页；若要安排一场“嘴上立场与行动痕迹不同”的关系戏，继续看[双男主潜台词示例](/oh-story/dual-male-lead-subtext)。关系性质与亲密节奏按作者设定，不由题材卡自动决定。",
+          "en": "Remove one lead hypothetically. If the same story still works with only a few affectionate lines missing, add an independent goal, leverage or a decision that is his to make. More sacrifice is not the only way to establish importance.\n\nSwap key lines. If Yu’s admission commitments and Shen’s contribution boundary disappear into generic gruff kindness, restore concrete reasons instead of more catchphrases. Protection should preserve the other man’s decisions; speaking or working for him is not automatically affectionate.\n\nThis page covers long-form progression. For a scene whose spoken position differs from observable action, see [dual-lead subtext](/oh-story/dual-male-lead-subtext). Relationship nature and intimacy follow the author’s settings rather than being automatically determined by a genre card."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "必须一个冷一个热吗？",
+          "en": "Must one lead be cold and the other warm?"
+        },
+        "a": {
+          "zh": "不必。用目标、证据观、公开范围和压力下的选择区分他们；相似性格也能在同一件事上作不同决定。",
+          "en": "No. Distinguish goals, evidence, disclosure and choices under pressure. Similar temperaments can make different decisions about one event."
+        }
+      },
+      {
+        "q": {
+          "zh": "每章都要撒糖吗？",
+          "en": "Does every chapter need an affectionate beat?"
+        },
+        "a": {
+          "zh": "不设配额。让相处与主线有因果联系，日常、分歧和恢复都可以有作用；关键选择后来要得到真实回应。",
+          "en": "There is no quota. Connect interaction causally to the plot. Everyday scenes, disagreement and recovery can matter; later responses should remember key choices."
+        }
+      }
+    ],
+    "skill": {
+      "name": "story-long-write",
+      "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/SKILL.md",
+      "text": {
+        "zh": "用长篇双男主题材卡核对外部压力、目标差异与关系变化，遵守本书文风和当前章边界。",
+        "en": "Use the long-form dual-lead card to connect external pressure, differing goals and relationship movement under book style and chapter boundaries."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "长篇双男主的外部压力与关系推进",
+          "en": "External pressure and relationship progression for long-form dual leads"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/genre-prose-cards/双男主.md"
+      },
+      {
+        "label": {
+          "zh": "作者文风与事实揭示边界",
+          "en": "Author style and factual reveal boundaries"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/style-resolution.md"
+      }
+    ],
+    "related": [
+      "/oh-story/dual-male-lead-subtext",
+      "/oh-story/romance-subplot",
+      "/oh-story/character-arc",
       "/oh-story"
     ]
   }
