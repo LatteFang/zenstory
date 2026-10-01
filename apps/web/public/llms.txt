@@ -414,6 +414,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Fix Audio and Video Out of Sync After Editing](https://zenstory.ai/video-recap/fix-audio-video-sync-after-editing) — Trace desynchronization through source footage, edited picture, sound beds and export. Includes a complete original repair plan and actual tool limits.
 - [Why Subtitles Disappear After Video Export and How to Fix It](https://zenstory.ai/video-recap/fix-subtitles-missing-from-video-export) — Check the actual delivery, caption layer, burn-in setting and complete cue list. Includes a two-line repair plan that preserves adopted sound.
 - [How to Fix Distorted Video Audio: Source, Mix and Export](https://zenstory.ai/video-recap/fix-distorted-audio-in-video-export) — Locate distortion in the source, mix or delivery. Includes float-mix and master-gain calculations, followed by encoded-output measurement and listening.
+- [How to Reduce Video Export File Size Without Losing Key Content](https://zenstory.ai/video-recap/reduce-video-export-file-size) — Check bytes, duration and encoding, try the skill’s actual re-encoding controls, and review a complete paper-box tutorial plan for legibility and sound.
 
 
 ## Workbench docs

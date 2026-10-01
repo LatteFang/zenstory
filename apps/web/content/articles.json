@@ -36693,6 +36693,17 @@
         }
       },
       {
+        "id": "complete-original-sound-plan",
+        "heading": {
+          "zh": "原声示例：保留老师解释、操作声与学员回应",
+          "en": "Original-sound example: retain explanation, action sounds and reply"
+        },
+        "body": {
+          "zh": "沿用手工修补示范，选择一条具体的已采用AAC复制路线。以下十秒内容、时间和台词为本例原创，补在上面的混音或复制选择之后，没有真实文件或听审。\n\n| 输出区间 | 必须听见、看见什么 |\n|---|---|\n| 0—3秒 | 老师指着布料说“先看我做这一针”，说明完整说完。 |\n| 3—6秒 | 老师示范，画面连续看见针通过、线收紧；保留布料和线的原操作声。 |\n| 6—10秒 | 老师说“现在你试一次”，学员答“从这里开始吗”，老师答“对”；学员开始动作。 |\n\n假设这十秒已剪好、画面时长不改，视频内音频流0是已听过并采用的完整AAC声音，包含以上对白和操作声。本轮只做所选画面包装，不加音乐或旁白。实际项目先验证文件、音轨与音画区间是否满足复制条件；不符合时不把假设预填为通过。\n\n执行者明确选择`--audio-mode adopted-packet-copy`、`--audio-stream-index 0`，不带TTS或BGM配置，另出候选。复制路径不重新混音、压低、归一化或裁短；包装可以重新编码画面，复制后的音频仍要过实际包与时间核对。原片已有字幕或新包装文字，各按已经确定的视觉决定处理，不因无旁白就自动删除。\n\n最终从“先看”连续听到“对”和后面的动作，核6秒附近没有截掉老师句尾，学员回应没有被旧配音或音乐遮住。3—6秒没有说话也有示范声音，不用背景音乐填满。包匹配证明采用声音被复制，不能代替已经选中正确轨和内容听审。\n\n若后来想删掉两秒等待，重新交代画面与声音的改动范围，再形成一条新的完整声音方案；当前十秒复制候选不能直接剪成八秒还称整条原音轨没变。学员只是开始试针，不由十秒片段证明已经学会；按画面实际停点交付。",
+          "en": "Keep the hand-repair demonstration and select one concrete adopted-AAC copying route. These ten seconds, times and lines are original for this example, following the earlier mix-versus-copy decision. No file or listening approval exists here.\n\n| Time | Picture and sound |\n|---|---|\n| 0–3 seconds | Teacher indicates the cloth and fully says, “Watch this stitch first.” |\n| 3–6 seconds | Continuous needle passage and thread tightening, with original cloth and thread sounds. |\n| 6–10 seconds | “Now try once.” Student: “Start here?” Teacher: “Yes.” The student begins. |\n\nAssume the ten-second picture is already edited and unchanged, with audio ordinal 0 holding the complete, previously heard and adopted AAC of these lines and action sounds. Only chosen visual packaging changes now, with no music or narration. Verify actual files, track and intervals against copying conditions; do not prefill the assumption as a pass.\n\nChoose `--audio-mode adopted-packet-copy` and `--audio-stream-index 0` explicitly, omit TTS and BGM configuration, and return a separate candidate. Copying performs no remixing, ducking, normalization or trimming. Packaging can re-encode picture, while copied audio still needs actual packet and timing verification. Existing captions and new visual text follow declared decisions instead of being removed automatically with narration absent.\n\nHear continuously from “Watch” through “Yes” and the subsequent action. Check the teacher’s ending near six seconds and an unobscured student reply. The speech-free 3–6 interval contains demonstration sound, without requiring music. Matching packets proves copying, not selection of the intended track or human content review.\n\nIf two seconds of waiting should later go, declare picture and sound changes and create another complete audio plan. Cutting this candidate to eight seconds cannot preserve the entire ten-second adopted track unchanged. The student starts trying; the excerpt does not prove mastery. Deliver according to its visible stopping point."
+        }
+      },
+      {
         "id": "delivery",
         "heading": {
           "zh": "导出后核对处理记录和实际声音",
@@ -40011,6 +40022,17 @@
         }
       },
       {
+        "id": "complete-missing-word-plan",
+        "heading": {
+          "zh": "修复示例：灯亮时等待，灯灭后才合盖",
+          "en": "Repair example: wait for the light, then close the lid"
+        },
+        "body": {
+          "zh": "沿用“灯还亮着，先不要合盖”的原句，选择一个八秒微缩模型演示作为原创制作练习：0—4秒画面显示指示灯亮着，手停在未合的盖旁；4—6秒灯熄灭，老师原声说“灯灭了，可以合了”；6—8秒实际合盖。旁白只用原句，占0—4秒，后面保留原声。没有真实源文件或试听结论。\n\n假设定稿与`spoken_text`都是完整原句，但问题WAV听起来是“灯还亮着，先合盖”。字幕写对也不能修声音的反义。先单听该WAV确认，再看成片是否确实用到了它，记录缺的是“不要”，不把未知问题先归到压稿或混音。\n\n**重合成之前看缓存**：所引实现按文字、设置和WAV身份复用分段。同一文字与设置直接重跑，可能再次采用这份漏读WAV。执行者先保存问题音频和对应sidecar证据，再只让问题段退出缓存并重新合成；检查本轮确实生成了新候选，不清空所有正确段，也不拿旧成功元数据当新完成。\n\n给问题段启用批准稿保护，文字仍是原句。新候选必须实际听清“不要”和句尾“合盖”；若仍漏读，继续保留未通过状态。若完整声音放不进0—4秒，先回报窗口冲突，按作者决定修安排，不裁掉否定或覆盖4—6秒的老师原声。\n\n候选读全且可放后，再让合成阶段消费当前有效音频与元数据，核实际落点与字幕。正常速度从灯亮、手等待播到灯灭、老师许可和实际合盖，确认旁白没有把许可提前，老师句尾没有被切掉。记录实际听过的版本、缺字是否消失，以及完整演示中的观察。",
+          "en": "Keep the original line, “灯还亮着，先不要合盖” (“The light is still on; don’t close the lid yet”). Select an original eight-second miniature-model demonstration: at 0–4 seconds the indicator is on and a hand waits beside the open lid; at 4–6 it goes out and the teacher’s original audio says closing is now allowed; at 6–8 the lid actually closes. Narration uses only the original line at 0–4, leaving the later original speech. No source file or listening result exists here.\n\nAssume approved copy and `spoken_text` contain the whole line, but the faulty WAV omits “不要,” reversing its instruction. Correct captions cannot repair that sound. Listen to the WAV, check that the finished candidate uses it and record the missing negation rather than assuming truncation or mixing before diagnosis.\n\n**Inspect caching before regeneration:** This implementation reuses segments by text, settings and WAV identity. Rerunning unchanged input may reuse the faulty WAV. Preserve the affected audio and sidecar evidence, then invalidate only that segment and synthesize again. Confirm a new candidate was generated without clearing correct segments or treating old success metadata as current completion.\n\nEnable approved-text protection and retain the original sentence. Actually hear the negation and final word in the new candidate. Continued omission remains a failure. If the complete voice will not fit 0–4, report the window conflict and revise the arrangement by author decision; do not cut the negation or cover the teacher at 4–6.\n\nOnce complete and placeable, let assembly consume the valid current audio and metadata, checking placement and captions. Play normally from lit indicator and waiting hand through extinguished light, permission and actual closing. Narration must not move permission earlier or cut the teacher’s ending. Record the version actually heard, whether the missing word returned and observations from the full demonstration."
+        }
+      },
+      {
         "id": "local-repair",
         "heading": {
           "zh": "只修问题段，再听接点与整片",
@@ -40080,6 +40102,13 @@
           "en": "Missing files, placement, and fit"
         },
         "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/scripts/narration_audio.py"
+      },
+      {
+        "label": {
+          "zh": "原声与旁白的合成分工",
+          "en": "Assembly roles for original speech and narration"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/references/audio-modes.md"
       }
     ],
     "related": [
@@ -47010,6 +47039,137 @@
       "/novel-to-game/organize-a-story-game-interface",
       "/novel-to-game/fix-a-game-button-that-does-nothing",
       "/novel-to-game/write-clear-interactive-story-choices"
+    ]
+  },
+  {
+    "owner": "video-recap",
+    "slug": "reduce-video-export-file-size",
+    "topic": "video-recaps",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "视频导出文件太大怎么办：减小体积，保住关键画面和声音",
+      "en": "How to Reduce Video Export File Size Without Losing Key Content"
+    },
+    "seo_title": {
+      "zh": "视频导出文件太大怎么办：压缩与清晰度｜ZenStory",
+      "en": "Reduce Video Export File Size and Keep Key Details"
+    },
+    "description": {
+      "zh": "核对文件体积、时长与编码，使用真实skill的重编码设置试候选，附纸盒教程完整压缩方案与可读性复查。",
+      "en": "Check bytes, duration and encoding, try the skill’s actual re-encoding controls, and review a complete paper-box tutorial plan for legibility and sound."
+    },
+    "answer": {
+      "zh": "先确认交付上限的单位、当前文件大小和实际时长，再从清晰母版调整编码质量与速度设置。CRF只有在重新编码时生效，也不保证精确文件体积。逐版实测大小，正常速度看细字与动作、听完整声音；必要时再试缩小画面，不为上传删掉关键过程或重做已定配音。",
+      "en": "Confirm the delivery limit’s units, current bytes and duration, then adjust encoding quality and speed from a clear master. CRF applies only when re-encoding and cannot guarantee an exact size. Measure each candidate, review text and motion at normal speed, and hear the complete audio. Try downscaling when needed without deleting key steps or regenerating approved narration."
+    },
+    "sections": [
+      {
+        "id": "measure-before-compressing",
+        "heading": {
+          "zh": "先确认“大”在哪里，以及要交多大的文件",
+          "en": "Measure the file and the required delivery size"
+        },
+        "body": {
+          "zh": "本地文件传不上去，先核限制说的是大小、时长、格式还是尺寸；已经上传但播放模糊，回到[模糊导出排查](/video-recap/fix-blurry-video-export)。不能只看文件写着1080p，就断定它必须很大或一定清晰。\n\n记录当前文件字节数、实际时长、视频编码、宽高和采用的音轨。MB与MiB不同；本例自行选定上限40MiB，即41,943,040字节，不代表任何平台的当前规则。\n\n文件体积与总平均码率、时长有关，声音与容器也占空间。两分钟文件若上限40MiB，总平均码率约为2.80Mbps，这是理解容量的估算，不能全部当成视频预算，也不是CRF输入值。复杂运动、细纹理和噪点会影响质量编码的结果，复制同一个CRF到另一素材不保证同样体积。",
+          "en": "When a file will not upload, establish whether the restriction concerns bytes, duration, format or dimensions. For uploaded playback that becomes blurry, use [blurred-export diagnosis](/video-recap/fix-blurry-video-export). A 1080p filename establishes neither size nor clarity.\n\nRecord bytes, actual duration, codec, dimensions and the adopted audio track. MB and MiB differ. This example selects a 40MiB limit—41,943,040 bytes—not a current platform rule.\n\nSize relates to total average bitrate and duration, including audio and container overhead. A two-minute file capped at 40MiB allows roughly 2.80Mbps overall. That estimate is neither the full video budget nor a CRF value. Motion, texture and noise affect quality-based encoding, so another source at the same CRF need not have the same size."
+        }
+      },
+      {
+        "id": "actual-compression-controls",
+        "heading": {
+          "zh": "先核当前路径是否真的重新编码",
+          "en": "Check that the chosen path actually re-encodes"
+        },
+        "body": {
+          "zh": "所引固定版本的 video-assemble 使用x264。实际参数是OUTPUT_CRF、OUTPUT_PRESET、OUTPUT_MAX_HEIGHT与FORCE_VIDEO_REENCODE，作用依次如下：\n\n| 设置 | 在这条路径里的作用 |\n|---|---|\n| CRF | 默认18；调大通常降低体积并增加质量损失，不能指定精确MB。 |\n| 预设 | 默认veryfast；调整编码速度与压缩取舍，不改变片长。 |\n| 高度 | 默认0不加缩放；大于0只限制高度并保持比例，不提高低清细节。 |\n| 重编码 | 需要重新压制时可显式开启；视频流复制分支不会应用新CRF。 |\n\n[FFmpeg 的libx264文档](https://ffmpeg.org/ffmpeg-codecs.html#libx264_002c-libx264rgb)把CRF说明为质量模式，把preset列作编码预设。这里的变量来自仓库实现，不是所有编辑器都接受的通用参数。\n\n烧录字幕、画面处理或缩放也会使这条路径进入编码。字幕已烧进母版时，不再额外烧一遍；只缩减文件不应默认重写旁白、改剪点、换配乐或更改帧率。若声音已采用，先明确保留方式；新编码设置不能自动冻结混音。",
+          "en": "The cited video-assemble version uses x264 with OUTPUT_CRF, OUTPUT_PRESET, OUTPUT_MAX_HEIGHT and FORCE_VIDEO_REENCODE. In that order:\n\n| Setting | What it changes |\n|---|---|\n| CRF | Defaults to 18. Increasing it generally reduces size and increases loss; it specifies no exact MB. |\n| Preset | Defaults to veryfast. It trades encoding speed against compression without changing duration. |\n| Height | Defaults to 0 with no added scaling. Positive values cap height proportionally, without restoring low-resolution detail. |\n| Encode | Explicitly enables re-encoding when required. Stream copying does not apply a new CRF. |\n\n[FFmpeg’s libx264 documentation](https://ffmpeg.org/ffmpeg-codecs.html#libx264_002c-libx264rgb) describes CRF as a quality mode and preset as an encoding preset. The environment variables belong to this repository, not every editor.\n\nBurning subtitles, visual processing and scaling can also trigger encoding. Do not burn an extra copy over captions already in the master. Reducing bytes need not rewrite narration, change cuts, replace music or alter frame rate. Declare how adopted audio stays intact; new encoding settings do not automatically freeze a mix."
+        }
+      },
+      {
+        "id": "complete-size-example",
+        "heading": {
+          "zh": "压缩示例：纸盒教程变小，底扣仍能看清",
+          "en": "Compression example: a smaller tutorial with a readable bottom tab"
+        },
+        "body": {
+          "zh": "原创纸盒折叠教程长120秒，清晰母版1920×1080，假设当前导出90MiB。它完整显示展开折线、合拢盒壁、扣住底扣和放入物件后的结果，字幕已经烧进画面；AAC完整音轨已采用，不增加旁白或音乐。本例交付上限是作者选的40MiB，没有真实文件或压缩结果。\n\n先实际确认母版、字节数、时长与音轨；若并非以上条件，按实际输入改方案。选择新工作目录和输出，保留旧版本。要复用输入视频里的已采用AAC流，须先满足`adopted-packet-copy`的编码与区间条件，明确音频流序号；不满足时先解决声音方案，不静默改成新混音。\n\n**第一候选**：保持1080高与完整120秒，选择OUTPUT_CRF=23、OUTPUT_PRESET=medium、OUTPUT_MAX_HEIGHT=0、FORCE_VIDEO_REENCODE=1。这些是本例试用值，非保证。已烧录字幕保持在母版中，选择不再烧录新字幕；AAC采用复制，不重复响度处理。\n\n实际生成后测字节数，再正常速度检查三个环节：折线是否仍可辨，底扣是否确实扣上，物件放进去后是否稳住。听讲解、折纸声和结尾，检查字幕字形与动作区域。若小于上限却看不清底扣，这版仍不采用。\n\n**若候选仍超过上限但细节可读**，可从同一清晰母版另试一项变化，例如较慢preset，保留其他决定；另测大小，不承诺慢预设必然省多少。若需要试720高度，做单独候选并重看小字与底扣，不能从宽高推定可读。每次都从同一母版开始，不用上一轮小文件反复压小。\n\n只有实际文件满足上限、内容可读且声音正确，才记录它为可采用候选。若仍不满足，保留未完成事实，按作者允许范围调整输出方案；没有哪项CRF能保证所有两分钟素材都恰好40MiB。",
+          "en": "An original paper-box tutorial lasts 120 seconds with a clear 1920×1080 master and a hypothetical 90MiB export. It shows unfolding creases, closing walls, fastening the bottom tab and placing an object inside. Captions are already burned in; the complete AAC soundtrack is adopted, with no new narration or music. The author selects a 40MiB delivery limit. No real file or compression result exists here.\n\nFirst confirm master, bytes, duration and track. Revise the plan if actual inputs differ. Use a new working directory and output while keeping the old version. Copying the adopted AAC from the input video requires the `adopted-packet-copy` codec and interval conditions plus an explicit audio ordinal. Resolve incompatible audio separately instead of silently producing a new mix.\n\n**First candidate:** Keep 1080 height and all 120 seconds; try OUTPUT_CRF=23, OUTPUT_PRESET=medium, OUTPUT_MAX_HEIGHT=0 and FORCE_VIDEO_REENCODE=1. These are trial values, not guarantees. Retain the master’s burned captions without burning another set. Copy the adopted AAC without repeating loudness processing.\n\nAfter rendering, measure bytes and review at normal speed: readable creases, actual tab fastening and an object held by the completed box. Hear explanation, paper sounds and ending; inspect caption shapes and the action area. Reject an unreadable tab even if the file meets the limit.\n\n**If still oversized but readable,** try one further change from the same clear master, such as a slower preset, preserving other decisions. Measure rather than promising a fixed saving. A separate 720-height candidate needs fresh checks of text and tab detail; dimensions alone cannot establish legibility. Start each trial from the master instead of repeatedly compressing the previous small file.\n\nRecord an adoptable candidate only when actual bytes meet the cap, content remains readable and sound is correct. Otherwise keep the incomplete result visible and adjust within the author’s permitted scope. No CRF guarantees every two-minute source becomes exactly 40MiB."
+        }
+      },
+      {
+        "id": "compression-brief",
+        "heading": {
+          "zh": "给 AI 一个有边界的压缩请求",
+          "en": "Give AI a bounded compression request"
+        },
+        "body": {
+          "zh": "可向负责合成的执行者提供：\n\n> 输入清晰母版与已采用AAC音轨，保持片长、剪点、字幕内容、动作顺序和声音。上限40MiB是本次交付决定。先确认视频是否重新编码，提出一项参数试法，输出独立候选并报告实际字节数。复查底扣、字幕和完整声音；不重生成TTS，不删关键动作凑大小，不把渲染成功写成观看通过。\n\n这是作者的操作简报，不是skill自动寻找最佳参数的功能。video-assemble的实际配置与记录可支撑候选制作，大小和可读性仍要核实际文件。只换扩展名不会重新压缩；移动文件头帮助播放起步，也不等于减少到指定体积。\n\n原声来自另一份已采用文件时，另按[画面与已定声音配对](/video-recap/keep-audio-when-changing-video)处理，不把当前画面的声音当成指定音轨。",
+          "en": "Give the assembly operator this brief:\n\n> Use the clear master and adopted AAC. Keep duration, cuts, caption content, action order and sound. This delivery limit is 40MiB. Confirm whether video will re-encode, propose one parameter trial and return an independent candidate with actual bytes. Review the bottom tab, captions and full audio. Do not regenerate TTS, delete essential steps to fit or equate rendering with viewing approval.\n\nThis is an author’s brief, not an automatic parameter optimizer. video-assemble’s settings and records support candidate production; verify actual bytes and legibility. Renaming an extension does not recompress, and relocating the file header for playback startup does not establish a target size.\n\nFor an adopted soundtrack from another file, follow [pairing picture with retained audio](/video-recap/keep-audio-when-changing-video) instead of assuming the current picture’s sound is the requested track."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "CRF设成23一定能压到指定大小吗？",
+          "en": "Does CRF 23 guarantee the requested size?"
+        },
+        "a": {
+          "zh": "不能。它控制这条x264路径的质量取舍，体积仍受素材与时长影响。必须重新编码后测实际字节数，再核细节是否可读。",
+          "en": "No. It controls the quality tradeoff in this x264 path; source and duration still affect size. Re-encode, measure actual bytes and check legibility."
+        }
+      },
+      {
+        "q": {
+          "zh": "不加旁白，声音就不会变吗？",
+          "en": "Does no new narration mean audio stays unchanged?"
+        },
+        "a": {
+          "zh": "不一定。处理混音与已采用AAC复制是不同方式。先明确音轨与保留条件，再看实际处理和完整声音。",
+          "en": "No. A processed mix differs from copying an adopted AAC stream. Declare the track and preservation conditions, then inspect processing and hear it fully."
+        }
+      }
+    ],
+    "skill": {
+      "name": "video-assemble",
+      "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/SKILL.md",
+      "text": {
+        "zh": "把母版、交付大小、必须保住的细节和已采用声音交给负责video-assemble的执行者。先核实际编码路径，再试独立候选并测大小与内容；这项合成技能不自动决定压缩满意度。",
+        "en": "Give the video-assemble operator the master, delivery cap, critical details and adopted audio. Check the actual encoding path, then measure and review an independent candidate; assembly does not decide compression satisfaction automatically."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "实际CRF、preset与高度设置",
+          "en": "Actual CRF, preset and height controls"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/scripts/lib.py"
+      },
+      {
+        "label": {
+          "zh": "视频重编码、复制与输出音频",
+          "en": "Video re-encoding, copying and output audio"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/scripts/assemble.py"
+      },
+      {
+        "label": {
+          "zh": "采用AAC的复制条件",
+          "en": "Adopted AAC copying conditions"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/references/audio-modes.md"
+      }
+    ],
+    "related": [
+      "/video-recap/fix-blurry-video-export",
+      "/video-recap/keep-audio-when-changing-video",
+      "/video-recap/make-a-video-with-original-audio-and-no-voiceover"
     ]
   }
 ]
