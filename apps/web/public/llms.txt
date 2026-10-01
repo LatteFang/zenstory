@@ -136,6 +136,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Write a Reunion Scene](https://zenstory.ai/oh-story/write-a-reunion-scene) — Use expectations, old habits, and present responses to write a reunion. Includes a complete scene without assuming romance or forgiveness.
 - [How to Choose Character Names That Fit Your Novel](https://zenstory.ai/oh-story/choose-fiction-character-names) — Choose names from setting and relationships, test confusing names and aliases, and use a complete three-person revision plus an AI naming brief.
 - [How to Build a Useful Character Relationship Map for a Novel](https://zenstory.ai/oh-story/make-a-novel-character-relationship-map) — Map goals, conditions and knowledge as well as social ties. Follow a four-person book-fair map, complete scene and concrete relationship updates.
+- [How to Fix Mechanical Question-and-Answer Dialogue in Fiction](https://zenstory.ai/oh-story/fix-question-and-answer-dialogue-in-fiction) — Revise mechanical dialogue through goals, initiative and responses. A complete board-loan example keeps necessary questions without adding constant gestures.
 
 ### Choose and write a genre / 题材与类型写法
 - [Choose and write a genre](https://zenstory.ai/guides/genres) — Choose a genre and learn the story patterns it needs.
@@ -184,6 +185,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Write Marriage Before Love in a Novel](https://zenstory.ai/oh-story/write-a-marriage-before-love-novel) — Marriage is a starting situation. Develop separate goals, boundaries and chosen closeness through a complete dinner negotiation and invitation scene.
 - [How to Write Business-Management Fiction](https://zenstory.ai/oh-story/write-a-business-management-novel) — Build a story from customer need through stock, terms, delivery and payment. Follow a complete stationery-shop order and its next capacity decision.
 - [How to Write an Online-Game Novel](https://zenstory.ai/oh-story/write-an-online-game-novel) — Use understandable quest rules, roles, actions and reward choices rather than lists of stats. Follow a complete escort quest and its team consequences.
+- [How to Write a Dual Male Lead Novel](https://zenstory.ai/oh-story/write-a-dual-male-lead-novel) — Connect two distinct goals to an external plot. A theater-credit scene shows cooperation, public choices and costs without fixed roles or affection quotas.
 
 ### Revise your novel / 小说改稿与去 AI 味
 - [Revise your novel](https://zenstory.ai/guides/revision) — Fix weak prose, continuity mistakes, and chapters that stall.
@@ -220,6 +222,13 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Stop AI Fiction from Revealing Future Plot Too Soon](https://zenstory.ai/oh-story/stop-ai-fiction-from-revealing-future-plot) — Specify the current payoff, protected later revelations, and stopping point. Includes an album-story repair and a focused revision brief.
 - [How to Write Clear Action Sequences in Fiction](https://zenstory.ai/oh-story/write-clear-action-sequences-in-fiction) — Check positions, held objects, and action order, then supply necessary connections. Includes a complete scene without an inventory of every movement.
 - [How to Shorten an Overlong Novel Chapter Without Losing Its Story](https://zenstory.ai/oh-story/shorten-an-overlong-novel-chapter) — Check length and required beats, then remove redundant explanation and process. Compare a complete scene before and after with the skill’s one-pass workflow.
+- [How to Keep Multiple AI Novel Projects Separate](https://zenstory.ai/oh-story/keep-multiple-ai-novels-separate) — Separate manuscripts, settings and progress. Follow a two-book switch with explicit paths and scope; an active-book selector is not session isolation.
+- [How to Fix Inconsistent Prose Style in an AI Novel](https://zenstory.ai/oh-story/fix-inconsistent-ai-novel-prose-style) — Resolve rhythm, viewpoint, dialogue and emotion separately. A rainy-night revision preserves story facts and knowledge while restoring the book’s voice.
+- [How to Stop AI Fiction from Adding Unwanted Characters](https://zenstory.ai/oh-story/stop-ai-fiction-from-adding-unwanted-characters) — Define this chapter’s cast, facts and stopping point. Distinguish incidental people from plot-changing additions, with a workshop example and local repair.
+- [How to Stop AI Continuation Repeating the Previous Chapter](https://zenstory.ai/oh-story/stop-ai-continuation-from-repeating-the-previous-chapter) — Separate rewriting from continuation and confirm the previous ending, completed events and next outline. A clock-shop example keeps continuity without replay.
+- [How to Fix Viewpoint Drift in AI Fiction](https://zenstory.ai/oh-story/fix-ai-fiction-viewpoint-drift) — Separate pronoun drift, access to other minds and premature knowledge. A sealed-letter revision keeps events intact without inventing observations or memories.
+- [How to Stop AI Fiction Characters Knowing Secrets Too Soon](https://zenstory.ai/oh-story/stop-ai-fiction-characters-from-knowing-secrets-too-soon) — Separate author facts, reader knowledge and character evidence. A complete interview-and-rota repair preserves privacy and the actual shift agreement.
+- [How to Stop AI Fiction Adding a Crisis After Every Success](https://zenstory.ai/oh-story/stop-ai-fiction-from-adding-a-crisis-after-every-success) — Separate established costs from an invented crisis. Preserve the chapter’s agreed result and reward, with a complete curtain-repair scene and quiet aftermath.
 
 ### Book covers / 小说封面
 - [Book covers](https://zenstory.ai/guides/book-covers) — Plan cover art and lettering, then check upload crops and thumbnail readability.
@@ -229,6 +238,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Make a Book Cover Readable as a Thumbnail](https://zenstory.ai/oh-story/make-a-book-cover-readable-as-a-thumbnail) — Check title, subject and background at the actual small display size. Follow a complete bookshop-cover revision plan without claiming a fixed font rule.
 - [How to Make a Book Cover Match the Story’s Genre](https://zenstory.ai/oh-story/match-a-book-cover-to-your-story) — Use the synopsis, main action and tone to diagnose a misleading cover. Follow a complete space-station mystery brief without relying on title keywords alone.
 - [How to Use a Reference Image for a Book Cover](https://zenstory.ai/oh-story/use-reference-images-for-a-book-cover) — Declare whether an image is an editing target or style reference. Use a complete repair-shop cover brief with preserved identity, composition and exact text.
+- [How to Make an AI Book Cover Look Illustrated](https://zenstory.ai/oh-story/make-an-ai-book-cover-look-illustrated) — Separate painted style from genre, character and type. A complete umbrella-maker brief preserves the subject, title and byline while changing the medium.
 
 ### Short-drama scripts / 短剧改编与剧本
 - [Short-drama scripts](https://zenstory.ai/guides/short-drama) — Adapt a story into episodes, scenes, and shootable dialogue.
@@ -268,6 +278,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Write a Hidden-Identity Short Drama](https://zenstory.ai/drama-skills/hidden-identity-short-drama) — Connect a hidden identity to a task, recognition tests and relationship consequences. Includes an original acting-director story and knowledge table.
 - [How to Write an Underdog Rise Short Drama](https://zenstory.ai/drama-skills/underdog-rise-short-drama) — Make dismissal concrete, then change judgments through verifiable results. Includes an original repair contest and witness roles beyond applause.
 - [How to Control Suspense with Audience Information](https://zenstory.ai/drama-skills/control-suspense-with-audience-information) — Separate identity, sound and evidence reveals. Plan what viewers know now with an original visitor scene, avoiding hidden essentials or premature disclosure.
+- [How to Add Sound Effects at the Right Moment in a Video](https://zenstory.ai/drama-skills/add-sound-effects-to-video) — Locate action and original audio, then place the cue in cut-local time. Follow a door-knock example with cue arithmetic and actual mixing boundaries.
 
 ### Storyboards and AI video / 分镜与 AI 视频
 - [Storyboards and AI video](https://zenstory.ai/guides/ai-video) — Plan shots, keep characters consistent, and improve generated footage.
@@ -289,7 +300,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Time Short-Drama Dialogue with Action and Reaction](https://zenstory.ai/drama-skills/dialogue-timing) — Map every line, action, interruption, pause, and listener reaction on a timeline. Includes a copy-shop example, relative-beat template, and overload fixes.
 - [AI Short-Drama Image Roles: Character, Setting, Composition & Style](https://zenstory.ai/drama-skills/reference-image-roles) — Set roles so references cannot override wardrobe, setting or composition. Nine roles, an original coastal weather-station example and conflict fixes.
 - [Short-Drama Look Development: Representative-Frame Method](https://zenstory.ai/drama-skills/visual-look-development) — Define stable rules and variables for material, color, edges and space. Test characters, locations and high-pressure scenes with an original pool example.
-- [How to Shoot Evidence Reveals: Make the Proof and Consequences Clear](https://zenstory.ai/drama-skills/evidence-reveal-storyboard) — Define the feature viewers must read, then stage control, reveal, reaction, and consequence. Includes a pharmacy example with two temperature logs.
+- [How to Shoot Evidence Reveals: Make the Proof and Consequences Clear](https://zenstory.ai/drama-skills/evidence-reveal-storyboard) — Decide what viewers must read, then stage possession, reveal, response and consequence. Includes a complete brief comparing two rehearsal-room outage records.
 - [How to Create Prop References for AI Video](https://zenstory.ai/drama-skills/prop-reference-image) — Fix a prop’s scale, form, materials, and working parts; list current open/closed state, damage, contents, and text separately. Includes a recorder board.
 - [What Is an AI Motion Comic? A Workflow from Script to Final Cut](https://zenstory.ai/drama-skills/motion-comic) — Use art, keyframes, limited motion, voice, and editing. Choose static or dynamic; build script, visuals, shots, and sound. See an original breakdown.
 - [How to Address Stiff AI-Video Acting: Make Emotion Visible](https://zenstory.ai/drama-skills/character-performance-prompts) — Start with goal, trigger, and shot size; choose gaze, voice, body, or decisive action, not stacked emotion words. Includes an original dance-class example.
@@ -330,6 +341,10 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Fix Floating Props in AI Video](https://zenstory.ai/drama-skills/fix-floating-props-in-ai-video) — Separate lost support, unintended carried motion, and chosen effects. Includes a complete tabletop-envelope prompt and repair checks.
 - [AI Video Character Changes Face After Turning: How to Fix It](https://zenstory.ai/drama-skills/fix-character-face-changes-after-turning) — Check identity across front, side and back views, real references and the turn itself. Includes a complete prompt and review without consistency guarantees.
 - [How to Choose Video Transitions: Cuts, Dissolves and Scene Changes](https://zenstory.ai/drama-skills/choose-video-transitions) — Choose transitions by the action, scene change or pause viewers need to understand. Includes a complete original edit plan and actual tool limits.
+- [How to Fix Cropped Characters in AI Video](https://zenstory.ai/drama-skills/fix-cropped-characters-in-ai-video) — Separate reference cropping, movement out of frame and later aspect-ratio changes. A counter scene keeps the head, important hands and accepted action visible.
+- [How to Fix Repeated Actions in AI Video](https://zenstory.ai/drama-skills/fix-repeated-actions-in-ai-video) — Distinguish intended repetition, generation rebound and repeated edits. A cup-placement example defines contact, release, final hold and usable footage.
+- [How to Fix Wrong Eyelines in AI Video](https://zenstory.ai/drama-skills/fix-wrong-eyelines-in-ai-video) — Separate body direction, gaze target and camera position. A counter-scene brief moves attention from a person to a blue circle while preserving other states.
+- [How to Stop Unwanted Voiceover and Dialogue in AI Video](https://zenstory.ai/drama-skills/stop-unwanted-voiceover-and-dialogue-in-ai-video) — Write a complete sound timeline with speakers, exact lines and ambience. Two original prompts preserve approved sound while excluding unwanted voices.
 
 ### Interactive stories and games / 互动故事与游戏
 - [Interactive stories and games](https://zenstory.ai/guides/interactive-games) — Turn a novel into player actions, branching stories, and a playable game.
@@ -384,6 +399,8 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Fix a Game Button That Does Nothing](https://zenstory.ai/novel-to-game/fix-a-game-button-that-does-nothing) — A highlighted button does not prove an action happened. Separate missing input, rule rejection and hidden results with an original diagnostic path.
 - [How to Design Dialogue History in a Visual Novel](https://zenstory.ai/novel-to-game/design-dialogue-history-in-a-story-game) — Design an on-demand dialogue backlog with speakers, the actual route and an explicit rollback policy, using a complete repair-shop example and AI brief.
 - [How to Fix Small Game Buttons and Accidental Taps on Mobile](https://zenstory.ai/novel-to-game/fix-small-game-buttons-on-mobile) — Check actual touch targets, spacing and choice text, with a complete delivery example that enlarges controls while preserving actions, costs and results.
+- [How to Fix Text That Is Too Small in a Mobile Game](https://zenstory.ai/novel-to-game/fix-small-text-in-a-mobile-game) — Check fonts, size, spacing and occlusion in the real game viewport. Follow a library scene redesign without changing choices or story state.
+- [How to Design Mute and Volume Settings for a Story Game](https://zenstory.ai/novel-to-game/design-mute-and-volume-settings-in-a-story-game) — Separate music, speech and cues while retaining rules, choices and results when muted. A museum-closing route checks settings, resuming and restart behaviour.
 
 ### Video scripts and editing / 视频解说与剪辑
 - [Video scripts and editing](https://zenstory.ai/guides/video-recaps) — Write narration from footage, edit a story, and finish audio and subtitles.
@@ -424,6 +441,9 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [Why Subtitles Disappear After Video Export and How to Fix It](https://zenstory.ai/video-recap/fix-subtitles-missing-from-video-export) — Check the actual delivery, caption layer, burn-in setting and complete cue list. Includes a two-line repair plan that preserves adopted sound.
 - [How to Fix Distorted Video Audio: Source, Mix and Export](https://zenstory.ai/video-recap/fix-distorted-audio-in-video-export) — Locate distortion in the source, mix or delivery. Includes float-mix and master-gain calculations, followed by encoded-output measurement and listening.
 - [How to Reduce Video Export File Size Without Losing Key Content](https://zenstory.ai/video-recap/reduce-video-export-file-size) — Check bytes, duration and encoding, try the skill’s actual re-encoding controls, and review a complete paper-box tutorial plan for legibility and sound.
+- [How to Fix Subtitles That Do Not Match the Voiceover](https://zenstory.ai/video-recap/fix-subtitles-that-do-not-match-the-voiceover) — Compare approved text, TTS spoken text, adopted audio and subtitle sources. A keep/delete example separates content mismatch from timing errors.
+- [How to Fix AI Voiceover That Speaks Too Fast](https://zenstory.ai/video-recap/fix-ai-voiceover-that-speaks-too-fast) — Check raw delivery, global speed and local fitting. A worked example preserves a negation and rechecks picture timing, captions and the final sound.
+- [When to Reveal a Twist in a Video Recap](https://zenstory.ai/video-recap/choose-when-to-reveal-a-twist-in-a-video-recap) — Choose a viewer question before revealing answers. Compare two openings from one original short film without hiding prerequisites or inventing motives.
 
 
 ## Workbench docs
