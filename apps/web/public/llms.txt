@@ -134,6 +134,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Write an Apology Scene](https://zenstory.ai/oh-story/write-an-apology-scene) — Build an apology from a specific wrong, conversational purpose, and reply. Includes an original cover-credit scene separating admission, repair, and trust.
 - [How to Write a Character Death That Matters](https://zenstory.ai/oh-story/write-a-character-death) — Establish the living character, the cause of death, who knows what, and the changed relationships. Includes original prose and revision checks.
 - [How to Write a Reunion Scene](https://zenstory.ai/oh-story/write-a-reunion-scene) — Use expectations, old habits, and present responses to write a reunion. Includes a complete scene without assuming romance or forgiveness.
+- [How to Choose Character Names That Fit Your Novel](https://zenstory.ai/oh-story/choose-fiction-character-names) — Choose names from setting and relationships, test confusing names and aliases, and use a complete three-person revision plus an AI naming brief.
 
 ### Choose and write a genre / 题材与类型写法
 - [Choose and write a genre](https://zenstory.ai/guides/genres) — Choose a genre and learn the story patterns it needs.

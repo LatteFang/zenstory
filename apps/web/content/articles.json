@@ -5200,6 +5200,17 @@
         }
       },
       {
+        "id": "complete-cooperation-scene",
+        "heading": {
+          "zh": "把合作写成正文：主角选择，队友执行，各有结果",
+          "en": "Write the cooperation: choices, execution and shared results"
+        },
+        "body": {
+          "zh": "沿用许澄、孟予与罗清的原例，把已经选定的短版、试听、删地址、确认和现场播放写成第三人称限知场景，跟随许澄。下面是原创正文示范，设备的损坏原因不另加解释。\n\n> 孟予把第二组耳机插回去，声音还是没有出来。许澄试过同一段录音，在第一组里能听见收班时落下的门闩。\n>\n> “只能留一组。”孟予说。\n>\n> 长合辑放到最后，要占这组耳机很久。许澄把夜班交接和回家路两段排到一起，其他采访先移出这版。“我做两分钟主片。这两段照她们先前同意的范围留，别急着开播。”\n>\n> 罗清听完短版安排，点头。“按这个准备，最后文件还要给我听。”\n>\n> 孟予重新接好播放器，调过音量，让许澄和受访者先听。交接声刚过去，受访者按住耳机：“后面这句是我的住址，不能放。”\n>\n> 许澄停下播放。她在旧录音里找到报地址的那句，和对方重听了前后。“删掉这句，其余还是照你同意的那两段，可以吗？”\n>\n> “我要先听删后的。”\n>\n> 她改完内容，让孟予出一版供试听。受访者听到回家路结束，摘下耳机。“这版可以公开。”\n>\n> 孟予完成导出，拿同一文件从头试播。罗清听完，选定这版；许澄跟着听到门闩落下、脚步声接上，报住址的那句没有出现。\n>\n> 展览开放时，一位居民坐下来戴上耳机。许澄等他听完两分钟主片，看着他把耳机放回去。“交班那声门闩，我每天也听。”他说。她把备好的展签放稳，采访与内容编辑一栏写着她的名字，播放技术一栏是孟予。\n\n许澄没有修好第二组耳机，但决定了有限设备里保留什么内容，并暂停有问题的版本。受访者实际听后决定公开范围，孟予完成技术工作，罗清采用最终版；现场播放与两人的展签署名在结尾落地。读者从各人的行动看懂贡献，无须让队友变弱或让主角取得本场以外的权限。",
+          "en": "Keep the original Xu Cheng, Meng Yu and Luo Qing case. This original limited-third-person demonstration follows Xu through the selected short version, listening, address removal, confirmation and public playback. It adds no cause for the broken equipment.\n\n> Meng plugged the second headphone set back in. Still silent. Xu tried the same recording through the first set and heard the door bolt fall at the end of a shift.\n>\n> “We have one set,” Meng said.\n>\n> The long compilation would occupy it for a while. Xu placed the handover and journey home together and moved the other interviews out of this version. “A two-minute main piece. Keep these within the permissions they gave us. Don’t start public playback yet.”\n>\n> Luo heard the arrangement and nodded. “Prepare that. I still need to hear the final file.”\n>\n> Meng reconnected the player, adjusted volume and let Xu and the interviewee listen first. Just after the handover, the interviewee held the headphones. “The next line is my address. You can’t play that.”\n>\n> Xu stopped playback, found the line in the old recording and listened to its neighbors with her. “Remove this line and retain the two agreed passages?”\n>\n> “Let me hear it after the cut.”\n>\n> Xu revised the content and asked Meng for a listening version. The interviewee heard the journey home finish and took off the headphones. “You can make this version public.”\n>\n> Meng exported and tested the same file from its start. Luo heard it and chose it. Xu followed the falling bolt into footsteps; the address line was gone.\n>\n> When the exhibition opened, a resident sat down and put on the headphones. Xu waited through the two-minute piece and watched him set them back. “That bolt at the handover—I hear it every day,” he said. She straightened the prepared label. Interviews and content editing carried her name; playback technology carried Meng’s.\n\nXu does not repair the second set. She chooses what the available equipment will carry and stops a flawed version. The interviewee decides public use after listening, Meng does the technical work, and Luo adopts the final version. Public playback and both credits appear in the ending. Their actions establish contribution without weakening a teammate or granting authority beyond this event."
+        }
+      },
+      {
         "id": "repair",
         "heading": {
           "zh": "配角太强时怎么修？",
@@ -5286,6 +5297,13 @@
           "en": "Reader contract and four agency questions"
         },
         "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/reader-contract-and-progression.md"
+      },
+      {
+        "label": {
+          "zh": "从方案写到实际场景",
+          "en": "From a plan to an enacted scene"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/writing-craft.md"
       }
     ]
   },
@@ -22443,6 +22461,17 @@
         }
       },
       {
+        "id": "third-speaker-example",
+        "heading": {
+          "zh": "第三人插话：重新点明归属，不给每句加动作",
+          "en": "A third speaker enters: re-establish attribution"
+        },
+        "body": {
+          "zh": "沿用修车店的阿民和罗宁，接在罗宁压住钥匙之后；原文提到的许姐这时从门口插话。七点半截止与十分钟试车是作者为这段续例选定的时间。她提供期限，罗宁负责试车，阿民等候，三人不用轮流做表情。\n\n> 许姐在门口说：“比赛签到七点半就停了。”\n>\n> “试一圈要多久？”阿民问罗宁。\n>\n> “十分钟。你愿意等，试完能交的先交。”\n>\n> “我等。”阿民松开拢钥匙的手，退到一旁。\n>\n> 许姐问：“第四辆呢？”\n>\n> 罗宁把台上三把钥匙留在自己这边。“还没修完，今天不交。”\n\n第一句姓名与位置建立第三人，阿民的问题明确交给罗宁，下一句因此可以省标签。阿民退开给试车留下空间；许姐再次插问时点名，罗宁保留钥匙对应交车条件。本段只达成等候和先试车，尚未完成试车或交车。若把所有名字都删掉，三人轮换就容易被误当成两人交替；若每句都加点头皱眉，也没有新增归属或信息。",
+          "en": "Continue the bike-shop exchange after Luo stops the key. Xu, already mentioned in the original discussion, now speaks from the doorway. The author selects seven-thirty closing and a ten-minute ride for this continuation. Xu supplies timing, Luo handles test rides and Min waits; they need not perform a gesture at every turn.\n\n> “Race check-in closes at seven thirty,” Xu said from the doorway.\n>\n> “How long for a lap?” Min asked Luo.\n>\n> “Ten minutes. If you wait, you can take whichever bikes pass.”\n>\n> “I’ll wait.” Min released the keys he had gathered and stepped aside.\n>\n> “And the fourth?” Xu asked.\n>\n> Luo kept the three keys on his side of the bench. “Not repaired yet. That one stays today.”\n\nThe first line establishes the third speaker. Min addresses Luo, so the reply can omit a tag. Min’s movement makes room for testing. Name Xu on her next interruption; Luo’s keys maintain the handover condition. They have agreed to wait and test, without completing either testing or delivery yet. Removing every name can make three speakers look like two alternating; repeated nods and frowns add no useful attribution."
+        }
+      },
+      {
         "id": "revision-pass",
         "heading": {
           "zh": "一遍修改只查归属、作用与密度",
@@ -22498,6 +22527,20 @@
           "en": "Action density and dialogue rhythm"
         },
         "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/dialogue-mastery.md"
+      },
+      {
+        "label": {
+          "zh": "主语重置与动作连续性",
+          "en": "Subject resets and continuous action"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/writing-craft.md"
+      },
+      {
+        "label": {
+          "zh": "按本书表达选择保留事实",
+          "en": "Expression choices with preserved facts"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/style-resolution.md"
       }
     ],
     "related": [
@@ -46472,6 +46515,137 @@
         },
         "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-edit/references/sound-and-subtitles.md"
       }
+    ]
+  },
+  {
+    "owner": "oh-story",
+    "slug": "choose-fiction-character-names",
+    "topic": "characters-and-dialogue",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "小说人物起名怎么起：符合设定，也让读者分得清",
+      "en": "How to Choose Character Names That Fit Your Novel"
+    },
+    "seo_title": {
+      "zh": "小说人物起名怎么起：设定、区分与称呼｜ZenStory",
+      "en": "How to Choose Character Names for a Novel"
+    },
+    "description": {
+      "zh": "从时代、地域和人物关系出发选名字，检查相似姓名与别称，附三人同场的完整改名示例和AI起名简报。",
+      "en": "Choose names from setting and relationships, test confusing names and aliases, and use a complete three-person revision plus an AI naming brief."
+    },
+    "answer": {
+      "zh": "先定人物所处时代、地域、文化和常用称呼，再给重要角色几个候选。把候选放进同一段对白，检查是否容易分清；别称先建立与本名的对应。名字有寓意可以，但不必替性格下结论。选定后核正文、设定和后续提纲，保留角色原有事实。",
+      "en": "Start with period, place, culture and forms of address. Test a few candidates in a shared scene for clarity, establish aliases and check the selected names across manuscript, notes and future outline. Meaning is optional; naming alone need not announce personality."
+    },
+    "sections": [
+      {
+        "id": "naming-brief",
+        "heading": {
+          "zh": "先给名字一个所在的世界",
+          "en": "Begin with the world the name belongs to"
+        },
+        "body": {
+          "zh": "Oh Story的人物卡将姓名放在身份、目标和关系旁，起名要求贴合时代、地域与文化。先写一份短简报：故事发生在哪里、人物属于哪一代、家人和同事怎样称呼他、是否已有本名或别称。\n\n真实历史或文化背景需要核相应资料，不让生成器编出“古人都这样取名”或未经核验的词源。[Reedsy的作者教程](https://reedsy.com/blog/how-to-come-up-with-a-character-name/)也讨论名字与故事背景、称呼和朗读测试的关系。这里用它提示常见检查，具体人物仍按自己的设定选择。\n\n同人或既有世界观先保留原作已采用的本名、译名；新人物沿相应地域的命名方式。跨文化角色可以有不同名字风格，只要各自来处成立。人物有迁居、改名或笔名时，先确定缘由和谁知道，不为统一风格抹掉这项经历。",
+          "en": "Oh Story’s character cards put names beside identity, goals and relationships, with naming matched to period, place and culture. Write a short brief covering the setting, generation, how relatives and coworkers address the person, and any established name or alias.\n\nFor real historical or cultural settings, verify relevant material rather than accepting an invented naming convention or etymology. [Reedsy’s author guide](https://reedsy.com/blog/how-to-come-up-with-a-character-name/) discusses setting, forms of address and read-aloud testing. Use these as checks; choose for your own story.\n\nIn fanfiction or an established world, retain adopted original names and translations; name new people for their region. Different cultural backgrounds can produce different naming styles when their origins make sense. Establish a migration, renaming or pen-name history and who knows it instead of erasing it for uniformity."
+        }
+      },
+      {
+        "id": "test-cast-names",
+        "heading": {
+          "zh": "把候选放进多人场景再选",
+          "en": "Test candidates in a shared scene"
+        },
+        "body": {
+          "zh": "名字单看好听，放在一页里却可能难认。把本章同场的名字、常用称呼列在一起，再写几句实际对白。\n\n| 检查 | 怎样试 |\n|---|---|\n| 外形与读音相近 | 连读本场姓名，看看是否需要回头确认是谁。只改真正造成混淆的候选。 |\n| 称呼对应 | 首次出现别称时建立与已认识人物的关系；不要忽然把同一人叫成三个陌生名字。 |\n| 人物关系 | 同姓可以表示家族，也可能只是同姓；正文按已定关系交代。 |\n| 文字负担 | 试读生僻字、长名和缩写，按读者与文风判断是否需要辅助。 |\n| 寓意与揭示 | 名字可以寄托愿望或反讽，不让解释提前泄露本章尚未知的身份。 |\n\n不要求整本书每人不同姓、不同首字。家庭成员的相似名字、身份谜题里的别名也可以保留；在实际混淆处补关系或归属。名字只能辅助认人，角色的目标、行动和声音仍要有区别。",
+          "en": "A name can look appealing alone and become confusing on a crowded page. List the people in the current scene with their usual forms of address, then try actual dialogue.\n\n| Check | Test |\n|---|---|\n| Similar appearance or sound | Read the scene’s names aloud. Revise candidates that cause genuine confusion. |\n| Aliases | Connect a new form of address to the known person instead of introducing three apparently new people. |\n| Relationships | A shared surname may reflect family or coincidence; explain according to established facts. |\n| Reading load | Test unusual spelling, long names and abbreviations against audience and narrative voice. |\n| Meaning and disclosure | A name may carry a hope or irony without exposing an identity still unknown here. |\n\nDifferent surnames or initials for every character are optional. Related names and mystery aliases can remain; clarify actual confusion through relationships or attribution. Names help recognition, while goals, actions and voices distinguish people."
+        }
+      },
+      {
+        "id": "complete-naming-example",
+        "heading": {
+          "zh": "完整例子：只换容易混淆的名字，保留同一场戏",
+          "en": "Complete example: rename confusing characters and keep the scene"
+        },
+        "body": {
+          "zh": "原创设定为当代虚构城市的小改衣店。学徒林宁改裙子，同事林凝取衣袋，顾客林琳要求保留裙长。三人无亲属关系；本稿没有把相似名字设计成线索。作者发现顺读时常要倒回确认，选择保留主角林宁，将同事改为宋禾、顾客改为赵芬。名字是本例创作选择，不声称代表某年代的统计习惯。\n\n**改前：**\n\n> 林宁把蓝裙铺在柜台上。“裙长也要收吗？”\n>\n> “不改裙长，只改腰。”林琳说。\n>\n> 林凝拿来衣袋。“这只够大吗？”\n>\n> 林琳看了一眼。“够了。别把两处都改了。”\n\n**改后：**\n\n> 林宁把蓝裙铺在柜台上。“裙长也要收吗？”\n>\n> “不改裙长，只改腰。”赵芬说。\n>\n> 宋禾拿来衣袋。“这只够大吗？”\n>\n> 赵芬看了一眼。“够了。别把两处都改了。”\n\n学徒问、顾客限定改动、同事拿袋、顾客回应的次序没变，衣服也没有因此已经改好。这里先完成姓名取舍；若再润色，另定范围。后文让熟客被叫作“赵姐”时，可以先由林宁招呼“赵姐，还是只改腰，对吧”，借当前交流把称呼接上。叙述继续用赵芬，不为避重反复换叫法。",
+          "en": "This original scene takes place in a small alterations shop in an invented contemporary Chinese city. Apprentice Lin Ning handles a skirt, coworker Lin Ning brings a garment bag, and customer Lin Lin requests its original length. The Chinese draft uses 林宁, 林凝 and 林琳. They are unrelated and the similarity is no clue. After finding the scene hard to follow, the author keeps 林宁 and renames the coworker 宋禾 (Song He) and customer 赵芬 (Zhao Fen). These are creative choices, not a claim about demographic naming patterns.\n\n**Before:**\n\n> Lin Ning spread the blue skirt on the counter. “Shorten it too?”\n>\n> “Keep the length. Just take in the waist,” Lin Lin said.\n>\n> Lin Ning brought a garment bag. “Is this big enough?”\n>\n> Lin Lin looked at it. “Yes. Don’t alter both.”\n\n**After:**\n\n> Lin Ning spread the blue skirt on the counter. “Shorten it too?”\n>\n> “Keep the length. Just take in the waist,” Zhao Fen said.\n>\n> Song He brought a garment bag. “Is this big enough?”\n>\n> Zhao Fen looked at it. “Yes. Don’t alter both.”\n\nThe question, customer’s limit, coworker’s bag and reply retain their order. The skirt has not been altered yet. This pass chooses names; define a separate scope for prose polishing. If Lin later uses “Zhao-jie,” connect it in a greeting to the established customer. Keep a stable narrative name rather than changing labels merely to avoid repetition."
+        }
+      },
+      {
+        "id": "ai-naming-brief",
+        "heading": {
+          "zh": "给AI的起名简报与改名检查",
+          "en": "Give AI a naming brief and check the replacement"
+        },
+        "body": {
+          "zh": "可以给story-long-write一段明确要求：\n\n> 只讨论这三人的名字。背景为当代虚构城市改衣店，三人无亲属关系；保留主角林宁，同事负责衣袋，顾客只要求改腰、不改裙长。请给同事和顾客少量候选，说明是否与已用名字容易混淆，试写同一段对白供我选。保留动作、人物关系、台词事实与本场停点，不新增身份秘密或词源。\n\n候选和本页对照是作者工作用的简表，不是skill原生角色文件。选定后，核设定、已写正文、摘要、后续提纲和别称对应，逐处确认是不是同一人。不要把同字片段全局替换进另一个人、店名或引用里；已建立的家族称呼和刻意隐瞒仍按情节保留。\n\n若正文已经清楚，临时名字也能先支持写作。关键是采用后保持一致；名字不合适可以修订，不必在第一章前选到无法再改。",
+          "en": "Give story-long-write a bounded request:\n\n> Discuss only these three names in a contemporary alterations shop in an invented city. The people are unrelated. Keep Lin Ning; the coworker brings a bag and the customer wants waist alteration without shortening. Offer a few candidates for the other two, explain possible confusion with existing names and try the same dialogue for my choice. Preserve actions, relationships, dialogue facts and stopping point. Add no secret identity or invented etymology.\n\nCandidates and comparisons are author working notes, not the skill’s native character file. Once selected, check character notes, manuscript, summaries, future outline and aliases, confirming each occurrence belongs to this person. A broad text replacement can also change another person, a shop name or a quotation. Preserve established family address and deliberate concealment according to plot.\n\nA temporary name can support drafting when the scene is clear. Keep the adopted choice consistent and revise when useful; you need not find an irrevocable name before chapter one."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "名字必须有深刻寓意吗？",
+          "en": "Must every name have a deep meaning?"
+        },
+        "a": {
+          "zh": "不用。先满足设定和辨识需要。寓意、家人愿望和反讽可以有，但是否解释看本场作用，不让名字替代人物行动。",
+          "en": "No. Fit and recognition come first. Meaning, family hopes or irony are optional; explain them when they serve the scene rather than replacing behavior."
+        }
+      },
+      {
+        "q": {
+          "zh": "每个人的姓和首字都要不同吗？",
+          "en": "Does everyone need a different surname or initial?"
+        },
+        "a": {
+          "zh": "不必。相似名字可以服务亲属、文化或线索，实际读不清时才调整或补归属；别为区分名字改掉已定关系。",
+          "en": "No. Similarities can serve family, culture or clues. Revise or clarify genuine confusion without changing established relationships."
+        }
+      }
+    ],
+    "skill": {
+      "name": "story-long-write",
+      "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/SKILL.md",
+      "text": {
+        "zh": "请story-long-write只讨论指定角色的名字，附背景、已有本名别称与同场人物。生成少量候选并放进短对白，待作者选择；不改人物事实或继续写章节。",
+        "en": "Ask story-long-write to discuss only the named characters, with setting, established aliases and current cast. Try a few candidates in short dialogue for author choice, preserving facts without continuing chapters."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "姓名与时代、地域、文化",
+          "en": "Names, period, place and culture"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/character-basics.md"
+      },
+      {
+        "label": {
+          "zh": "姓名、主语与指代",
+          "en": "Names, subjects and attribution"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/writing-craft.md"
+      },
+      {
+        "label": {
+          "zh": "表达选择与事实保留",
+          "en": "Expression and preserved facts"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/style-resolution.md"
+      }
+    ],
+    "related": [
+      "/oh-story/clear-character-names-and-pronouns",
+      "/oh-story/introduce-a-fiction-character",
+      "/oh-story/story-bible-template"
     ]
   }
 ]
