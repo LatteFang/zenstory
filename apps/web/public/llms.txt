@@ -181,6 +181,9 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Write Sports Fiction](https://zenstory.ai/oh-story/write-a-sports-fiction-novel) — Connect match goals, limits, decisions and feedback. Includes an original match and training worksheet, with team changes that affect play.
 - [Writing Business Fiction: Revenue, Costs, and Working Cash](https://zenstory.ai/oh-story/revenue-costs-and-cash-in-business-fiction) — Separate sales, incurred costs, and available cash when writing business fiction. Includes a two-day stall example, repeat customers, and revision checks.
 - [How to Write a Time-Loop Novel Without Repeating the Same Scene](https://zenstory.ai/oh-story/write-a-time-loop-novel) — Define reset timing, retained memory, and object states. Includes four original clock-tower loops, a complete scene, and checks for an earned ending.
+- [How to Write Marriage Before Love in a Novel](https://zenstory.ai/oh-story/write-a-marriage-before-love-novel) — Marriage is a starting situation. Develop separate goals, boundaries and chosen closeness through a complete dinner negotiation and invitation scene.
+- [How to Write Business-Management Fiction](https://zenstory.ai/oh-story/write-a-business-management-novel) — Build a story from customer need through stock, terms, delivery and payment. Follow a complete stationery-shop order and its next capacity decision.
+- [How to Write an Online-Game Novel](https://zenstory.ai/oh-story/write-an-online-game-novel) — Use understandable quest rules, roles, actions and reward choices rather than lists of stats. Follow a complete escort quest and its team consequences.
 
 ### Revise your novel / 小说改稿与去 AI 味
 - [Revise your novel](https://zenstory.ai/guides/revision) — Fix weak prose, continuity mistakes, and chapters that stall.
