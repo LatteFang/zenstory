@@ -6079,12 +6079,12 @@
       "en": "How to Write Believable Misunderstandings | ZenStory"
     },
     "description": {
-      "zh": "误会要有可信的信息差和不便解释的理由，推动人物行动，并在澄清后留下后果。用原创短剧场景演示如何修掉强行不说与巧合救场。",
-      "en": "Credible information gaps and reasons for silence drive action; fallout remains after clarification. The scene fixes forced silence and coincidence rescue."
+      "zh": "用可信信息差、正常澄清和实际回应组织误会。附社区短片原场景及确认、交付续段，不靠强行沉默或碰巧有人救场。",
+      "en": "Build misunderstandings through credible evidence, clarification and responses. Includes a community film scene followed by approval and delivery."
     },
     "answer": {
-      "zh": "检查误会梗，先问四件事：人物凭什么误判，为什么此刻无法轻易澄清，误判让他做了什么，真相公开后还失去了什么。巧合可以把人物推入麻烦；脱困则交给已建立的能力、主动选择和需要承担的后果。",
-      "en": "Test a misunderstanding with four questions: What evidence supports the mistaken judgment? Why can it not be clarified easily right now? What action does the error cause? What remains lost after the truth comes out? Coincidence may push characters into trouble, but let established abilities, active choices, and consequences they must bear get them out."
+      "zh": "检查误会梗，先问人物凭什么误判、能怎样澄清、误判让他做了什么，以及澄清后还有什么要处理。巧合可以引出麻烦，人物的选择和回应继续推动故事；有真实违约就处理它，轻喜剧也可以落在改口、小尴尬或新的理解，不必强加严重损失。",
+      "en": "Ask what supports the mistaken reading, how clarification is possible, what action the error causes and what remains to address. Coincidence can start trouble; choices and responses continue the story. Address actual broken agreements, while light comedy may land on a changed response, embarrassment or understanding without severe loss."
     },
     "sections": [
       {
@@ -6118,6 +6118,17 @@
         "body": {
           "zh": "**已有事实与约定**：许安和周梨共同制作社区短片，约好宣传图、署名与本片唯一配乐都经两人确认后用于放映；不能单方面更换后照常交付。许安答应送宣传材料前让周梨看过。参与拍摄的陶婶私下要求公开照片避开她的正脸，也不愿公开私人原因。配乐当前由周梨保管，还没有交付。\n\n**误会发生**：周梨到剪辑室时，看见社区已经发布许安送去的替换合影，照片里恰好也没有周梨。署名仍列两人，周梨却认为许安想独占项目。观众已听过陶婶的请求，知道换图理由，同时知道许安确实跳过了确认。\n\n失败版让许安只说“我有苦衷”，再让陶婶碰巧路过解释、一切复原。可改成双方正常回应：\n\n> 周梨指着已发布的预告：“图里没有我，发之前也不用问我了？”\n>\n> 许安调出署名页：“名字还在。照片要换，但我确实没等你确认。我现在请社区撤下，先不继续发。”\n>\n> “署名是署名。你答应的是我看过才能送。”\n>\n> 周梨合上配乐文件：“这版先别交。我需要知道，下一次我的决定会不会又被跳过。”\n\n许安当场给社区联系人发撤下请求，对方回复并实际移除预告。他随后主动询问陶婶是否愿意只说明“我要求换照片”，不公开原因；她同意，三人再讨论可用照片。陶婶的有限说明澄清了换图动机，没有替许安免掉违约。\n\n到约定交片时间，两人仍未确认新图和配乐交付。许安向联系人说明不能按约交齐，联系人回复将放映改期。**延期这时才成为已发生的结果**，不是周梨一合文件就自动发生；以后若补救赶上另一场，也应写出新确认与实际交付。\n\n修复需要许安遵守共同确认，周梨也可为“抢走署名”的错误指责澄清。但两者不是等量责任，周梨也不必立即恢复合作。",
           "en": "**Established agreement:** Xu An and Zhou Li co-create a community short film. Its publicity image, credits, and sole score require both collaborators’ approval before use at the screening; neither can replace them unilaterally and proceed. Xu An promised to show Zhou Li the publicity before delivery. Participant Aunt Tao privately requested that public photos avoid her face and that her reason remain private. Zhou Li still holds the undelivered score.\n\n**The error:** Zhou Li arrives in the editing room and sees the replacement photo already published by the community. By chance, she is absent from it too. Both names remain credited, but she suspects Xu An is claiming the project. Viewers have heard Aunt Tao’s request and also know he skipped approval.\n\nA weak version gives him only “I have my reasons,” then brings Aunt Tao past by coincidence to explain and reset everything. Let both respond normally instead:\n\n> Zhou Li points at the published notice. “I’m not in the photo, and you don’t even ask before sending it?”\n>\n> Xu An opens the credits. “Your name’s here. The photo needed replacing, but I did send it without waiting for you. I’ll ask them to take it down now and stop sharing it.”\n>\n> “Credits are separate. You promised I’d see it before you sent it.”\n>\n> Zhou Li closes the score file. “Don’t deliver this version yet. I need to know you won’t bypass my decision again.”\n\nXu An sends the community contact a removal request. The contact replies and actually removes the notice. He then asks Aunt Tao whether she will confirm only “I asked for a different photo,” without her private reason. She agrees, and the three discuss usable pictures. Her limited disclosure explains the motive without excusing the broken agreement.\n\nAt the delivery deadline, the new picture and score handover remain unapproved. Xu An tells the contact they cannot deliver the agreed package, and the contact reschedules the screening. **The delay becomes an actual consequence here**, rather than automatically occurring when Zhou Li closes a file. A later successful delivery also needs actual approval and handover.\n\nRepair requires him to honor shared approval. She can correct her mistaken accusation about claiming credit. Those are not equal responsibilities, and she need not resume collaboration immediately."
+        }
+      },
+      {
+        "id": "complete-repair-conversation",
+        "heading": {
+          "zh": "澄清之后：重新确认和实际交付怎么写",
+          "en": "After clarification: show renewed approval and delivery"
+        },
+        "body": {
+          "zh": "沿用预告已撤下、放映已经改期的结果。下面选择“两人愿意继续完成本片”的后续分支；不把它规定成所有误会都必须和好。\n\n> 许安把待确认的照片放到屏幕上，陶婶看过后指向其中一张：“这张不露我的正脸，可以用在这次放映的宣传里。原因不用解释。”\n>\n> “只说您要求换图，不讲原因。”许安回答。\n>\n> 周梨把那张图放大：“我刚才以为你想独占片子，这一点我想错了。但你答应让我先看，这件事确实没做到。”\n>\n> “是。我不能拿换图的理由当作跳过你的理由。”许安把选中的新图留在屏幕上，“这张和原来的双人署名，一起确认？”\n>\n> 周梨检查图与署名：“这版我同意。”许安也确认采用这一版，没有再临时换照片。\n>\n> 周梨把本片已定配乐交给他：“还是这版配乐。你收好，这次放映就用它。”许安接收后回答：“好，就用这一版，不换了。”他才把已共同确认的新图、署名和配乐送给社区联系人。\n>\n> 联系人回复：“材料收齐了，按改期后的场次准备。”许安把回复给周梨看，没有把原场放映说成已经追回。\n\n新的确认落实到当前图、署名和原配乐，陶婶的许可只覆盖她刚说明的用途，私人原因仍未公开。周梨承认了错误推断，许安也实际采用了共同确认的做法；不是两个道歉词把责任抹平。\n\n本片可以在这个局部补救上结束此场。后续合作是否恢复信任，要看新的行动；也可以选择周梨暂不继续的分支，保留已经发生的延期，不为延长误会再次让人物拒绝正常沟通。",
+          "en": "Retain the removed publicity notice and rescheduled screening. This continuation chooses a branch where both collaborators want to finish this film. It is not a rule that every misunderstanding must end in reconciliation.\n\n> Xu An put the pending photos on the screen. Aunt Tao pointed to one after looking. “This one keeps my face out. You can use it to promote this screening. No need to explain why.”\n>\n> “Only that you requested another photo. Not your reason,” Xu replied.\n>\n> Zhou Li enlarged it. “I thought you wanted the film for yourself. I was wrong about that. But you did promise I’d see the picture first, and you didn’t keep that promise.”\n>\n> “Yes. Needing another photo wasn’t a reason to bypass you.” Xu left the chosen image on screen. “This picture and our original two names, approved together?”\n>\n> Zhou checked the picture and credits. “I approve this version.” Xu approved the same version rather than switching pictures again.\n>\n> Zhou handed over the established score. “The original score. Here it is; let’s use it for this screening.” After receiving it, Xu replied, “Yes, we’ll use this score. No last-minute changes.” Only then did he send the jointly approved picture, credits and score to the community contact.\n>\n> The reply arrived: “All materials received. We’ll prepare for the rescheduled screening.” Xu showed Zhou the message without claiming to have recovered the original event.\n\nApproval concerns this picture, the original credits and the established score. Tao’s consent covers the use she stated; her private reason remains undisclosed. Zhou corrects a mistaken inference and Xu actually uses shared approval rather than two apologies erasing unequal responsibility.\n\nThis local repair can end the scene. Future trust depends on further conduct. A branch where Zhou declines to continue can also retain the actual delay without prolonging the misunderstanding by preventing normal conversation again."
         }
       },
       {
@@ -8974,6 +8985,17 @@
         }
       },
       {
+        "id": "complete-child-response",
+        "heading": {
+          "zh": "完整交流：孩子的意愿如何被成年人接住",
+          "en": "Complete exchange: adults respond to the child’s preference"
+        },
+        "body": {
+          "zh": "沿用科学展例的家庭事实与虚构活动规则。这段展开家中填表、说明身世和邀请姨父的时刻；成年人的先前确认仍是身世前提，报名表不承担证明血缘的功能。\n\n> 母亲把合作表和个人作品表并排放在桌上：“你改成个人作品，是不想让人陪你吗？”\n>\n> 米粒把模型转过来，指给她看电池盒：“你们换一个人来，我还得再教他一遍。姨父知道电池放哪里。我想自己讲，让他按开关。”\n>\n> 母亲没有把个人表藏回去：“这位叔叔是你的亲生爸爸。我之前只说他是旧朋友，也没有先问你想怎么展示。”\n>\n> 米粒看了他一会儿，又转回模型：“那姨父还来吗？”\n>\n> 生父说：“我想来看。我先来当访客，不替他按开关。你愿意的时候，再给我看。”\n>\n> “先问姨父能不能来。”母亲拨通电话：“米粒的亲生爸爸回来了，我已经告诉她。她还是想请你来，自己讲模型，请你按开关。联系人还填你，可以吗？”\n>\n> 姨父答应：“我能来，联系人还填我。开关听米粒指挥。”\n>\n> 母亲向米粒重复了他的答复，把个人作品表留在桌面：“我按这个提交，再等老师登记。”\n>\n> 米粒把模型转向自己，重新试了一次开关。这次她没有把个人表收进箱子。\n\n母亲先问到具体原因，再接收意见；生父回应的是本次访客与演示分工，姨父亲自答应，孩子不被成人代答。提交和老师登记仍按原例的后续过程完成，不把“我按这个提交”写成登记已改。\n\n米粒可以对新知道的关系继续提问、暂时沉默或以后再接近，不必立即改称呼、感谢所有安排或替母亲决定伴侣。普通陪伴与模型演示已经可以成为关系回报，不再加一次生病或鉴定来证明这场戏有作用。",
+          "en": "Use the science-fair example’s established family facts and fictional event rules. This expands form-filling, disclosure and the uncle’s invitation at home. The adults’ earlier confirmation remains the parentage premise; the event form proves no biological relationship.\n\n> The mother placed the joint and individual-project forms side by side. “Does the individual form mean you don’t want anyone with you?”\n>\n> Mi Li turned the model and showed her the battery box. “If you send someone else, I have to teach him again. Uncle knows where the batteries go. I want to explain it myself and have him press the switch.”\n>\n> Her mother did not hide the individual form. “This man is your birth father. I only told you he was an old friend, and I didn’t ask how you wanted to demonstrate.”\n>\n> Mi Li looked at him for a while, then returned to the model. “Can Uncle still come?”\n>\n> The father said, “I want to see it. I’ll come as a visitor first, without taking over the switch. Show me when you want to.”\n>\n> “Let’s ask whether Uncle can come.” Her mother called. “Mi Li’s birth father is back. I’ve told her. She still wants you to come, explain the model herself and have you operate the switch. Can we keep your name on the contact form?”\n>\n> He agreed. “I’ll be there; keep my name on the contact form. Mi Li tells me when to press the switch.”\n>\n> The mother repeated his answer to Mi Li and left the individual form on the table. “I’ll submit this, then wait for the teacher’s registration.”\n>\n> Mi Li turned the model toward herself and tested the switch again. This time she left the individual form on the table.\n\nThe mother asks for a specific reason and receives a preference. The father responds to this visit and demonstration role; the uncle agrees himself. Adults do not answer in the child’s place. Submission and registration still occur later as in the original example; a promise to submit has not already changed a registration.\n\nMi Li can ask further questions, remain quiet or approach later without immediately changing her address, thanking everyone or choosing her mother’s partner. Ordinary attendance and a demonstration can deliver relational value without another illness or parentage test to justify the scene."
+        }
+      },
+      {
         "id": "production",
         "heading": {
           "zh": "儿童角色与制作怎样兼顾",
@@ -9033,10 +9055,10 @@
       },
       {
         "label": {
-          "zh": "开发范围与作者选择",
-          "en": "Development scope and creator choices"
+          "zh": "人物回应与可表演行动",
+          "en": "Character responses and playable action"
         },
-        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-develop/SKILL.md"
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-write/references/script-craft.md"
       }
     ]
   },
@@ -9598,20 +9620,20 @@
     "published_on": "2026-09-26",
     "updated_on": "2026-09-29",
     "title": {
-      "zh": "短剧中段拖沓怎么办：让故事循环换代",
-      "en": "Fixing a Micro-Drama’s Sagging Middle: Renew the Story Cycle"
+      "zh": "短剧中段拖沓怎么办：让人物面对新的选择",
+      "en": "Fixing a Micro-Drama’s Sagging Middle: Give Characters New Choices"
     },
     "seo_title": {
       "zh": "短剧中段拖沓怎么办｜ZenStory",
       "en": "Fix a Micro-Drama’s Sagging Middle | ZenStory"
     },
     "description": {
-      "zh": "用顺序打乱测试识别重复循环，通过改变冲突方向、抬代价、收束、改造或移交恢复中段动力。",
-      "en": "Spot repetition by shuffling sequences. Restore momentum with a new line of proof, higher costs, closure, a changed mechanism or a handover."
+      "zh": "检查中段是否只重复同一种回报，再看人物信息、策略与关系怎样继续。附修复店停供后的完整协商，不强加每集升级代价。",
+      "en": "Check repeated payoffs, then track information, strategies and relationships. Includes a complete supply-loss scene without forcing a higher cost every episode."
     },
     "answer": {
-      "zh": "短剧中段拖沓常来自同一机制免费重复：场面更大，人物掌握的信息、可用筹码、知情者和退路却没变。先把几次运行调换顺序；若毫无损失，就是重复。保留核心追问，改变证明方式与代价，并在机制耗尽时收束、改造或移交。",
-      "en": "A micro-drama’s middle often sags when the same mechanism repeats without cost: the scenes get bigger, but what the characters know, the leverage available, who knows the secret and the escape routes all stay the same. Swap the order of several repetitions. If nothing is lost, they are redundant. Keep the central question, change how it is tested and what it costs, and close, reshape or hand over the mechanism when it runs out of possibilities."
+      "zh": "先检查几场戏是否只把同一种回报重复得更大声。交换顺序能帮助检查因果接力，再看人物知道什么、还能怎样做、关系怎样变化。保留观众在意的问题，改变回应办法；已经演完的部分可以收束。轻喜剧的熟悉笑点、日常相处与成功余味也能有作用，不要求每集都付更大代价。",
+      "en": "Check whether successive scenes merely repeat the same payoff more loudly. Reordering helps test causal carryover; also examine knowledge, available strategies and relationships. Retain the audience’s central interest, vary the response, and conclude what has run its course. Familiar comedy, everyday interaction and a success’s aftermath can matter without a higher cost in every episode."
     },
     "sections": [
       {
@@ -9621,8 +9643,8 @@
           "en": "Identify the Mechanism That Keeps Repeating"
         },
         "body": {
-          "zh": "写清主角每次用什么优势、对手为何会行动、观众提前知道什么、本次改变哪项状态、主角付出什么成本。免费循环最先耗尽。若对手吃过亏仍按原办法配合，机制已经要求人物变笨。",
-          "en": "Write down the advantage the protagonist uses each time, why the opponent acts, what the audience knows in advance, which state changes this time and what the protagonist pays. A cycle that costs nothing wears out first. If an opponent has already lost but keeps cooperating with the same setup, the mechanism now depends on the opponent acting foolishly."
+          "zh": "写清这几场戏共同让观众期待什么，主角怎样争取，对方依据什么事实回应，以及哪些信息、关系或条件已经改变。若作品以反制推进，对手吃过亏仍无理由按老办法配合，就要检查人物是否被写笨。成本是可检查的一项，不是每集必须添一笔债的配额。",
+          "en": "State the shared expectation, the protagonist’s approach, the facts behind the other person’s response, and changes in information, relationship or conditions. In a story driven by countermoves, an opponent who repeats a losing approach without reason needs revision. Cost is one diagnostic dimension rather than a debt quota for every episode."
         }
       },
       {
@@ -9632,8 +9654,8 @@
           "en": "Shuffle the Order and Change the Line of Proof"
         },
         "body": {
-          "zh": "把中段三次运行交换位置。认知、难度、知情者、适用条件和退路没有变化，就需合并。修订时保持同一靶心，换回应向量：上次用钱证明资格，下次改由权限、关系选择或对手反制验证；避免换成弱相关新线。",
-          "en": "Change the order of three iterations in the middle. If nothing changes in knowledge, difficulty, who knows the truth, the conditions under which the method works or the available ways out, combine them. During revision, keep the same central question but test it differently. If money served as proof of qualification last time, use authority, a relationship choice or an opponent’s countermove next. Do not replace the cycle with a loosely related new storyline."
+          "zh": "把中段三次争取交换位置，检查前一次的选择是否影响后一次。若叙事声称在推进，却看不出信息、关系、适用条件或退路的接力，再考虑合并。保留同一个核心问题，换一种回应：上次靠手艺说服顾客，下次可能需要处理保修、分工或供应，避免无关支线突然接管作品。\n\n交换测试不能单独证明一场戏没用。熟悉的笑点、人物相处和安静的回报可能不靠顺序推进；要按本剧承诺判断它是否仍有新体验，别为了“每次不同”取消观众喜欢的日常。",
+          "en": "Reorder three attempts and ask whether an earlier choice changes the next. If the story claims progression without carryover in information, relationships, conditions or escape routes, consider merging. Keep the central question while varying the response: craft may persuade a customer once, while warranty, teamwork or supply matters next. Avoid an unrelated thread taking over.\n\nReordering alone cannot prove a scene useless. Familiar comedy, interaction and a quiet payoff may work without chronological progression. Judge their experience against this show’s promise rather than removing valued everyday scenes merely to make every occasion different."
         }
       },
       {
@@ -9648,14 +9670,25 @@
         }
       },
       {
+        "id": "complete-supply-scene",
+        "heading": {
+          "zh": "完整续段：材料停供后，旧办法怎样改",
+          "en": "Complete continuation: when the material supply stops"
+        },
+        "body": {
+          "zh": "沿用修复店的前两轮与已经出现过的备选材料铺。下面展开第三轮；新材料的交期更长、另付运输费是前文已给的条件，不能在这里忽然变成同日免费送达。\n\n> 店主把未发出的材料单收回：“我这一路不再供了。你修得好，也不能让我继续发。”\n>\n> 师傅没有再搬来一件器物证明手艺。她回到徒弟的工作台：“当前订单，按我教过的办法先检查。需要新材料的部分留着，别为了赶交期硬做。”\n>\n> 徒弟把待检器物挪到台前：“我先检查，缺什么等你回来再定。”他开始处理已经学过的检查步骤，没有替师傅承诺全部按时完成。\n>\n> 师傅到了前期那家备选铺。老板说：“还是上回说的条件，交期慢一些，运输费另算。”\n>\n> “按这个订。”师傅接受这次费用与交期，老板应下这笔订货。她随后联系当前订单的顾客：“原来的材料渠道停了。我换了一家，但这件不能按原交期交。你愿意等新材料，还是先把东西取回去？”\n>\n> 这位顾客说：“这件我等。材料到后告诉我新的取件日。”师傅记下他对这一件的选择，没有替其他顾客一起作决定。\n\n此段完成了徒弟开始检查、备选铺接单和一位顾客同意等待，材料尚未到货，修复也尚未完成。原技术优势继续用于检修，但不能直接兑换供货权限；顾客是否愿意延期要有他的回应。\n\n可以沿这条分工继续，也可以在既有订单处理完后结束修复店单元。选择依据是本剧的承诺和人物关系，不是规定每次换办法后都必须再找一个更大的敌人。",
+          "en": "Continue the first two rounds and the already-established alternative shop. This passage develops round three. Slower delivery and separate transport charges are existing conditions rather than suddenly becoming free same-day supply.\n\n> The owner withdrew the unshipped materials order. “My channel stops here. Being good at repairs won’t make me keep supplying you.”\n>\n> The craftsperson did not bring another object to prove her skill. At the apprentice’s bench she said, “Check the current order using what I taught you. Leave the parts needing new materials. Don’t force them to meet the deadline.”\n>\n> The apprentice brought the waiting object forward. “I’ll inspect it. We’ll decide what it needs when you return.” He began the learned checks without promising that the entire order would be finished on time.\n>\n> At the earlier alternative shop, the owner said, “The same terms as before: slower delivery, transport extra.”\n>\n> “Place the order on those terms.” She accepted the fee and lead time, and the shop accepted the order. Then she contacted the current customer. “The old supplier stopped. I found another, but this object won’t be ready by the original date. Would you wait for materials or collect it first?”\n>\n> “I’ll wait for this one. Tell me the new collection date when the materials arrive.” She recorded this customer’s choice without making it for every other customer.\n\nThe apprentice has begun inspection, the supplier has accepted an order and one customer has agreed to wait. Materials have not arrived and repair is unfinished. Craft still supports inspection but does not grant supply authority. The customer’s response establishes whether a delay is acceptable.\n\nContinue this teamwork or close the shop’s story once existing orders are handled. The decision follows the show’s promise and relationships rather than a requirement to find a larger enemy after every strategy change."
+        }
+      },
+      {
         "id": "handover",
         "heading": {
           "zh": "循环耗尽后的三种处理",
           "en": "Three Options When a Cycle Runs Out"
         },
         "body": {
-          "zh": "**收束**让机制在一次不可重复的运行中结清；**改造**保留机制，改变适用条件、代价或承担者；**移交**让另一个人物使用同一机制，改变观众立场。新循环要继承旧循环的时限、退出成本和观众已经在意的人或物，先处理余波，再抬起下一股压力。\n\n换代前另做一次“什么都不做”测试：主角若退出，新循环会造成什么具体损失？答案比旧循环更抽象，说明紧迫性没有交接。把旧循环中已经在意的人、物、时限或责任带入新机制，再开始下一轮。\n\n换代完成后，给旧回报留出一拍余波，让观众确认损失与关系变化。",
-          "en": "**Close it:** Settle the mechanism in one final use that cannot be repeated. **Reshape it:** Keep the mechanism but change its conditions, cost or the person who bears it. **Hand it over:** Let another character use the same mechanism, changing the audience’s perspective. The new cycle must inherit the old one’s time limits, cost of walking away and people or objects the audience already cares about. Deal with the aftermath before introducing the next source of pressure.\n\nBefore the transition, run a “do nothing” test: if the protagonist walks away, what specific loss will the new cycle cause? If the answer is more abstract than in the old cycle, the urgency has not carried over. Bring an established person, object, deadline or responsibility into the new mechanism before starting the next round.\n\nOnce the transition is complete, leave a beat for the previous payoff’s aftermath so viewers can register the losses and changes in relationships."
+          "zh": "**收束**让机制在一次不可重复的运行中结清；**改造**保留机制，改变适用条件、代价或承担者；**移交**让另一个人物使用同一机制，改变观众立场。继续写新的阶段时，保留已经建立且仍未处理的时限、退出成本和观众在意的人或物。先处理余波，再看本剧是否需要下一股压力；结清之后也可以收尾。\n\n换代前另做一次“什么都不做”测试：主角若退出，新循环会造成什么具体损失？答案比旧循环更抽象，说明紧迫性没有交接。把旧循环中已经在意的人、物、时限或责任带入新机制，再开始下一轮。\n\n换代完成后，给旧回报留出一拍余波，让观众确认损失与关系变化。",
+          "en": "**Close it:** Settle the mechanism in one final use that cannot be repeated. **Reshape it:** Keep the mechanism but change its conditions, cost or the person who bears it. **Hand it over:** Let another character use the same mechanism, changing the audience’s perspective. A continuing phase retains established, unresolved deadlines, exit costs and people or objects the audience values. Deal with the aftermath, then decide whether the show needs further pressure; a settled story can also end.\n\nBefore the transition, run a “do nothing” test: if the protagonist walks away, what specific loss will the new cycle cause? If the answer is more abstract than in the old cycle, the urgency has not carried over. Bring an established person, object, deadline or responsibility into the new mechanism before starting the next round.\n\nOnce the transition is complete, leave a beat for the previous payoff’s aftermath so viewers can register the losses and changes in relationships."
         }
       },
       {
@@ -9676,8 +9709,8 @@
           "en": "Name what is lost if rounds are reordered"
         },
         "body": {
-          "zh": "| 这一轮 | 继承前轮条件 | 留给后轮 |\n|---|---|---|\n| 技术演示 | 对手尚未知道本事 | 对手知道正面比较不利，观众认识办法 |\n| 保修追问 | 已认可技术，但责任未证实 | 真实交付记录被看见，对手转向供应反制 |\n| 停供与分工 | 对手已学会避开旧比较 | 费用、交期与徒弟责任进入下一阶段 |\n\n第三轮不能放在第一轮前还保留“对手学会避开”这句；第二轮也不能只换成更大的裂纹，把同一技术回报再演一次。变化来自认知、权限、成本与承担者，不是损坏规模。\n\n收束、改造或移交旧循环时，留下既有顾客与交期责任。也让前轮成功有实际余波，不要求每集运行一整轮，更不把固定轮数当质量标准。",
-          "en": "| Round | Before | Carryover |\n|---|---|---|\n| Craft test | Opponent has not seen the skill | He learns direct comparison is unfavorable |\n| Warranty question | Skill accepted; responsibility unproved | Completed delivery is confirmed; opposition shifts toward supply |\n| Supply loss and teamwork | Opponent has adapted | Cost, delay and apprentice responsibility persist |\n\nThe third round cannot precede the first while retaining an opponent who learned to avoid the technique. The second cannot simply present a larger crack. Changes arise from knowledge, authority, cost and responsibility rather than damage scale.\n\nClosure, modification or transfer retains customer and deadline commitments. Give success its aftermath. One full round per episode and fixed round counts are not quality requirements."
+          "zh": "| 这一轮 | 前后条件 |\n|---|---|\n| 技术演示 | 继承前轮条件: 对手尚未知道本事; 留给后轮: 对手知道正面比较不利，观众认识办法 |\n| 保修追问 | 继承前轮条件: 已认可技术，但责任未证实; 留给后轮: 真实交付记录被看见，对手转向供应反制 |\n| 停供与分工 | 继承前轮条件: 对手已学会避开旧比较; 留给后轮: 费用、交期与徒弟责任进入下一阶段 |\n\n第三轮不能放在第一轮前还保留“对手学会避开”这句；第二轮也不能只换成更大的裂纹，把同一技术回报再演一次。变化来自认知、权限、成本与承担者，不是损坏规模。\n\n收束、改造或移交旧循环时，留下既有顾客与交期责任。也让前轮成功有实际余波，不要求每集运行一整轮，更不把固定轮数当质量标准。",
+          "en": "| Round | Conditions |\n|---|---|\n| Craft test | Before: Opponent has not seen the skill; Carryover: He learns direct comparison is unfavorable |\n| Warranty question | Before: Skill accepted; responsibility unproved; Carryover: Completed delivery is confirmed; opposition shifts toward supply |\n| Supply loss and teamwork | Before: Opponent has adapted; Carryover: Cost, delay and apprentice responsibility persist |\n\nThe third round cannot precede the first while retaining an opponent who learned to avoid the technique. The second cannot simply present a larger crack. Changes arise from knowledge, authority, cost and responsibility rather than damage scale.\n\nClosure, modification or transfer retains customer and deadline commitments. Give success its aftermath. One full round per episode and fixed round counts are not quality requirements."
         }
       }
     ],
@@ -9706,8 +9739,8 @@
     "skill": {
       "name": "short-drama-develop",
       "text": {
-        "zh": "用 $short-drama-develop 审读中段三次运行。列共同回报、对手知道什么、主角成本与每轮新增条件，再做交换顺序测试。需要换代时选收束、改造或移交，继承原时限和责任；不突然增加供应、能力或弱相关新线。",
-        "en": "Use $short-drama-develop to review repeated runs: shared payoff, opposing knowledge, protagonist cost and new conditions. Test reordered runs. Choose closure, modification or transfer while inheriting deadlines and responsibilities. Add no convenient supplier, power or unrelated plot."
+        "zh": "用 $short-drama-develop 审读中段几次重复场面，列共同回报、人物所知、策略与关系，再做交换顺序测试。按本剧承诺决定合并、展开、收束、改造或移交；保未处理的时限和责任，不强制每集增债，不突然增加供应或能力。",
+        "en": "Use $short-drama-develop to review recurring scenes: shared payoff, knowledge, strategies and relationships. Test reordered scenes, then merge, develop, close, modify or transfer according to the show’s promise. Retain unresolved deadlines and duties without a debt quota or convenient new supply or power."
       },
       "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-develop/SKILL.md"
     },
@@ -9725,6 +9758,13 @@
           "en": "Loop operation, exhaustion and handover"
         },
         "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-develop/references/mechanism-loop.md"
+      },
+      {
+        "label": {
+          "zh": "作者承诺与开发写法边界",
+          "en": "Creator promise and development choices"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-develop/references/stage-contract.md"
       }
     ]
   },
