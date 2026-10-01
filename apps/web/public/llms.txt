@@ -434,6 +434,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Fix Distorted Video Audio: Source, Mix and Export](https://zenstory.ai/video-recap/fix-distorted-audio-in-video-export) — Locate distortion in the source, mix or delivery. Includes float-mix and master-gain calculations, followed by encoded-output measurement and listening.
 - [How to Reduce Video Export File Size Without Losing Key Content](https://zenstory.ai/video-recap/reduce-video-export-file-size) — Check bytes, duration and encoding, try the skill’s actual re-encoding controls, and review a complete paper-box tutorial plan for legibility and sound.
 - [How to Fix Subtitles That Do Not Match the Voiceover](https://zenstory.ai/video-recap/fix-subtitles-that-do-not-match-the-voiceover) — Compare approved text, TTS spoken text, adopted audio and subtitle sources. A keep/delete example separates content mismatch from timing errors.
+- [How to Fix AI Voiceover That Speaks Too Fast](https://zenstory.ai/video-recap/fix-ai-voiceover-that-speaks-too-fast) — Check raw delivery, global speed and local fitting. A worked example preserves a negation and rechecks picture timing, captions and the final sound.
 
 
 ## Workbench docs
