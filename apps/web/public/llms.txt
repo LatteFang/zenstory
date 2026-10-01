@@ -441,6 +441,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Reduce Video Export File Size Without Losing Key Content](https://zenstory.ai/video-recap/reduce-video-export-file-size) — Check bytes, duration and encoding, try the skill’s actual re-encoding controls, and review a complete paper-box tutorial plan for legibility and sound.
 - [How to Fix Subtitles That Do Not Match the Voiceover](https://zenstory.ai/video-recap/fix-subtitles-that-do-not-match-the-voiceover) — Compare approved text, TTS spoken text, adopted audio and subtitle sources. A keep/delete example separates content mismatch from timing errors.
 - [How to Fix AI Voiceover That Speaks Too Fast](https://zenstory.ai/video-recap/fix-ai-voiceover-that-speaks-too-fast) — Check raw delivery, global speed and local fitting. A worked example preserves a negation and rechecks picture timing, captions and the final sound.
+- [When to Reveal a Twist in a Video Recap](https://zenstory.ai/video-recap/choose-when-to-reveal-a-twist-in-a-video-recap) — Choose a viewer question before revealing answers. Compare two openings from one original short film without hiding prerequisites or inventing motives.
 
 
 ## Workbench docs
