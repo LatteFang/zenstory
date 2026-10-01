@@ -48832,5 +48832,354 @@
       "/drama-skills/ai-short-drama-edit-list-template",
       "/video-recap/fix-audio-video-sync-after-editing"
     ]
+  },
+  {
+    "owner": "oh-story",
+    "slug": "fix-inconsistent-ai-novel-prose-style",
+    "topic": "revision",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "AI写小说文风不一致怎么办：按本书要求逐项调整",
+      "en": "How to Fix Inconsistent Prose Style in an AI Novel"
+    },
+    "seo_title": {
+      "zh": "AI写小说文风不一致怎么改｜ZenStory",
+      "en": "Fix Inconsistent AI Novel Prose Style | ZenStory"
+    },
+    "description": {
+      "zh": "把句长、视角、对白和情绪表达分开检查，用本书文风覆盖默认写法。附雨夜借伞改写，保留原事实与知情范围。",
+      "en": "Resolve rhythm, viewpoint, dialogue and emotion separately. A rainy-night revision preserves story facts and knowledge while restoring the book’s voice."
+    },
+    "answer": {
+      "zh": "先找出不一致发生在哪个表达维度，再把当前要求与本书文风交给写作、润色和审稿环节。不要只说“像前面”，也不要为了统一句长改掉剧情。Oh Story按维度处理文风优先级，未声明的部分才采用参考方法的默认值。",
+      "en": "Identify the expression dimension that changed, then give drafting, polishing and review the current request and this book’s style. “Make it like before” is too vague. Do not alter plot to equalise sentences. Oh Story resolves style by dimension and uses reference defaults only where no applicable preference is declared."
+    },
+    "sections": [
+      {
+        "id": "diagnose-the-dimension",
+        "heading": {
+          "zh": "先说明哪里变了，而不是给整本书换标签",
+          "en": "Name the change before replacing the whole voice"
+        },
+        "body": {
+          "zh": "同一本书突然从轻快对白变成长段旁白，问题可能在叙述者评论；从人物所见跳到反派心思，问题也可能是信息边界。先拿相邻章节各一小段比较，指出实际句子，不用“高级”“有质感”代替要求。\n\n| 要检查的部分 | 可以说明的要求 |\n|---|---|\n| 句长与节奏 | 保留连贯中句，关键处短停顿；不把每句拆成一行。 |\n| 视角 | 跟随本章人物所见所想，不替他知道旁人的秘密。 |\n| 白话与对白 | 叙述平实，人物按各自习惯说话。 |\n| 情绪与评论 | 可直写本视角的感受；不替每个动作补人生结论。 |\n\n这些是本文示例里的作者选择，不是所有小说必须执行的风格。统一文风也不等于所有人物用同一口气，或打斗与闲聊具有相同节奏。",
+          "en": "A shift from brisk dialogue to long commentary may concern narrator presence. A jump from the viewpoint character’s observations into an antagonist’s thoughts may also violate information boundaries. Compare a short passage from each neighbouring chapter and name actual sentences instead of asking for “sophistication.”\n\n| Dimension | An actionable request |\n|---|---|\n| Sentence rhythm | Keep connected medium-length sentences with short pauses at key moments, rather than one line per sentence. |\n| Viewpoint | Follow what this chapter’s character sees and thinks without giving them another person’s secret. |\n| Narration and dialogue | Use plain narration while preserving each speaker’s habits. |\n| Emotion and commentary | Direct feeling is allowed within the viewpoint; do not attach a life lesson to every gesture. |\n\nThese are this example’s author choices, not universal rules. A coherent book does not require identical character voices or identical rhythms for a fight and a quiet conversation."
+        }
+      },
+      {
+        "id": "resolve-current-and-book-style",
+        "heading": {
+          "zh": "本次要求、本书文风与默认方法怎么取舍",
+          "en": "Resolve current requests, book style and defaults"
+        },
+        "body": {
+          "zh": "Oh Story的表达顺序是：当前请求、本书文风与设定、本书有效作者偏好，再到题材/流程/全局偏好、主对标文风和通用方法。每个维度取第一个明确且适用的要求，不把整份默认文件叠成一张禁令表。\n\n长篇读取本书`设定/文风.md`全文；简短但可执行的一句也有效。不用另一书的文件补缺，也不把旧摘要当作全文。临时要求只用于这次任务，不自动写成长期偏好。\n\n文风可以改变表达，不能改章节事件、知情范围、字数要求和修改范围。例如“本章写得幽默些”不能让人物提前发现真相。“转限知”可以暂不叙述他无从知道的事实，不能新增“他早就知道”来保住原句。",
+          "en": "Oh Story applies expression preferences in this order: the current request, book-local style and settings, active book-local author preferences, genre/workflow/global preferences, the main benchmark’s style, then general references. Each dimension takes the first explicit applicable instruction; defaults do not combine into a universal prohibition list.\n\nFor long fiction, read this book’s full `设定/文风.md`. One executable sentence can be enough. Do not fill gaps from another book or substitute an old summary for the full current text. A temporary request applies to this task and does not automatically become a lasting preference.\n\nStyle may change expression without changing events, knowledge, word-count requirements or revision scope. “Make this chapter funnier” cannot make someone discover a secret early. Limited viewpoint can withhold facts the character cannot know; it cannot invent “he already knew” to preserve an unsuitable sentence."
+        }
+      },
+      {
+        "id": "complete-rainy-night-revision",
+        "heading": {
+          "zh": "完整示例：借伞仍然只是借伞",
+          "en": "Complete example: a borrowed umbrella remains a borrowed umbrella"
+        },
+        "body": {
+          "zh": "原创设定：许宁在小店借梁川的伞，答应次日上午还；她不知道他第二天要搬走。本书采用许宁限知、平实中句，允许她直接表达担心。待改片段却写：“命运已替两人安排别离。梁川凝望她的背影，藏起迁居的秘密。”\n\n问题不只是抒情太重：旁白替本章说出了未知的未来，还进入梁川的内心。可以改成：\n\n> 许宁把伞撑开，伞骨卡了一下。梁川伸手扶正，等她握稳才松开。\n>\n> “明早还你。”她说。\n>\n> “放柜台就行。”\n>\n> 她回头看了一眼亮着灯的小店。雨越下越急，她担心明早赶不上开门，又问：“九点前有人吗？”\n>\n> “有人。”\n>\n> 她点点头，沿着屋檐走到街角。伞还在她手里，归还要等明天。\n\n本例新增“九点前有人”的对话作为作者已经选定的局部改写方案，不把它当成原稿本来发生过的事；正式用到现有小说时，先确认是否允许补这句及其后文影响。梁川搬家的事实仍在作者设定中，只是本章不揭露；他回答有人，也不证明他本人会在店里。\n\n交给AI的任务可以写：“只调整本章借伞段落，采用本书文风全文；保留借出、次日上午归还约定和许宁尚不知搬家。此次允许补她问开门时间的交流，不写第二天归还，不改其他章节，不更新长期文风。”",
+          "en": "Original setup: Xu Ning borrows Liang Chuan’s umbrella at a small shop and promises to return it the next morning. She does not know he moves away tomorrow. This book uses her limited viewpoint, plain connected sentences and direct worry. A faulty passage says, “Fate had arranged their separation. Liang watched her leave and concealed his move.”\n\nThe problem is more than heavy lyricism: commentary reveals an unknown future and enters Liang’s mind. A candidate revision is:\n\n> Xu opened the umbrella; one rib caught. Liang straightened it and let go once she had a firm grip.\n>\n> “I’ll return it tomorrow morning,” she said.\n>\n> “Leave it on the counter.”\n>\n> She glanced back at the lit shop. Rain was getting harder. Worried she would miss opening time, she asked, “Will someone be here before nine?”\n>\n> “Yes.”\n>\n> She nodded and followed the awning to the corner. The umbrella remained with her; returning it belonged to tomorrow.\n\nThe opening-time exchange is an explicitly chosen new local revision in this example, not a claim that it existed in an earlier manuscript. When applying it to a book, approve the added exchange and check its later implications. Liang’s move remains an author-level fact withheld from this chapter. “Someone” does not establish that he personally will be there.\n\nA task can say: “Revise only this chapter’s umbrella passage using the full book-local style. Preserve the loan, the next-morning return arrangement and Xu’s lack of knowledge about the move. This revision may add her opening-time question, but must not write the return, change other chapters or update lasting preferences.”"
+        }
+      },
+      {
+        "id": "carry-style-through-review",
+        "heading": {
+          "zh": "改完要复核事实，也把文风带到下一环节",
+          "en": "Review facts and carry the same style into polishing"
+        },
+        "body": {
+          "zh": "将本次生效要求与来源交给后续润色和审稿，不让下一环节又套回另一份默认文风。核对原稿和改稿：借伞是否发生、归还是否仍未发生、谁知道搬家、补写是否得到允许。\n\n作者明确选定某种停顿或修辞，不代表所有同类句子都好；仍要查重复、冗余和越界。检测器报警也不自动等于必须删。需要保留已获准的原句时，按本书白名单规则登记具体句子与用途，不用“没有”等泛词关闭整类检查。\n\n若只是一个段落出了问题，先修那个段落。没有必要把整本书统一改成短句，更不必把裁决说明插进小说正文。",
+          "en": "Pass the effective requirements and their sources to subsequent polishing and review so another default does not overwrite them. Compare draft and revision: did the loan happen, is return still pending, who knows about the move, and was added dialogue allowed?\n\nAn approved pause or metaphor does not make every similar sentence good. Check repetition, redundancy and information leaks. A detector finding does not automatically require deletion. When retaining an authorised original line, use the book-local whitelist rules for that specific phrase and purpose rather than exempting broad words to disable whole checks.\n\nIf only one passage drifted, repair that passage first. The entire novel need not become short sentences, and style-resolution commentary belongs outside the story prose."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "每一章都要用同样句长吗？",
+          "en": "Must every chapter use the same sentence lengths?"
+        },
+        "a": {
+          "zh": "不用。根据行动、对话与安静段落调整节奏，保留作者选定的叙述声音和信息边界。",
+          "en": "No. Vary rhythm for action, conversation and quiet passages while preserving the author’s chosen voice and information boundaries."
+        }
+      }
+    ],
+    "skill": {
+      "name": "story-long-write",
+      "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/SKILL.md",
+      "text": {
+        "zh": "用 $story-long-write 检查指定段落的文风漂移，附本书文风全文、当前要求与原段。列出变化维度，保留已发生事实与知情范围，只改授权范围；把同一文风要求交给后续润色和审稿。",
+        "en": "Use $story-long-write with the named passage, full book style and current request. Identify changed dimensions, preserve events and knowledge, and revise only the authorised scope. Carry the same style requirements into polishing and review."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "按维度裁决、事实边界与本书白名单",
+          "en": "Dimension-level style resolution, fact boundaries and book-local exemptions"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/style-resolution.md"
+      },
+      {
+        "label": {
+          "zh": "本书材料与产物目录",
+          "en": "Book-local materials and artifact paths"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/project-files.md"
+      }
+    ],
+    "related": [
+      "/oh-story/revise-ai-prose",
+      "/oh-story/stop-ai-polishing-from-changing-your-plot",
+      "/oh-story/keep-multiple-ai-novels-separate"
+    ]
+  },
+  {
+    "owner": "novel-to-game",
+    "slug": "design-mute-and-volume-settings-in-a-story-game",
+    "topic": "interactive-games",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "游戏静音和音量设置怎么做：声音关了，关键信息仍要看得见",
+      "en": "How to Design Mute and Volume Settings for a Story Game"
+    },
+    "seo_title": {
+      "zh": "游戏静音和音量设置怎么做｜ZenStory",
+      "en": "Story Game Mute and Volume Settings | ZenStory"
+    },
+    "description": {
+      "zh": "区分音乐、语音与提示音，静音后保留规则、选择和结果。附闭馆提醒完整路线，核设置、恢复与重开行为。",
+      "en": "Separate music, speech and cues while retaining rules, choices and results when muted. A museum-closing route checks settings, resuming and restart behaviour."
+    },
+    "answer": {
+      "zh": "先明确哪些声音可调、静音后用什么文字或视觉反馈表达关键信息，再实现设置。音量变化只改变播放表现，不替玩家提交动作。用真实候选走一条静音到结果再重开的路线，检查资源失败时也能继续。",
+      "en": "Specify adjustable sound layers and the text or visual feedback that carries essential information when muted, then implement settings. Volume changes affect playback rather than submitting player actions. In the actual candidate, follow a muted route through a result and restart, including a missing-resource fallback."
+    },
+    "sections": [
+      {
+        "id": "define-the-audio-behaviour",
+        "heading": {
+          "zh": "先定声音职责，再决定要几个控件",
+          "en": "Assign sound roles before choosing controls"
+        },
+        "body": {
+          "zh": "游戏美术方向的方法要求说明声音来源、动作反馈层级，以及静音时用什么视觉通道补足；语音不能成为规则、目标、选择或结果的唯一载体。不是每款小型游戏都需要三个滑块，按已经采用的声音与玩家需要设计。\n\n| 声音层 | 可以确认的行为 |\n|---|---|\n| 背景音乐 | 调低或关闭后，场景和选择仍可读。 |\n| 角色语音 | 台词对应同一份文字；没声音时不丢掉说话者与信息。 |\n| 操作与警告音 | 用已提交结果的文字、图形或状态变化补足。 |\n\n总静音是否记住上次音量、设置是否跨重开保留、重新打开声音是否从当前位置继续，都应由项目决定。本文的设置清单是对这些方法的编辑应用，不是skill自带的一套通用音量组件。",
+          "en": "The art-direction method specifies sound sources, feedback layers and visual channels that remain when muted. Voice cannot be the only carrier of rules, goals, choices or outcomes. A small game does not automatically need three sliders; choose controls for its adopted sound layers and player needs.\n\n| Layer | Behaviour to decide |\n|---|---|\n| Background music | Reducing or disabling it leaves the scene and choices understandable. |\n| Character speech | Matching text preserves the speaker and information without sound. |\n| Input and warning cues | Text, graphics or state changes communicate the actual committed result. |\n\nThe project decides whether mute remembers the previous volume, preferences survive restart, and unmuting resumes at the current position. This settings worksheet applies native methods editorially; it is not a universal volume widget supplied by the skill."
+        }
+      },
+      {
+        "id": "keep-settings-out-of-story-decisions",
+        "heading": {
+          "zh": "调音量不等于执行剧情，字幕也要跟实际事件走",
+          "en": "Changing volume is not a story action"
+        },
+        "body": {
+          "zh": "构建阶段继承已批准设计，规则与事件由游戏状态提交，表现层负责让玩家听见或看见。拖动音量不应该开门、领取道具、重播一个已结算警告或自动选“离开”。\n\n设置打开时游戏是否计时，按已有设计执行；实时游戏与回合式文游可以不同。也别为了静音才偷偷新增暂停能力。语音台词变化后，旧资产应重新核对；缺音或自动播放受限时，按已约定的文字fallback继续，不把“没有声音”误报成玩家没有收到剧情事件。\n\n静音反馈只补已有信息：声音原本是模糊方向提示，文字也不应直接公布隐藏答案。关键是等价表达，而不是奖励玩家关声音来获得额外线索。",
+          "en": "Build inherits the approved design: game rules commit events while presentation makes them audible or visible. Dragging volume should not open a door, grant an item, repeat a settled warning or automatically choose “leave.”\n\nWhether time advances while settings are open follows existing design; real-time and turn-based games may differ. Muting must not secretly introduce pausing. When dialogue changes, check the old voice asset. Missing audio or autoplay restrictions use the agreed text fallback rather than treating silence as proof that no story event occurred.\n\nA visual fallback preserves existing information. If sound gives an indistinct direction, text must not reveal the hidden answer outright. Offer equivalent communication rather than extra clues for turning sound off."
+        }
+      },
+      {
+        "id": "complete-muted-route",
+        "heading": {
+          "zh": "完整示例：听不到闭馆提醒，也能走出东厅",
+          "en": "Complete example: leaving the east gallery without hearing the warning"
+        },
+        "body": {
+          "zh": "原创纸面游戏：当前20:59，21:00博物馆东厅关闭，值班员说“东厅关闭，请走南廊”。玩家还在东厅，尚未选择离开。规则已经规定设置期间不推进时间；总静音控制全部声音，跨重开保留个人设置。关闭事件显示同一句提醒与南廊出口指示，不代玩家走路。\n\n| 实际路线 | 预期变化 |\n|---|---|\n| 在21:00提醒前打开设置，开启静音 | 只改变声音偏好，位置仍在东厅。 |\n| 返回游戏，按原计时到21:00时发生提醒 | 没有声音，文字显示说话者与原句；出口指示出现一次。 |\n| 玩家选择“从南廊离开” | 按原规则到南廊，离厅结果可见，不需要语音才能完成。 |\n| 重新开始 | 剧情回初态，静音偏好按本例约定保留；旧闭馆事件不立即重现。 |\n\n再做有区分力的检查：恢复声音不得把玩家送回东厅，也不得把刚才台词当新剧情重复提交；模拟本条音频缺失时，显示约定文字仍能完成相同离厅路线。提醒若未发生，不能为了展示设置页面先把未来台词写进历史。\n\n上表不是已经运行的游戏证据。正式实现后，在目标运行时检查控件真的能改变播放、静音时关键信息可读，以及设置、返回、离厅和重开状态正确；实际计时与偏好保存可以选择其他规则，但应一致。",
+          "en": "Original paper game: the current time is 20:59 and the museum’s east gallery closes at 21:00. An attendant says, “The east gallery is closing. Use the south corridor.” The player remains inside and has not chosen to leave. This design explicitly stops time in settings, uses master mute for all sound and preserves that preference across restart. The closing event displays the same line and a south-corridor exit cue without moving the player.\n\n| Route | Expected change |\n|---|---|\n| Open settings before the 21:00 warning and mute | Only the audio preference changes; the player remains in the gallery. |\n| Resume; let the existing game clock reach 21:00 and trigger its warning | No sound plays. Text identifies the attendant and preserves the line; the exit cue appears once. |\n| Choose “Leave through the south corridor” | The original rule moves the player into the corridor and displays the departure result without requiring voice. |\n| Restart | Story state resets and this example’s mute preference remains; the old closing event does not immediately recur. |\n\nCheck a meaningful countercase: unmuting must neither return the player to the gallery nor submit the warning again as a new event. Simulate the missing voice file and complete the same route through its agreed text fallback. Before the warning occurs, a settings preview must not insert future dialogue into history.\n\nThe table is not evidence of a running game. After implementation, check actual playback controls, muted readability and state through settings, resuming, departure and restart on the target runtime. Timing and preference persistence may differ in another design, but must remain consistent."
+        }
+      },
+      {
+        "id": "verify-the-smallest-useful-route",
+        "heading": {
+          "zh": "验收设置要看真实播放与路线，不只看滑块截图",
+          "en": "Verify playback and the route, beyond a slider screenshot"
+        },
+        "body": {
+          "zh": "先重现原问题：声音关掉后，玩家究竟丢了哪条信息、哪一步不能做？按设计/美术/构建归属修，再走原路线与相邻反例。语音生产合同要求实际触发、字幕、静音、损坏文件与重开检查；测试方法要求真实输入和结果，不能用静态界面截图代替。\n\n只验证项目已有的控件与采用的声音，不因本教程给所有游戏添加音乐、配音或更多设置。听感好不好可以继续调整，但“声音可关闭、信息仍可读、结果没被改写”应当能由实际候选证明。",
+          "en": "Reproduce the original loss: what information disappears when muted, and what action becomes impossible? Repair the responsible design, art or build layer, then replay the failing route and an adjacent countercase. The voice-production contract checks actual triggering, subtitles, mute, damaged files and restart; test design requires real input and outcomes rather than static settings screenshots.\n\nVerify only adopted sounds and existing controls. This tutorial does not require adding music, voice or more settings to every game. Listening preferences can continue to evolve, while actual candidate evidence should establish that sound can be disabled, information remains readable and results are not rewritten."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "静音后需要把所有声音都写成字幕吗？",
+          "en": "Must every sound become a subtitle when muted?"
+        },
+        "a": {
+          "zh": "不需要。保留规则、目标、选择与结果所需信息；环境氛围可用适当视觉补足，不能因静音增加未获知的事实。",
+          "en": "No. Preserve information needed for rules, goals, choices and results. Appropriate visuals can support ambience without revealing otherwise unknown facts."
+        }
+      }
+    ],
+    "skill": {
+      "name": "game-build",
+      "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-build/SKILL.md",
+      "text": {
+        "zh": "用 $game-build 实现已批准的声音设置，附声音层、静音fallback、计时与重开规则。设置只改变播放；保留关键文字和已提交结果。用实际运行路径检查静音、恢复、缺音与重开，不把纸面表格当游戏完成。",
+        "en": "Use $game-build with approved sound layers, muted fallback, timing and restart rules. Settings affect playback while retaining essential text and committed results. Verify mute, unmute, missing audio and restart in the actual runtime."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "声音层级与静音视觉通道",
+          "en": "Sound hierarchy and muted visual channels"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-art-direction/references/art-direction-method.md"
+      },
+      {
+        "label": {
+          "zh": "语音与字幕、缺音和重开检查",
+          "en": "Speech, text, missing-audio and restart checks"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-build/references/tts-production-contract.md"
+      },
+      {
+        "label": {
+          "zh": "实际路线与相邻反例",
+          "en": "Actual route and adjacent countercase"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-qa/references/test-design-method.md"
+      }
+    ],
+    "related": [
+      "/novel-to-game/game-voice-assets",
+      "/novel-to-game/readable-gameplay-feedback",
+      "/novel-to-game/design-skippable-game-cutscenes"
+    ]
+  },
+  {
+    "owner": "drama-skills",
+    "slug": "fix-cropped-characters-in-ai-video",
+    "topic": "short-drama",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "AI视频人物被裁切怎么办：先查原图、动作范围和画幅",
+      "en": "How to Fix Cropped Characters in AI Video"
+    },
+    "seo_title": {
+      "zh": "AI视频人物被裁切怎么修｜ZenStory",
+      "en": "Fix Cropped Characters in AI Video | ZenStory"
+    },
+    "description": {
+      "zh": "分清参考图裁切、人物运动出画和后期换画幅。附柜台取票完整提示词，保住头部、关键手部与已确认动作。",
+      "en": "Separate reference cropping, movement out of frame and later aspect-ratio changes. A counter scene keeps the head, important hands and accepted action visible."
+    },
+    "answer": {
+      "zh": "先看裁切从哪一步开始：输入图已经缺头部或手部、人物动作越过画面边缘，还是完整生成片被后期裁成竖屏。回到对应材料修构图与动作范围，再检查整个动作。别只加“不裁切”，也别为了人物全身入画丢掉本镜关键道具。",
+      "en": "Locate where cropping begins: the input already lacks the head or hands, movement crosses the frame, or a complete generation is later cropped into portrait. Repair the responsible composition or action range, then inspect the whole action. “No cropping” alone is insufficient, and full-body framing must not hide the shot’s important object."
+    },
+    "sections": [
+      {
+        "id": "locate-the-crop",
+        "heading": {
+          "zh": "先比较输入、原始视频与最终版本",
+          "en": "Compare the input, original clip and final version"
+        },
+        "body": {
+          "zh": "| 裁切出现在哪里 | 先检查什么 |\n|---|---|\n| 参考图已经切掉头顶或手 | 实际送入的图片与本镜用途；文字计划不等于已修好的图片。 |\n| 起点正常，弯腰或举手时出画 | 动作范围与摄影机的相对位置，是否有足够空间。 |\n| 原视频完整，最终版才缺人物 | 后期画幅和裁切位置，先处理最终构图。 |\n\n并非任何出画都是错误。人物离场、脸部特写和有意遮挡可以服务叙事；只有本镜必须看见的事实丢失，才按问题处理。例如递交凭据的镜头要看清持物变化，不需要为了保全鞋子退成读不清手部的大远景。",
+          "en": "| Where cropping appears | First check |\n|---|---|\n| Reference already loses head or hands | The actual submitted image and its shot role; a written plan is not a repaired image. |\n| Start is correct but bending or raising an arm leaves frame | Subject movement relative to the camera and available space. |\n| Original clip is complete but final output is cropped | The later aspect ratio and crop position. |\n\nLeaving frame is not inherently wrong. Exits, facial close-ups and intentional occlusion can serve the story. Treat cropping as a defect when a required visible fact is lost. A receipt handover needs readable object possession; pulling into an extreme wide shot merely to retain shoes may hide the important hands."
+        }
+      },
+      {
+        "id": "revise-composition-without-changing-events",
+        "heading": {
+          "zh": "构图要覆盖完整动作，也要服从原分镜",
+          "en": "Cover the action while preserving the accepted shot"
+        },
+        "body": {
+          "zh": "视频提示词方法要求从已确认起点到终点，运镜与分镜一致。固定机位应说明景别、高度、轴线侧、画内运动与保持时间；移动机位说明触发、路径及终点构图。同一区间不能既“完全固定”又要求摄影机一路跟随。\n\n如果原分镜只留脸部特写，却要求从腰下取物再举到胸前，先修改分镜或采用获准的补镜，不能在提示词里默默换成远景。参考图的构图用途与终点事实也要分开：起始图不能拿人物已经取到票的状态冒充“准备取票”。\n\n改后用实际参考图确认头部和关键手部位置。不要把未取得的图片称为冻结关键帧；用文字计划准备参考图时，明确还需真实图片才能按图生视频路径提交。",
+          "en": "Video-prompt methods realise accepted starts and ends while inheriting storyboard camera behaviour. A fixed shot specifies framing, height, axis side, movement within the frame and duration. A moving shot specifies trigger, path and endpoint. One interval cannot demand both a fully fixed camera and continuous camera following.\n\nIf an accepted facial close-up also requires taking something from below the waist, revise the storyboard or use an approved additional shot rather than silently changing to a wide view inside the prompt. Keep a reference’s composition role separate from end-state facts: an image of a person already holding the ticket cannot serve as the starting state before pickup.\n\nUse the actual revised reference to check the head and important hands. An image not yet acquired is not a frozen keyframe. When planning an input in text, make clear that an actual image is still required for image-to-video submission."
+        }
+      },
+      {
+        "id": "complete-counter-framing",
+        "heading": {
+          "zh": "完整示例：取票时头部与持票手都留在画内",
+          "en": "Complete example: keeping the head and ticket hand visible"
+        },
+        "body": {
+          "zh": "原创纸面镜头：书店柜台，杜晴从自己面前取回有蓝圆印的票据，最后在胸前拿稳。票据起初在柜台上，归属不变；本镜不表现交给别人。原方案是过紧的头肩构图，低头取票时手和纸都在画外。作者已同意改成六秒固定中景，保留取票动作和结尾持物。\n\n创作者已明确选用文生视频，下面是构图与动作正文候选，没有实际生成视频：\n\n> 竖屏书店柜台场景。成年短发女子杜晴穿灰色开衫，站在柜台后；白色票据带蓝色圆印，平放在她面前。柜台、她的双手以及头顶到腰部都在画内，头顶上方留出空间。摄影机在既定轴线左侧平视，六秒保持固定中景，为了看清她取票并拿稳的完整动作，不推近、不摇移。杜晴先低头看票据，右手伸向柜台，手指接触纸边后拿起；她直起身，将票据停在胸前，蓝圆印朝向画面，左手仍搭在柜台上。手、纸与头部在弯腰和直起时都保持可见，纸只有这一张，不转交。末尾她站稳，票据仍由右手持有。全镜只有轻微店内环境声，无对白、画外音和配乐；任何时刻都不生成非画内字幕、caption或对白文字叠加。票据无需生成可读文字。\n\n构图中的留白没有通用百分比，六秒也是本例选择，不保证某模型一次成功。若换成图生视频，先取得同一起点的真实图：票据在柜台，不在胸前，并按所用模型的参考绑定方式提交；不要直接沿用文生的准备声明。",
+          "en": "Original paper shot: at a bookshop counter, Du Qing picks up her own receipt with a blue circular mark and holds it steadily at her chest. It begins on the counter and ownership does not change; no handover occurs. A tight head-and-shoulders plan hides the hand and paper during pickup. The author approves a six-second fixed medium shot preserving the action and final possession.\n\nThe creator explicitly chooses text-to-video. This is a composition and motion candidate, without an actual generated clip:\n\n> Portrait bookshop-counter scene. Du Qing, an adult woman with short hair and a grey cardigan, stands behind the counter. One white receipt bearing a blue circular mark lies in front of her. Keep the counter, both hands and her head through waist visible, with space above the head. The camera is at eye level on the established left side of the axis and holds this medium framing for six seconds to show the whole pickup and steady hold, without pushing in or panning. She looks down, reaches with her right hand, contacts the paper edge and lifts it. She straightens and holds the receipt at chest height with its blue mark toward the image; her left hand remains on the counter. Head, hand and paper remain visible while bending and straightening. There is one receipt and no transfer. At the end she stands steadily and still holds it in her right hand. Use only quiet shop ambience, without dialogue, voice-over or music. Generate no non-diegetic subtitles, captions or dialogue overlays at any point. The receipt requires no readable text.\n\nThere is no universal headroom percentage, and six seconds is this example’s choice rather than a one-try model guarantee. For image-to-video, obtain an actual matching start image with the receipt on the counter, not already at the chest, and bind it according to the target model. Do not reuse a text-to-video preparation statement as proof of an image input."
+        }
+      },
+      {
+        "id": "check-the-whole-action",
+        "heading": {
+          "zh": "检查首、中、尾，再看最终画幅",
+          "en": "Check start, middle, end and the final frame format"
+        },
+        "body": {
+          "zh": "正常速度看完整镜头，再暂停定位：手碰纸、纸离台、人物直起和最后持物时，关键内容是否都可见？头顶偶然被切掉与整个动作在画外，修法不必相同。核对下一镜仍是右手持同一张票，不因补构图变成左手或第二张纸。\n\n最终成片若换画幅，重新检查这些时刻；原视频通过不证明裁切后的版本通过。只需补本镜影响的材料，不为一次构图错误重写全剧。提示词更清楚是改进方案，真实参考和生成结果才证明是否解决。",
+          "en": "Watch the complete shot at normal speed, then pause to locate contact, lift, straightening and final possession. Required content should be visible at each point. An occasional clipped head and an entire off-screen action may need different repairs. Check that the following shot still begins with the same receipt in the right hand, without a new hand or duplicate paper introduced by reframing.\n\nIf the final edit changes aspect ratio, inspect these moments again. A passing source clip does not prove the cropped version passes. Update only affected shot materials rather than rewriting the series for one framing error. A clearer prompt proposes a repair; actual references and generated results establish whether it worked."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "写全身入画就能解决所有裁切吗？",
+          "en": "Does asking for a full-body shot solve every crop?"
+        },
+        "a": {
+          "zh": "不能。按本镜需要选择景别，确保头部、关键动作和道具可读；也要检查真实参考、运动范围和后期裁切。",
+          "en": "No. Choose framing for the shot’s needed head, action and objects, then check actual references, movement range and later cropping."
+        }
+      }
+    ],
+    "skill": {
+      "name": "short-drama-video-prompts",
+      "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/SKILL.md",
+      "text": {
+        "zh": "用 $short-drama-video-prompts 检查指定镜头的裁切，附已确认分镜、实际输入与原片。定位输入、运动或后期问题；保留动作和终点，需换景别时先同步分镜。分别说明文生与真实图生输入，检查完整动作与最终画幅。",
+        "en": "Use $short-drama-video-prompts with the accepted shot, actual input and source clip. Locate reference, movement or edit cropping; retain action and endpoint, updating the storyboard before changing framing. Distinguish text-to-video from real image inputs and inspect the whole action and final aspect ratio."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "固定与移动摄影机、构图与主体相对运动",
+          "en": "Fixed and moving cameras, framing and relative subject movement"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/references/camera-audio-continuity.md"
+      },
+      {
+        "label": {
+          "zh": "起止边界、真实参考及动作实现",
+          "en": "Start/end boundaries, actual references and motion implementation"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/references/motion-recipe.md"
+      }
+    ],
+    "related": [
+      "/drama-skills/stop-unwanted-ai-video-camera-drift",
+      "/drama-skills/vertical-storyboarding",
+      "/drama-skills/reference-image-roles"
+    ]
   }
 ]
