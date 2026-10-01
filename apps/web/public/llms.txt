@@ -226,6 +226,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Stop AI Fiction from Adding Unwanted Characters](https://zenstory.ai/oh-story/stop-ai-fiction-from-adding-unwanted-characters) — Define this chapter’s cast, facts and stopping point. Distinguish incidental people from plot-changing additions, with a workshop example and local repair.
 - [How to Stop AI Continuation Repeating the Previous Chapter](https://zenstory.ai/oh-story/stop-ai-continuation-from-repeating-the-previous-chapter) — Separate rewriting from continuation and confirm the previous ending, completed events and next outline. A clock-shop example keeps continuity without replay.
 - [How to Fix Viewpoint Drift in AI Fiction](https://zenstory.ai/oh-story/fix-ai-fiction-viewpoint-drift) — Separate pronoun drift, access to other minds and premature knowledge. A sealed-letter revision keeps events intact without inventing observations or memories.
+- [How to Stop AI Fiction Characters Knowing Secrets Too Soon](https://zenstory.ai/oh-story/stop-ai-fiction-characters-from-knowing-secrets-too-soon) — Separate author facts, reader knowledge and character evidence. A complete interview-and-rota repair preserves privacy and the actual shift agreement.
 
 ### Book covers / 小说封面
 - [Book covers](https://zenstory.ai/guides/book-covers) — Plan cover art and lettering, then check upload crops and thumbnail readability.
