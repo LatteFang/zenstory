@@ -21873,8 +21873,8 @@
           "en": "Use actual events as line conditions"
         },
         "body": {
-          "zh": "| 项目 | 记录 |\n|---|---|\n| G-01 | 说话者与条件：园丁；玩家请求钥匙但尚未说明阀门；台词：“先告诉我你开过哪只阀。”；状态或下一步：开放现场检查与出示记录 |\n| G-02 | 说话者与条件：园丁；本场实际见过旧记录，钥匙仍在园丁、玩家尚未持有；台词：“这道线是后来加的。钥匙给你，别先开南边。”；状态或下一步：交钥匙，提供顺序依据 |\n| G-03 | 说话者与条件：园丁；玩家只检查了现场；台词：“先让我看你找到的接头。”；状态或下一步：进入核验，尚未交钥匙 |\n\n玩家自己读过文件，不等于园丁见过。G-02 的条件来自“出示记录”的实际行动；不能用无关的好感分数代替这一知识来源。\n\n编号把文案、字幕与语音对应起来，出现条件仍由游戏规则检查。表格是本页纸面设计，不代表已经接入引擎或运行通过。\n\n**同一初态的完整纸面交互：**供水暂停，钥匙在园丁手中，玩家尚未开阀且只检查过现场。玩家手中有旧记录，园丁本场还未见；本例页边注记明确南边那条线为后加，原定顺序仍是先北后南。这是本例选定的游戏规则。\n\n> 玩家：“先借我阀门钥匙。”\n>\n> 园丁：“先告诉我你开过哪只阀。”\n>\n> 玩家：“还没开。我把旧记录带来了，你看看这页。”\n>\n> 玩家实际选择“出示旧记录”。园丁接过纸页，看了页边注记，再指向北侧箭头。\n>\n> 园丁：“这道线是后来加的。钥匙给你，别先开南边。”\n>\n> 他把钥匙递到玩家手里。状态记录归属转移，出现按既定顺序前往阀柜的行动；此刻供水仍未恢复。\n>\n> 玩家再次请求钥匙。园丁看着玩家手中的钥匙：“你拿着呢，按刚才说的来。”\n\n第二次请求没有再次发物件，也不把园丁变回“未见记录”。未出示的相邻路径仍可选择带他看接头，触发原G-03：“先让我看你找到的接头。”他同意查看后进入现场核验，钥匙暂留园丁；不能先写成已经交出，或借出示分支的注记知识收尾。两路后来做完各自规则才进入相应结果。\n\n“钥匙给你”是对白表现，真正归属由规则提交的递交记录决定。只改句子而不改触发条件，重复播放仍可能重发；规则正确之后，感谢、提醒或沉默都可以按人物选择写，不为避免一句重复无限新增台词。",
-          "en": "| Item | Record |\n|---|---|\n| G-01 | Speaker / condition: Gardener; key requested without valve history; Line: “Tell me which valve you opened.”; State or next step: Inspection and showing records become available |\n| G-02 | Speaker / condition: Gardener shown the record; key still with gardener, not held by player; Line: “That line was added later. Take the key. Don’t open south first.”; State or next step: Key handed over; sequence evidence given |\n| G-03 | Speaker / condition: Player inspected only the site; Line: “Show me the joint you found first.”; State or next step: Verification begins; no key yet |\n\nPrivate reading does not inform the gardener. G-02 reads the showing action, not an unrelated affection score.\n\nIDs connect copy, captions and voices; game rules still verify conditions. This is a paper example, not an implemented or tested engine script.\n\n**Complete paper interaction from one initial state:** Supply is paused; the gardener holds the key. The player has inspected the site but opened no valve and carries an old record the gardener has not seen in this scene. Its margin explicitly identifies the south line as a later addition, with the original north-before-south order unchanged. These are the chosen game rules for this example.\n\n> Player: “Lend me the valve key.”\n>\n> Gardener: “Tell me which valve you opened.”\n>\n> Player: “None yet. I brought the old record. Look at this page.”\n>\n> The player actually selects showing the record. The gardener takes the page, reads its margin, and points to the north arrow.\n>\n> Gardener: “That line was added later. Take the key. Don’t open south first.”\n>\n> He puts the key in the player’s hand. The state records transfer and offers travel to the valve cabinet in the established order. Supply remains unrestored.\n>\n> The player asks again. The gardener looks at the held key: “You have it. Follow the order we just discussed.”\n\nThe second request grants no additional object or reset to an unseen record. On the unshown route, the player may instead offer to show the joint, triggering the original G-03: “Show me the joint you found first.” Agreement enters site verification with the key still held by the gardener. Do not report transfer early or borrow the other route’s margin knowledge. Each route reaches its own result only after its requirements are completed.\n\n“Take the key” presents dialogue; possession follows the rule-committed handover. Wording changes alone cannot stop duplicate grants from faulty conditions. Once state is correct, reminders, thanks, or silence may fit the character without limitless new lines merely to avoid one repetition."
+          "zh": "| 项目 | 记录 |\n|---|---|\n| G-01 | 说话者与条件：园丁；玩家请求钥匙但尚未说明阀门；台词：“先告诉我你开过哪只阀。”；状态或下一步：开放现场检查与出示记录 |\n| G-02 | 说话者与条件：园丁；本场实际见过旧记录，钥匙仍在园丁、玩家尚未持有；台词：“这道线是后来加的。钥匙给你，别先开北边。”；状态或下一步：交钥匙，提供顺序依据 |\n| G-03 | 说话者与条件：园丁；玩家只检查了现场；台词：“先让我看你找到的接头。”；状态或下一步：进入核验，尚未交钥匙 |\n\n玩家自己读过文件，不等于园丁见过。G-02 的条件来自“出示记录”的实际行动；不能用无关的好感分数代替这一知识来源。\n\n编号把文案、字幕与语音对应起来，出现条件仍由游戏规则检查。表格是本页纸面设计，不代表已经接入引擎或运行通过。\n\n**同一初态的完整纸面交互：**供水暂停，钥匙在园丁手中，玩家尚未开阀且只检查过现场。玩家手中有旧记录，园丁本场还未见；本例页边注记明确南边那条线为后加，并注明先南后北；沿用[温室任务设计](/novel-to-game/write-a-game-quest)的规则：先开南阀再开北阀，恢复供水并保住北侧备用水。\n\n> 玩家：“先借我阀门钥匙。”\n>\n> 园丁：“先告诉我你开过哪只阀。”\n>\n> 玩家：“还没开。我把旧记录带来了，你看看这页。”\n>\n> 玩家实际选择“出示旧记录”。园丁接过纸页，看了页边注记，再指向南侧箭头。\n>\n> 园丁：“这道线是后来加的。钥匙给你，别先开北边。”\n>\n> 他把钥匙递到玩家手里。状态记录归属转移，出现按既定顺序前往阀柜的行动；此刻供水仍未恢复。\n>\n> 玩家再次请求钥匙。园丁看着玩家手中的钥匙：“你拿着呢，按刚才说的来。”\n\n第二次请求没有再次发物件，也不把园丁变回“未见记录”。未出示的相邻路径仍可选择带他看接头，触发原G-03：“先让我看你找到的接头。”他同意查看后进入现场核验，钥匙暂留园丁；不能先写成已经交出，或借出示分支的注记知识收尾。两路后来做完各自规则才进入相应结果。\n\n“钥匙给你”是对白表现，真正归属由规则提交的递交记录决定。只改句子而不改触发条件，重复播放仍可能重发；规则正确之后，感谢、提醒或沉默都可以按人物选择写，不为避免一句重复无限新增台词。",
+          "en": "| Item | Record |\n|---|---|\n| G-01 | Speaker / condition: Gardener; key requested without valve history; Line: “Tell me which valve you opened.”; State or next step: Inspection and showing records become available |\n| G-02 | Speaker / condition: Gardener shown the record; key still with gardener, not held by player; Line: “That line was added later. Take the key. Don’t open north first.”; State or next step: Key handed over; sequence evidence given |\n| G-03 | Speaker / condition: Player inspected only the site; Line: “Show me the joint you found first.”; State or next step: Verification begins; no key yet |\n\nPrivate reading does not inform the gardener. G-02 reads the showing action, not an unrelated affection score.\n\nIDs connect copy, captions and voices; game rules still verify conditions. This is a paper example, not an implemented or tested engine script.\n\n**Complete paper interaction from one initial state:** Supply is paused; the gardener holds the key. The player has inspected the site but opened no valve and carries an old record the gardener has not seen in this scene. Its margin identifies the south line as a later addition and specifies south before north, following the [greenhouse quest](/novel-to-game/write-a-game-quest): open south then north to restore supply while preserving the north reserve.\n\n> Player: “Lend me the valve key.”\n>\n> Gardener: “Tell me which valve you opened.”\n>\n> Player: “None yet. I brought the old record. Look at this page.”\n>\n> The player actually selects showing the record. The gardener takes the page, reads its margin, and points to the south arrow.\n>\n> Gardener: “That line was added later. Take the key. Don’t open north first.”\n>\n> He puts the key in the player’s hand. The state records transfer and offers travel to the valve cabinet in the established order. Supply remains unrestored.\n>\n> The player asks again. The gardener looks at the held key: “You have it. Follow the order we just discussed.”\n\nThe second request grants no additional object or reset to an unseen record. On the unshown route, the player may instead offer to show the joint, triggering the original G-03: “Show me the joint you found first.” Agreement enters site verification with the key still held by the gardener. Do not report transfer early or borrow the other route’s margin knowledge. Each route reaches its own result only after its requirements are completed.\n\n“Take the key” presents dialogue; possession follows the rule-committed handover. Wording changes alone cannot stop duplicate grants from faulty conditions. Once state is correct, reminders, thanks, or silence may fit the character without limitless new lines merely to avoid one repetition."
         }
       },
       {
@@ -46699,6 +46699,275 @@
       "/oh-story/clear-character-names-and-pronouns",
       "/oh-story/introduce-a-fiction-character",
       "/oh-story/story-bible-template"
+    ]
+  },
+  {
+    "owner": "novel-to-game",
+    "slug": "design-dialogue-history-in-a-story-game",
+    "topic": "interactive-games",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "视觉小说怎么做对白历史：找回已读台词，接着当前选择",
+      "en": "How to Design Dialogue History in a Visual Novel"
+    },
+    "seo_title": {
+      "zh": "视觉小说对白历史怎么做：回看与返回选择｜ZenStory",
+      "en": "Design Dialogue History in a Visual Novel"
+    },
+    "description": {
+      "zh": "设计玩家主动打开的对白回看，保留说话者和已走分支，明确是否允许回滚，附完整维修场景与AI设计简报。",
+      "en": "Design an on-demand dialogue backlog with speakers, the actual route and an explicit rollback policy, using a complete repair-shop example and AI brief."
+    },
+    "answer": {
+      "zh": "先确定玩家只回看已读台词，还是能回到过去重选。只读历史按当前路径收录已经显示的对白，保留说话者和顺序；打开、滚动、关闭都不重新结算选择。返回时接着原来的当前句或选项。未选分支、尚未揭示的秘密与后台状态不混进历史。",
+      "en": "First decide whether players can only reread or also return to an earlier choice. A read-only backlog retains displayed lines, speakers and order from the current route. Opening, scrolling and closing it must not settle choices again. Resume at the current line or choice without exposing unseen branches, secrets or internal state."
+    },
+    "sections": [
+      {
+        "id": "history-or-rollback",
+        "heading": {
+          "zh": "先说清“回看”和“重选”各做什么",
+          "en": "Declare what rereading and reselection do"
+        },
+        "body": {
+          "zh": "玩家误点跳过一句、忘了谁提出要求，常需要看前面的对白。历史页先解决这件事；想改变已做选择，则涉及另一套回滚规则。\n\ngame-build 的可执行模型合同把自由重选、固定历史只回看和不可逆节点作为需要明确的设计决定。本例选择**只读历史**。如果你的游戏允许回滚，入口要说明会回到哪一处、哪些已提交结果会撤销；不要让点击旧台词悄悄改掉当前进度。\n\n[Ren’Py 的对白历史文档](https://www.renpy.org/doc/html/history.html)说明已显示的台词可以储存后再显示；历史条目中的回滚标识可用于另一项回滚动作。这里借它说明两种操作可以分开，不宣称本页方案已在 Ren’Py 或 skill 中自动实现。\n\n“对白历史”也不同于全剧情图鉴。通关解锁的其他路线可以另设档案；当前游玩时回看，先尊重此路径已经公开的信息。",
+          "en": "Players may skip a line accidentally or forget who made a request. A backlog helps recover that dialogue. Changing an earlier choice requires a separate rollback policy.\n\ngame-build’s playable-model contract requires an explicit decision about free reselection, fixed history for rereading, or irreversible nodes. This example chooses **read-only history**. If your game permits rollback, explain the destination and which committed results will be undone; clicking an old line must not silently alter progress.\n\n[Ren’Py’s dialogue-history documentation](https://www.renpy.org/doc/html/history.html) describes storing displayed lines for redisplay and a history identifier usable by a separate rollback action. These operations can be distinct; this page does not claim automatic implementation in Ren’Py or the skill.\n\nA backlog also differs from a complete story gallery. Other routes may unlock in a separate archive after play. During the current run, history should respect information already revealed on that route."
+        }
+      },
+      {
+        "id": "what-history-shows",
+        "heading": {
+          "zh": "保留原台词、说话者与这次实际走过的路",
+          "en": "Keep the lines, speakers and route actually played"
+        },
+        "body": {
+          "zh": "先决定收录对白、旁白以及玩家已提交的发言哪些内容，采用后保持一致。本例收录三者；未选选项不作为“玩家说过的话”。台词内容按当时显示的版本保存，后来的线索不能偷偷重写早先一句。\n\n| 需要回看的内容 | 显示办法 |\n|---|---|\n| 谁提出什么要求 | 保留原说话者及台词，不把两人的话合成一句摘要。 |\n| 玩家实际选了什么 | 收录已提交发言或行动说明，按发生顺序排列。 |\n| 当时身份还未揭晓 | 沿用当时的可见称呼，不提前换成真实姓名。 |\n| 行动是否已经完成 | 显示当时实际反馈；提出维修不等于物件已经修好。 |\n\ngame-world-design 的叙事方法区分世界事实、人物相信和玩家知道。后台可能已有凶手身份、未来回应或其他分支对白，历史不能因此把它们显示出来。\n\ngame-art-direction 把完整历史放在玩家主动打开的页面。主界面仍保留当前选择必需的依据；不能把费用、危险或对方的关键要求藏进历史，让玩家靠翻旧页才能理解眼前按钮。",
+          "en": "Decide which dialogue, narration and committed player statements to retain, then apply that policy consistently. This example retains all three. Unchosen options are not things the player said. Preserve what was displayed at the time; a later clue must not rewrite an earlier line silently.\n\n| What players need | Presentation |\n|---|---|\n| Who requested what | Keep the original speaker and line instead of merging two speakers into a summary. |\n| What the player chose | Record committed speech or action descriptions in their actual order. |\n| An unrevealed identity | Retain the name visible then, without substituting a future real name. |\n| Whether an action finished | Keep the actual feedback; requesting repair does not make the object repaired. |\n\ngame-world-design distinguishes world facts, character beliefs and player knowledge. Hidden culprit identities, future responses and other-route dialogue must not appear just because the backend contains them.\n\ngame-art-direction places complete history on an on-demand page. Keep evidence needed for the current choice nearby: fees, danger or a crucial request should not require searching old pages before understanding a button."
+        }
+      },
+      {
+        "id": "complete-history-example",
+        "heading": {
+          "zh": "完整纸面路径：回看维修要求，再决定是否付费",
+          "en": "Complete paper path: reread the repair request before paying"
+        },
+        "body": {
+          "zh": "原创文字游戏中，林禾带台灯到维修铺，有3枚代币。台灯仍在柜台，没有维修或扣费；旧开关要保留。作者选择以下对白和规则，作为实现前的纸面示范。\n\n> 林禾：“灯线坏了。只换线，旧开关留着。”\n>\n> 技师：“我先检查，不拆开关。”\n>\n> 玩家选择“请他检查灯线”。检查完成，技师指着破损处。\n>\n> 技师：“确实要换线，2枚代币。开关没坏，照你的要求留着。”\n>\n> 当前界面提供“确认换线，支付2枚代币”和“暂不修，取回台灯”。\n\n玩家忘了开关约定，主动打开“对白历史”。页内按上面的顺序显示林禾、技师、已选择的检查行动与实际反馈。未选“自己拿灯离开”的另一条路线没有发生，不出现在历史；确认换线后的未来回应也不出现。\n\n玩家滚回第一句，读到“旧开关留着”，再关闭历史。仍回到原来的两个选择；台灯留在柜台、代币仍为3、维修尚未开始。滚动和关闭没有把“请他检查”再执行一次。\n\n玩家这次确认换线，规则提交一次2枚代币的费用，余额1。稍后，技师递回修好的灯，旧开关仍在；游戏显示对应结果。再次打开历史，才看到刚发生的确认与交付。再回看检查台词不会重复扣费或让台灯倒退到未修状态。\n\n这条路径恢复了一个具体约定，又接回当前行动。纸面推演用于写清预期，不证明已有可运行界面；实际项目需验证入口、滚动、返回与费用记录。",
+          "en": "In an original text game, Lin He brings a lamp to a repair shop with three tokens. The lamp remains on the counter, unrepaired and unpaid for; its old switch must stay. The author selects these lines and rules as a paper example before implementation.\n\n> LIN: “The cable broke. Replace only that. Keep the old switch.”\n>\n> TECHNICIAN: “I’ll check first, without removing the switch.”\n>\n> The player chooses “Ask him to inspect the cable.” After inspection, he points to the damage.\n>\n> TECHNICIAN: “It needs a new cable: two tokens. The switch works; I’ll keep it as you asked.”\n>\n> Current choices: “Confirm cable replacement; pay two tokens” and “Decline repair and take the lamp.”\n\nHaving forgotten the agreement, the player opens Dialogue History. It shows Lin, the technician, the selected inspection and its actual feedback in that order. An unchosen leave-with-the-lamp route never occurred and is absent, as is the future response to authorizing repair.\n\nThe player scrolls to “Keep the old switch,” then closes history. The same two choices remain. The lamp is still on the counter, the balance is three and repair has not begun. Scrolling and closing did not repeat inspection.\n\nNow the player confirms replacement. The rules charge two tokens once, leaving one. Later, the technician returns the repaired lamp with its old switch and the game shows this result. Only then does history include confirmation and delivery. Rereading inspection neither charges again nor restores the unrepaired lamp.\n\nThis path recovers a concrete agreement and resumes the current action. Paper reasoning defines expectations, not proof of a running interface. The project still needs to verify opening, scrolling, returning and fee records."
+        }
+      },
+      {
+        "id": "history-brief-and-check",
+        "heading": {
+          "zh": "把回看要求交给实际设计与构建",
+          "en": "Give design and build a bounded history request"
+        },
+        "body": {
+          "zh": "先在已有 GAME_DESIGN 中明确历史政策，再给 game-art-direction 当前场景和目标视口：\n\n> 本项目只读回看，不允许从历史重选。请设计当前对白到历史、滚动阅读再返回当前选项的体验。保留说话者和已提交路线，历史可在清楚边界内滚动；当前维修费与保留开关的要求仍在决定旁。不要增加剧情、把回看做成回滚或输出未来分支。\n\n这份请求使用 skill 的信息层级与历史回看方向；它不是现成历史组件。方向确定后，game-build 按已批准规则接入实际项目，入口与关闭只改变界面显示，不结算游戏行动。\n\n核当前版本时走一次上例，再走“暂不修”相邻路径：历史是否只含那次实际发生的内容，关闭是否回到正确位置，费用与物件是否保持。存读档后的历史由项目存档政策决定，沿用[存档状态修复](/novel-to-game/fix-story-state-after-loading-a-save)的版本与路径检查，别靠另写一份剧情摘要猜出已走路线。",
+          "en": "Declare the history policy in the existing GAME_DESIGN, then give game-art-direction the current scene and target viewport:\n\n> This project permits read-only history with no reselection from it. Design opening from current dialogue, scrolling and returning to the current choice. Preserve speakers and committed route. Give the history a clear scroll boundary, while keeping repair cost and switch retention beside the decision. Add no plot, rollback behavior or future branches.\n\nThis request uses the skill’s information hierarchy and history direction; it is not a ready-made component. game-build can implement the approved rules afterward, with opening and closing affecting presentation without settling actions.\n\nWalk the example and a neighboring decline-repair route in the current build. Check route-specific content, return position, charges and possession. Persistence after loading follows the project’s save policy: use the version and path checks in [save-state repair](/novel-to-game/fix-story-state-after-loading-a-save), rather than guessing the route from a freshly generated summary."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "点旧台词就必须回到过去吗？",
+          "en": "Must clicking an old line return to the past?"
+        },
+        "a": {
+          "zh": "不必。只读历史可以仅供阅读。允许回滚时，要另定目的地、撤销范围和不可逆节点，并向玩家说明行为。",
+          "en": "No. History can be read-only. Rollback needs a declared destination, undo scope and irreversible boundaries that players can understand."
+        }
+      },
+      {
+        "q": {
+          "zh": "历史可以显示还没选的路线吗？",
+          "en": "Can history show an unchosen route?"
+        },
+        "a": {
+          "zh": "当前对白回看只收录当前路径已经显示的内容。其他路线若作为通关档案解锁，另设清楚入口和条件，避免游玩中泄露后续。",
+          "en": "The current backlog retains displayed content from the actual route. A separate unlocked gallery may show other routes under clear conditions without leaking them during play."
+        }
+      }
+    ],
+    "skill": {
+      "name": "game-art-direction",
+      "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-art-direction/SKILL.md",
+      "text": {
+        "zh": "提供已有GAME_DESIGN、PRODUCT_BRIEF、历史政策和目标视口，请game-art-direction设计对白回看入口、阅读边界与返回当前选择的体验。构建另按批准规则实现，不把方向稿当成可运行组件。",
+        "en": "Provide GAME_DESIGN, PRODUCT_BRIEF, history policy and target viewport to game-art-direction for the backlog entry, reading boundary and return experience. Build the approved behavior separately; direction is not a running component."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "按需历史与当前决策信息",
+          "en": "On-demand history and current decision information"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-art-direction/references/art-direction-method.md"
+      },
+      {
+        "label": {
+          "zh": "只读回看、回滚与提交边界",
+          "en": "Read-only history, rollback and committed state"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-build/references/playable-model-contract.md"
+      },
+      {
+        "label": {
+          "zh": "已走分支与玩家已知信息",
+          "en": "Actual branches and player knowledge"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-world-design/references/narrative-design-method.md"
+      },
+      {
+        "label": {
+          "zh": "实际路径与相邻反例检查",
+          "en": "Actual paths and neighboring counterexamples"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-qa/references/test-design-method.md"
+      }
+    ],
+    "related": [
+      "/novel-to-game/organize-a-story-game-interface",
+      "/novel-to-game/write-video-game-dialogue",
+      "/novel-to-game/fix-story-state-after-loading-a-save"
+    ]
+  },
+  {
+    "owner": "novel-to-game",
+    "slug": "fix-small-game-buttons-on-mobile",
+    "topic": "interactive-games",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "手机游戏按钮太小、容易误触怎么改：先看实际点按区域",
+      "en": "How to Fix Small Game Buttons and Accidental Taps on Mobile"
+    },
+    "seo_title": {
+      "zh": "手机游戏按钮太小容易误触怎么改｜ZenStory",
+      "en": "Fix Small Game Buttons and Accidental Taps on Mobile"
+    },
+    "description": {
+      "zh": "检查实际点击范围、相邻按钮间距和选择文字，用完整送药场景说明如何扩大按钮而不改费用、动作或结果。",
+      "en": "Check actual touch targets, spacing and choice text, with a complete delivery example that enlarges controls while preserving actions, costs and results."
+    },
+    "answer": {
+      "zh": "先在目标手机界面检查实际可点区域，别只看图标大小。扩大整个按钮的点击范围，留出相邻间距，让行动和必要代价完整可读；空间不够先删重复说明或拆相邻节拍。保持原动作绑定，重要确认说明将执行什么，再用真实设备检查误触和重复提交。",
+      "en": "Inspect the actual touch target on the target mobile interface, not just the icon. Enlarge the active button, separate neighboring targets and keep the action and necessary cost legible. Remove repeated copy or split beats when space is tight. Preserve action bindings, describe important confirmations and test accidental taps and repeated submission on real devices."
+    },
+    "sections": [
+      {
+        "id": "find-the-tap-problem",
+        "heading": {
+          "zh": "先区分按钮难点中，还是点中了却没有结果",
+          "en": "Distinguish missed taps from an action with no result"
+        },
+        "body": {
+          "zh": "记录玩家打算点哪项、实际哪里有反应。字很大但只有文字本身可点，仍可能难用；图标周围有大边框，但边框不接收点按，也没有增加有效区域。\n\n若玩家确实点中了，状态却不变，另查[按钮没有反应](/novel-to-game/fix-a-game-button-that-does-nothing)的输入、动作和结果链。本页处理目标太小、挤在一起和文字读不完整的问题，修尺寸后也要确认仍连着原动作。\n\n可用区域受到屏幕尺寸、浏览器栏、设备安全区域和横竖屏影响。给设计者当前实际界面与目标输入方式，不用一张桌面海报证明手机可点。鼠标能点中也不能证明手指容易点中。",
+          "en": "Record the intended choice and where activation actually happens. Large text can still be difficult when only the letters are clickable. A decorative border adds no usable area if taps there do nothing.\n\nIf the intended button activates but state does not change, inspect the input, action and result chain in [buttons with no response](/novel-to-game/fix-a-game-button-that-does-nothing). Here the problem is small targets, crowding or unreadable choices; resizing should still preserve their original action.\n\nAvailable space depends on viewport, browser bars, safe areas and orientation. Supply the actual interface and target input method. A desktop poster cannot prove mobile usability, and accurate mouse clicking cannot prove easy finger tapping."
+        }
+      },
+      {
+        "id": "target-and-choice",
+        "heading": {
+          "zh": "扩大可点区域，保住行动与必要代价",
+          "en": "Enlarge the target while preserving action and cost"
+        },
+        "body": {
+          "zh": "[W3C 对 WCAG 2.2 目标尺寸最低要求的说明](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum)给出24×24 CSS像素及间距、等效控件、行内文字、用户代理和必要呈现等例外。这里衡量实际目标，不是图标或设备物理像素。下例选择48像素最小高度作自己的设计起点，不把48写成统一合规门槛；满足一条尺寸条件也不证明整个游戏无障碍。\n\n实际修订可以先做这几件事：\n\n| 界面问题 | 修改方向 |\n|---|---|\n| 只有短文字能点 | 把内边距纳入同一按钮的实际目标，边缘也触发同一动作。 |\n| 两个选择贴在一起 | 分开有效区域并留间距，不让扩大的点击层覆盖邻项。 |\n| 长标签被省略 | 保留行动与本项代价，允许完整换行，不把“支付2枚”藏到截断处。 |\n| 多段解释挤走选项 | 留当前决定必需信息，删除重复或拆拍，不靠缩小字体解决。 |\n\ngame-art-direction 的方法要求目标视口能读到当前正文、选择和必要反馈，选项突出玩家动词与本项代价。按钮变大后，主场景仍应保持可读；历史等主动打开的页面可以另有清楚滚动边界。配色可辅助区分，文字和形状也要说明行动，不让玩家只能凭红绿判断。",
+          "en": "[W3C’s explanation of WCAG 2.2 minimum target size](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) gives 24×24 CSS pixels with spacing, equivalent-control, inline, user-agent and essential-presentation exceptions. Measure the actual target, not its icon or physical display pixels. The example below selects a 48-pixel minimum height as its own starting choice, not a universal compliance threshold. Meeting one sizing condition does not establish whole-game accessibility.\n\n| Interface problem | Revision |\n|---|---|\n| Only letters activate | Include padding in the same active button; its edges perform the same action. |\n| Adjacent choices touch | Separate active areas and add spacing; enlarged layers must not cover a neighbor. |\n| Long labels truncate | Preserve action and local cost with complete wrapping, not a hidden payment suffix. |\n| Repeated explanations crowd out choices | Keep decision-critical information, cut repetition or split beats instead of shrinking fonts. |\n\ngame-art-direction requires readable current text, choices and necessary feedback in the target viewport, emphasizing verbs and each option’s cost. Larger buttons still need a readable play panel. On-demand history can have a separate, clear scroll boundary. Color can help, while words and shapes must also identify actions instead of relying only on red versus green."
+        }
+      },
+      {
+        "id": "complete-mobile-choice",
+        "heading": {
+          "zh": "完整纸面例子：选摆渡车，确认费用，再看到到达",
+          "en": "Complete paper example: choose the shuttle, confirm cost and arrive"
+        },
+        "body": {
+          "zh": "原创送药游戏里，玩家在山口，药箱在手，有4枚钱；本段没有倒计时。作者已定两种行动：坐摆渡车到诊所消耗2枚钱和1回合；步行同样到诊所，消耗0枚钱和2回合。两条路线都能送达，本例不另造迟到失败条件。\n\n旧界面把“坐车”和“步行”两个文字链接并排放在插画角落，只有文字可点，费用写在更下面的说明里。改版把两个真实按钮竖排在当前选择区，分别写“坐摆渡车到诊所”和“步行到诊所”，旁边各保留本项费用与回合数。\n\n给布局的起点是390×844 CSS像素竖屏、按钮最小高48、相邻间距12；高度随完整文字增加，有效区域与所见按钮一致。这些是作者选的规格，尚需在目标设备和实际长文本里试，不能由纸面数字宣称已经同屏通过。\n\n> 当前：山口。你提着药箱，持有4枚钱。\n>\n> 选择：坐摆渡车到诊所（2枚钱，1回合）；步行到诊所（0枚钱，2回合）。\n>\n> 玩家点中摆渡车按钮的内边距。本例先显示确认：“花2枚钱坐摆渡车到诊所？药箱会随你带上。”下面是“确认坐车”和“返回选择”。\n>\n> 玩家先返回。仍在山口，4枚钱、药箱和回合数都未变化。\n>\n> 再选摆渡车并确认。规则提交一次行程：钱剩2枚，用去1回合，地点到诊所，药箱仍在手。界面显示“你带药箱抵达诊所”，接出交药行动。\n\n这次修改解决的是难点按和费用分离；确认页是本例针对付费行动选的设计。它没有把步行改成失败，也没有因为点开确认就扣钱。再连点确认不能结算第二次；不需每次无代价推进都增加确认。",
+          "en": "In an original medicine-delivery game, the player holds a medicine case at a mountain pass with four coins. This section has no countdown. The author has defined two actions: a shuttle reaches the clinic for two coins and one turn; walking also reaches it for no coins and two turns. Both can deliver. The example invents no lateness failure.\n\nThe old interface places adjacent “Ride” and “Walk” text links in an illustration corner, with only letters active and costs farther below. The revision stacks two actual buttons in the choice area: “Take the shuttle to the clinic” and “Walk to the clinic,” each beside its own coin and turn cost.\n\nThe layout starts from a 390×844 CSS-pixel portrait viewport, 48-pixel minimum button height and 12-pixel gap. Height grows for complete text; active and visible button areas match. These are author-selected specifications to test with target devices and real long labels, not proof of fitting on screen.\n\n> Current state: Mountain pass; medicine case held; four coins.\n>\n> Choices: Shuttle to clinic (two coins, one turn); walk to clinic (no coins, two turns).\n>\n> The player taps inside the shuttle button’s padding. This design opens confirmation: “Spend two coins to take the shuttle to the clinic? You will bring the medicine case.” Controls: “Confirm ride” and “Return to choices.”\n>\n> The player returns first. Location, four coins, the case and turns remain unchanged.\n>\n> They choose the shuttle again and confirm. The rules commit one journey: two coins remain, one turn passes, location becomes the clinic and the case stays held. Feedback reads “You arrive at the clinic with the medicine case,” followed by a handover action.\n\nThe revision addresses difficult tapping and detached cost information. Confirmation is this example’s decision for a paid action. Walking does not become a failure, and merely opening confirmation does not charge. Repeated confirmation must not settle twice; every cost-free advance need not gain a confirmation screen."
+        }
+      },
+      {
+        "id": "mobile-brief-and-test",
+        "heading": {
+          "zh": "给 AI 实际画面与规则，再用手机走完",
+          "en": "Give AI the actual interface and rules, then walk it on a phone"
+        },
+        "body": {
+          "zh": "已有 GAME_DESIGN 与 PRODUCT_BRIEF 后，可给 game-art-direction 这样一份有界要求：\n\n> 目标是手机竖屏触控，附当前送药选择界面和两条已批准行动。请只修点按区域、间距、文字换行与当前信息布局。费用、回合数、药箱归属和两条到达结果保持；提出摆渡车确认页，开页和返回都不结算。别缩小字体塞内容，也不要增加新路线或失败规则。\n\n美术方向确定后，由 game-build 修实际控件和原动作绑定。QA方法关注玩家可观察结果；在目标手机分别点中心与边缘、走返回和确认，再走步行相邻路径，核实际触发、费用、回合、地点和物件。检查快速重复点按是否只提交一次，以及结果出现后下一项是否还能读到、点到。\n\n放大文字、切换已支持的横竖屏和换成最长实际选项后，再看是否遮挡或截断。超出项目支持范围的设备如实记录。文章布局或桌面自动检查不能代替该游戏的真实触控、可读性和操作反馈；本页示例尚未实现为游戏。",
+          "en": "With GAME_DESIGN and PRODUCT_BRIEF in place, give game-art-direction a bounded request:\n\n> Target portrait mobile touch input. Here are the current delivery-choice interface and two approved actions. Revise only active areas, spacing, wrapping and current information layout. Keep costs, turns, case possession and both arrival outcomes. Propose shuttle confirmation with no settlement on opening or returning. Do not shrink fonts to cram content or add routes or failure rules.\n\nAfter direction is settled, game-build can revise actual controls and their existing bindings. QA methods focus on visible results. On the target phone, tap centers and edges, return from confirmation, confirm, and walk the neighboring route. Check actions, charges, turns, location and possession. Rapid repeated taps should commit once; the next action must remain readable and usable after the result.\n\nIncrease text size, use supported orientations and try the longest real choices to find overlap or truncation. Record devices beyond the supported scope accurately. Article layout and desktop automation do not establish the game’s touch usability, legibility or feedback. This page’s example has not been implemented as a game."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "按钮都改成48像素就够了吗？",
+          "en": "Is making every button 48 pixels enough?"
+        },
+        "a": {
+          "zh": "48是本文示例选择。还要检查实际有效区域、间距、完整文字、动作绑定与目标设备；WCAG最低目标尺寸及其例外是另一项具体标准，不能由单个数字证明整体验收。",
+          "en": "Forty-eight is the example’s choice. Check active area, spacing, full text, binding and target devices. WCAG minimum size and its exceptions are a specific criterion; one number cannot establish the whole experience."
+        }
+      },
+      {
+        "q": {
+          "zh": "所有选择都要再确认一次吗？",
+          "en": "Does every choice need confirmation?"
+        },
+        "a": {
+          "zh": "不用。按代价、可逆性和误操作影响决定。确认写清实际行动；打开或返回不提前结算，提交后只发生一次结果。",
+          "en": "No. Decide by cost, reversibility and consequences of mistakes. Describe the actual action, leave state unchanged on opening or returning, and settle a submitted result once."
+        }
+      }
+    ],
+    "skill": {
+      "name": "game-art-direction",
+      "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-art-direction/SKILL.md",
+      "text": {
+        "zh": "附已有产品简报、游戏设计、目标手机视口与当前界面，请game-art-direction只修点按区域、文字可读性和选择布局。保原动作与代价，方向采用后再由构建实现并按目标设备检查。",
+        "en": "Provide the product brief, game design, target mobile viewport and current interface. Ask game-art-direction to revise targets, legibility and choice layout while preserving actions and costs, then build and verify the adopted direction on target devices."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "目标视口、信息层级与非颜色反馈",
+          "en": "Target viewport, hierarchy and non-color feedback"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-art-direction/references/art-direction-method.md"
+      },
+      {
+        "label": {
+          "zh": "界面回调与唯一状态提交",
+          "en": "UI callbacks and committed state"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-build/references/playable-model-contract.md"
+      },
+      {
+        "label": {
+          "zh": "实际输入、溢出与结果路径",
+          "en": "Actual input, overflow and outcome paths"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-qa/references/test-design-method.md"
+      }
+    ],
+    "related": [
+      "/novel-to-game/organize-a-story-game-interface",
+      "/novel-to-game/fix-a-game-button-that-does-nothing",
+      "/novel-to-game/write-clear-interactive-story-choices"
     ]
   }
 ]
