@@ -235,6 +235,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Make a Book Cover Readable as a Thumbnail](https://zenstory.ai/oh-story/make-a-book-cover-readable-as-a-thumbnail) — Check title, subject and background at the actual small display size. Follow a complete bookshop-cover revision plan without claiming a fixed font rule.
 - [How to Make a Book Cover Match the Story’s Genre](https://zenstory.ai/oh-story/match-a-book-cover-to-your-story) — Use the synopsis, main action and tone to diagnose a misleading cover. Follow a complete space-station mystery brief without relying on title keywords alone.
 - [How to Use a Reference Image for a Book Cover](https://zenstory.ai/oh-story/use-reference-images-for-a-book-cover) — Declare whether an image is an editing target or style reference. Use a complete repair-shop cover brief with preserved identity, composition and exact text.
+- [How to Make an AI Book Cover Look Illustrated](https://zenstory.ai/oh-story/make-an-ai-book-cover-look-illustrated) — Separate painted style from genre, character and type. A complete umbrella-maker brief preserves the subject, title and byline while changing the medium.
 
 ### Short-drama scripts / 短剧改编与剧本
 - [Short-drama scripts](https://zenstory.ai/guides/short-drama) — Adapt a story into episodes, scenes, and shootable dialogue.
@@ -339,6 +340,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Choose Video Transitions: Cuts, Dissolves and Scene Changes](https://zenstory.ai/drama-skills/choose-video-transitions) — Choose transitions by the action, scene change or pause viewers need to understand. Includes a complete original edit plan and actual tool limits.
 - [How to Fix Cropped Characters in AI Video](https://zenstory.ai/drama-skills/fix-cropped-characters-in-ai-video) — Separate reference cropping, movement out of frame and later aspect-ratio changes. A counter scene keeps the head, important hands and accepted action visible.
 - [How to Fix Repeated Actions in AI Video](https://zenstory.ai/drama-skills/fix-repeated-actions-in-ai-video) — Distinguish intended repetition, generation rebound and repeated edits. A cup-placement example defines contact, release, final hold and usable footage.
+- [How to Fix Wrong Eyelines in AI Video](https://zenstory.ai/drama-skills/fix-wrong-eyelines-in-ai-video) — Separate body direction, gaze target and camera position. A counter-scene brief moves attention from a person to a blue circle while preserving other states.
 
 ### Interactive stories and games / 互动故事与游戏
 - [Interactive stories and games](https://zenstory.ai/guides/interactive-games) — Turn a novel into player actions, branching stories, and a playable game.

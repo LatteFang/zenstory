@@ -31523,7 +31523,7 @@
       "en"
     ],
     "published_on": "2026-09-29",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "zh": "AI短剧画面年代不对怎么办：从剧情事实定设备与陈设",
       "en": "How to Fix the Wrong Era in AI Drama Images"
@@ -31559,8 +31559,8 @@
           "en": "Apply the era where appearance changes"
         },
         "body": {
-          "zh": "| 条目 | 本故事的已定方向 | 修订重点 |\n|---|---|---|\n| 办公电脑 | 液晶显示器，能连接 U 盘 | 删无依据的 CRT、老式主机词 |\n| 手机 | 全面屏智能手机 | 不生成与扫码行动冲突的按键机 |\n| 办公桌椅 | 本项目已选的白色桌面、网面椅 | 不因机构场所整体加灰旧滤镜 |\n| 照明 | 已接受的顶灯与窗光 | 与时间、光源方向一致 |\n| 一只旧茶缸 | 剧本明确是退休居民带来的旧物 | 保留这件物的磨损，不扩散到全屋 |\n\n这些选择是本文原创项目的视觉方向，不能当成所有现代办公室的标准配置。时代会约束范围，具体装修仍由故事地点与创作者决定。\n\n写“显示器”容易留下不必要的生成空白，写已选的形制更明确。只补影响画面的部分，不需要为每个背景物件写一段历史。",
-          "en": "| Item | Accepted direction in this story | Repair |\n|---|---|---|\n| Computer | LCD display with USB access | Remove unsupported CRT or old-machine cues |\n| Phone | Full-screen smartphone | Avoid a keypad phone incompatible with the action |\n| Furniture | Accepted white desk and mesh chair | Do not age the entire room because it is an institution |\n| Light | Accepted ceiling source and window light | Preserve time and source direction |\n| Old mug | A retired resident’s explicitly old possession | Keep its wear local to that object |\n\nThese choices belong to the original example, not every modern office. Era constrains possibilities; location and creator choices determine the actual interior.\n\n“Display” can leave avoidable ambiguity where an accepted form exists. Specify consequential details without writing a history for every background object."
+          "zh": "| 条目 | 方向与修订 |\n|---|---|\n| 办公电脑 | 液晶显示器，能连接 U 盘；删无依据的 CRT、老式主机词 |\n| 手机 | 全面屏智能手机；不生成与扫码行动冲突的按键机 |\n| 办公桌椅 | 本项目已选的白色桌面、网面椅；不因机构场所整体加灰旧滤镜 |\n| 照明 | 已接受的顶灯与窗光；与时间、光源方向一致 |\n| 一只旧茶缸 | 剧本明确是退休居民带来的旧物；保留这件物的磨损，不扩散到全屋 |\n\n这些选择是本文原创项目的视觉方向，不能当成所有现代办公室的标准配置。时代会约束范围，具体装修仍由故事地点与创作者决定。\n\n写“显示器”容易留下不必要的生成空白，写已选的形制更明确。只补影响画面的部分，不需要为每个背景物件写一段历史。",
+          "en": "| Item | Direction / edit |\n|---|---|\n| Computer | LCD display with USB access. Remove unsupported CRT or old-machine cues |\n| Phone | Full-screen smartphone. Avoid a keypad phone incompatible with the action |\n| Furniture | Accepted white desk and mesh chair. Do not age the entire room because it is an institution |\n| Light | Accepted ceiling source and window light. Preserve time and source direction |\n| Old mug | A retired resident’s explicitly old possession. Keep its wear local to that object |\n\nThese choices belong to the original example, not every modern office. Era constrains possibilities; location and creator choices determine the actual interior.\n\n“Display” can leave avoidable ambiguity where an accepted form exists. Specify consequential details without writing a history for every background object."
         }
       },
       {
@@ -31570,8 +31570,8 @@
           "en": "Repair the asset direction before downstream prompts"
         },
         "body": {
-          "zh": "先把项目时代与设备条目修正，再读取已经引用这些条目的图片和视频提示词。保留人物身份、空间布局和本镜动作，只替换没有剧情依据的“复古、老式、积灰”等词及对应形制。\n\n示例修订目标：“二〇二四年的社区办公室，已确认的液晶显示器和网面椅；同一窗户位置与顶灯；保留居民带来的旧茶缸。”这比“不要老旧、不要复古”更清楚地说明要留下什么。\n\n若剧本确实写旧电脑在现代场景里被继续使用，旧有了来源就可以保留。年代核对不是把所有物件强制更新，也不是禁止创作者选择复古美术。",
-          "en": "Correct the project era and equipment entries first, then inspect existing image and video prompts using them. Preserve character identity, room geometry and shot action while replacing unsupported aging cues and forms.\n\nExample repair direction: “Community office in 2024, using the accepted LCD display and mesh chair; preserve the window and ceiling-light positions and the resident’s old mug.” This establishes what to keep more clearly than a string of negative adjectives.\n\nAn explicitly old computer can remain in a contemporary setting. Era review does not require new objects everywhere or prohibit an intentional retro visual choice."
+          "zh": "先把项目时代与设备条目修正，再读取已经引用这些条目的图片和视频提示词。保留人物身份、空间布局和本镜动作，只替换没有剧情依据的“复古、老式、积灰”等词及对应形制。\n\n示例修订目标：“二〇二四年的社区办公室，已确认的液晶显示器和网面椅；同一窗户位置与顶灯；保留居民带来的旧茶缸。”这比“不要老旧、不要复古”更清楚地说明要留下什么。\n\n若剧本确实写旧电脑在现代场景里被继续使用，旧有了来源就可以保留。年代核对不是把所有物件强制更新，也不是禁止创作者选择复古美术。\n\n**完整修订简报：设备更新，旧茶缸保留**\n\n本例再选定一个教学视图：窗口在画面左侧，原顶灯与白桌、网面椅保留，志愿者的手机和U盘参与剧本动作。旧茶缸由退休居民带来，磨损只属于它。下面假设一张待修图片错误画了CRT和拨号电话；本文没有实际图片，不把这些位置当成其他项目的观察结果。\n\n先把本项目的时代、设备条目改回已接受方向，再交图片环节一个有界说明：\n\n> 使用作者选定的社区办公室图片作基底。按本项目二〇二四年视觉方向，将桌上错误的CRT显示器改成已确认的液晶显示器，电脑保留能够连接剧本U盘的接口；移除本例没有剧情依据的拨号电话，不新增电话。手机保持本项目已定的全面屏智能手机，不改成按键机。\n> 保留人物身份、服装、姿态与手中物件，保留白桌、网面椅、左侧窗的位置、原机位、画面裁切、顶灯与窗光方向。居民旧茶缸仍在原位，保留它自身的磨损；其余陈设沿用已选现代办公室方向，不新增全屋泛黄或灰尘。删除错误电话后，露出的桌面按周围材质、透视和光照补齐，不把墙、窗或桌子搬走。显示器内容不承担可读证据，不新写可识别的文字或虚构反馈。另存候选，不覆盖选定基底。\n\n实际图片里若没有电话，就不执行“删除电话”；原窗在别的位置，就按真实已选视图保护它。人物手里若正握着要改的设备，先明确这项接触怎样处理，不能用“人物全不变”掩盖几何冲突。\n\n收到候选后核设备形制、原镜头动作是否还能成立、旧茶缸是否被误删，以及人物和光向是否漂移。再检查已引用这些设备的其他机位，统一沿用同一视觉决定；提示词改好不等于这些图都已经重出。",
+          "en": "Correct the project era and equipment entries first, then inspect existing image and video prompts using them. Preserve character identity, room geometry and shot action while replacing unsupported aging cues and forms.\n\nExample repair direction: “Community office in 2024, using the accepted LCD display and mesh chair; preserve the window and ceiling-light positions and the resident’s old mug.” This establishes what to keep more clearly than a string of negative adjectives.\n\nAn explicitly old computer can remain in a contemporary setting. Era review does not require new objects everywhere or prohibit an intentional retro visual choice.\n\n**Complete revision brief: correct equipment, retain the old mug**\n\nChoose a teaching view for this example: the window is screen left; the existing ceiling light, white desk and mesh chair remain. The volunteer’s phone and USB drive support scripted actions. A retired resident brought the old mug; its wear belongs to that object. Assume an image incorrectly shows a CRT and rotary phone. No actual image exists here, and these positions are not observations about another project.\n\nRestore the accepted era and equipment entries before sending this bounded request to the image stage:\n\n> Use the author’s selected community-office image as the base. Following this project’s accepted 2024 visual direction, replace the incorrect CRT on the desk with the confirmed LCD display, retaining computer access for the script’s USB drive. Remove the unsupported rotary phone in this example without adding another telephone. Keep the selected full-screen smartphone rather than substituting a keypad device.\n> Preserve character identity, clothes, pose and held objects, the white desk, mesh chair, left-side window, camera, crop, ceiling source and window-light direction. Keep the resident’s old mug in place with its own wear. Retain the selected contemporary room direction elsewhere, without added yellowing or dust across the room. Reconstruct the desk area exposed by telephone removal to match surrounding material, perspective and light without moving the wall, window or desk. The display carries no readable evidence; invent no legible text or feedback. Save a candidate without overwriting the base.\n\nIf the real selected image has no telephone, omit its removal. If the window is elsewhere, preserve the actual view. If someone holds the equipment being changed, resolve that contact explicitly instead of hiding a geometric conflict behind “keep the person unchanged.”\n\nInspect equipment forms, whether the shot’s action still works, accidental mug removal, identity and light drift. Then check other views already referencing those devices, following the same accepted direction. Revised text does not mean every image has been regenerated."
         }
       },
       {
@@ -31613,6 +31613,13 @@
           "en": "Era evidence and concrete forms"
         },
         "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-assets/references/era-anchors.md"
+      },
+      {
+        "label": {
+          "zh": "有界改图的目标、保持项与连续影响",
+          "en": "Bounded image-edit targets, preserve set and continuity impact"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-image-prompts/references/edit-and-revision.md"
       }
     ],
     "related": [
@@ -50040,6 +50047,256 @@
       "/oh-story/romance-subplot",
       "/oh-story/character-arc",
       "/oh-story"
+    ]
+  },
+  {
+    "owner": "oh-story",
+    "slug": "make-an-ai-book-cover-look-illustrated",
+    "topic": "book-covers",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "AI小说封面像真人照片怎么办：先明确插画画法",
+      "en": "How to Make an AI Book Cover Look Illustrated"
+    },
+    "seo_title": {
+      "zh": "AI小说封面像真人照片怎么办｜ZenStory",
+      "en": "Make an AI Book Cover Look Illustrated | ZenStory"
+    },
+    "description": {
+      "zh": "把绘画媒介与题材、人物、排版分开说明，清理棚拍与写实摄影要求。附修伞人完整封面简报，保留人物、书名和笔名，再比较实际候选。",
+      "en": "Separate painted style from genre, character and type. A complete umbrella-maker brief preserves the subject, title and byline while changing the medium."
+    },
+    "answer": {
+      "zh": "先确认作者要的是哪种插画，再检查提示词和参考图是否仍要求棚拍、摄影皮肤或写实镜头效果。把绘画方式写清楚，同时保留人物身份、题材、构图、书名和笔名。改变画法不等于换人物；收到候选后看实际图，不凭一个“插画”标签宣布成功。",
+      "en": "Choose the intended illustration style, then check whether prompts and references still ask for studio photography, photographic skin or lens effects. Specify the painted medium while preserving identity, genre, composition, title and byline. A medium change is not a new character; inspect the actual candidate rather than trusting an “illustration” label."
+    },
+    "sections": [
+      {
+        "id": "separate-medium-and-story",
+        "heading": {
+          "zh": "题材相同，也可能画法不同",
+          "en": "The same story can use different visual media"
+        },
+        "body": {
+          "zh": "都市日常、悬疑或仙侠是故事方向，数字绘画、线稿插画和摄影则是表现方式。封面内容符合题材，仍可能因为画法不合作者选择而需要修订。照片本身不是错误；本页处理作者已经选定插画、输出却像照片的情况。\n\nOh Story的封面方法把文字、风格与画面分层，并明确用绘画表达替换摄影感。先说出可观察的选择，例如较大的色块、可见笔触、简化材质边缘与清楚轮廓，不只写“二次元一点”“不要像真人”。\n\n不必同时改头身比例、人物年龄和整个场景。先确认哪项才是作者要换的画法；夸张比例、柔和水彩或细腻厚涂是不同候选，不要把它们一股脑塞进同一次要求。",
+          "en": "Contemporary life, mystery and fantasy describe story direction. Digital painting, line illustration and photography describe visual medium. A cover can fit the genre yet need revision because its medium differs from the author’s choice. Photography itself is not an error; this page concerns an intended illustration that came out photographic.\n\nOh Story separates text, style and image content and explicitly uses painted expression in place of photographic cues. Name visible choices such as broad color masses, brush texture, simplified material edges and clear contours, rather than only asking for “more anime.”\n\nDo not automatically change proportions, age and the entire location together. Exaggeration, soft watercolor and detailed opaque painting are different candidates, not a bundle of requirements to combine blindly."
+        }
+      },
+      {
+        "id": "check-competing-directions",
+        "heading": {
+          "zh": "清理互相打架的风格和参考用途",
+          "en": "Remove conflicting directions and clarify reference roles"
+        },
+        "body": {
+          "zh": "检查有没有一边要求`digital painting style`，一边又要求棚拍人像、照片级皮肤毛孔或真实镜头散景。把不符合本次画法的要求撤掉，换成选定的绘画表现；照明方向可以保留，不必因去摄影感就把人物压成没有明暗的平面。\n\n参考图也要说明用途。如果它只供面部、衣着和构图参考，就不要同时让执行者完整复制其中的摄影材质。若它是要编辑的基底，先查看作者选定的那版，再点名应保留的身份、人数、持物、标题和裁切。\n\n原生封面流程分别保存候选，不覆盖已选版本。只改色调却继续保留全部摄影要求，通常还没有落实这次媒介选择；反过来，把人物换成年轻模特，也不是保住身份的风格修订。",
+          "en": "Check whether `digital painting style` competes with studio portraiture, photographic pores or lens bokeh. Withdraw directions that oppose the selected medium and replace them with its visible treatment. Lighting direction can remain; removing photography does not require flattening every light and shadow.\n\nSpecify reference use too. A face, clothing or composition reference need not also dictate photographic materials. If an image is the editing base, inspect the author’s selected version and name identity, count, held objects, title and crop to preserve.\n\nThe native cover workflow saves distinct candidates. Changing only color while retaining all photographic instructions does not implement the medium choice. Replacing the person with a younger model is also not an identity-preserving style revision."
+        }
+      },
+      {
+        "id": "complete-umbrella-cover-brief",
+        "heading": {
+          "zh": "完整简报：《街角修伞人》保留什么，改变什么",
+          "en": "Complete brief: keep the umbrella-maker story, change its medium"
+        },
+        "body": {
+          "zh": "原创小说《街角修伞人》，笔名“夏树”，讲一位中年修伞人重新开门做小生意的都市日常。作者选定2:3竖版、数字绘画、有笔触而不过度卡通的方向。原先的纸面方案已经有深蓝工作衫、一把闭合的红伞、店门和暖灯，但写了“studio portrait, photorealistic skin”。这里没有真实封面，示例展示如何修简报。\n\n保留这位人物的中年外观、短深色头发、工作衫和原来的站姿；不是因为改插画就给他换脸、减龄或加盔甲。背景仍是同一家街角小店。可以交付完整新候选：\n\n> Author-selected 2:3 portrait digital-painted cover for a warm contemporary story about a middle-aged umbrella repairer reopening his corner shop. One middle-aged man with short dark hair and a worn navy work shirt stands just inside the doorway, holding one closed red umbrella upright in his right hand; his left hand rests on the door handle. Preserve the selected character identity, middle-aged appearance, clothing, pose and umbrella count when using the author’s chosen image as a reference. Use broad painted color masses, visible brush texture and simplified fabric edges with believable anatomy. A warm doorway lamp lights him from above; keep the shop interior quieter than the figure and umbrella. Title exactly '街角修伞人' in clear cream lettering in a quiet upper area; byline exactly '夏树' in smaller readable lettering below. Keep both inside the retained canvas. The requested medium is digital painting, with no photographic skin rendering, studio backdrop, added people, slogan or watermark. Save a separate candidate.\n\n若实际基底里的手或门把位置与本示例不同，就按作者选定基底改写保持项，不能把这段模板的姿态当成原图事实。没有真实参考图时，按文本建立候选；有图时先确认它控制身份、构图还是整图编辑。\n\n出图后分别看画法、人物与文字：笔触和材质是否落实，年龄与红伞是否保留，书名笔名是否准确；再核准备上传那版的裁剪和实际小图表现。本例没有生成图片，也没有把简报里的要求当成已通过的成图结果。",
+          "en": "The original contemporary novel `街角修伞人`, by `夏树`, follows a middle-aged umbrella repairer reopening his small business. The author selects 2:3 portrait digital painting with brush texture rather than heavy cartoon exaggeration. A paper concept already includes a navy work shirt, one closed red umbrella, a shop entrance and warm light, but asks for “studio portrait, photorealistic skin.” No real cover exists here; the example revises the brief.\n\nKeep the man’s middle-aged appearance, short dark hair, work shirt and selected stance. Changing medium does not authorize a new face, de-aging or armor. The corner shop remains the same. A complete candidate request is:\n\n> Author-selected 2:3 portrait digital-painted cover for a warm contemporary story about a middle-aged umbrella repairer reopening his corner shop. One middle-aged man with short dark hair and a worn navy work shirt stands just inside the doorway, holding one closed red umbrella upright in his right hand; his left hand rests on the door handle. Preserve the selected character identity, middle-aged appearance, clothing, pose and umbrella count when using the author’s chosen image as a reference. Use broad painted color masses, visible brush texture and simplified fabric edges with believable anatomy. A warm doorway lamp lights him from above; keep the shop interior quieter than the figure and umbrella. Title exactly '街角修伞人' in clear cream lettering in a quiet upper area; byline exactly '夏树' in smaller readable lettering below. Keep both inside the retained canvas. The requested medium is digital painting, with no photographic skin rendering, studio backdrop, added people, slogan or watermark. Save a separate candidate.\n\nIf a real base image places hands or the handle differently, revise the preserve set to match the author’s actual selection instead of calling the template’s pose an observed fact. With no real reference, establish a candidate from text. With a reference, determine whether it controls identity, composition or editing of the whole image.\n\nInspect medium, person and type separately: painted materials, retained age and umbrella, exact title and byline, then upload-candidate crop and small-display appearance. No image was generated for this example, and brief requirements are not a verified image result."
+        }
+      },
+      {
+        "id": "review-the-candidate",
+        "heading": {
+          "zh": "看实际候选，不用换一串风格词代替检查",
+          "en": "Inspect the candidate instead of replacing a string of style words"
+        },
+        "body": {
+          "zh": "比较时保持同一书名、笔名和故事方向，才能判断这次画法是否更贴合作者选择。若只脸部仍像照片，就点名那一处表现与须保留的身份；若整图方向错误，再考虑重新做完整候选。\n\n文字错误看[封面文字修订](/oh-story/fix-ai-book-cover-text)，缩小后难辨看[封面缩略图检查](/oh-story/make-a-book-cover-readable-as-a-thumbnail)。画法修订不能代替这两项检查，也不能用“高清”证明封面可读。",
+          "en": "Keep the same title, byline and story direction when comparing the chosen medium. If only the face remains photographic, name that region and its identity requirements. If the whole visual direction is wrong, consider a complete new candidate.\n\nFor incorrect lettering, see [cover-text revision](/oh-story/fix-ai-book-cover-text). For small-display problems, see [thumbnail checks](/oh-story/make-a-book-cover-readable-as-a-thumbnail). Medium revision does not replace either check, and high resolution alone does not prove legibility."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "插画封面一定要卡通吗？",
+          "en": "Must an illustrated cover be cartoonish?"
+        },
+        "a": {
+          "zh": "不用。画法可以细腻，也可以简化；先选可观察的笔触、轮廓和材质表现，保留本书人物和气质。",
+          "en": "No. Painting can be detailed or simplified. Choose visible treatment of brushwork, contours and materials while preserving the story’s character and tone."
+        }
+      },
+      {
+        "q": {
+          "zh": "加一句digital painting就够吗？",
+          "en": "Is adding digital painting enough?"
+        },
+        "a": {
+          "zh": "它是明确媒介的起点，不是保证。还要清理冲突的摄影要求、说明参考用途，并看实际候选是否符合选择。",
+          "en": "It specifies a medium, not a guarantee. Remove conflicting photography instructions, define reference roles and inspect the actual candidate."
+        }
+      }
+    ],
+    "skill": {
+      "name": "story-cover",
+      "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/SKILL.md",
+      "text": {
+        "zh": "按文字、风格和画面分层明确绘画媒介，保住书名、笔名和主体，另存候选并实际检查。",
+        "en": "Separate text, style and image content to specify the painted medium. Preserve title, byline and subject, save a candidate and inspect it."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "封面分层、绘画表达与候选检查",
+          "en": "Layered cover brief, painted expression and candidate inspection"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/SKILL.md"
+      },
+      {
+        "label": {
+          "zh": "绘画媒介、主体和背景层次",
+          "en": "Painted medium, subject and background layers"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/references/cover-styles.md"
+      }
+    ],
+    "related": [
+      "/oh-story/novel-cover-prompts",
+      "/oh-story/match-a-book-cover-to-your-story",
+      "/oh-story/use-reference-images-for-a-book-cover",
+      "/oh-story"
+    ]
+  },
+  {
+    "owner": "drama-skills",
+    "slug": "fix-wrong-eyelines-in-ai-video",
+    "topic": "ai-video",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "AI视频人物视线不对怎么办：先明确看谁、看哪里",
+      "en": "How to Fix Wrong Eyelines in AI Video"
+    },
+    "seo_title": {
+      "zh": "AI视频人物视线不对怎么办｜ZenStory",
+      "en": "Fix Wrong Eyelines in AI Video | ZenStory"
+    },
+    "description": {
+      "zh": "分清人物朝向、眼睛落点和机位，把看人、看证据写成有触发的过程。附柜台蓝圈示例，保住身体、持物和终点，不让“向左看”替代对象。",
+      "en": "Separate body direction, gaze target and camera position. A counter-scene brief moves attention from a person to a blue circle while preserving other states."
+    },
+    "answer": {
+      "zh": "先确认人物实际要看的人或物在本机位哪里，再分别写身体朝向、初始目光、触发与最后落点。不要只说“向左看”，也不要用运镜掩盖人物看错对象。起始帧已错时先修起点，起点正确而视频漂移时再修动作过程；得到片段后逐段核对实际目光。",
+      "en": "Locate the intended person or object in the selected camera view. Specify body direction, starting gaze, trigger and final target separately instead of only “look left.” If the starting frame is wrong, repair it first; if motion drifts from a correct start, revise the action. Check the actual generated segment rather than hiding an incorrect gaze with camera movement."
+    },
+    "sections": [
+      {
+        "id": "locate-the-target",
+        "heading": {
+          "zh": "先找对象，不先指定左右",
+          "en": "Locate the object before assigning left or right"
+        },
+        "body": {
+          "zh": "同一个人站在柜台另一端，换机位后可能落在画面不同位置。人物身体朝右、脸偏向右、眼睛看向桌面，也不是同一项状态。先对着当前构图找目标：对方的脸、桌上蓝圈还是门外声音所在的门缝。\n\n| 要说明的事 | 写得具体一点 |\n|---|---|\n| 看谁或什么 | 看钱叔的脸，或桌面纸张上已定的蓝圈。 |\n| 在哪里 | 本镜钱叔在画面右侧；蓝圈在两人之间较低的桌面。 |\n| 开始看哪里 | 安宁先看钱叔，不从已经低头读纸的状态开始。 |\n| 谁触发变化 | 钱叔指向蓝圈后，她才把注意移到纸上。 |\n\n正反打还要检查两镜方向与实际身高关系；不是把所有人都设成同一个平视角。具体机位改变后重新核对，别把上一机位的“左”直接复制到下一镜。",
+          "en": "The person across a counter can occupy a different screen position after a camera change. A right-facing body, a right-turned face and eyes looking down at paper are different states. Locate the target in this view: the other person’s face, a blue circle on the table, or a door gap where a sound came from.\n\n| Decision | A concrete description |\n|---|---|\n| Target | Qian’s face, or the accepted blue circle on the paper. |\n| Location | Qian is screen right; the circle is lower on the counter between them. |\n| Starting gaze | An looks at Qian before looking down at the paper. |\n| Trigger | Qian indicates the circle before she shifts attention. |\n\nFor shot/reverse-shot, match directions and actual height relationships rather than making everyone eye-level. Recheck after a camera change instead of copying the previous view’s “left.”"
+        }
+      },
+      {
+        "id": "check-frame-before-motion",
+        "heading": {
+          "zh": "先核起始帧，再修视线过程",
+          "en": "Check the starting frame before revising the motion"
+        },
+        "body": {
+          "zh": "原生视频方法把已确认起点、终点、时长和对白作为只读边界。真实起始帧已经让人物看向镜头，却要求视频从看着对方开始，两项互相冲突；先返回分镜/关键帧，不能随便挑一个当准。\n\n起点正确时，把目光变化接到已定触发，写清先看见指示，再把视线移到目标，头部怎样辅助，最后停在哪里。身体、手与道具未参与变化时保持原状态，别因“转头”让人物顺便转身、拿走纸或换位置。\n\n只有真实起始图已输入，才可省掉它已经说明的静态外观。没有图片、只有分镜文字时，复制正文仍需人物、造型、场景、构图和光线，不把“同上”当作已经有参考帧。",
+          "en": "The native video method treats accepted starts, ends, duration and dialogue as read-only boundaries. A real start frame looking into camera conflicts with a required start looking at the partner. Resolve the storyboard/keyframe rather than arbitrarily choosing one.\n\nWith a correct start, connect gaze movement to the accepted trigger: receive the indication, move attention to the target, describe supporting head movement, and settle. Preserve body, hands and objects that do not participate. Turning the head must not also turn the body, take the paper or relocate the person.\n\nStatic appearance may be omitted only when a real start image is actually supplied. With text alone, the copyable prompt still needs person, look, setting, composition and light. “As above” is not a reference frame."
+        }
+      },
+      {
+        "id": "complete-counter-gaze",
+        "heading": {
+          "zh": "完整示例：从钱叔的脸看到桌上蓝圈",
+          "en": "Complete example: from Qian’s face to the circle on the counter"
+        },
+        "body": {
+          "zh": "纸面已定场面：安宁在画面左侧，钱叔在右侧且比她高；两人在同一柜台前，纸张平放于他们之间，蓝圈是已选画面标记，不包含可读文字。安宁先看钱叔的脸，钱叔指蓝圈后她低头看圈；她还不知道这个圈表示什么。本镜不递纸、不站起、不发现作伪者。作者选六秒固定双人中景，实际任务须匹配目标能力；这里没有起始图片，采用完整文生视频简报。\n\n> 竖版生活化真人短剧。社区书店柜台内景，暖色顶灯，摄影机固定在入口一侧，双人中景同时保留两人的脸、双手和柜台上的纸。安宁是成年女性，短深色头发、深蓝工作衫，位于画面左侧，身体朝向右侧的钱叔。钱叔是成年男性，短灰发、浅灰外套，位于画面右侧，身体朝向安宁，站得比她高。纸张平放在两人之间，蓝圈位于安宁能看见的一面，无可读文字。安宁起点看着钱叔的脸，双手在自己一侧桌沿。钱叔左手食指原在纸边，右手留在自己一侧桌面。\n> 六秒过程：钱叔左手食指从纸边移到蓝圈旁并停住，纸张位置不变；安宁接收到这项指示后，先把目光从钱叔的脸移到蓝圈，再略低头保持注视。她的身体仍朝钱叔，双手仍在原桌沿，钱叔保持位置。结束时她看着蓝圈，尚未作出解释；纸仍平放，手指仍指在圈旁，两人未换位。固定机位，无对白，不新增取纸、起身或看向镜头的动作。\n\n这是本例选定的动作与视觉事实，不是已有图片的观察说明，也不是已生成视频。若使用真实图生视频起点，先核它是不是同一站位、同一纸面与初始目光，再减去已经由图明确承载的外观；不要因为参考只给脸，就把柜台和手的状态也全删掉。\n\n检查候选时看三处：起点是否仍看钱叔、变化是否发生在指示之后、最后是否落到圈而非镜头。看圈只能证明注意对象变化，不证明她已经读到内容、理解秘密或知道谁作伪。下一镜按这个终点接，不回到未发生的拿纸状态。",
+          "en": "Accepted paper scene: An Ning is screen left and Qian is screen right and taller. A sheet lies flat between them on one counter. Its blue circle is a selected visual mark with no readable words. An initially looks at Qian’s face, then down at the circle after he indicates it. She does not know its meaning. No paper handoff, standing up or culprit discovery occurs. The author selects a fixed six-second two-shot; a real task must fit target capabilities. No start image exists here, so use a complete text-to-video brief.\n\n> A vertical, restrained live-action community-bookshop scene under warm ceiling light. The camera stays on the entrance side in a medium two-shot retaining both faces, hands and the paper on the counter. An Ning is an adult woman with short dark hair and a navy work shirt, screen left with her body facing Qian. Qian is an adult man with short grey hair and a pale-grey jacket, screen right facing her and visibly taller. The sheet lies flat between them, with its blue circle on the face visible to An and no readable words. An initially looks at Qian’s face, both hands resting on her own counter edge. Qian’s left index finger starts beside the sheet; his right hand stays on his own side of the counter.\n> Across six seconds, Qian moves his left index finger from the sheet edge to beside the blue circle and stops, leaving the sheet in place. After receiving this indication, An moves her gaze from his face to the circle, then slightly lowers her head and settles her attention there. Her body still faces Qian and both hands remain on the original edge. Qian keeps his position. At the end she looks at the circle without explaining it; the sheet is flat, the finger remains beside the circle and neither person has changed places. Fixed camera, no dialogue, and no added paper pickup, standing or gaze into camera.\n\nThese are selected example actions and visual facts, not an observation of an existing image or a generated video. For a real image-to-video start, verify the same placement, sheet and starting gaze before subtracting static details the image supplies. A face-only reference does not justify omitting the counter and hand states.\n\nCheck the candidate’s start, indication-triggered change and final gaze toward the circle rather than camera. Looking at it establishes changed attention, not reading, understanding a secret or discovering a culprit. Continue the next shot from this end instead of an unoccurred paper pickup."
+        }
+      },
+      {
+        "id": "repair-only-the-wrong-state",
+        "heading": {
+          "zh": "只修已定位的偏差，再看实际片段",
+          "en": "Repair the located deviation and inspect the segment"
+        },
+        "body": {
+          "zh": "如果结尾目光不对，先查目标是否清楚、是否被手或画面裁切挡住，再修目标和落点；如果人物看人时方向不对，查当前机位与站位，不靠加“自然、专注”来补空间。\n\n需要改已定机位、人物位置或事件时回到分镜，不在运动提示词里悄悄替换。只改眼神却同时改脸、服装、持物或关系解释的候选应重新处理。\n\n复杂跨镜对话继续看[正反打连续性](/drama-skills/shot-reverse-shot-continuity)，表演无变化看[人物表情与反应](/drama-skills/character-performance-prompts)。本页先把这次注意到底落在哪个对象上写清楚。",
+          "en": "For an incorrect final gaze, check target clarity and obstruction by hands or crop, then revise its location and endpoint. For wrong person-to-person direction, check this camera and blocking. “Natural” or “focused” cannot substitute for space.\n\nChanges to accepted camera, placement or events belong in the storyboard rather than being silently substituted in motion text. A gaze repair that also alters face, clothes, custody or relationship meaning needs correction.\n\nFor a multi-shot conversation, see [shot/reverse-shot continuity](/drama-skills/shot-reverse-shot-continuity). For unchanging performance, see [character reactions](/drama-skills/character-performance-prompts). This page first identifies the exact object of attention."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "人物朝右就等于眼睛看右吗？",
+          "en": "Does a right-facing body imply rightward gaze?"
+        },
+        "a": {
+          "zh": "不等于。身体朝向、头部与目光落点分别说明，尤其看桌面证据时可能身体不动，只转移注意。",
+          "en": "No. Specify body, head and gaze separately. Looking at evidence on a table may shift attention while the body stays put."
+        }
+      },
+      {
+        "q": {
+          "zh": "参考图已经看错，提示词能直接纠正起点吗？",
+          "en": "Can motion text silently correct a wrong reference start?"
+        },
+        "a": {
+          "zh": "先解决起点冲突。原生方法要求分镜和关键帧起点一致；运动描述不能随便把其中一项忽略。",
+          "en": "Resolve the conflicting start first. The native method requires storyboard and keyframe starts to agree; motion text cannot simply ignore one."
+        }
+      }
+    ],
+    "skill": {
+      "name": "short-drama-video-prompts",
+      "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/SKILL.md",
+      "text": {
+        "zh": "按已定起点和终点写目光目标、触发与过程，保住身体和持物状态；机位变化再核屏幕方向。",
+        "en": "Write gaze target, trigger and process within accepted starts and ends. Preserve body and custody and recheck screen direction after camera changes."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "目光起点、有序变化与只读终点",
+          "en": "Starting gaze, ordered motion and read-only endpoint"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/references/motion-recipe.md"
+      },
+      {
+        "label": {
+          "zh": "视线方向与实际身高的机位配对",
+          "en": "Eyeline directions and camera pairing for actual heights"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-storyboard/references/blocking-playbooks.md"
+      }
+    ],
+    "related": [
+      "/drama-skills/shot-reverse-shot-continuity",
+      "/drama-skills/character-performance-prompts",
+      "/drama-skills/image-to-video-prompts",
+      "/drama-skills"
     ]
   }
 ]
