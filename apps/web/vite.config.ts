@@ -117,7 +117,7 @@ export default defineConfig({
       generateRobotsTxt: false,
     }),
     visualizer({
-      open: !process.env.CI,
+      open: false,
       gzipSize: true,
       brotliSize: true,
     }),
