@@ -16854,6 +16854,17 @@
         }
       },
       {
+        "id": "duplicate-caption-repair",
+        "heading": {
+          "zh": "字幕显示两遍，先判断来自哪一层",
+          "en": "If captions appear twice, identify the layers first"
+        },
+        "body": {
+          "zh": "| 两遍文字来自哪里 | 处理方向 |\n|---|---|\n| 原片画面里已经有字，又烧了一遍新字幕 | 先选择要保留的展示。原片硬字幕属于像素，删除新轨不会擦掉它。 |\n| 两个新增字幕或包装层都写了同一句 | 在当前工程中停用或删除明确重复的那一项，保留其他句子和必要时空提示。 |\n| 已烧入的字，加上播放器加载的可切换字幕 | 对比关闭播放器字幕后的同一文件，先确认重复只在播放层还是已经在导出里；不要据此重录声音。 |\n| 作者有意同时显示原文与译文 | 按双语方案检查分工和位置，不能只因两行相似就删掉一种语言。 |\n\n沿用裴照修船的原例，设计一个需要修的纸面候选：假定原片底部已清楚、忠实地显示“先别补，把单子找出来”，工程又新增了同一句；本版只需要一份这句对白，两句旁白字幕仍要保留。实际素材是否符合这个前提，必须先看自己的原片。\n\n这次修改说明可以写完整：\n\n> 保留原片已有的“先别补，把单子找出来”。删除工程中新加的重复对白这一项；保留“潮水退下以后……”和“工具箱上的十七号……”两句旁白字幕及既有必要提示。声音和剪点沿用已定版本。重新渲染后检查对白发生处只剩选定的那份文字；原字幕仍可读，工具箱十七号、找单与比对动作没有被挡住。\n\n若走引用版本的显式`subtitle_track.json`路径，要提供全部仍需生成的字幕，而非仅交一条“删除这一句”的补丁。该轨在`adopted-packet-copy`模式下完整替换生成字幕，不与旧自动字幕合并；空数组会移除所有生成字幕，仍不会擦除画面里原有的字。先核当前音轨绑定和整份保留清单，不为修一句清空两句旁白。\n\n`--no-burn-subtitles`只关闭本次新字幕的烧录，不能去掉素材已烧入的文字。确需替换硬字幕时，可优先找无字幕源片或另定经过检查的遮盖方案。当前工具的遮盖是画矩形底板，不是还原被文字盖住的画面；半透明底板会留下原字，遮满底部也可能盖掉号码和手部动作。测真实区域与出入时刻，检查该处和相邻动作后再采用。\n\n这里的修订单没有生成真实工程或样帧。重复问题处理完后，再继续本页的换行、字号与正常播放检查；不能用缩字把两份重复内容硬挤在一起。",
+          "en": "| Source | Repair |\n|---|---|\n| Text already inside the picture, plus newly burned captions | Choose the retained presentation first. Hardcoded captions are pixels; deleting a new track does not erase them. |\n| Two added subtitle or packaging layers repeat a line | Disable or remove the identified duplicate in the current project while retaining other lines and necessary time/place labels. |\n| Burned text plus a player’s switchable subtitle track | Compare the same file with player captions off. Establish whether duplication is playback-only or inside the export; rerecording audio is unnecessary for this diagnosis. |\n| Intentional source text and translation | Review the adopted bilingual layout. Similar-looking lines alone do not justify removing a language. |\n\nUsing Pei Zhao’s boat-repair example, design a paper candidate needing repair: suppose the source already displays “Don’t patch it yet. Find the record” clearly and faithfully, and the project adds that same line again. This version needs one presentation of the dialogue while retaining both narration captions. Check actual source footage before relying on that premise.\n\nA complete revision request could read:\n\n> Keep the existing source caption “Don’t patch it yet. Find the record.” Delete only the added duplicate dialogue item. Retain the narration captions beginning “After the tide went out…” and “The seventeen on the toolbox…,” plus existing necessary labels. Keep the selected sound and cuts. In the new render, check that the dialogue has only its chosen presentation, remains readable and leaves the toolbox number, retrieval and comparison actions visible.\n\nOn the pinned explicit `subtitle_track.json` path, provide every generated cue that should remain, rather than a one-line deletion patch. In `adopted-packet-copy` mode the track completely replaces generated subtitles; it does not merge with legacy automatic captions. Empty cues remove all generated text without erasing letters already inside the picture. Check the current audio binding and complete retained-cue list before clearing narration to repair one dialogue line.\n\n`--no-burn-subtitles` stops this run’s new burn-in; it cannot remove text baked into source footage. For replacement, prefer an available clean source or an explicitly reviewed masking design. The current mask draws a rectangular backing rather than reconstructing covered picture detail. A translucent backing leaves source letters visible; a full-bottom cover can hide the number or hand actions. Measure the real region and timing, then review it and neighboring action before adoption.\n\nThis revision request produced no real project or sample frames. After repairing duplication, continue the article’s line-break, type-size and playback review. Smaller lettering does not solve duplicated content."
+        }
+      },
+      {
         "id": "review",
         "heading": {
           "zh": "导出后检查动态问题",
@@ -16939,6 +16950,20 @@
           "en": "Continuous narration, subtitle reading, and full playback"
         },
         "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-script/references/creative-editing-playbook.md"
+      },
+      {
+        "label": {
+          "zh": "字幕烧录开关与合成边界",
+          "en": "Subtitle burn-in controls and assembly boundaries"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/SKILL.md"
+      },
+      {
+        "label": {
+          "zh": "矩形遮盖的实际范围与透明度",
+          "en": "Actual rectangular mask geometry and opacity"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/scripts/visual_render.py"
       }
     ]
   },
@@ -27343,6 +27368,17 @@
         "body": {
           "zh": "对应方法是 `video-assemble` 下的 `scripts/pair_media.py`，由明确的两输入计划运行。当前引用实现接受 MP4 家族容器中的 H.264/HEVC 零起点恒定帧率画面与满足时钟要求的连续 AAC 音轨，复制压缩流而非重新混音。\n\n它不自动偏移、变速、裁切、补静音、标准化或用 shortest 截尾。格式或时钟不符合条件时，回上游准备合适输入，不把失败解释成已保留成功。\n\n首尾容差用于检查容器相容，不能证明一句台词对上一次嘴部动作。流与解码检查通过后，仍需正常速度观看与完整听审。\n\n只做输入检查的计划记录会是PLANNED，不产生配对视频；实际配对并通过检查才记录PAIR_RENDERED。FAILED记录不能当候选成功使用，早期输入错误也应按错误处理。计划目录不能复用成渲染目录，继续使用新的输出目录，保留已采用文件。",
           "en": "The method is scripts/pair_media.py under video-assemble, driven by an explicit two-input plan. The cited implementation accepts suitable MP4-family H.264/HEVC zero-origin constant-rate picture and contiguous AAC audio, copying compressed streams instead of remixing.\n\nIt does not infer offset, speed changes, trimming, padding, normalization or shortest-stream truncation. Prepare suitable upstream inputs when format or timing fails; a failure is not successful preservation.\n\nEndpoint tolerance checks container compatibility, not alignment between a spoken line and mouth movement. Stream and decode checks still require normal-speed viewing and complete listening.\n\nInput-check-only planning records PLANNED and creates no paired video. Actual pairing that passes checks records PAIR_RENDERED. A FAILED record is not a successful candidate; early input errors also remain errors. Do not reuse a planned directory as the render directory; choose a new output directory and retain adopted files."
+        }
+      },
+      {
+        "id": "complete-pair-plan",
+        "heading": {
+          "zh": "完整配对计划：指定新画面与真正采用的音轨",
+          "en": "Complete pairing plan: choose the picture and adopted audio stream"
+        },
+        "body": {
+          "zh": "沿用前面的“第二镜只修画面、全部时钟不变”例子。下面是一份纸面执行候选：作者选定新画面为`/project/picture-v2.mp4`，已采用声音来自`/project/adopted-final.mp4`的第二条音轨，即音频序号1。只有实际检查这些文件、该音轨和内部事件仍对应后，才运行；示例文件并未在本教程中生成。\n\n将下面的完整计划保存为 `pair.json`：\n\n> `{\"artifact\": \"media_pair\", \"schema_version\": 1, \"picture\": {\"path\": \"/project/picture-v2.mp4\"}, \"audio\": {\"path\": \"/project/adopted-final.mp4\", \"selected_stream\": 1}}`\n\n把路径替换成自己的实际文件。第二条音轨是本纸面例子选定的来源，不是所有项目都选1；确认它确实包含已经采用的完整旁白、原声与音乐。`selected_stream`按音频流计数，不是把视频流也算进去的总序号。\n\n进入已安装的`video-assemble`技能目录后，可用同一计划先检查，再用另一个未存在的目录实际配对：\n\n> `python3 scripts/pair_media.py pair.json --output-dir pair-plan-check --plan-only`\n> `python3 scripts/pair_media.py pair.json --output-dir paired-candidate`\n\n两目录都须是本次新名称。第一条只做计划检查，没有成片；第二条才实际复制两输入的画面流和选定声音流。不能把检查目录改名后就称渲染完成。计划没有偏移或裁尾字段，时钟不合要求要回上游修输入。\n\n实际输出`paired.mp4`的音频序号变成0，声音提供者的画面与新画面的自带声音都未采用。后续字幕绑定这份新文件及`a:0`；即使原声音来自`a:1`，也不沿用旧序号。\n\n看片时完整核第二镜新画面、该镜内部说话/动作对应，以及它前后的交接，再听完整混音。包与时钟验证通过后仍可能配了内容错位的声音，见[剪后音画不同步排查](/video-recap/fix-audio-video-sync-after-editing)。本例展示完整计划和顺序，尚未执行命令或验证任何真实成片。",
+          "en": "Keep the example where only shot two’s picture changes and the complete clock stays fixed. This is a paper execution candidate: the author chooses `/project/picture-v2.mp4` and the second audio stream, audio ordinal 1, from `/project/adopted-final.mp4`. Run only after checking the actual files, selected stream and internal event correspondence. These example files were not produced for this tutorial.\n\nSave this complete plan as `pair.json`:\n\n> `{\"artifact\": \"media_pair\", \"schema_version\": 1, \"picture\": {\"path\": \"/project/picture-v2.mp4\"}, \"audio\": {\"path\": \"/project/adopted-final.mp4\", \"selected_stream\": 1}}`\n\nReplace the paths with real files. Stream 1 is this example’s choice, not a universal selection. Verify that it contains the complete adopted narration, source sound and music. `selected_stream` counts audio streams only, not an overall index including video.\n\nFrom the installed `video-assemble` skill directory, check the plan, then render into a different nonexistent directory:\n\n> `python3 scripts/pair_media.py pair.json --output-dir pair-plan-check --plan-only`\n> `python3 scripts/pair_media.py pair.json --output-dir paired-candidate`\n\nBoth directory names must be new. The first command creates no video; the second copies the picture and chosen audio streams. Renaming a planned directory does not make it rendered. There is no shift or tail-trimming field; unsuitable clocks require upstream input repair.\n\nThe output `paired.mp4` has audio ordinal 0. The donor’s picture and the new picture’s own sound are ignored. Bind later subtitles to this new file and `a:0`, even though the donor used `a:1`.\n\nReview the new picture in shot two, its internal speech/action correspondence and neighboring handoffs, then listen to the whole mix. Matching packets and clocks can still accompany mismatched content; see [post-edit audio-video sync diagnosis](/video-recap/fix-audio-video-sync-after-editing). This example provides a complete plan and sequence, not executed commands or verified media."
         }
       },
       {
@@ -45931,6 +45967,156 @@
       "/novel-to-game/design-locked-options-in-a-story-game",
       "/novel-to-game/readable-gameplay-feedback",
       "/novel-to-game/choose-buttons-or-free-text-input"
+    ]
+  },
+  {
+    "owner": "video-recap",
+    "slug": "fix-audio-video-sync-after-editing",
+    "topic": "video-recaps",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "剪完视频后音画不同步怎么办：先找错位发生在哪一层",
+      "en": "How to Fix Audio and Video Out of Sync After Editing"
+    },
+    "seo_title": {
+      "zh": "剪完视频后音画不同步怎么办｜ZenStory",
+      "en": "Fix Audio and Video Out of Sync After Editing"
+    },
+    "description": {
+      "zh": "从原片、剪后画面、声音底轨与最终导出定位不同步，附完整原创错位记录与修订方案。明确流复制、时长相容和实际同步的区别。",
+      "en": "Trace desynchronization through source footage, edited picture, sound beds and export. Includes a complete original repair plan and actual tool limits."
+    },
+    "answer": {
+      "zh": "先在实际原片和新成片里找同一次清楚的动作与声音，确定错位从哪版开始，再检查原片区间怎样映射到剪后时间。只错一段就修该段来源或放置；整段同幅度错位才考虑平移，越往后越偏则先查版本、变速和实际时钟。保留音轨的流复制不能自动对齐嘴型或动作，总时长相同也不够。修后正常速度重播关键点和整片。",
+      "en": "Find the same clear action and sound in the actual source and finished edit, identify the first failing version, then check the source-to-output mapping. Repair a local source range or placement locally; consider a shift only for a consistent offset, and inspect versions, retiming and actual clocks for growing drift. Packet copy does not align mouths or actions, and equal duration is insufficient. Replay checkpoints and the whole new render at normal speed."
+    },
+    "sections": [
+      {
+        "id": "first-failing-version",
+        "heading": {
+          "zh": "先定位：原片就错，还是剪完才错",
+          "en": "Find the first version that goes out of sync"
+        },
+        "body": {
+          "zh": "选一个画面和声音确实属于同一事件的时刻，例如近处门合上与对应的合门声，或镜头里说话者清楚的起音。不要拿另加的配乐重拍、远处声音传播或有意先行的画外声当作必须重合的锚点。先确认这版作品希望它怎样对应。\n\n按原片、锁定剪后画面所对应的声音、混音候选、实际导出依次比较。记录文件版本、事件、画面时刻、声音时刻和原片来源；没有播放观察的值写未知。预览异常时再比较同一导出在另一个播放器的表现，避免只凭编辑器卡顿改动已经正确的文件。\n\n原片也错时，要先处理素材或录音的对应关系。原片正确、剪后才错时，优先看选段和声音放置。画面与声音已经正确、只有字幕提前或延后时，转到[字幕同步检查](/video-recap/subtitle-timing-evidence)；AI生成的嘴部表演本身错了，见[AI视频口型排查](/drama-skills/ai-video-lip-sync)。\n\n这是已有内容的定位工作，不需要先重写解说文案或重录所有声音。",
+          "en": "Choose a moment where picture and sound really belong to the same event: a nearby door closing with its closing sound, or a clear utterance by the visible speaker. Added music accents, sound arriving from a distance and deliberate offscreen sound leads are not automatically coincidence anchors. Establish the edit’s intended relationship first.\n\nCompare the source, the sound belonging to the locked edit, the mix candidate and the actual export. Record the file version, event, picture time, sound time and source location. Leave unobserved values unknown. If preview is suspect, compare the same export in another player before changing a file that may already be correct.\n\nIf the source is wrong too, address its footage or recording relationship first. If only the edit fails, inspect selected ranges and sound placement. For correct picture and sound with mistimed text, use [subtitle synchronization checks](/video-recap/subtitle-timing-evidence). For incorrect generated mouth performance, use [AI-video lip-sync diagnosis](/drama-skills/ai-video-lip-sync).\n\nThis is diagnosis of existing material. Rewriting the narration or recording every line again need not be the first step."
+        }
+      },
+      {
+        "id": "map-the-pattern",
+        "heading": {
+          "zh": "比较几个位置，再决定修哪里",
+          "en": "Compare several positions before choosing a repair"
+        },
+        "body": {
+          "zh": "| 观察到的形状 | 优先检查与修订范围 |\n|---|---|\n| 同一段的多个对应事件都晚相近幅度 | 核对是否整段放晚、误用了旧时间。证据相符且完整声音能保留时，再修这段位置；只看一个动作还不够。 |\n| 开始接近，后面逐渐偏开 | 核对是否混用了不同版本、只有一层变速，或导入/渲染改变实际时钟。先找到差异，不靠一次平移修全片。 |\n| 只在一处重剪之后突然错位 | 查该剪点前后的原片起止和剪后位置，以及是否还在用旧底轨。后面已有正确的段落不要一起移动。 |\n| 某一路正确，另一路错 | 分别检查原对白、旁白、动作声和音乐的来源与放置；不能从一路错推出全部混音都晚。 |\n\n这些是编辑诊断，不是自动识别结果。一次门声可能被遮盖或来自别处，不能只看波形峰值就认定它与画面动作同源。补看同一段的完整句子、下一动作和剪点后另一事件，直到修订范围有依据。",
+          "en": "| Pattern | Check and repair |\n|---|---|\n| Several matching events in one passage are late by a similar amount | Check late placement or old timings. Change that passage’s position only when the evidence agrees and the complete sound remains available. One action is insufficient. |\n| The start is close, but the gap grows | Check mixed versions, retiming of only one layer, and changed import or render clocks. Locate the difference before applying a global shift. |\n| Sync changes suddenly after one recut | Inspect source boundaries and output positions around that cut, including an old bed still being used. Leave later correct passages in place. |\n| One sound layer fits and another does not | Check dialogue, narration, effects and music independently; one late layer does not prove the whole mix is late. |\n\nThese are editorial diagnoses, not automatic detection results. A door sound can be obscured or belong elsewhere; a waveform peak alone does not prove a shared source event. Check the complete line, the next action and another event after the cut until the repair scope has support."
+        }
+      },
+      {
+        "id": "complete-sync-example",
+        "heading": {
+          "zh": "完整原创范例：画面选了新入点，原声还用了旧入点",
+          "en": "Complete example: new picture In point, old source-audio In point"
+        },
+        "body": {
+          "zh": "下面是虚构木工作坊视频的纸面记录，没有真实音视频测试。示例选定25fps恒定帧率、零起点且符合来源工具要求的素材；实际项目必须先核真实媒体。原片中，门在4.0秒合上并有对应声响，人物在5.0—6.2秒说完“钥匙留在桌上”。\n\n剪后画面共10秒：先取原片1—7秒，放到成片0—6秒；再接另一段已选的4秒画面。出问题的候选把第一段原声误取成原片0—6秒，仍放在成片0—6秒。第二段声音、独立连续音乐与已采用旁白的位置正确。\n\n| 项目 | 本例记录与决定 |\n|---|---|\n| 第一段正确画面 | 原片1—7秒映射到成片0—6秒；门应在成片3.0秒合上，台词应在4.0—5.2秒发生。 |\n| 候选第一段声音 | 误取原片0—6秒；门声在成片4.0秒，台词从5.0秒开始，原片6.0—6.2秒的句尾还被漏掉。 |\n| 正确修订 | 回原片完整取1—7秒声音，放回成片0—6秒，既修事件位置，也补回句尾；不是把已裁短的候选声音前移就结束。 |\n| 后续已定内容 | 第二段仍从成片6秒开始；保留它的正确声音、整条连续音乐和完整已采用旁白，不把这些一起前移1秒。 |\n| 待实际验证 | 新候选中门动作与门声的对应，完整句尾，6秒剪点交接、第二段及全片；纸面运算不能预填试听通过。 |\n\n在这个25fps例子里，正确源范围是半开帧区间25—175；原片第100帧的门动作映射到成片第75帧，即3.0秒。48kHz输出上，这个时刻是零起点的样本位置144000。数字用于解释本例；实际帧率或时钟不同就从实际映射求值，不能照抄。\n\nVideo Recap 的原声/音乐底轨方法允许按明确原片帧区间和输出位置重新准备声音。此例只更换第一段来源区间，完整底轨计划仍要包括第二段和全部明确空白；音乐已有正确连续轨时，按已选轨保留。重新准备受影响的底轨与新混音放置记录，再使用现有完整声音合成路径出新候选。原文、WAV和声线未改时，不为移动或修原声而重跑TTS。\n\n总时长10秒在错误候选里也成立，第一段却既错位又丢句尾。恢复正确来源后，正常速度核对门、整句、剪点和第二段，最后完整播放10秒成片；这个检查计划尚未实际执行。",
+          "en": "This fictional woodworking video is a paper example, not a media test. Its sources are chosen as zero-origin 25fps CFR footage meeting the source tool’s requirements; verify actual media in a real project. A door closes with its sound at source time 4.0 seconds. From 5.0 to 6.2 seconds, the speaker completes “Leave the key on the table.”\n\nThe finished picture lasts ten seconds: source time 1–7 maps to output 0–6, followed by another selected four-second shot. The failing candidate mistakenly uses source audio 0–6 at output 0–6. The second passage’s sound, continuous separate music and adopted narration placements are correct.\n\n| Item | Example record and decision |\n|---|---|\n| Correct first picture | Source 1–7 maps to output 0–6; the door closes at output 3.0, and the line belongs at 4.0–5.2. |\n| Candidate first audio | Source 0–6 was used; the door sound falls at output 4.0 and speech begins at 5.0. The source line’s final 0.2 seconds is also missing. |\n| Repair | Recover the complete source audio 1–7 and place it at output 0–6. This repairs event position and the lost ending. Moving the already shortened candidate alone is insufficient. |\n| Adopted later material | Keep the second passage at output 6, with its correct sound, the continuous music and complete adopted narration. Do not shift these one second too. |\n| Actual review still needed | Door correspondence, complete speech ending, the six-second cut, the second passage and the whole render; paper arithmetic is not listening approval. |\n\nAt 25fps, the correct half-open source frame range is 25–175. Source frame 100, the door event, maps to output frame 75, or 3.0 seconds. On a 48kHz output clock, that is sample 144000. These values explain this example. Derive positions from the actual map for different rates or clocks.\n\nVideo Recap’s source/score producer prepares sound from explicitly selected source-frame ranges and output placements. Here only the first source range changes, but the complete bed plan must still contain the second passage and every explicit silent interval. Retain the chosen continuous music stem when it remains correct. Rebuild the affected bed and new mix-placement record, then use the existing full-sound assembly path for a new candidate. Unchanged text, WAVs and voice selection need no new TTS merely to move sound or repair a source range.\n\nThe bad candidate also lasts ten seconds, yet its first passage is mistimed and missing a word ending. After restoring the right source, review the door, whole sentence, cut and second passage at normal speed, then play the complete ten-second file. This review plan has not been executed."
+        }
+      },
+      {
+        "id": "tool-boundaries",
+        "heading": {
+          "zh": "选对工具：保留音轨不等于自动同步",
+          "en": "Choose the path: preserving audio does not automatically synchronize it"
+        },
+        "body": {
+          "zh": "| 方法 | 能做什么与边界 |\n|---|---|\n| 画面与已定混音配对 | `pair_media.py`复制两路已选压缩流，核实际首尾与包时钟；不做偏移、变速、裁切或听感对齐。适合内部事件仍对应的新画面。 |\n| 按原片区间重建声音底轨 | `source_score.py`消费明确的源帧范围与输出位置，准备原声和连续音乐；不自己猜对白、不自动修漂移，也不输出最终视频。 |\n| 已采用旁白与底轨合成 | 完整声音采用路径消费明确的放置与增益，保完整声音。新`output_start_sample`才决定这个路径的旁白位置，旧生成窗口不自动成为新剪后位置。 |\n\n当前源底轨实现核恒定帧率和实际包时钟，不接受把可变帧率、变速或任意秒数偏移字段塞进去冒充支持。输入不适合时先回上游准备合适素材或在编辑器中完成明确修订，再核实际对应；不要随便补一个未支持的参数。\n\n[Adobe的同步说明](https://helpx.adobe.com/premiere/desktop/add-audio-effects/basic-audio-editing/synchronize-clips-in-the-timeline-panel.html)把同步点分为入点、出点、共同时间码、标记等。使用编辑器同步功能也先确定哪一个点属于同一事件，再看整段，不把开始对齐当作所有后续都正确。\n\n[YouTube上传排障](https://support.google.com/youtube/answer/58134?hl=en)也单列音画不同步并提醒检查两轨时长。本地编辑仍要逐事件核对；时长一致是需要看的条件，不能替代内容对应。",
+          "en": "| Path | Capability and boundary |\n|---|---|\n| Pair picture with adopted mix | `pair_media.py` copies selected compressed streams and checks endpoints and packet clocks. It does not shift, retime, trim or perceptually align them. Internal events must still correspond. |\n| Rebuild a source/score bed | `source_score.py` consumes explicit source-frame ranges and output placements, preparing source sound and continuous music. It does not infer dialogue, automatically repair drift or publish a final video. |\n| Assemble adopted narration and bed | The full-sound path consumes chosen placements and gains while retaining complete sound. New `output_start_sample` values govern narration placement on this path; old generation windows are not automatically the new edit’s positions. |\n\nThe current source-bed implementation checks CFR and actual packet clocks. It does not accept VFR, retiming or invented seconds-offset fields as supported operations. Prepare suitable inputs upstream or make an explicit editor revision, then check real correspondence rather than invent an unsupported option.\n\n[Adobe’s synchronization guide](https://helpx.adobe.com/premiere/desktop/add-audio-effects/basic-audio-editing/synchronize-clips-in-the-timeline-panel.html) offers points such as In, Out, common timecode and markers. Identify which point represents the same event, then review the passage; a correct start does not prove all later events match.\n\n[YouTube upload troubleshooting](https://support.google.com/youtube/answer/58134?hl=en) separately addresses out-of-sync audio and video and advises checking track durations. In a local edit, also check individual events: equal duration does not establish content correspondence."
+        }
+      },
+      {
+        "id": "review-new-export",
+        "heading": {
+          "zh": "修后检查新导出，不拿旧试听代替",
+          "en": "Review the new export"
+        },
+        "body": {
+          "zh": "回到这次实际导出，先播改动前、改动处和改动后的清楚事件，再连播整段与整片。除了动作与声音，还要听完整句尾、剪点处是否重说或漏说、音乐是否仍按已定方式接续，检查字幕绑定的是当前声音版本。\n\n文件或流验证只说明检查到的机械关系。流复制证明保住了选定音轨；底轨回执说明用了哪些源区间；放置记录说明声音放在哪里。哪一次动作听起来同步，仍需播放这版成片。未检查的位置继续标待检查。\n\n如果只是正常的声音先行、延后或跨镜头对白，保留已接受的叙事安排。需要让所有声音贴切点整齐排列，并不是音画同步的目标。",
+          "en": "Play the actual new export at clear events before, within and after the change, then replay the passage and whole piece. Listen for complete line endings, repeated or missing speech at cuts and the adopted music continuity. Check that subtitles bind to the current sound version.\n\nFile and stream validation prove their tested mechanical relationships. Packet copy identifies retained audio; a bed receipt identifies source ranges; placement records identify positions. Perceived correspondence still requires playback of this render. Keep unreviewed positions pending.\n\nRetain intentional sound leads, trails and dialogue crossing a picture cut. Synchronization does not require every sound to end neatly at a picture edit."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "声音整体往前挪一点就能修好吗？",
+          "en": "Can I fix sync by moving all audio earlier?"
+        },
+        "a": {
+          "zh": "只有已核对事件支持同幅度偏移、完整声音仍在且移动不损坏其他正确段落时，才按该范围修位置。持续漂移、错源片段或被裁掉句尾需要另外处理；本例回源重取声音才同时修好了位置和完整性。",
+          "en": "Only when checked events support a consistent offset, complete sound is available and the move preserves other correct passages. Drift, wrong source ranges and lost endings need different repairs. This example recovers the source to repair position and completeness together."
+        }
+      },
+      {
+        "q": {
+          "zh": "字幕对上了，音画就一定同步吗？",
+          "en": "Do aligned subtitles prove audio-video sync?"
+        },
+        "a": {
+          "zh": "不一定。字幕可以跟着一条已经放错的声音显示。分别核字幕与声音、声音与对应动作的关系，再在新成片里播放；不要靠移动字幕掩盖声音层错位。",
+          "en": "No. Captions can follow an incorrectly placed sound perfectly. Check caption-to-speech and sound-to-action correspondence separately in the new render; moving text does not repair misplaced audio."
+        }
+      }
+    ],
+    "skill": {
+      "name": "video-recap",
+      "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-recap/SKILL.md",
+      "text": {
+        "zh": "在已安装 Video Recap 的宿主中，用 $video-recap 只分析这版成片的音画错位。我提供原片/剪后画面/混音/导出版本、真实源到输出映射及已播放的对应事件记录。定位第一个出现问题的阶段和最小有依据的修订范围，未知时间保持未知；保已定文字、完整WAV、声线和未受影响的声音，列回源范围及新放置需核的项目。本轮不重录、不渲染，不宣称已听审。",
+        "en": "In a host with Video Recap installed, use $video-recap only to diagnose this edit’s sound-picture mismatch. Use the supplied source, picture, mix and export versions, actual source-to-output map and observed event records. Find the first failing stage and smallest supported repair scope; leave unknown times unknown. Keep selected text, complete WAVs, voice and unaffected sound. List source ranges and new placements to verify. Do not rerecord, render or claim listening approval in this request."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "原片帧范围与输出声音底轨",
+          "en": "Source frame ranges and output sound beds"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/references/source-score.md"
+      },
+      {
+        "label": {
+          "zh": "完整采用声音与明确放置",
+          "en": "Complete adopted sound and explicit placements"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/references/explicit-audio-mix.md"
+      },
+      {
+        "label": {
+          "zh": "重剪后采用声音的阶段衔接",
+          "en": "Adopted sound after a recut"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-recap/references/audio-routing.md"
+      },
+      {
+        "label": {
+          "zh": "流复制与感知同步的区别",
+          "en": "Packet copy and perceptual synchronization"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/references/pair-media.md"
+      }
+    ],
+    "related": [
+      "/video-recap/keep-audio-when-changing-video",
+      "/video-recap/fit-voiceover-to-a-picture-edit",
+      "/video-recap/subtitle-timing-evidence",
+      "/drama-skills/ai-video-lip-sync"
     ]
   }
 ]
