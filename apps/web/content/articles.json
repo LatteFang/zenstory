@@ -21592,7 +21592,7 @@
       "en"
     ],
     "published_on": "2026-09-29",
-    "updated_on": "2026-09-29",
+    "updated_on": "2026-09-30",
     "title": {
       "en": "How to Write a Visual Novel Script with Clear Routes",
       "zh": "视觉小说脚本怎么写：让角色路线各有目标和变化"
@@ -21617,8 +21617,8 @@
           "en": "Plan scene action before dialogue"
         },
         "body": {
-          "zh": "game-world-design 的场景方法先确定存在理由、人物议程、知识边界、玩家介入和离场状态。视觉小说可以阅读为主，但选定的关键互动仍要改变人物回应、信息或后续机会。\n\n沿用原创展厅场景：一张借展照片不见了，玩家在闭馆后向保管员询问。保管员想保护借展手续的信誉，照片主人想查明物件去向；玩家只看见空相框，尚不知道谁拿走照片。\n\n共通场景的任务是取得可追问依据。原作内心描写可以转成当前视角可感知的动作或文字，不让旁白提前宣布保管员在隐瞒，否则调查选择失去意义。",
-          "en": "game-world-design establishes scene purpose, agendas, knowledge, player intervention and exit state before lines. A visual novel can prioritize reading while consequential interactions still change responses, information or opportunities.\n\nOriginal gallery scene: a borrowed photograph is missing after closing. The keeper protects confidence in the loan process; its owner wants the object traced. The player sees an empty frame but does not know who removed it.\n\nThe common scene obtains grounds for inquiry. Adapt interior prose through the chosen viewpoint; narration should not declare concealment before investigation establishes it."
+          "zh": "game-world-design 的场景方法先确定存在理由、人物议程、知识边界、玩家介入和离场状态。视觉小说可以阅读为主，但选定的关键互动仍要改变人物回应、信息或后续机会。\n\n沿用原创展厅场景：一张借展照片不见了，玩家在闭馆后向保管员询问。保管员想保护借展手续的信誉，照片主人想查明物件去向；玩家只看见空相框，尚不知道谁拿走照片。\n\n共通场景的任务是取得可追问依据。原作内心描写可以转成当前视角可感知的动作或文字，不让旁白提前宣布保管员在隐瞒，否则调查选择失去意义。\n\n把上述开场展开为可读的原创脚本方案。玩家已在闭馆展厅，旁边是空相框。保管员说“登记说昨夜取走”，仍只是他给出的说法。作者为本例加入下列局部问答，不预设保管员就是拿走照片的人：\n\n> 保管员正往盒里收钥匙：“登记说昨夜取走。”\n>\n> 玩家选择“先看登记簿”。保管员把簿推到桌边。玩家看到日期原字被划掉，旁边补了新日期；只能确定有修改，看不出谁改。\n>\n> 回到问话，出现“这处日期为什么改过？”\n>\n> 保管员停下收钥匙：“有人口头通知改。签收页还没核，我得再看。”\n>\n> 玩家选择“我和你一起核签收页”。保管员答应，把交接柜指给玩家。两人开始查手续，尚未确认照片去向。\n\n另一条路径中，玩家没有选择看登记簿，就不出现已经发现涂改的质问。玩家可问“谁签收了照片？”保管员回应“我还没核签收页。你愿意一起查吗？”本例玩家选“好，一起查”，保管员指向交接柜；若玩家拒绝，就不算共同调查，也不自动把第一条观察写入历史。\n\n这里已经发生的是各自选定的观察、问话与合作；“有人通知”仍是解释候选，两条路线都尚未找回照片。汇合到交接柜时，见过日期的人可继续追问那一处，未见过的人不能说“我刚才看到了”。这段只演示共通场景与调查入口，不声称完整角色路线或游戏已实现。",
+          "en": "game-world-design establishes scene purpose, agendas, knowledge, player intervention and exit state before lines. A visual novel can prioritize reading while consequential interactions still change responses, information or opportunities.\n\nOriginal gallery scene: a borrowed photograph is missing after closing. The keeper protects confidence in the loan process; its owner wants the object traced. The player sees an empty frame but does not know who removed it.\n\nThe common scene obtains grounds for inquiry. Adapt interior prose through the chosen viewpoint; narration should not declare concealment before investigation establishes it.\n\nExpand that setup into a readable original script proposal. The player is in the closed gallery beside an empty frame. The keeper’s “The register says last night” remains a claim. These new local exchanges do not predetermine who removed the photograph:\n\n> The keeper was collecting keys into a box. “The register says last night.”\n>\n> The player chooses “Inspect the register first.” The keeper slides it over. The player sees a crossed-out date and a new date beside it, without knowing who made the change.\n>\n> On returning to questions, “Why was this date changed?” becomes available.\n>\n> The keeper stops collecting keys. “Someone told me to change it. I haven’t checked the receipt page. I need another look.”\n>\n> The player chooses “I’ll check that page with you.” The keeper agrees and indicates the handoff cabinet. They begin auditing the process without establishing the photograph’s location.\n\nOn another path the player does not inspect the register, so the alteration question is unavailable. “Who signed for the photo?” receives “I haven’t checked the receipt page. Will you look with me?” In this example the player selects “Yes, let’s check,” and the keeper indicates the cabinet. Declining would not establish cooperation, and the first path’s observation does not enter this history automatically.\n\nSelected observation, questions and cooperation occur, while “someone told me” remains an explanation candidate. Neither path recovers the photograph yet. At convergence by the cabinet, an inspector may follow up on the date; an uninspected path cannot claim “I saw it earlier.” This passage demonstrates the common scene and investigation entry, not a completed character route or implemented game."
         }
       },
       {
@@ -21628,8 +21628,8 @@
           "en": "Write conditions and actual results into the scene table"
         },
         "body": {
-          "zh": "| 脚本段 | 画面与声音 | 说话者／内容 | 条件与结果 |\n|---|---|---|---|\n| 共通开场 | 空相框，门口雨声 | 保管员：“登记说昨夜取走。” | 建立其说法，尚未证实 |\n| 查看登记簿 | 日期局部 | 主角看见日期被涂改 | 写入“见过涂改”，不直接认定伪造者 |\n| 返回问话 | 保管员停下收钥匙 | “这处日期为什么改过？” | 仅见过涂改时出现；得到解释候选 |\n| 未查看的问话 | 同一展厅 | “谁签收了照片？” | 不假装玩家已经发现涂改 |\n\n独立记进入条件和离场状态，表情与音效只在有作用时变化。台词编号可供文本、字幕与配音共用，格式按所选制作工具调整；这张表是交接模板，不是任意引擎可直接执行的脚本语法。",
-          "en": "| Segment | Picture / sound | Speaker / content | Condition and result |\n|---|---|---|---|\n| Common opening | Empty frame; rain | Keeper: “The register says last night.” | Establish a claim, not verified truth |\n| Inspect register | Date close-up | Player sees an altered date | Record inspection, not the editor’s identity |\n| Return question | Keeper pauses while collecting keys | “Why was this date changed?” | Available after inspection; obtains an explanation candidate |\n| Uninspected question | Same room | “Who signed for the photo?” | Does not assume unseen evidence |\n\nRecord entry and exit states; vary expression and sound when useful. Line IDs can connect text, captions and voices. Adapt the format to the production tool: this worksheet is not universal executable engine syntax."
+          "zh": "| 脚本段 | 表现、对白与状态 |\n|---|---|\n| 共通开场 | 空相框与门口雨声；保管员说登记为昨夜取走，只建立说法，尚未证实。 |\n| 查看登记簿 | 日期局部；玩家见过涂改，记录观察，不认定修改者。 |\n| 查看后返回问话 | 保管员停下收钥匙；“这处日期为什么改过？”仅查看后出现，回应为解释候选。 |\n| 未查看的问话 | 同一展厅问“谁签收了照片？”，不假装已发现涂改。 |\n\n独立记进入条件和离场状态，表情与音效只在有作用时变化。台词编号可供文本、字幕与配音共用，格式按所选制作工具调整；这张表是交接模板，不是任意引擎可直接执行的脚本语法。",
+          "en": "| Segment | Presentation, line and state |\n|---|---|\n| Common opening | Empty frame and rain. Keeper says the register gives last night; this establishes a claim, not verified truth. |\n| Inspect register | Date close-up. Record that the player saw alteration, without identifying the editor. |\n| Return after inspection | Keeper pauses while collecting keys. “Why was this date changed?” appears only after inspection; the reply is an explanation candidate. |\n| Uninspected question | In the same gallery, “Who signed for the photo?” does not assume unseen evidence. |\n\nRecord entry and exit states; vary expression and sound when useful. Line IDs can connect text, captions and voices. Adapt the format to the production tool: this worksheet is not universal executable engine syntax."
         }
       },
       {
@@ -21639,8 +21639,8 @@
           "en": "Give each character route its own question"
         },
         "body": {
-          "zh": "| 路线方向 | 持续目标 | 新行动与阻力 | 路线回报 |\n|---|---|---|---|\n| 跟保管员核手续 | 找到签收流程的漏洞 | 查交接与补签，保管员需承认管理疏漏 | 建立可追溯的借展记录 |\n| 与照片主人追去向 | 找回物件及其私人意义 | 沿签收线索找收件人，主人要决定是否公开家事 | 找回照片，明确今后由谁保管 |\n\n这只是本页新增的纸面路线设计。入口根据已发生的调查与明确合作决定，不把一个随意闲聊选项藏作唯一开启条件。\n\n两条路线可以共用展厅，却不能只换立绘重演同一冲突。核心人物应有多阶段关系、独立筹码与结局回收；若只有一场短交谈，就先作为支持短线，不为了“角色路线”标签扩成冗长内容。",
-          "en": "| Route direction | Ongoing aim | Action and resistance | Payoff |\n|---|---|---|---|\n| Audit with keeper | Find the handoff failure | Review signatures; keeper admits a procedural lapse | Traceable loan records |\n| Trace with owner | Recover the object and its personal meaning | Follow recipient evidence; owner chooses whether to reveal private context | Photograph recovered; custody agreed |\n\nThese are new paper-design routes for the example. Open them through established investigation and explicit cooperation, not an unrelated hidden chat choice.\n\nRoutes may share a gallery, but swapping portraits cannot replace distinct conflicts. A core route needs sustained relationship, leverage and payoff. Keep a brief encounter as a supporting line until broader depth is justified."
+          "zh": "| 路线 | 目标、行动与回报 |\n|---|---|\n| 与保管员核手续 | 找签收流程漏洞；查交接与补签，路线需保管员承认管理疏漏；路线目标是建立可追溯借展记录。 |\n| 与照片主人追去向 | 找回物件及其私人意义；沿签收线索找收件人，主人决定是否公开家事；路线目标是找回照片并明确今后保管者。 |\n\n这只是本页新增的纸面路线设计。入口根据已发生的调查与明确合作决定，不把一个随意闲聊选项藏作唯一开启条件。\n\n两条路线可以共用展厅，却不能只换立绘重演同一冲突。核心人物应有多阶段关系、独立筹码与结局回收；若只有一场短交谈，就先作为支持短线，不为了“角色路线”标签扩成冗长内容。",
+          "en": "| Route | Aim, action and payoff |\n|---|---|\n| Audit with keeper | Find the handoff failure; review signatures; the keeper needs to acknowledge a procedural lapse. The route aims for traceable loan records. |\n| Trace with owner | Recover the object and its personal meaning; follow recipient evidence while the owner chooses whether to disclose private context. The route aims to recover the photo and agree custody. |\n\nThese are new paper-design routes for the example. Open them through established investigation and explicit cooperation, not an unrelated hidden chat choice.\n\nRoutes may share a gallery, but swapping portraits cannot replace distinct conflicts. A core route needs sustained relationship, leverage and payoff. Keep a brief encounter as a supporting line until broader depth is justified."
         }
       },
       {
@@ -49071,7 +49071,7 @@
   {
     "owner": "drama-skills",
     "slug": "fix-cropped-characters-in-ai-video",
-    "topic": "short-drama",
+    "topic": "ai-video",
     "langs": [
       "zh",
       "en"
@@ -49299,7 +49299,7 @@
   {
     "owner": "drama-skills",
     "slug": "fix-repeated-actions-in-ai-video",
-    "topic": "short-drama",
+    "topic": "ai-video",
     "langs": [
       "zh",
       "en"
@@ -49415,6 +49415,241 @@
       "/drama-skills/fix-slow-actions-in-ai-video",
       "/drama-skills/choose-ai-video-in-and-out-points",
       "/drama-skills/fix-floating-props-in-ai-video"
+    ]
+  },
+  {
+    "owner": "oh-story",
+    "slug": "stop-ai-continuation-from-repeating-the-previous-chapter",
+    "topic": "revision",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "AI续写总重复上一章怎么办：从已发生的结果接着写",
+      "en": "How to Stop AI Continuation Repeating the Previous Chapter"
+    },
+    "seo_title": {
+      "zh": "AI续写重复上一章怎么办｜ZenStory",
+      "en": "Stop AI Continuation Repeating a Chapter | ZenStory"
+    },
+    "description": {
+      "zh": "分清重写与续写，确认上一章结尾、已完成事件和下一章细纲。附修钟铺交接例，保留必要承接而不重演旧行动。",
+      "en": "Separate rewriting from continuation and confirm the previous ending, completed events and next outline. A clock-shop example keeps continuity without replay."
+    },
+    "answer": {
+      "zh": "先确认是在重写当前章，还是从已完成章继续。续写要接住上一章实际结果，再进入下一章已批准的新行动；不从聊天里一个“继续”猜起点。必要的回顾可以保留，但不能把已发生的谈话、交接和决定再写成第一次发生。",
+      "en": "Confirm whether the task rewrites the current chapter or continues after a completed one. Continuation starts from the actual prior result and moves into the next approved action; “continue” alone is not a reliable starting point. Useful recap may remain, but occurred conversations, handoffs and decisions must not happen again as first-time events."
+    },
+    "sections": [
+      {
+        "id": "identify-what-repeats",
+        "heading": {
+          "zh": "先区分重复情节、回顾与当前章重写",
+          "en": "Distinguish replay, recap and a requested rewrite"
+        },
+        "body": {
+          "zh": "| 看到的情况 | 先确认什么 |\n|---|---|\n| 新章重新谈成昨天已经谈成的事 | 已完成事件是不是被当成仍待发生。 |\n| 开头短句回想昨夜的选择 | 是否提供当前判断所需的承接，而非整场重演。 |\n| 作者本来要求修改上一章 | 这是获准重写，不是续写出错。 |\n\n不要按出现过的人名或物件机械删重。同一把钥匙可以在下一章使用，同一句话也可被人物有意引用；需要修的是没有新作用、或把事实退回未发生状态的重复。",
+          "en": "| Symptom | First question |\n|---|---|\n| A new chapter negotiates yesterday’s completed agreement again | Was a completed event treated as pending? |\n| A short opening recalls last night’s choice | Does it support a current decision rather than replaying the scene? |\n| The author requested revision of the previous chapter | This is an authorised rewrite rather than faulty continuation. |\n\nDo not delete repeated names or objects mechanically. The same key can be used next chapter and a line can be deliberately quoted. Repair repetition that serves no new purpose or reverses occurred facts into pending events."
+        }
+      },
+      {
+        "id": "fix-the-handoff",
+        "heading": {
+          "zh": "把起点交接清楚，不用整章复述来证明记得",
+          "en": "Make the handoff explicit without retelling the chapter"
+        },
+        "body": {
+          "zh": "Oh Story的续写流程逐章完成并提交追踪后再写下一章。写前核对已完成章、本章细纲与当前相关状态；上一章结尾由组装流程承接，存疑时定点读原文，不用来源不明的聊天记忆代替。\n\n给AI的材料应说明：本次是续写第几章；已经发生什么；下一章要做什么；不能再次发生或提前发生什么。细纲把相同要求写了两遍，也只兑现一次。若实际正文与追踪不一致，先查缺失或错误的交接，不靠重复旧情节修补状态。\n\n批写时按当前章顺序推进。不要把几章并发写好后才决定谁接谁，也不要为了凑字数让角色再完成一次昨天的任务。",
+          "en": "Oh Story completes each chapter and commits tracking before the next. Before writing, confirm the completed chapter, current outline and relevant state. The assembly workflow carries the prior ending; inspect the specific manuscript when continuity is uncertain rather than relying on unsourced chat memory.\n\nTell AI which chapter to continue, what has occurred, what the next chapter does, and what must neither recur nor happen early. An instruction duplicated in the outline is fulfilled once. If prose and tracking disagree, investigate the handoff instead of repeating plot to patch the state.\n\nAdvance sequentially during batch drafting. Do not draft chapters concurrently and decide their ordering afterward, or repeat yesterday’s task merely to meet word count."
+        }
+      },
+      {
+        "id": "complete-clock-shop-continuation",
+        "heading": {
+          "zh": "完整示例：钥匙已借到，下一章从用钥匙开始",
+          "en": "Complete example: the key is already borrowed"
+        },
+        "body": {
+          "zh": "原创第五章结尾：陶安向店主借到了修钟间钥匙，约定次日上午九点与罗岑一起检查钟，不擅自拆件。第六章细纲是两人按约抵达、用钥匙开门、发现钟未走并记录现象；停在准备询问店主，尚未获得拆件许可。\n\n重复候选让陶安再次找店主借钥匙，并让罗岑重新同意时间。可以把重复协商改成当前行动：\n\n> 九点，陶安在修钟间门口等到罗岑。钥匙还是昨晚店主交给他的那一把。\n>\n> “没迟到。”罗岑看了一眼钟面，“可它怎么还指着六点？”\n>\n> 陶安开门，把钥匙留在自己口袋里。两人隔着玻璃看摆锤，没有动。\n>\n> “先记下来。”他说，“昨晚说的是检查，没答应拆。”\n>\n> 罗岑写下钟面与摆锤状态，合上本子。“一起问店主。”\n>\n> 陶安点头，把钟留在原处。\n\n借钥匙和约时间不再发生第二次；物件由陶安继续持有，两人实际抵达并完成观察。钟为何停、是否允许拆件仍未知，不因新章必须推进就自动给出答案。\n\n任务可以写：“续写第六章，接第五章已借到钥匙及九点约定，不重写借钥匙谈话。按本章细纲完成抵达、开门和观察，停在准备询问店主；不拆钟、不增诊断结论，保留本书文风。”上面是原创交接方案，不是已经运行的小说工程。",
+          "en": "Original chapter five ends with Tao An borrowing the clock-room key from its owner and arranging a nine-o’clock inspection with Luo Cen, without permission to dismantle anything. Chapter six covers arrival, unlocking, observing the stopped clock and recording it. It stops before asking the owner; dismantling remains unauthorised.\n\nA faulty continuation borrows the key again and renegotiates Luo’s arrival. Replace replayed negotiation with current action:\n\n> At nine, Tao met Luo outside the clock room. The key was still the one its owner had handed him last night.\n>\n> “On time,” Luo said, glancing at the dial. “But why does that still say six?”\n>\n> Tao unlocked the door and kept the key in his pocket. Through the glass, they watched the motionless pendulum.\n>\n> “Record it first,” he said. “We agreed to inspect it, not take it apart.”\n>\n> Luo noted the dial and pendulum, then closed the notebook. “Ask the owner together.”\n>\n> Tao nodded and left the clock where it was.\n\nBorrowing and scheduling do not occur twice. Tao retains the key; both arrive and observe. The cause and permission to dismantle remain unknown, without an automatic answer simply because a new chapter must progress.\n\nA task can say: “Continue chapter six from the borrowed key and nine-o’clock agreement at chapter five’s end. Do not replay borrowing. Follow the outline through arrival, unlocking and observation; stop before asking the owner, without dismantling or a new diagnosis. Preserve book-local style.” This is an original handoff example rather than a running novel project."
+        }
+      },
+      {
+        "id": "check-the-repaired-chapter",
+        "heading": {
+          "zh": "删重后看新结果，也看是否丢了必要承接",
+          "en": "Check new results and the continuity retained"
+        },
+        "body": {
+          "zh": "核对旧章实际结尾与新章开头：时间、位置、持物、知情和承诺是否接上？再核本章新行动有没有落地，而非只把旧事换词复述。必要的一句回顾可留，不能为“去重复”把钥匙来源或不拆件约定删掉。\n\n若已写出的后章沿用了重复谈话带来的新条件，按受影响范围修后文并走既有修订流程。只改措辞与改变事件状态分开处理，不手改追踪视图来伪装正确承接。",
+          "en": "Compare the actual prior ending and new opening for time, location, possession, knowledge and promises. Then check that the current chapter’s action occurs rather than rephrasing earlier events. Keep necessary recap; removing repetition must not erase the key’s origin or the no-dismantling agreement.\n\nIf later chapters depend on new conditions introduced by the repeated negotiation, repair their affected scope through the existing revision workflow. Distinguish wording changes from changed event state rather than hand-editing tracking views to simulate continuity."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "每章开头都不能回顾吗？",
+          "en": "Is recap forbidden at chapter openings?"
+        },
+        "a": {
+          "zh": "可以简短回顾当前行动需要的事实，或写人物对旧事的新理解；不要把已完成事件重演成第一次发生。",
+          "en": "Briefly recall facts needed now or a character’s changed understanding. Do not replay completed events as though they were happening for the first time."
+        }
+      }
+    ],
+    "skill": {
+      "name": "story-long-write",
+      "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/SKILL.md",
+      "text": {
+        "zh": "用 $story-long-write 检查续写重复，附已完成章结尾、本章细纲与当前状态。分开重写和续写，从已有结果进入新行动；保留有用回顾，删除越界重演，不用补字数替代进展。",
+        "en": "Use $story-long-write with the completed ending, current outline and state. Separate revision from continuation, advance from existing results and preserve useful recap while removing replay."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "逐章交接、状态来源与定点查旧信息",
+          "en": "Sequential handoff, state sources and targeted history lookup"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/workflow-daily.md"
+      },
+      {
+        "label": {
+          "zh": "本章细纲与相同要求只兑现一次",
+          "en": "Current outline and fulfilling duplicated requirements once"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/workflow-chapter.md"
+      }
+    ],
+    "related": [
+      "/oh-story/batch-draft-novel-chapters-with-ai",
+      "/oh-story/ai-novel-word-count",
+      "/oh-story/ai-fiction-consistency-check"
+    ]
+  },
+  {
+    "owner": "video-recap",
+    "slug": "fix-subtitles-that-do-not-match-the-voiceover",
+    "topic": "video-recaps",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "字幕和旁白内容不一样怎么办：先核实际声音，再修文字",
+      "en": "How to Fix Subtitles That Do Not Match the Voiceover"
+    },
+    "seo_title": {
+      "zh": "字幕和旁白内容不一致怎么修｜ZenStory",
+      "en": "Fix Subtitles That Differ from Voiceover | ZenStory"
+    },
+    "description": {
+      "zh": "对照批准稿、TTS实读文本、采用音频与字幕来源，分清内容和时间错误。附保留与删除句子被字幕写反的修复示例。",
+      "en": "Compare approved text, TTS spoken text, adopted audio and subtitle sources. A keep/delete example separates content mismatch from timing errors."
+    },
+    "answer": {
+      "zh": "先听当前成片的实际声音，再核字幕这句话来自哪份文字。时间对齐而内容不同，移动字幕轨不能解决；内容相同而显示太早或太晚，则按时间问题处理。定稿、TTS实读记录、音频与最终字幕分别对照，避免拿旧稿或原声字幕匹配新的旁白。",
+      "en": "Listen to the actual final audio and identify the text source for the mismatched cue. Aligned timing with different words is not repaired by moving the subtitle track; matching words shown early or late require timing work. Compare the approved draft, TTS spoken-text record, audio and final captions rather than matching new narration to old copy or source-dialogue subtitles."
+    },
+    "sections": [
+      {
+        "id": "compare-words-before-timing",
+        "heading": {
+          "zh": "先判断是字不一样，还是出现时间不一样",
+          "en": "Separate wording from timing"
+        },
+        "body": {
+          "zh": "| 当前情况 | 先修什么 |\n|---|---|\n| 旁白说“保留”，字幕写“删除” | 核当前采用声音与字幕文字来源。 |\n| 字词相同，但字幕提前出现 | 查本条起止或整轨偏移，不改成另一句话。 |\n| 字幕显示原片人物台词，声音是解说 | 核字幕所属原声还是旁白，别混用。 |\n\n专名、否定词和顺序词尤其要逐字比较。视频上有字并不证明它就是当前旁白字幕：花字、标牌与原片字幕各有职责。本文修的是要对应旁白的字幕内容，时间同步详见[字幕起止检查](/video-recap/subtitle-timing-evidence)。",
+          "en": "| Situation | First repair |\n|---|---|\n| Voice says “keep” but caption says “delete” | Check adopted audio and the subtitle text source. |\n| Words match but appear early | Check cue boundaries or track offset without substituting another sentence. |\n| Caption shows original dialogue while narration is heard | Check source-dialogue versus narration attribution. |\n\nCompare names, negation and ordering words carefully. Visible text is not automatically a caption for the current voice: titles, signs and source subtitles have separate roles. This page repairs captions intended to represent narration; see [subtitle boundary checks](/video-recap/subtitle-timing-evidence) for timing."
+        }
+      },
+      {
+        "id": "identify-current-text-and-audio",
+        "heading": {
+          "zh": "定稿、实读记录与声音各证明什么",
+          "en": "Identify what each text and audio record establishes"
+        },
+        "body": {
+          "zh": "配音模块记录`authored_text`、`spoken_text`及是否自动缩稿。前者保留送入的作者稿，后者记录本段实际送去合成的文本；它们不替代回听供应商到底读了什么。默认超窗可能缩稿，选定稿保护`--preserve-approved-text`可阻止自动删字，超窗或必需段失败则不能当完成。\n\n先确认成片真的采用了当前WAV，再检查字幕是否仍引用旧稿。仅文件名相同或元数据存在，不能证明已换入成片。若稿件需要改动，作者先选择最终说法，再只重生成受影响声音，并按新采用声音核字幕和接点。",
+          "en": "The voice module records `authored_text`, `spoken_text` and automatic shortening. The first retains the supplied author text; the second records words sent for synthesis. Neither replaces listening to what the provider actually spoke. Default over-window handling may shorten copy; `--preserve-approved-text` prevents automatic deletion and treats an overrun or required-segment failure as unfinished.\n\nConfirm the current WAV is actually in the final edit before checking captions still based on old copy. A matching filename or present metadata does not establish adoption. If wording changes, the author selects the final version, then regenerates only affected audio and checks captions and joins against the adopted sound."
+        }
+      },
+      {
+        "id": "complete-wording-repair",
+        "heading": {
+          "zh": "完整示例：保留与删除被旧字幕写反",
+          "en": "Complete example: an old caption reverses keep and delete"
+        },
+        "body": {
+          "zh": "原创剪辑教学片的一句批准旁白是：“这一段要保留，下一段可以删除。”本段TTS的`spoken_text`一致，分段与当前成片回听也一致；外部导入的旧字幕却写：“这一段可以删除，下一段要保留。”本例窗口18—22秒仅为教学安排，正式起止须核实际音频。\n\n| 核对材料 | 本例结果 |\n|---|---|\n| 批准稿和实读记录 | 保留当前段，删除下一段。 |\n| 实际分段和采用的声音 | 听到相同说法，没有换成旧音频。 |\n| 显示字幕 | 使用了相反的旧文字，内容错误。 |\n\n保留当前声音，把对应字幕改成批准句，再按这条声音复核起止。不要为了迁就旧字幕把正确旁白换错，也不要只拖动时间，让错误句子晚两秒出现。\n\n若项目采用本仓库的独立字幕轨，应在完整当前轨里修这条，同时保留其他所有需要的字幕。该集成只用于已采用AAC声音、输出从零开始的`adopted-packet-copy`路径；提交轨替换全部生成字幕，不是把一条补丁自动合并。新混旁白的路线不能直接假定同样适用。\n\n导出后听这句并看字幕首尾，再看前后接点与其他保留字幕。这里给出的是修复方案，没有生成TTS、字幕轨或成片；真实采用声音和真实轨道决定最终检查值。",
+          "en": "An original editing lesson’s approved narration says, “Keep this section; the next section can be deleted.” Its TTS `spoken_text` matches, and listening to the segment and current edit confirms it. An imported old cue instead says, “Delete this section; keep the next.” An 18–22-second window is a teaching arrangement, with actual boundaries still needing audio review.\n\n| Material | Example result |\n|---|---|\n| Approved copy and spoken-text record | Keep the current section; delete the next. |\n| Actual segment and adopted sound | The same words are heard; old audio was not substituted. |\n| Displayed caption | Opposite old text causes a content error. |\n\nKeep the current sound and replace the cue with the approved sentence, then verify its actual boundaries. Do not replace correct narration to accommodate old subtitles or merely move the incorrect sentence two seconds later.\n\nFor this repository’s independent track integration, edit the cue within the complete current track and retain every other caption needed. The integration applies to zero-start output media with adopted AAC audio in `adopted-packet-copy` mode. The track replaces all generated captions rather than automatically merging a one-cue patch. Do not assume the same integration applies to a newly mixed narration route.\n\nAfter export, listen and inspect this cue’s first and last display, neighbouring joins and retained captions. This is a repair plan without generated TTS, track or video; actual adopted audio and the real track determine final check values."
+        }
+      },
+      {
+        "id": "verify-content-and-coverage",
+        "heading": {
+          "zh": "结构验证之后，仍要检查实际文字覆盖",
+          "en": "Verify actual words and coverage after structural checks"
+        },
+        "body": {
+          "zh": "字幕轨加载器保留文字与起止，核当前画面、采用声流和时长；它不识别声音、改错字或证明语音与文字同步。完整轨少了一句话，也不能靠“文件合法”发现所有漏字幕。\n\n因此分开核对：采用哪路音频、哪些旁白/原声需要字幕、每条的当前文字、实际显示与声音起止。时间或素材变动后重新准备受影响轨，失效输入不能继续冒充当前版本。只改一条文字时也要保留其他字幕，不把全轨替换误当局部更新。",
+          "en": "The track loader preserves text and boundaries while checking current picture, adopted audio stream and duration. It does not recognise speech, correct words or prove synchronization. A structurally valid full track can still omit a required sentence.\n\nCheck separately which audio is adopted, which narration or source lines need captions, each cue’s current words and actual sound/display boundaries. Changed time or media requires preparing the affected track again; stale input cannot represent the current version. Even a one-line wording repair must retain other required captions when replacing a full track."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "把字幕识别一遍就一定正确吗？",
+          "en": "Does another transcription guarantee correct captions?"
+        },
+        "a": {
+          "zh": "不能。识别结果只是候选，仍需对照当前采用声音核人名、否定与顺序，并在导出中检查文字和起止。",
+          "en": "No. Transcription is a candidate; compare names, negation and order against adopted audio, then verify wording and boundaries in the export."
+        }
+      }
+    ],
+    "skill": {
+      "name": "video-assemble",
+      "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/SKILL.md",
+      "text": {
+        "zh": "让 video-assemble 阶段核对当前旁白与字幕来源，附批准稿、实读记录、采用声音和当前轨。先修文字或声音的实际错误，再核起止；使用独立轨时按支持路径完整替换并保留其他字幕，不把结构验证当回听。",
+        "en": "At video-assemble, compare approved copy, spoken-text records, adopted audio and current captions. Repair the actual wording or audio fault before timing. Use full-track replacement only on its supported route and preserve other cues; validation does not replace listening."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "作者稿、实读、批准保护与分段复用",
+          "en": "Author text, spoken text, approval protection and segment reuse"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-voiceover/SKILL.md"
+      },
+      {
+        "label": {
+          "zh": "实际记录的作者文本与合成文本字段",
+          "en": "Recorded author-text and synthesis-text fields"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-voiceover/scripts/voiceover.py"
+      },
+      {
+        "label": {
+          "zh": "完整字幕轨、绑定与内容检查边界",
+          "en": "Complete subtitle tracks, binding and content-check limits"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/references/subtitle-track.md"
+      }
+    ],
+    "related": [
+      "/video-recap/subtitle-timing-evidence",
+      "/video-recap/fix-missing-words-in-ai-voiceover",
+      "/video-recap/fix-automatic-subtitle-errors"
     ]
   }
 ]
