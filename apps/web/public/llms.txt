@@ -220,6 +220,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Stop AI Fiction from Revealing Future Plot Too Soon](https://zenstory.ai/oh-story/stop-ai-fiction-from-revealing-future-plot) — Specify the current payoff, protected later revelations, and stopping point. Includes an album-story repair and a focused revision brief.
 - [How to Write Clear Action Sequences in Fiction](https://zenstory.ai/oh-story/write-clear-action-sequences-in-fiction) — Check positions, held objects, and action order, then supply necessary connections. Includes a complete scene without an inventory of every movement.
 - [How to Shorten an Overlong Novel Chapter Without Losing Its Story](https://zenstory.ai/oh-story/shorten-an-overlong-novel-chapter) — Check length and required beats, then remove redundant explanation and process. Compare a complete scene before and after with the skill’s one-pass workflow.
+- [How to Keep Multiple AI Novel Projects Separate](https://zenstory.ai/oh-story/keep-multiple-ai-novels-separate) — Separate manuscripts, settings and progress. Follow a two-book switch with explicit paths and scope; an active-book selector is not session isolation.
 
 ### Book covers / 小说封面
 - [Book covers](https://zenstory.ai/guides/book-covers) — Plan cover art and lettering, then check upload crops and thumbnail readability.
@@ -268,6 +269,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Write a Hidden-Identity Short Drama](https://zenstory.ai/drama-skills/hidden-identity-short-drama) — Connect a hidden identity to a task, recognition tests and relationship consequences. Includes an original acting-director story and knowledge table.
 - [How to Write an Underdog Rise Short Drama](https://zenstory.ai/drama-skills/underdog-rise-short-drama) — Make dismissal concrete, then change judgments through verifiable results. Includes an original repair contest and witness roles beyond applause.
 - [How to Control Suspense with Audience Information](https://zenstory.ai/drama-skills/control-suspense-with-audience-information) — Separate identity, sound and evidence reveals. Plan what viewers know now with an original visitor scene, avoiding hidden essentials or premature disclosure.
+- [How to Add Sound Effects at the Right Moment in a Video](https://zenstory.ai/drama-skills/add-sound-effects-to-video) — Locate action and original audio, then place the cue in cut-local time. Follow a door-knock example with cue arithmetic and actual mixing boundaries.
 
 ### Storyboards and AI video / 分镜与 AI 视频
 - [Storyboards and AI video](https://zenstory.ai/guides/ai-video) — Plan shots, keep characters consistent, and improve generated footage.
@@ -384,6 +386,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Fix a Game Button That Does Nothing](https://zenstory.ai/novel-to-game/fix-a-game-button-that-does-nothing) — A highlighted button does not prove an action happened. Separate missing input, rule rejection and hidden results with an original diagnostic path.
 - [How to Design Dialogue History in a Visual Novel](https://zenstory.ai/novel-to-game/design-dialogue-history-in-a-story-game) — Design an on-demand dialogue backlog with speakers, the actual route and an explicit rollback policy, using a complete repair-shop example and AI brief.
 - [How to Fix Small Game Buttons and Accidental Taps on Mobile](https://zenstory.ai/novel-to-game/fix-small-game-buttons-on-mobile) — Check actual touch targets, spacing and choice text, with a complete delivery example that enlarges controls while preserving actions, costs and results.
+- [How to Fix Text That Is Too Small in a Mobile Game](https://zenstory.ai/novel-to-game/fix-small-text-in-a-mobile-game) — Check fonts, size, spacing and occlusion in the real game viewport. Follow a library scene redesign without changing choices or story state.
 
 ### Video scripts and editing / 视频解说与剪辑
 - [Video scripts and editing](https://zenstory.ai/guides/video-recaps) — Write narration from footage, edit a story, and finish audio and subtitles.
