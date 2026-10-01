@@ -3994,6 +3994,17 @@
         }
       },
       {
+        "id": "complete-relationship-scenes",
+        "heading": {
+          "zh": "把关系变化写成正文：合作的边界，私下的邀约",
+          "en": "Dramatize the change: work boundaries and a personal invitation"
+        },
+        "body": {
+          "zh": "沿用许芮、梁策与气象站原例，先展开有限帮助，再展开几周后的私人邀约。两段是原设计的一份正文候选，不把专业合作自动变成恋爱。资料流程只是虚构工作背景，叙述贴近许芮。\n\n> 许芮将缺项标在汇总页上，拿给负责人。“这些还没核完，今天不能标完成。”\n>\n> 负责人看过缺口，答应延后汇总。她收回页子，才回到梁策身旁。\n>\n> “汇总能晚一点交了。”她把缺项翻给他看，“帮我找到导出记录里对应的位置就行。到了约好的时间，你照常下山。后面我来核。”\n>\n> 梁策看了一遍。“能给你找出来。不过我走之前还得把步骤写下，省得你重找。”\n>\n> “那就先做这个。剩下的不要赶着标完。”\n>\n> 他用离站前那段休息时间查到缺项位置，将核对步骤写好，放在她的汇总页旁。许芮按纸上的顺序确认了要从哪里接着查，没有把尚未核对的部分勾掉。\n>\n> 约定的离站时间到了，梁策收好东西。“我得去接我爸。”\n>\n> “去吧。复查我再问你哪天有空。”\n>\n> 他离开后，许芮把写着步骤的纸留在手边，继续处理自己的那一部分。再次约复查时，她先问他的时间；他答应了，提前备好她需要的记录。\n\n本轮可见变化是愿意请求、接受和履行有限帮助。负责人同意延后，梁策实际完成定位与说明并按时离站，许芮继续核对；汇总仍没有被虚报完成。这里已经能交付同事间的温暖。\n\n若本书要继续恋爱线，原例几周后的邀请可以这样展开。此处只增加私人相处，不抢先确认情侣关系：\n\n> 许芮在下班时叫住梁策。“周五一起去河边走走？不是复查。”\n>\n> 他原本正翻工作安排，听完便把它合上。“好啊。吃完饭再去？”\n>\n> “行。下班各自吃饭，河边入口见。”\n>\n> 周五，他们在约好的入口碰面。许芮讲起自己为什么选了山上的工作，梁策问她当初怎么下的决定。她答完，也问他接父亲的那天。\n>\n> 梁策说起与父亲相处的难处。许芮听完，才把自己原先以为他只是急着走的想法告诉他。\n>\n> “工作可以约时间，”他说，“那天我得按约去接他。”\n>\n> “我现在知道了。”她跟他继续往河边走。这一次，他们手里都没有待复查的记录。\n\n“不是复查”提出私人邀请，答应、商量时间和实际见面构成回应；双方互相听见工作之外的生活。没有要求梁策靠放弃父亲证明心意，也没有把接受散步解释成接受所有亲密行为。两个人怎样继续，仍取决于后续具体选择与本书风格。",
+          "en": "Keep Xu Rui, Liang Ce and the weather-station setup. This complete candidate first expands limited help, then the personal invitation several weeks later. Professional cooperation does not automatically establish romance. The work process is fictional background; narration stays close to Xu.\n\n> Xu marked the gaps on her summary sheet and took it to the supervisor. “These haven’t been checked. I can’t mark them complete today.”\n>\n> After reviewing the gaps, the supervisor approved a later summary. Xu took the sheet back and returned to Liang.\n>\n> “We can submit the summary later.” She showed him the missing entries. “Just help me find their positions in the export records. Leave at the time we agreed. I’ll do the checks afterward.”\n>\n> Liang looked through them. “I can find those. I should write down the steps before I leave, so you don’t have to find them again.”\n>\n> “Start with that. Don’t rush to mark the rest complete.”\n>\n> He used his remaining break to locate the missing entries and placed written checking steps beside her sheet. Xu followed them to confirm where she should continue. She left the unchecked entries open.\n>\n> At the agreed departure time, Liang put his things away. “I have to meet my dad.”\n>\n> “Go. I’ll ask when you’re free for the follow-up.”\n>\n> After he left, Xu kept his written steps at hand and continued her part. When she arranged the next check, she asked about his availability first. He agreed and prepared the records she needed beforehand.\n\nThe enacted change is willingness to request, accept and deliver bounded help. The supervisor approves delay; Liang locates the gaps, writes the steps and leaves on time; Xu continues checking. Nobody falsely completes the summary. Colleague warmth can already be this scene’s reward.\n\nFor a continuing romance, expand the original invitation several weeks later as follows. It adds personal time without declaring the pair a couple:\n\n> As work ended, Xu called Liang back. “Walk by the river with me on Friday? This isn’t about the follow-up.”\n>\n> He closed the work schedule he had been reading. “I’d like that. After dinner?”\n>\n> “Yes. We’ll each eat after work and meet at the river entrance.”\n>\n> On Friday, they met at the agreed entrance. Xu explained why she had chosen the mountain job. Liang asked how she had reached that decision. After answering, she asked about the day he had gone to meet his father.\n>\n> Liang described some difficulties between them. Xu listened before explaining that she had first thought he simply wanted to leave work early.\n>\n> “We can arrange work times,” he said. “That day I’d promised to meet him.”\n>\n> “I understand that now.” She continued along the river with him. This time neither carried records awaiting a check.\n\n“This isn’t about the follow-up” makes a personal invitation. Acceptance, arranging a time and actually meeting provide a response. Both hear about a life beyond work. Liang need not abandon his father to prove affection; agreeing to a walk does not imply agreement to every intimate behavior. Later choices and the book’s style determine how the relationship continues."
+        }
+      },
+      {
         "id": "response-check",
         "heading": {
           "zh": "善意之后要有采用与回应",
@@ -4085,6 +4096,13 @@
           "en": "Author choice before default templates"
         },
         "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/style-resolution.md"
+      },
+      {
+        "label": {
+          "zh": "场景展开与详略取舍",
+          "en": "Scene development and selective detail"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/writing-craft.md"
       }
     ]
   },
@@ -4145,6 +4163,17 @@
         "body": {
           "zh": "原创城镇故事中，乔澜要保住老街取水点。档案官沈砚秋亲历过争水，想把分散站点并入统一安排。他管记录初核与方案建议，停站由配水会决定；前文明确补齐两周服务记录可申请复核。这是本故事的制度，不是现实供水规则。\n\n沈的筹码是完整档案和他人信赖的统计口径，弱点是把“记录里没有”当作“需求不存在”。他先赢一轮：乔澜提交未核实旧表，沈拿出修订记录；配水会撤下那份材料，两位邻居暂不愿为它作证。\n\n乔澜随后发现，一次领水有时由一人代几户，不等于只有一户使用。她核对两周代领记录、各户确认和站点实际领取，证明当前次数没有表达全部服务户数。它还不能证明所有配额计算都错，也不能凭私家存水推算无限自给。\n\n她带齐记录请求复核。配水会接受这项具体差异，实际暂缓停站并安排补核服务范围，才算本轮改变。沈失去的是“只按领取次数足够”的依据，没有突然变笨或丢掉全部权力；他转而要求代领对象逐户对应，继续形成新的阻力。\n\n主角得到有限进展，最终保留站点仍待后续。对手的损失与他的已建认知偏好相连，而不是一份新资料瞬间推翻全城制度。",
           "en": "In this original town, Qiao Lan wants to retain an old-street water pickup point. Archivist Shen Yanqiu witnessed a dispute and favors consolidation. He reviews records and recommends plans; a distribution council decides closure. Earlier scenes establish that two weeks of service records allow a review request. These are fictional institutional conditions.\n\nHis leverage is trusted archive data. His weakness is equating absence from records with absence of need. He wins first: Qiao submits an unchecked old table; he supplies revision records, the council excludes it, and two neighbors withdraw support for that table.\n\nQiao finds that one collection may serve several households. She checks two weeks of proxy records, household confirmations and actual collections. Counts do not express all households served. That does not prove every quota calculation wrong or infer unlimited self-supply from private tanks.\n\nShe brings the records and requests review. The council accepts this specific discrepancy, pauses closure and orders service coverage rechecked. This is the enacted local change. Shen loses the claim that collection counts suffice, not his intelligence or every power. He asks for proxy entries to map to households, creating further resistance.\n\nQiao gains limited progress; permanent retention remains unresolved. The opponent loses through an established bias, not one document overturning an entire city system."
+        }
+      },
+      {
+        "id": "complete-counterplay-scene",
+        "heading": {
+          "zh": "把反制写成正文：对手承认差异，仍能提出要求",
+          "en": "Put counterplay on the page: concede a difference and keep resisting"
+        },
+        "body": {
+          "zh": "沿用河道档案官原例，把乔澜带齐记录请求复核的这一轮展开。前一轮旧表已经被撤下，这次用的是已核对的两周代领记录、各户确认和实际领取记录。以下为原场景的一份正文候选，采用贴近乔澜的第三人称限知；配水会和复核规则仍是虚构设定。\n\n> 乔澜把两周记录摊在桌上。沈砚秋先拿起最上面那张，沿着领取次数往下看。\n>\n> “这回不是旧表？”\n>\n> “不是。你先看这次领取。”她把对应的各户确认移到旁边，“来的是一个人，领回去给几户用。次数只记了一次。”\n>\n> 沈砚秋把那张确认拿过去，又对了领取记录。“这次是一人代领。其他的呢？”\n>\n> “都放在对应日期下面。各户也核过了。你可以一项项看。”\n>\n> 乔澜没有收回材料。上次两位邻居不愿替那份旧表作证，争到最后，她只能看着它被撤下；这次她把能核的部分先核完了。\n>\n> 沈砚秋翻了几页，把领取次数和各户确认并在一起。“你要我用户数替掉所有次数？”\n>\n> “先别凭次数说这里没人需要。代领的这一部分，该另核服务范围。”\n>\n> 配水会的接收人将两组材料对照后，在复核页上记下了差异。“这项接收。停站先暂缓，按这些记录补核服务范围。”她把决定交给乔澜核对。\n>\n> 乔澜看见暂缓两个字，才问：“后续材料还是交到这里？”\n>\n> 接收人说是。沈砚秋把一张代领记录推到她面前：“每次谁领、对应哪些户，逐户放在一起。不能只加一个总数。”\n>\n> 乔澜把那张纸放回相应日期下面，收好复核决定。老街取水点暂时不会按原安排停下；要把它保住，下一轮仍得面对桌上这些记录。\n\n沈从眼前材料发现统计遗漏，并据此调整要求，没有突然知道乔澜没说过的计划。他承认的是代领造成的差异，仍追求可核对的统一安排；乔澜争取的是暂缓和补核，最终保留尚未决定。双方目标和本轮权限都没有被一张纸清空。\n\n反制不一定升级成更大的阴谋。对手接受部分事实、收紧他能提出的要求，也能形成有分量的下一轮。若作者希望这场结束整个争议，就要相应设计最终决定与响应，不能把本例的“暂缓”改称“全部胜利”。",
+          "en": "This dramatizes Qiao Lan’s request for a review in the archive-officer example. Her earlier unverified sheet was withdrawn. She now brings the checked two-week collection records, household confirmations and actual collections. The complete candidate stays in Qiao’s third-person limited viewpoint. The council and review rules belong to this fictional town.\n\n> Qiao spread the two weeks of records across the table. Shen Yanqiu picked up the first sheet and followed its collection count.\n>\n> “This isn’t the old table again?”\n>\n> “No. Look at this collection.” She moved the corresponding household confirmations beside it. “One person came, but took water back for several households. That’s counted as one visit.”\n>\n> Shen checked the confirmation against the collection record. “One person collecting for others here. What about the rest?”\n>\n> “The confirmations are under the matching dates. We checked with the households too. You can go through them.”\n>\n> Qiao left the papers with him. Last time, two neighbors had refused to vouch for her old table. She had watched it being withdrawn. This time she had checked what she could before coming.\n>\n> Shen turned several pages, placing visit counts beside household confirmations. “You want household totals to replace every collection count?”\n>\n> “I want you to stop treating the count as proof nobody needs this point. Check the households served by these shared collections separately.”\n>\n> The council’s receiving officer compared the two sets and recorded the difference on the review sheet. “We accept this discrepancy. Closure is deferred while we check the service coverage against these records.” She passed the decision to Qiao.\n>\n> Qiao read the word deferred before asking, “Do I bring the further material here?”\n>\n> The officer said yes. Shen pushed a collection entry toward Qiao. “Match each collector to the households they collected for. Put them together. One extra total won’t do.”\n>\n> Qiao returned the sheet to its date and put away the review decision. The old street’s water point would remain for now. Keeping it would still mean facing the records on this table.\n\nShen learns about the omission from material he receives and adjusts his demand. He does not know Qiao’s unspoken plans. He concedes a discrepancy while continuing to seek a verifiable shared arrangement. Qiao gains a deferral and further review; permanent retention is undecided. One sheet has not erased either person’s goal or authority.\n\nCounterplay need not become a bigger conspiracy. Accepting part of the evidence and tightening an available demand can produce meaningful opposition. To end the whole dispute here, design the final decision and response rather than rename this deferral a complete victory."
         }
       },
       {
@@ -4228,6 +4257,13 @@
           "en": "Default methods follow the book"
         },
         "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/style-resolution.md"
+      },
+      {
+        "label": {
+          "zh": "场景展开与详略取舍",
+          "en": "Scene development and selective detail"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/writing-craft.md"
       }
     ]
   },
@@ -14359,13 +14395,24 @@
         }
       },
       {
+        "id": "complete-transition-example",
+        "heading": {
+          "zh": "完整转场示例：先约好，再跳到次日柜台",
+          "en": "A complete transition: make the appointment, then cut to the counter"
+        },
+        "body": {
+          "zh": "沿用简遥核对旧纸卷的原例。下面把库房、电话与次日供应店连起来，完整示范该留的决定与该略的移动。已知只有记录差异，原因仍未确定；包装型号与本站供应登记已在前文出现。这是一份原创正文候选，不是现实观测或采购建议。\n\n> 库房里，那层放余卷的货架已经空了。简遥翻开余料登记，最后一卷已领走；她将日期记在纸卷型号旁边，拿起电话。\n>\n> “我想找这个型号的余卷。”她报出包装上的型号，“站里的登记写的是你们店。能帮我看看旧进货记录吗？”\n>\n> 老板让她明天开门后过来，答应把旧单据找出来。简遥问清开门时间，在笔记的下一行写下供应店、九点。\n>\n> 次日九点，供应店的卷帘门升起来。简遥把记着型号的笔记放到柜台上，老板翻出旧单据，推到她面前。\n>\n> “我们三年前就没再进这个型号了。你要找余卷，先看看以前那批客户。”\n>\n> 她对了单据上的型号，记下这条采购线索。“是你们店停止进货，还是这个型号已经停产？”\n>\n> “我能给你看的就是店里的单据。”老板说。\n>\n> 简遥在“停止进货”旁写上店名。还得核其他采购渠道，也得确认这个型号怎样与站里的记录对应。她收回笔记，旧单据仍留在柜台上。\n\n库房段留下“这里没有余卷”与一个领取日期，再通过电话取得见面的约定；它没有证明余卷被谁拿去篡改数据。次日一句给出新时间与地点，柜台兑现旧单据的约定，老板的话又把调查限制在该店进货范围。新增问答是作者为展开原场景选定的回应，不把店内单据升级成全行业停产证明。\n\n收拾本子、下山、途中买票与走到店门口没有本例要展开的新作用，正文直接跨过去。若这些过程包含人物选择、日常体验或情绪变化，按本书需要保留；跳切并不禁止赶路。这里靠待核问题、同一本笔记和实际约定承接，不需要让每个切口都押上一个意象。\n\n这个新场已交付查到的局部信息，后续兼容性与采购渠道仍待查。转场把读者送到新的核对现场，不替整条调查线提前给出结论。",
+          "en": "Keep Jian Yao’s search for the old paper-roll model. This complete candidate connects the store room, telephone call and next-day supplier visit, retaining decisions while compressing travel. Only the discrepancy is known; its cause remains open. The model on the packaging and the station’s supplier entry appeared earlier. This is original fiction, not observation or purchasing advice.\n\n> The shelf for spare rolls was empty. Jian opened the supplies register. The last roll had been taken out. She wrote the date beside the model number and picked up the telephone.\n>\n> “I’m looking for a spare of this model.” She read the number from the packaging. “The station lists your shop as the supplier. Could you check the old purchasing records?”\n>\n> The owner asked her to come after opening the next morning and promised to find the invoices. Jian checked the opening time and wrote shop, nine o’clock on the next line of her notebook.\n>\n> At nine the next morning, the shop shutter rose. Jian laid her model note on the counter. The owner found the old invoices and pushed them across to her.\n>\n> “We stopped buying this model three years ago. If you want a spare, start with the customers from that batch.”\n>\n> She checked the model on the invoice and noted the purchasing lead. “Your shop stopped buying it, or they stopped making this model?”\n>\n> “These are the shop’s invoices. That’s what I can show you.”\n>\n> Jian wrote the shop name beside stopped buying. Other purchasing channels and the model’s relationship to the station’s records still needed checking. She took back her notebook. The invoices stayed on the counter.\n\nThe first scene delivers an empty shelf and a withdrawal date, then an appointment through the call. It does not prove who used a roll to alter data. One sentence establishes the next day and place; the counter fulfills the invoice appointment. The exchange limits the finding to this shop’s purchases. Its additional dialogue is the author’s chosen expansion of the original scene, not proof of industry-wide discontinuation.\n\nPacking notes, descending the mountain, buying a ticket and reaching the door add no intended effect here, so the passage jumps ahead. Keep travel when it contains a choice, ordinary experience or emotional change the book needs. A cut does not ban journeys. This version bridges with a question, the same notebook and an actual appointment; every cut need not repeat a matching image.\n\nThe new scene delivers partial information. Compatibility and other supply channels remain open. The transition brings readers to the next inquiry rather than deciding the entire investigation in advance."
+        }
+      },
+      {
         "id": "repair",
         "heading": {
           "zh": "转场生硬或拖沓时怎么改",
           "en": "How to Repair Abrupt or Dragging Transitions"
         },
         "body": {
-          "zh": "| 症状：原因 | 修正 |\n| --- | --- |\n| 每次都写人物离开、赶路、抵达：把空间连续误当成叙事连续 | 跳到下一次有变化的动作 |\n| 切到新人物后读者不知为何：只用“与此同时”代替定位和联系 | 补必要定位；联系可以来自共同事件、对照、情绪或本书群像安排 |\n| 新场开头复述上一场结论：只承接，没有推进 | 从结论造成的阻碍、发现或选择写起 |\n| 用相似物硬转，逻辑却断了：视觉相似代替了因果 | 补清谁为何来到这里、要处理什么 |\n| 高压场后立刻完全松弛：情绪结果被清零 | 让余波改变新场的节奏或人物策略 |\n| 频繁切线却迟迟不回来：每条线只留钩子不交付 | 切回时先回答一部分，再提出新问题 |",
+          "zh": "| 症状：原因 | 修正 |\n| --- | --- |\n| 每次都写人物离开、赶路、抵达：把空间连续误当成叙事连续 | 跳到下一次有变化的动作 |\n| 切到新人物后读者不知为何：只用“与此同时”代替定位和联系 | 补必要定位；联系可以来自共同事件、对照、情绪或本书群像安排 |\n| 新场开头复述上一场结论：只承接，没有推进 | 从结论造成的阻碍、发现或选择写起 |\n| 用相似物硬转，逻辑却断了：视觉相似代替了因果 | 补清谁为何来到这里、要处理什么 |\n| 切场后前一场的影响被遗忘：情绪结果被清零 | 承接已有后果；如释重负也可成为真实响应，不强制持续紧张 |\n| 频繁切线却迟迟不回来：每条线只留钩子不交付 | 切回时先回答一部分，再提出新问题 |",
           "en": "| Problem and cause | Fix |\n| --- | --- |\n| Every scene shows the character leaving, traveling, and arriving: Spatial continuity is mistaken for narrative continuity | Jump to the next action that changes something |\n| Readers cannot place a cut to another person: “Meanwhile” substitutes for orientation and connection | Supply necessary orientation; shared events, contrast, emotion, or the work’s ensemble design can provide the link |\n| A new scene opens by repeating the last scene’s conclusion: The transition continues but does not advance | Begin with the obstacle, discovery, or choice caused by that conclusion |\n| A similar image forces a transition while the logic breaks: Image matching has replaced cause | Clarify who came here, why, and what they need to handle |\n| A tense scene cuts away with its effects forgotten: The emotional consequence has been reset | Carry its effects into the next scene; earned relief can be a response |\n| The narrative switches lines repeatedly and takes too long to return: Every line leaves hooks but delivers nothing | On returning, answer something before raising a new question |"
         }
       }
@@ -14420,6 +14467,13 @@
           "en": "Author choices and factual boundaries"
         },
         "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/style-resolution.md"
+      },
+      {
+        "label": {
+          "zh": "场景展开与详略取舍",
+          "en": "Scene development and selective detail"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-long-write/references/writing-craft.md"
       }
     ]
   },
