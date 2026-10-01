@@ -40160,6 +40160,17 @@
           "zh": "旁白模式需要有效分段并放入时间线；原声混音不生成旁白，但会处理选中原声；已采用AAC音轨复制有编码、区间与输入限制，选错轨会复制错内容。无旁白模式必须显式选择，不能把空TTS当成完成配音。\n\n已采用音轨复制遇到错误不自动改成原声混音；新画面要配旧完整混音时走明确配对，再核对输出轨。模式切换可能改变声音处理，不能只改名字后声称旧混音仍完整保留。\n\n修复后单听目标区间，再连听每个接点和尾部，最后看完整成片。记录哪一层的问题被实际修好，哪些仍待听；流检查、包复制和正常播放分别证明不同的事。",
           "en": "Narration needs valid placed segments. Source-mix creates no narration but processes the selected source audio. Adopted AAC copy has codec, interval, and input constraints; a wrong selected stream copies wrong content. Choose no-narration explicitly rather than using empty TTS as completed speech.\n\nA copy failure does not authorize a silent switch to mixing. Pair new picture with an old complete mix explicitly, then check output selection. Changing modes may change processing; a renamed mode proves no retained mix.\n\nAfter repair, listen to the target interval, joins, and tail, then watch the full video. Record which layer was repaired and what remains unheard. Stream inspection, packet copying, and playback prove different things."
         }
+      },
+      {
+        "id": "complete-silent-export-repair",
+        "heading": {
+          "zh": "完整返修例：误发画面预览，保住八秒原声",
+          "en": "Complete repair: replace the silent preview and retain source sound"
+        },
+        "body": {
+          "zh": "沿用A三秒、B两秒、C三秒原例，展开一个具体分支：假定核查确认`edited_source.mp4`的音频序号0已包含A完整对白、B等长静音、C环境声；旧交付误发只有画面的预览。本版选择原声，未选旁白、额外BGM或新字幕。\n\n完整修订单：\n\n> 改用核过的八秒剪后文件作输入，保留A对白、B静音和C环境声。本轮不生成旁白或添配乐。实际核音轨与画面时钟满足复制条件后，显式采用adopted-packet-copy和音频序号0，用新工作/交付目录保留旧预览。打开本次交付，先听A、B、C各区间，再听两个接点和全八秒，核画面次序仍相同。\n\n从已安装`video-assemble`技能目录运行，本纸面命令为：\n\n> `python3 scripts/assemble.py /project/edited_source.mp4 --work-dir no-sound-repair --output-dir no-sound-delivery --recap-stem no-sound-candidate --audio-mode adopted-packet-copy --audio-stream-index 0 --no-burn-subtitles`\n\n换成实际路径，两目录本次用新名称。复制要求选中AAC及相容区间，不读取TTS，不能带额外BGM或显式TTS设置。关闭新烧录符合本例无新字幕的选择，源硬字仍在画面；需要字幕另定交付，见[字幕缺失排查](/video-recap/fix-subtitles-missing-from-video-export)。\n\n复制针对实际剪后输入音轨，不承诺A、C原始AAC包未经处理直达成片；此前多源剪切已经处理和拼接。剪后若本身少A或C，先修上游声音再复制。\n\n方案未执行或试听。B安静是所选来源事实，A、C完整可听仍须复查，不能给B填音乐冒充找回全片声音。",
+          "en": "Keep A’s three seconds, B’s two and C’s three. This branch assumes checks establish that audio ordinal 0 in `edited_source.mp4` already contains A’s complete dialogue, B’s equal-duration silence and C’s ambience. A picture-only preview was mistakenly delivered. The selected version uses source sound, without narration, extra BGM or new captions.\n\nComplete repair request:\n\n> Use the checked eight-second cut as input, retaining A, B’s silence and C. Generate no narration or added music. Verify copy-compatible audio and picture clocks, then explicitly adopt adopted-packet-copy with audio ordinal 0. Use new work/delivery directories and retain the old preview. Open the new delivery, listen to all three intervals, both joins and eight seconds, and compare picture order.\n\nFrom the installed `video-assemble` directory, the paper command is:\n\n> `python3 scripts/assemble.py /project/edited_source.mp4 --work-dir no-sound-repair --output-dir no-sound-delivery --recap-stem no-sound-candidate --audio-mode adopted-packet-copy --audio-stream-index 0 --no-burn-subtitles`\n\nReplace the path and use new directories. Copy requires selected AAC and compatible intervals, does not read TTS and rejects extra BGM or explicit TTS settings. No new burn-in follows this example’s caption choice; source-burned pixels remain. Choose any new captions separately; see [missing-caption diagnosis](/video-recap/fix-subtitles-missing-from-video-export).\n\nCopy applies to the actual cut’s audio, not untouched original AAC packets from A and C: multi-source cutting has already processed and joined sound. If the cut lacks A or C, repair it before freezing the audio.\n\nNo execution or listening occurred here. B is deliberately silent; review A and C for complete audibility. Music in B does not recover the whole soundtrack."
+        }
       }
     ],
     "faq": [
@@ -40220,6 +40231,20 @@
           "en": "Missing WAVs and placement state"
         },
         "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/scripts/narration_audio.py"
+      },
+      {
+        "label": {
+          "zh": "合成命令与字幕选择",
+          "en": "Assembly command and caption choice"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/SKILL.md"
+      },
+      {
+        "label": {
+          "zh": "剪后音轨与新目录路由",
+          "en": "Cut audio and new-directory routing"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-recap/references/audio-routing.md"
       }
     ],
     "related": [
@@ -46164,6 +46189,289 @@
       "/video-recap/fit-voiceover-to-a-picture-edit",
       "/video-recap/subtitle-timing-evidence",
       "/drama-skills/ai-video-lip-sync"
+    ]
+  },
+  {
+    "owner": "video-recap",
+    "slug": "fix-subtitles-missing-from-video-export",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "视频导出后字幕不见了怎么办：区分画面、字幕文件与播放层",
+      "en": "Why Subtitles Disappear After Video Export and How to Fix It"
+    },
+    "seo_title": {
+      "zh": "视频导出后字幕不见了怎么办｜ZenStory",
+      "en": "Fix Subtitles Missing After Video Export"
+    },
+    "description": {
+      "zh": "先打开实际交付文件，区分画面硬字幕、独立SRT与可切换轨，再查烧录开关、完整字幕清单及媒体绑定。附两句字幕的完整返修方案。",
+      "en": "Check the actual delivery, caption layer, burn-in setting and complete cue list. Includes a two-line repair plan that preserves adopted sound."
+    },
+    "answer": {
+      "zh": "先确认打开的是本次实际交付，再判断字幕是画面像素、独立文件还是播放器可切换的轨。只导出SRT不会让文字自动出现在MP4画面上；要随视频一直显示，就选烧录并检查新导出。只缺几句时再查完整清单、时间与当前绑定，保留原文字和声音。",
+      "en": "Open the actual delivery and distinguish burned pixels, a separate file and a selectable track. An SRT alone does not place text in MP4 pixels. For always-visible captions, burn them and review the new export. For missing lines, check the full cue list, timing and current binding."
+    },
+    "sections": [
+      {
+        "id": "identify-caption-layer",
+        "heading": {
+          "zh": "先检查发出去的文件，再辨认字幕层",
+          "en": "Check the delivered file and caption layer"
+        },
+        "body": {
+          "zh": "编辑器预览有字，不证明导出的那份也有。记录当前路径和缺字时刻，确认没有误发无包装母版、旧预览或只有画面的候选。\n\n| 字幕在哪一层 | 要核对什么 |\n|---|---|\n| 已烧进画面 | 实际帧上有字，关闭播放器字幕仍可见；改字需重新处理画面。 |\n| 独立SRT等文件 | 是否一同交付，播放器或平台是否加载当前文件。 |\n| 容器内可切换轨 | 导出格式是否支持，目标播放器能否选择并显示。 |\n| 仅编辑器预览 | 本层是否启用并参与本次导出。 |\n\n[Adobe导出说明](https://helpx.adobe.com/uk/premiere/desktop/render-and-export/export-files/overview-of-export-settings.html)将独立文件、烧录与嵌入轨分开，格式支持也有边界。具体编辑器按自己的选项核对。这里的Video Recap路径提供SRT与ASS烧录，不自动导出任意可切换格式。\n\n同时辨认原片已有的硬字幕，避免把它当成本次生成的字。本地有字、上传后才没有时，另查实际上传文件、平台字幕加载与播放选择，不因此重录正确旁白。",
+          "en": "A captioned editor preview does not establish captions in the exported delivery. Record the current path and missing time. Check that an unbranded master, old preview or picture-only candidate was not sent.\n\n| Layer | Check |\n|---|---|\n| Burned picture | Text on actual frames remains with player captions off. Changes require picture processing. |\n| Separate SRT or similar file | Deliver it too and check loading of the current file. |\n| Selectable container track | Check export-format support and target-player selection. |\n| Editor preview | Confirm this enabled layer participates in export. |\n\n[Adobe’s export reference](https://helpx.adobe.com/uk/premiere/desktop/render-and-export/export-files/overview-of-export-settings.html) distinguishes sidecars, burn-in and embedded tracks, with format limits. Check your editor’s options. The Video Recap path here supplies SRT and ASS burn-in, not every selectable format.\n\nDistinguish source-burned captions from new text. If local playback shows captions but uploaded playback does not, check the actual upload, platform loading and playback selection before rerecording correct speech."
+        }
+      },
+      {
+        "id": "check-skill-caption-path",
+        "heading": {
+          "zh": "检查skill实际用了哪条字幕路径",
+          "en": "Inspect the caption path actually used"
+        },
+        "body": {
+          "zh": "所引`video-assemble`始终生成SRT；烧录开启时另生成ASS并绘制到画面。`--no-burn-subtitles`关闭新烧录，仍可能留下SRT。有字幕文件只是相应产物存在，是否实际可见还要看本次导出与运行错误。\n\n在`adopted-packet-copy`模式中，当前`subtitle_track.json`完整替换全部生成字幕。空`cues`会有意移除所有新生成字幕；只写补充的一句也不会保留其余旧清单。源画面硬字仍是像素。\n\n显式轨按输出时间填写，绑定当前画面和实际采用音轨。配对后的音频序号是0；当前CLI轨省略`edit_plan`。包数、采样率和时钟用当前媒体事实，不能让声明自行证明正确。过期或无可见帧的轨会报错，先处理失败。\n\n合法清单也可能漏掉一句。对照定稿和实际播放查覆盖；字已存在但太小或遮挡，转去[字幕排版](/video-recap/subtitle-layout-and-line-breaks)，字跟不上声音则看[SRT时序](/video-recap/subtitle-timing-evidence)。",
+          "en": "The pinned `video-assemble` always generates SRT. With burn-in on it also generates ASS and draws it on the picture. `--no-burn-subtitles` disables new burn-in while SRT may remain. Check the actual export and errors rather than file existence alone.\n\nIn `adopted-packet-copy`, a present `subtitle_track.json` replaces all generated captions. Empty `cues` deliberately removes them. One supplemental cue does not preserve the old list. Source-burned pixels remain.\n\nAuthor the track on the output clock, binding current picture and adopted audio. Paired output uses audio ordinal 0; current CLI tracks omit `edit_plan`. Obtain packet count, sample rate and clock from current media. Stale tracks and cues with no visible frame fail.\n\nA valid list can still omit a line. Compare approved wording and playback for coverage. For existing but small or obstructed text, see [layout](/video-recap/subtitle-layout-and-line-breaks); for text missing speech timing, see [SRT diagnosis](/video-recap/subtitle-timing-evidence)."
+        }
+      },
+      {
+        "id": "complete-caption-repair",
+        "heading": {
+          "zh": "完整返修例：有SRT，发出的视频却没字",
+          "en": "Complete repair: an SRT exists but the sent picture has no text"
+        },
+        "body": {
+          "zh": "下面是原创八秒收纳示范的纸面方案，没有真实渲染结果。画面先合上盒盖，再把蓝标签贴到右上角；两句已采用声音为1—3秒、5—7秒。作者要求接收人只拿视频也能看字幕。\n\n假定核查确认：旧候选误用了`--no-burn-subtitles`，创作者播放器加载了独立SRT，发送的MP4没有新烧录文字。声音和完整清单正确，返修只改字幕交付。\n\n| 输出时间 | 全部需显示的文字 |\n|---|---|\n| 1—3秒 | 先把盒盖合上。 |\n| 5—7秒 | 蓝色标签贴在右上角。 |\n\n完整修订单：\n\n> 沿用八秒画面与已采用完整声音，保留两句字幕和各自时段。本版选择烧录新字幕，关闭此前误选的不烧录设置。用当前文件核对绑定，保留全部提示；在合盖和贴标签画面测可读位置，避开手与标签，再出独立候选。关闭播放器字幕后看新文件，两句仍须可见。连播八秒，核声音、动作次序和文字出入沿用定稿。\n\n实际项目先测真实时段。走显式轨时，核当前零起点媒体、选定AAC音轨和完整时钟，再填绑定；两句都进当前整轨，不提交一句补丁。烧录处理画面，`adopted-packet-copy`仅冻结选定AAC声音，仍须检查新导出的音轨和听感。\n\n如果作者要求可关闭字幕，就保留该交付选择，附字幕文件和目标加载说明，不擅自改成永久烧录。",
+          "en": "This original eight-second storage demonstration is a paper plan, with no rendered result. Close the box, then place a blue label at its upper-right corner. The adopted lines occupy 1–3 and 5–7 seconds. The recipient must see text from the video alone.\n\nAssume checking establishes that the old candidate mistakenly used `--no-burn-subtitles`. The creator’s player loaded an SRT, but the sent MP4 had no new burned text. Sound and the complete cue list are correct; change caption delivery only.\n\n| Output time | Complete wording |\n|---|---|\n| 1–3 seconds | Close the box first. |\n| 5–7 seconds | Put the blue label at the upper-right corner. |\n\nComplete repair request:\n\n> Retain the eight-second picture and adopted complete sound, both captions and their intervals. Choose burn-in and disable the mistakenly selected no-burn setting. Check bindings against the current file and carry every cue. Measure readable placement on the closing and labeling frames, clear of the hands and label, then render a separate candidate. With player captions off, both lines must remain visible. Play eight seconds and compare sound, action order and caption boundaries with the approved version.\n\nMeasure actual timings in a real project. For the explicit track, verify current zero-origin media, selected AAC and the complete clock before filling bindings. Include both cues in the replacement. Burn-in processes picture; `adopted-packet-copy` freezes only selected AAC. Check new audio and listening too.\n\nFor a switchable-caption requirement, preserve that choice and provide the sidecar with loading instructions. Do not replace it with permanent burn-in without an author decision."
+        }
+      },
+      {
+        "id": "review-delivery",
+        "heading": {
+          "zh": "生成、烧录与交付分别检查",
+          "en": "Review generation, burn-in and delivery"
+        },
+        "body": {
+          "zh": "先核完整清单，再看本地新导出的实际帧，最后在接收人要使用的环境打开同一交付。看两句首尾、长字幕、亮暗背景与换镜，确认文件版本、重复加载和动作遮挡。\n\n一帧只证明这一刻有字；导出结束也不证明接收人开的是它。记录实际看过的文件和时刻，再检查剩余区间。",
+          "en": "Check the full list, the new export’s frames and the same delivery in the recipient’s intended environment. Review cue starts/ends, long text, light/dark backgrounds and cuts, including version, double loading and covered action.\n\nOne frame establishes text at that moment; an export-complete message does not establish which file the recipient opened. Record reviewed files and times and check the rest."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "有SRT就说明字幕在视频里吗？",
+          "en": "Does an SRT mean captions are in the video?"
+        },
+        "a": {
+          "zh": "不说明。独立文字与时码需要播放器或平台加载；成为画面则要实际烧录。按交付要求选择，再检查最终文件。",
+          "en": "No. Separate text and timing need loading; text in the picture needs actual burn-in. Choose for the delivery and inspect the final file."
+        }
+      },
+      {
+        "q": {
+          "zh": "只少一句，显式轨只写这一句行吗？",
+          "en": "Can an explicit track contain only the missing line?"
+        },
+        "a": {
+          "zh": "当前合同完整替换所有生成字幕，须带上每句仍需显示的内容。一条合法提示不会自动恢复其余字幕，原画面硬字是另一层。",
+          "en": "The current contract replaces all generated captions. Carry every line that should remain. One valid cue does not restore the others; source-burned text is another layer."
+        }
+      }
+    ],
+    "skill": {
+      "name": "video-recap",
+      "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-recap/SKILL.md",
+      "text": {
+        "zh": "请 video-recap 只排查这个已说明的问题。附当前文件、具体时间、已选交付方式和实际观察，先定位首次出错的一层，再提出局部修订单。保留未受影响的画面、文字与声音；需要的探测、渲染和播放分别列清，没有实际执行的项目留待检查。",
+        "en": "Ask video-recap to diagnose this specified problem with current files, times, delivery choice and observations. Locate the first failing stage and propose a local repair, preserving unaffected picture, text and sound. Distinguish probing, rendering and playback; leave unperformed checks pending."
+      }
+    },
+    "related": [
+      "/video-recap/subtitle-layout-and-line-breaks",
+      "/video-recap/subtitle-timing-evidence",
+      "/video-recap/keep-audio-when-changing-video"
+    ],
+    "topic": "video-recaps",
+    "sources": [
+      {
+        "label": {
+          "zh": "字幕输出与烧录开关",
+          "en": "Caption output and burn-in"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/SKILL.md"
+      },
+      {
+        "label": {
+          "zh": "完整清单与当前媒体绑定",
+          "en": "Complete cues and media binding"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/references/subtitle-track.md"
+      },
+      {
+        "label": {
+          "zh": "字幕包装与交付检查",
+          "en": "Caption and delivery review"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/references/packaging.md"
+      },
+      {
+        "label": {
+          "zh": "实际SRT与ASS烧录路径",
+          "en": "Actual SRT and ASS burn-in"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/scripts/assemble.py"
+      }
+    ]
+  },
+  {
+    "owner": "video-recap",
+    "slug": "fix-distorted-audio-in-video-export",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "视频人声爆音怎么办：先查原录音，再查混音和导出",
+      "en": "How to Fix Distorted Video Audio: Source, Mix and Export"
+    },
+    "seo_title": {
+      "zh": "视频人声爆音和失真怎么修｜ZenStory",
+      "en": "Fix Distorted Video Audio: Clipping and Mix Headroom"
+    },
+    "description": {
+      "zh": "对比原录音、单段配音、混音和当前成片，定位首次失真。附浮点叠轨与固定总增益演算，分清恢复输入、降低增益和最终测听。",
+      "en": "Locate distortion in the source, mix or delivery. Includes float-mix and master-gain calculations, followed by encoded-output measurement and listening."
+    },
+    "answer": {
+      "zh": "先单听原录音和配音，再听叠轨与导出，定位失真首次出现的一层。干净声音叠加后过载，就回未受损输入调整轨道或总增益；原录音已失真，降低播放音量只让它更小声。保留版本，查实际限幅路径，再测听本次编码输出。",
+      "en": "Compare isolated source/voice, mix and export to locate the first distortion. For overload introduced by combining clean inputs, return to them and revise track or master gain. Lowering an already distorted source only makes it quieter. Retain versions, check actual limiting and measure/listen to the new encoded output."
+    },
+    "sections": [
+      {
+        "id": "locate-distortion",
+        "heading": {
+          "zh": "找到首次失真的那一层",
+          "en": "Locate the first distorted stage"
+        },
+        "body": {
+          "zh": "“爆音”可能指人声刺裂、一声啪、齿音或设备大音量失真。先记时间和听到什么，不把所有杂声都归为叠轨过载。\n\n| 同条件对照 | 先检查 |\n|---|---|\n| 原录音或独立配音已失真 | 回原始候选、录制或该段生成；降低成片音量不恢复已损坏细节。 |\n| 单听干净，叠起来异常 | 是否重复输入、轨道/总增益、峰值余量和后续处理。 |\n| 中间混音正常，成片异常 | 实际混音输入、编码后测量、播放器与设备。 |\n| 只在某设备大声播放时出现 | 同一文件换设备与较低播放音量对照。 |\n\n[Adobe电平监看](https://helpx.adobe.com/ca/premiere/desktop/add-audio-effects/adjust-volume-and-levels/monitor-volume-levels.html)建议播放时查看Audio Meters并调整过高或过低电平；[对白修复](https://helpx.adobe.com/uk/premiere/desktop/add-audio-effects/adjust-volume-and-levels/repair-dialogue.html)将噪声、低频、嗡声、齿音和混响分开处理。本页重点是叠轨和余量。\n\n[配音音量不均](/video-recap/fix-uneven-ai-voiceover-volume)和[音乐遮盖人声](/video-recap/background-music-overpowers-voice)不必然已经失真，按实际问题选修法。",
+          "en": "Distortion may mean cracked speech, a click, sibilance or a device failing at high playback volume. Record time and sound before diagnosing every noise as mix overload.\n\n| Comparison | First check |\n|---|---|\n| Source or isolated voice already distorted | Original candidate, recording or segment generation. Lowering final volume does not restore damaged detail. |\n| Clean separately, abnormal together | Duplicate inputs, track/master gain, headroom and later processing. |\n| Mix clean, export abnormal | Actual mix input, encoded measurements, player and device. |\n| One device at high volume only | Same-file comparison on another device and at lower volume. |\n\n[Adobe’s meter guide](https://helpx.adobe.com/ca/premiere/desktop/add-audio-effects/adjust-volume-and-levels/monitor-volume-levels.html) recommends watching playback levels and adjusting excessive or low levels. Its [repair guide](https://helpx.adobe.com/uk/premiere/desktop/add-audio-effects/adjust-volume-and-levels/repair-dialogue.html) separates noise, rumble, hum, sibilance and reverb. This page focuses on track addition and headroom.\n\n[Uneven voice segments](/video-recap/fix-uneven-ai-voiceover-volume) and [music masking speech](/video-recap/background-music-overpowers-voice) do not alone establish distortion. Match the repair to the observed problem."
+        }
+      },
+      {
+        "id": "actual-processing",
+        "heading": {
+          "zh": "这条混音路径是否真的限幅",
+          "en": "Does this mix path actually limit peaks?"
+        },
+        "body": {
+          "zh": "普通`narration`和`source-mix`按配置做最终响度/限幅，检查本次设置与输出。已采用AAC复制不做这些处理，原音轨失真也会保留。\n\n显式完整声音路径把准备底轨与配音声轨相加得到浮点premaster，再乘固定`master_gain_db`后编码，跳过旧ducking、loudnorm与limiter。改旧环境变量不会给它补一个限幅器。\n\n`source_score.py`浮点底轨保留超出`[-1,1]`的数值并记样本峰值。超过常见满幅参照不等于浮点文件已削顶；继续查总增益、编码与播放余量。有限值、文件生成和复制通过，分别有自己的检查范围。",
+          "en": "Ordinary `narration` and `source-mix` apply configured final loudness/limiting; inspect current settings and output. Adopted AAC copy performs neither and retains any existing distortion.\n\nThe explicit full-sound path adds the prepared bed and voice bus into a float premaster, applies fixed `master_gain_db` and encodes. It bypasses old ducking, loudnorm and limiting. Ambient settings do not add a limiter to it.\n\nFloat beds from `source_score.py` preserve values outside `[-1,1]` and record sample peaks. Exceeding that common reference does not establish a clipped float file. Check master gain and encoding/playback headroom. Finite samples, file generation and packet-copy checks have their own scopes."
+        }
+      },
+      {
+        "id": "complete-headroom-example",
+        "heading": {
+          "zh": "完整演算：两路相加，给候选留余量",
+          "en": "Worked example: leave headroom when tracks combine"
+        },
+        "body": {
+          "zh": "这是八秒手作解说的纸面演算，没有真实音频。画面、旁白“边缘已经剪齐，下一步涂胶”、音乐和放置已选定。假定实际对照确认独立声音干净，异常首次出现在混合后。\n\n左声道某一同时刻，准备底轨贡献0.55，配音声轨0.75。配音已做本路径的声道转换与逐段增益，不能把输入mono数值直接当左声道贡献。相加为1.30，固定总增益0 dB仍是1.30。\n\n本候选选择总幅度乘0.5，等价`master_gain_db`约−6.0206 dB。该样本两路变为0.275和0.375，合为0.65，比例与时段不变。这只演算一个样本；其他时刻、右声道与编码后真峰还要测。\n\n完整返修单：\n\n> 回到未受损的已采用底轨和完整配音，保留画面、台词、音色、放置与两路比例。本候选采用约−6.0206 dB固定总增益，写入新的完整混音采用记录，在新目录输出。比较原问题处、前后与完整八秒；测当前编码文件的响度和真峰，再听语音可辨性、音色与字幕时段。\n\n新采用记录选择总增益，显式路径仍消费完整底轨和配音。降低旧AAC不会恢复此前已削顶的细节；不要随后未经检查又自动推回旧电平。若异常来自原录音或尖锐齿音，这个叠轨假设不成立，回该层处理。",
+          "en": "This paper calculation concerns an eight-second craft recap, with no actual audio. Picture, narration (“The edge is trimmed; apply the glue next”), music and placement are selected. Assume actual comparison establishes clean isolated inputs and the first abnormality after mixing.\n\nAt one simultaneous left-channel sample, prepared bed contributes 0.55 and voice bus 0.75. Voice already includes channel conversion and segment gain; a mono input value is not automatically its left-channel contribution. Addition gives 1.30, unchanged by a 0 dB master.\n\nThe candidate adopts a 0.5 master multiplier, approximately −6.0206 dB in `master_gain_db`. Contributions become 0.275 and 0.375, totaling 0.65, retaining balance and timing. This covers one sample; measure other times, the right channel and encoded true peak.\n\nComplete repair request:\n\n> Return to the undamaged adopted bed and complete voice. Keep picture, wording, voice, placement and relative balance. Adopt approximately −6.0206 dB as fixed master gain in a new complete mix adoption and render into a new directory. Compare the problem spot, neighbors and eight seconds. Measure encoded loudness and true peak, then listen for intelligibility, voice quality and approved caption timing.\n\nThe new adoption chooses master gain while the explicit path consumes complete inputs. Turning down old AAC does not recover earlier clipped detail. Do not automatically boost back without checking. If the defect originates in the source or sibilance, repair that stage instead."
+        }
+      },
+      {
+        "id": "repair-and-review",
+        "heading": {
+          "zh": "保住完整声音，测听新编码输出",
+          "en": "Keep complete sound and review the new encoded output"
+        },
+        "body": {
+          "zh": "原录音或独立TTS已经刺裂，先找未受损原声、重录或仅重生成该段。需要去噪、修复或瞬态处理时，用实际支持它的工具，保留候选作比较；底轨生成器不自动补回波形。\n\n作品有意选择的失真效果、动作声和喊叫可保留，核必要话语仍可懂。重复输入先移除错误那一路。重做声音后检查新时长、接点与字幕，不为峰值好看裁尾字。\n\n测编码后当前文件的实际LUFS与真峰，再听问题处、响亮字词、配乐进入和全片。分段RMS、浮点样本峰值和编码真峰不是同一量。短剧声音方法指出，两遍loudnorm未必命中目标，按项目交付要求检查实际结果。\n\n在接收人常用条件下比较候选，记录修了哪一层、实际测听和仍待查区间，供作者采用。",
+          "en": "For damaged recording or isolated TTS, find an undamaged source, rerecord or regenerate only that segment. Use a tool supporting repair, denoising or transient processing where needed and retain candidates. The bed producer does not recover waveform detail automatically.\n\nPreserve intended distortion, action sounds and shouting while checking necessary intelligibility. Remove an unintended duplicate input. For replaced sound, check duration, joins and captions; keep complete endings.\n\nMeasure actual LUFS and true peak of the current encoded file, then listen at defects, strong words, music entries and in full. Segment RMS, float sample peak and encoded true peak differ. The drama sound method notes that two-pass loudnorm may miss its target; judge actual results against project delivery requirements.\n\nCompare under recipient playback conditions and report repaired stage, measurements/listening and remaining checks for author adoption."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "调小播放器音量就修好了吗？",
+          "en": "Does lowering player volume fix distortion?"
+        },
+        "a": {
+          "zh": "可能缓解播放设备过载，但文件已损坏的细节不会恢复。先对比同一文件和独立原声，区分文件与播放问题。",
+          "en": "It may reduce device overload but does not restore damaged file detail. Compare the same file and isolated source to distinguish the stages."
+        }
+      },
+      {
+        "q": {
+          "zh": "浮点峰值超过1就证明声音坏了吗？",
+          "en": "Does a float peak above 1 prove damaged sound?"
+        },
+        "a": {
+          "zh": "不证明。所引浮点路径保留超出常见满幅参照的值。继续核总增益、后续编码、实际真峰和听感，不直接判成最终削顶。",
+          "en": "No. The cited float path preserves values beyond the common reference. Check master gain, encoding, actual true peak and listening before diagnosing final clipping."
+        }
+      }
+    ],
+    "skill": {
+      "name": "video-recap",
+      "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-recap/SKILL.md",
+      "text": {
+        "zh": "请 video-recap 只排查这个已说明的问题。附当前文件、具体时间、已选交付方式和实际观察，先定位首次出错的一层，再提出局部修订单。保留未受影响的画面、文字与声音；需要的探测、渲染和播放分别列清，没有实际执行的项目留待检查。",
+        "en": "Ask video-recap to diagnose this specified problem with current files, times, delivery choice and observations. Locate the first failing stage and propose a local repair, preserving unaffected picture, text and sound. Distinguish probing, rendering and playback; leave unperformed checks pending."
+      }
+    },
+    "related": [
+      "/video-recap/fix-uneven-ai-voiceover-volume",
+      "/video-recap/background-music-overpowers-voice",
+      "/video-recap/fix-a-video-export-with-no-sound"
+    ],
+    "topic": "video-recaps",
+    "sources": [
+      {
+        "label": {
+          "zh": "浮点底轨与样本峰值",
+          "en": "Float beds and sample peaks"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/references/source-score.md"
+      },
+      {
+        "label": {
+          "zh": "叠轨与固定总增益",
+          "en": "Addition and fixed master gain"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/references/explicit-audio-mix.md"
+      },
+      {
+        "label": {
+          "zh": "处理与复制边界",
+          "en": "Processed and copied audio"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/references/audio-modes.md"
+      },
+      {
+        "label": {
+          "zh": "真实叠轨和总幅度运算",
+          "en": "Actual mix and master multiplier"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/scripts/adoption/audio_mix_binding.py"
+      },
+      {
+        "label": {
+          "zh": "编码后响度与真峰",
+          "en": "Encoded loudness and true peak"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-edit/references/sound-and-subtitles.md"
+      }
     ]
   }
 ]
