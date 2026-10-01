@@ -319,6 +319,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Fix Sliding Feet in AI Video](https://zenstory.ai/drama-skills/fix-sliding-feet-in-ai-video) — Check foot contact, body travel, and floor anchors. Includes a complete doorway-walk prompt and checks for preserving the shot’s purpose.
 - [How to Fix Floating Props in AI Video](https://zenstory.ai/drama-skills/fix-floating-props-in-ai-video) — Separate lost support, unintended carried motion, and chosen effects. Includes a complete tabletop-envelope prompt and repair checks.
 - [AI Video Character Changes Face After Turning: How to Fix It](https://zenstory.ai/drama-skills/fix-character-face-changes-after-turning) — Check identity across front, side and back views, real references and the turn itself. Includes a complete prompt and review without consistency guarantees.
+- [How to Choose Video Transitions: Cuts, Dissolves and Scene Changes](https://zenstory.ai/drama-skills/choose-video-transitions) — Choose transitions by the action, scene change or pause viewers need to understand. Includes a complete original edit plan and actual tool limits.
 
 ### Interactive stories and games / 互动故事与游戏
 - [Interactive stories and games](https://zenstory.ai/guides/interactive-games) — Turn a novel into player actions, branching stories, and a playable game.
@@ -405,6 +406,7 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [How to Fix Repeated Lines in AI Voiceover](https://zenstory.ai/video-recap/fix-repeated-lines-in-ai-voiceover) — Separate repeated text, reused segment audio, and duplicate placement. Includes a repair plan that restores the intended second line.
 - [How to Fix Pitch Changes After Speeding Audio](https://zenstory.ai/video-recap/fix-pitch-changes-after-speeding-audio) — Locate pitch changes in source audio, narration, or playback. Includes a ten-to-eight-second plan checking filters, cumulative speed, and listening.
 - [How to Fix Video Audio Playing on One Side](https://zenstory.ai/video-recap/fix-video-audio-playing-on-one-side) — Separate playback faults, an empty channel, and intentional stereo. Includes a narration repair example and the limits of normalization and stream copy.
+- [How to Fix a Blurry Video Export](https://zenstory.ai/video-recap/fix-blurry-video-export) — Compare source, edited master and export to locate scaling or encoding loss. Includes an original diagnostic plan and real settings from the skill.
 
 
 ## Workbench docs

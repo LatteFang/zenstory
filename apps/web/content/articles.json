@@ -45338,5 +45338,305 @@
         "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-build/references/build-brief-contract.md"
       }
     ]
+  },
+  {
+    "owner": "drama-skills",
+    "slug": "choose-video-transitions",
+    "topic": "ai-video",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "视频转场怎么选：硬切、叠化与时空变化",
+      "en": "How to Choose Video Transitions: Cuts, Dissolves and Scene Changes"
+    },
+    "seo_title": {
+      "zh": "视频转场怎么选：硬切、叠化与时空变化",
+      "en": "How to Choose Video Transitions: Cuts and Dissolves"
+    },
+    "description": {
+      "zh": "先判断观众需要接上动作、识别时空变化还是感受停顿，再选转场。附完整原创剪辑方案与真实工具边界。",
+      "en": "Choose transitions by the action, scene change or pause viewers need to understand. Includes a complete original edit plan and actual tool limits."
+    },
+    "answer": {
+      "zh": "先说明相邻两镜是什么关系，再选择转场：同一动作要保住完成过程，换时空要让新地点与时间可理解，叠化或黑场按作品需要使用。先试清楚的剪点，不用效果遮住缺失动作；选定后回听声音并检查字幕。short-drama-edit 的内置渲染只做硬切，声音桥和画面转场需外部工具实际完成。",
+      "en": "First identify the relationship between adjacent shots. Preserve completion of continuous action, establish a new time or place, and use a dissolve or black interval when it serves the piece. Try a clear cut before covering missing action with an effect. Review sound and subtitles afterward. The pinned short-drama-edit renderer makes hard cuts; sound bridges and picture transitions require external editing."
+    },
+    "sections": [
+      {
+        "id": "relation-first",
+        "heading": {
+          "zh": "先问两镜之间发生了什么",
+          "en": "Start with the relationship between shots"
+        },
+        "body": {
+          "zh": "转场是把观众从当前画面送到下一画面。下一镜可能接着同一个动作，也可能已经是第二天、另一个地点，或作者有意把两个画面放在一起比较。先用一句话写清这层关系，再看效果库。\n\n| 两镜关系 | 先保住什么 |\n|---|---|\n| 同一时刻的连续行动 | 动作是否接得上、人物朝向与持物是否能理解；切后不要让同一交接再做一次。 |\n| 时间或地点改变 | 新镜头是否提供足够的环境、光线或已定信息，让观众知道现在在哪里、何时。 |\n| 有意比较或情绪停顿 | 两画面怎样互相解释，停顿是否承载作品需要的感受；不要求每次都有新剧情事实。 |\n| 剧本明确指定效果 | 读清它要求的是时空变化，还是必须执行的画面、声音效果，再落实。 |\n\n剧本写“转场到次日”不自动等于要加叠化。若剧本明确写“画面渐黑，留下雨声”，则不能用默认硬切冒充已完成这个效果。优先遵守已接受的表达。",
+          "en": "A transition takes viewers from the current picture to the next. The next shot may continue the same action, move to another day or place, or deliberately compare two images. Describe that relationship in one sentence before browsing effects.\n\n| Relationship | What to preserve first |\n|---|---|\n| Continuous action | A readable action, orientation and object ownership; do not repeat a completed handoff after the cut. |\n| A different time or place | Enough environment, light or accepted information to establish where and when the next shot happens. |\n| Comparison or an emotional pause | How the pictures inform each other and what feeling the pause serves. Each transition need not reveal a new plot fact. |\n| A specified effect | Determine whether the script requests a scene change or a particular picture or sound effect, then implement it. |\n\n“Transition to the following day” does not automatically require a dissolve. An explicit instruction to fade the picture to black while rain continues cannot be fulfilled by a default hard cut. Follow the accepted expression."
+        }
+      },
+      {
+        "id": "choose-effect",
+        "heading": {
+          "zh": "硬切、叠化和黑场各解决什么",
+          "en": "Choose a cut, dissolve or black interval for a reason"
+        },
+        "body": {
+          "zh": "硬切直接换画面。动作衔接、注意转向听者、新地点已经清楚时，都可以从硬切试起；它并不天然粗糙。若切后突然看不懂谁拿着物件，先检查剪点和动作覆盖，而不是立刻加转场。\n\n叠化让前后画面短暂重叠，可以参与时间流逝、回忆或柔和段落交接的表达。它也会让脸、手和可读文字重叠，因此要看真正承载信息的区域有没有被遮住。持续多久由实际画面与作品节奏决定，本文不给所有视频共用的秒数。\n\n黑场可以形成停顿、段落边界或明确结束；也可能只是意外空帧。根据剧本与前后镜判断，不把所有黑色画面当故障，也不要求每次换场都先黑一下。\n\n声音桥是另一项决定：上场声音延续到新画面，或下场声音先进入，都需要明确来源与时间关系。它不能使第二天的对白看似仍发生在昨晚，也不能截断原句。具体的一句对白中途切反应镜，见[连续对白切画面](/drama-skills/cut-away-during-continuous-dialogue)。",
+          "en": "A hard cut changes picture directly. It can work for connected action, attention moving to a listener, or an already-readable new location. If viewers cannot tell who now holds an object, check the cut and action coverage first.\n\nA dissolve briefly overlaps the pictures. It can contribute to elapsed time, memory or a gentle passage between scenes. Faces, hands and text also overlap, so inspect whether essential information remains readable. Choose duration from actual pictures and pacing rather than a universal number of seconds.\n\nA black interval may create a pause, a section boundary or an ending. It may also be an accidental gap. Judge it against the script and adjoining shots; neither reject every black frame nor insert one for every location change.\n\nA sound bridge is a separate decision. Carrying earlier sound into a new picture, or introducing the next scene’s sound early, requires a clear source and time relationship. Do not make tomorrow’s dialogue seem to occur last night or truncate the original line. For cutting to a reaction during one complete line, see [continuous dialogue cuts](/drama-skills/cut-away-during-continuous-dialogue)."
+        }
+      },
+      {
+        "id": "complete-transition-example",
+        "heading": {
+          "zh": "原创完整方案：昨晚交苗，次日种下",
+          "en": "Original complete plan: an evening handoff and morning planting"
+        },
+        "body": {
+          "zh": "下面是为比较剪法设计的虚构场景，没有实际视频或播放结论。已定故事是：傍晚温室里，叶澄把一盆幼苗交给杜宁，提醒“明早把它种在校门旁，那里有光”；杜宁接稳花盆，答“我来种”。第二天早上，杜宁在校门旁完成种植。作品选择朴素、连续的叙事，剧本没有指定叠化或新增旁白。\n\n**为本例设想的镜头覆盖**：温室双人镜完整拍到叶澄持盆、杜宁双手接稳、叶澄松手及两句对白；另一镜从杜宁仍在温室里持盆开始，拍他转向出口。次日校门全景中可见早晨光线与门牌，杜宁已在花坛边，花盆放在身旁；随后他把幼苗从盆里取出放入备好的穴中、填土、浇水。种植镜完整承载这些动作。门牌是否可读，实际制作按已定画内文字方案处理。\n\n**本版选定的剪法**：\n\n1. 温室交接镜保留完整提醒、接稳后松手和“我来种”。在杜宁已经持稳花盆、回应已经完成处切出。\n2. 硬切到温室出口镜；从杜宁已经持盆的状态接起，不再次演一遍接盆。保留转向出口与离开的必要过程，压缩不承担信息的等待。\n3. 再硬切到次日校门全景。保留新环境和早晨光线可辨认的区间；不把温室里的“我来种”移到这里，冒充杜宁此刻的新对白。次日镜采用本场已有环境声。\n4. 接种植动作，保留幼苗实际进入穴中、填土和浇水完成。离开时只说明这一株已经种下，不写成整座花坛都已完成。\n\n这版用环境和实际动作建立时空变化，没有依赖特效。若作者希望更柔和地表现一夜过去，可以另比较出口镜到校门镜的叠化：交接仍先完成，门牌与种植也要在重叠结束后清楚可见。它是可选表达，不是修正交接缺帧的方法；效果需要外部剪辑实际完成。\n\n若真实素材中杜宁从未接到花盆，不能照本方案声称交接成立。先恢复原片已有的接稳与松手，或回制作补这项必要动作，再决定转场。",
+          "en": "This fictional scene compares editorial choices. There are no actual clips or playback findings. The accepted story: in an evening greenhouse, Ye Cheng hands Du Ning a seedling pot and says, “Plant it beside the school gate tomorrow morning. It gets light there.” Du receives the pot securely and answers, “I’ll plant it.” The next morning he completes the planting. The piece uses plain, continuous storytelling; its script specifies neither a dissolve nor new narration.\n\n**Imagined coverage:** A greenhouse two-shot includes Ye holding the pot, Du securing it with both hands, Ye releasing it and both complete lines. A second shot starts with Du still holding the pot in the greenhouse and follows his turn toward the exit. The next morning’s school-gate wide shot shows morning light and a gate sign; Du is beside the bed with the pot next to him. Planting coverage then shows him removing the seedling, placing it in a prepared hole, filling soil and finishing watering. Any readable gate lettering follows the project’s accepted text treatment.\n\n**The selected edit:**\n\n1. Keep the full instruction, secure grip before release, and “I’ll plant it.” Leave once Du holds the pot and his answer finishes.\n2. Hard cut to the greenhouse exit shot with Du already holding the pot. Do not repeat the handoff. Keep the turn and necessary departure, shortening idle waiting.\n3. Hard cut to the morning school-gate wide shot. Retain enough of the shot to recognize the environment and morning light. Do not move the greenhouse answer here as new present-tense dialogue. Use the morning scene’s existing ambience.\n4. Continue through the seedling entering the hole, filling soil and completed watering. This ending establishes one planted seedling, not completion of the entire bed.\n\nEnvironment and action establish the scene change. For a gentler overnight passage, the creator could compare a dissolve from departure to the gate: finish the handoff first and keep the sign and planting readable after the overlap. That is an expressive option requiring actual external editing, not a repair for missing handoff frames.\n\nIf real footage never shows Du receiving the pot, this plan cannot establish a completed handoff. Restore an existing secure grip and release or request that necessary coverage before choosing the transition."
+        }
+      },
+      {
+        "id": "execution-record",
+        "heading": {
+          "zh": "把转场决定写成实际可做的修改",
+          "en": "Record a transition that can actually be executed"
+        },
+        "body": {
+          "zh": "记录前后来源、真实入出点、两镜关系、选定画面效果、声音处理和需要保留的动作。实际用了外部剪辑，再补工程、效果区间与参数；效果占用的画面、声音及字幕时间以最终时间线为准。改后不能照抄旧版累计时刻。\n\n固定版本的 short-drama-edit 内置 render 先编码各段，再直接拼接，画面只做硬切。CUT 的“声音”行是说明，不会自动完成交叉淡入、静音或声音桥；也没有在这行写“叠化”就生成画面转场的能力。需要效果时在外部工具完成并记录，再验收实际交付文件。\n\n若你只想讨论剪法，向 AI 提供相邻镜头的事实与剧本要求，明确这一轮只给方案。若调用技能处理媒体，素材须真实存在且可读。提示词写完和工程保存成功都不等于效果已经正确出现在成片。",
+          "en": "Record the preceding and following sources, actual in/out points, their relationship, chosen picture effect, sound treatment and actions to retain. After external editing, record the project, effect interval and parameters. Read picture, sound and subtitle times from the final timeline rather than carrying old cumulative positions forward.\n\nThe pinned short-drama-edit renderer encodes segments and concatenates them with hard cuts. A CUT’s sound line describes intent; it does not execute crossfades, muting or sound bridges. Writing “dissolve” there does not create a picture transition. Implement effects externally, document them and inspect the delivered file.\n\nFor discussion only, give the AI adjoining shot facts and script requirements and request a plan without running production. To process media through the skill, provide actual readable files. A written prompt or saved project does not establish a correctly rendered effect."
+        }
+      },
+      {
+        "id": "watch-the-join",
+        "heading": {
+          "zh": "看接点，也看前后整段",
+          "en": "Inspect the join and the full passage"
+        },
+        "body": {
+          "zh": "先在接点前后逐帧看，找是否重复动作、人物突然换持物、文字被两画面重叠遮住或出现意外黑白帧。再正常速度播放前后整段，判断时空变化是否清楚、情绪停顿是否合适、对白和环境声是否突兀。\n\n最后在实际成片上核字幕：台词仍完整，时间随新剪法更新，关键画面没有被字幕挡住。若问题是缺动作，回覆盖；若是换场不明，补回已有的环境或时间依据；若效果太抢眼，比较硬切或调整它的持续区间。以这次作品的观看需要作决定。",
+          "en": "Step through the join to find repeated actions, changed object ownership, essential text obscured by overlap or unintended black/white frames. Then play the surrounding passage at normal speed to judge time and place, the emotional pause and sound continuity.\n\nCheck subtitles on the actual output: complete speech, updated timing and unobstructed essential pictures. Missing action calls for coverage; an unclear scene change calls for available location or time evidence; an intrusive effect calls for comparison with a cut or adjusted duration. Decide from the needs of this piece."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "每次换场都要加转场特效吗？",
+          "en": "Does every scene change need an effect?"
+        },
+        "a": {
+          "zh": "不必。新镜头已经让时空清楚时，硬切可以成立；剧本明确指定的效果仍要落实。",
+          "en": "No. A cut can work when the new shot establishes time and place. Implement effects the script explicitly requires."
+        }
+      },
+      {
+        "q": {
+          "zh": "两段AI视频接不上，叠化能修好吗？",
+          "en": "Can a dissolve fix two AI shots that do not connect?"
+        },
+        "a": {
+          "zh": "只能改变接点表现，不能补出未发生的接物、转身或关键台词。先核对必要动作是否存在与完成，再决定效果。",
+          "en": "It changes the presentation of a join, not the existence of a handoff, turn or essential line. Establish necessary action and completion before choosing the effect."
+        }
+      }
+    ],
+    "skill": {
+      "name": "short-drama-edit",
+      "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-edit/SKILL.md",
+      "text": {
+        "zh": "使用 $short-drama-edit 处理我提供的真实镜头、剧本和分镜，逐剪点说明连续动作与时空变化，保留完整台词和必要结果。先报告素材缺口；内置硬切能实现的方案与需要外部工程的效果分别写清。若本轮只审方案，明确不运行渲染。",
+        "en": "Use $short-drama-edit with actual footage, script and storyboard. Explain continuous action and scene changes at each cut, preserving complete speech and necessary results. Identify coverage gaps and distinguish native hard cuts from effects requiring an external project. For planning only, explicitly request no rendering."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "切点、转场与时空关系",
+          "en": "Cuts, transitions and scene relationships"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-edit/references/cut-craft.md"
+      },
+      {
+        "label": {
+          "zh": "声音桥与字幕的实际边界",
+          "en": "Sound bridges and subtitle implementation"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-edit/references/sound-and-subtitles.md"
+      },
+      {
+        "label": {
+          "zh": "实际成片接点与交付验收",
+          "en": "Output joins and delivery inspection"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-edit/references/delivery-verify.md"
+      }
+    ],
+    "related": [
+      "/drama-skills/cut-away-during-continuous-dialogue",
+      "/drama-skills/shot-continuity-checklist",
+      "/video-recap/editing-rhythm",
+      "/drama-skills/ai-short-drama-edit-list-template"
+    ]
+  },
+  {
+    "owner": "video-recap",
+    "slug": "fix-blurry-video-export",
+    "topic": "video-recaps",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "视频导出后变模糊怎么办：先查原片、缩放和压制",
+      "en": "How to Fix a Blurry Video Export"
+    },
+    "seo_title": {
+      "zh": "视频导出后变模糊怎么办：先查原片、缩放和压制",
+      "en": "How to Fix a Blurry Video Export"
+    },
+    "description": {
+      "zh": "逐级比较原片、剪后母版与导出文件，定位缩放或压制造成的损失。附原创排查方案及当前skill的真实输出设置。",
+      "en": "Compare source, edited master and export to locate scaling or encoding loss. Includes an original diagnostic plan and real settings from the skill."
+    },
+    "answer": {
+      "zh": "先用同一播放器、相同显示大小比较原片、剪后母版和本地导出，找画质从哪一步开始变差；再检查真实输出尺寸、画面缩放和编码设置。恢复到合适的源文件与输出规格后重新出候选，不把低清成片放大当恢复细节。上传后才模糊，则单独检查平台处理与播放清晰度。",
+      "en": "Compare the source, edited master and local export in the same player at the same display size to locate the first loss. Check actual dimensions, scaling and encoding settings, then render a candidate from suitable source material. Enlarging a low-resolution export does not restore detail. If only uploaded playback looks blurry, check platform processing and playback quality separately."
+    },
+    "sections": [
+      {
+        "id": "locate-first-loss",
+        "heading": {
+          "zh": "先找哪一步开始模糊",
+          "en": "Find the first stage that loses detail"
+        },
+        "body": {
+          "zh": "不要只看编辑器里的预览，也不要只凭文件名写着1080p判断清晰。把同一时刻分别定位到原片、剪后画面母版和本地导出，用同一播放器、相同窗口大小与播放条件比较。先看细字、边缘和纹理，再正常速度看运动；截图只能看单帧，不能判断整段运动画质。\n\n| 首次变差的位置 | 接下来查什么 |\n|---|---|\n| 原片已经不清楚 | 换可用的原始文件或补拍必要画面；提高导出尺寸无法补回原来没有记录的细节。 |\n| 原片清楚，剪后母版变差 | 是否用了低清下载或预览副本，是否放大了局部，拼多来源时哪个画面被放大。 |\n| 母版清楚，本地导出变差 | 实际输出宽高、缩放上限、编码设置以及是否重复压制已有成片。 |\n| 本地导出清楚，上传播放才变差 | 平台处理是否结束、实际播放清晰度与观看条件；先别因此重做本地剪辑。 |\n\n同一文件在不同播放器中差别明显时，把播放器和显示缩放也记录下来，不能直接把差异归到导出参数。",
+          "en": "Do not judge only an editor preview or a filename containing “1080p.” Locate the same moment in the source, edited picture master and local export. Compare in one player with the same window size and playback conditions. Inspect small text, edges and texture, then watch motion at normal speed. A still does not establish motion quality.\n\n| First loss | What to check next |\n|---|---|\n| Source is already unclear | Find a usable original or obtain necessary coverage. Larger export dimensions cannot recover unrecorded detail. |\n| Source is clear; edited master worsens | A low-resolution download or preview copy, enlarged crop, or upscaled source in a multi-video assembly. |\n| Master is clear; local export worsens | Actual dimensions, scaling cap, encoding settings and repeated encoding of an earlier export. |\n| Local export is clear; uploaded playback worsens | Processing status, selected playback quality and viewing conditions before remaking the local edit. |\n\nIf one file looks different between players, record player and display scaling too rather than immediately blaming export settings."
+        }
+      },
+      {
+        "id": "dimensions-and-scaling",
+        "heading": {
+          "zh": "输出尺寸与画面里的细节分开查",
+          "en": "Separate output dimensions from picture detail"
+        },
+        "body": {
+          "zh": "画幅是宽高关系，分辨率是实际宽高像素，两者不是同一件事。横竖素材怎样并排进入一个画幅，见[横竖屏拼接](/video-recap/combine-landscape-and-portrait-videos)；本页检查的是已经选定的画面在制作途中哪里丢了细节。\n\n大画布里放着一个小视频，再加留边，文件尺寸可以很大，主体占用的像素仍有限。裁出原片很小的区域放满画面，也会放大已有像素。检查实际可见区域，不能只记录容器宽高。\n\n所引 video-cut 多来源路径把片段等比例放进统一画布并留边；画布选择考虑实际采用来源的方向、面积与时长。低清来源可能在较大画布里被放大。这个流程解决拼接规格，不保证每段达到同等细节，也不会自动做超分辨率修复。\n\n源几何探测还考虑旋转和像素宽高比。对竖屏或带旋转信息的素材，按实际显示画面核对，不只抄存储宽高。",
+          "en": "Aspect ratio describes proportions; resolution describes actual pixel dimensions. For fitting landscape and portrait material, see [mixed orientations](/video-recap/combine-landscape-and-portrait-videos). This page traces detail loss after the picture has been chosen.\n\nA small video surrounded by padding can live in a large frame while its subject still occupies few pixels. Enlarging a small crop likewise enlarges existing pixels. Inspect the visible region as well as frame dimensions.\n\nThe cited multi-source video-cut path fits segments proportionally into a shared canvas with padding. Canvas selection considers adopted sources’ orientation, area and duration. A low-resolution source can be enlarged within that canvas. This enables assembly; it neither promises equal detail nor performs automatic super-resolution.\n\nGeometry probing also accounts for rotation and pixel aspect ratio. Check the displayed picture rather than copying stored dimensions alone."
+        }
+      },
+      {
+        "id": "actual-settings",
+        "heading": {
+          "zh": "核对当前skill真正使用的设置",
+          "en": "Check the settings the current skill actually consumes"
+        },
+        "body": {
+          "zh": "下面只说明所引固定版本的 video-assemble 合成路径，其他编辑器和包装路径须另查。它有三项输出设置：\n\n- **OUTPUT_MAX_HEIGHT**：大于0时限制输出高度并保持宽高比；0表示本阶段不加这个缩放。实现只缩小，不把低清画面升成高清。\n- **OUTPUT_CRF**：此路径的x264编码质量设置，默认18。调大通常减少体积并加重损失；调小不能恢复源画面已经丢掉的细节。不要把18称为所有素材都无损的保证。\n- **OUTPUT_PRESET**：默认veryfast。它参与编码速度与压缩取舍，不能当成分辨率选项。\n\n这些编码设置仅在本阶段重新编码视频时生效。烧录字幕、遮罩、视觉叠加、包装、缩放或强制重编码会进入编码路径；没有这些处理时，视频流走复制路径，改CRF不会凭空重新压制它。音频另按已有声音方案处理。\n\nvideo-cut 产生剪后母版时已使用自己的编码设置；合成阶段再设置更低CRF不会恢复上一步的损失。可回到尚清楚的源文件重建受影响画面，避免反复把已压制成片当原片。若另走前景包装或剪映导出，也按那条路径的实际实现与输出复核，不把这里三个变量当通用开关。",
+          "en": "These settings describe only the pinned video-assemble composition path. Check other editors and packaging paths separately.\n\n- **OUTPUT_MAX_HEIGHT:** A positive value caps output height while retaining proportions. Zero adds no downscale at this stage. The implementation shrinks; it does not upgrade low-resolution pictures.\n- **OUTPUT_CRF:** This path’s x264 quality setting, default 18. A larger value generally reduces size with more loss. A lower value cannot restore detail already absent from the input. Eighteen is not a losslessness guarantee.\n- **OUTPUT_PRESET:** Default veryfast. It participates in encoding speed and compression tradeoffs, not resolution selection.\n\nEncoding settings apply when this stage re-encodes video. Burned subtitles, masking, visual overlays, packaging, scaling or forced re-encoding enter that path. Without these operations the video stream is copied, so changing CRF alone does not re-encode it. Sound follows the existing audio plan separately.\n\nvideo-cut already applies its own encoding when building the edited master. A lower composition CRF cannot undo that loss. Rebuild affected pictures from a still-clear source instead of repeatedly treating an encoded export as the original. Foreground packaging and JianYing export require their own implementation and output checks; these three variables are not universal switches."
+        }
+      },
+      {
+        "id": "complete-export-example",
+        "heading": {
+          "zh": "原创排查方案：装订教程里的细线看不清",
+          "en": "Original diagnostic plan: a fine thread in a binding tutorial"
+        },
+        "body": {
+          "zh": "这是虚构的纸面案例，没有真实文件、探测或观看结论。创作者把一段手工装订教程剪成短视频，关键内容是针从纸孔穿出，细线收紧，随后打结。假设原片和已剪画面母版都是1920×1080，源文件能看清孔位与线条；旧导出使用OUTPUT_MAX_HEIGHT=480，作者觉得针线细节不够清楚。字幕、剪点与声音已定。\n\n**先证实假设**：实际打开三份对应文件，定位穿孔和收线时刻；探测它们的真实宽高；同条件播放比较。若母版已经丢了细节，就停止只改最终导出，回到造成损失的那一步。若旧导出实际没有缩到480高，也不能拿这项设置当已证实原因。\n\n**若比较确认损失首次出现在该缩小导出**，本例作者选择保留1080高的本地候选：从清楚的画面母版重新出文件，在这条合成路径把OUTPUT_MAX_HEIGHT改为0，编码采用OUTPUT_CRF=18、OUTPUT_PRESET=veryfast。保持原字幕、画面次序与声音决定，使用单独候选工作目录和输出，留下原版作比较。关闭这个缩放只是不再缩小，不承诺候选立刻清楚；仍需实际检查。\n\n**完整复查**：同条件比较原片、母版、旧导出和新候选的穿孔、收线、打结全过程。针应确实穿出，线应真正收紧，结应完成；不能为了看起来更清晰改成静态示意图或删掉步骤。核字幕没有因缩放改变而压住针线，声音仍完整且同步，再测候选宽高。\n\n若候选细节可读，记录文件与实际观察后供作者采用；若仍不好，分别排查源细节、裁切放大和编码，不直接宣称参数已修复。若平台要求另交较小文件，单独制作并比较这一版的可读性，不把这里取消缩放当成所有交付规格。",
+          "en": "This is a fictional paper case with no files, probes or viewing findings. A creator edits a bookbinding tutorial. Essential coverage shows a needle emerging through a paper hole, thread tightening and a completed knot. Assume both source and edited picture master are 1920×1080 and their hole and thread details are readable. An old export used OUTPUT_MAX_HEIGHT=480, and the creator finds the needlework unclear. Subtitles, cuts and sound are approved.\n\n**Verify the assumptions:** Open the corresponding files, locate piercing and tightening, probe actual dimensions and compare playback under the same conditions. If the master already loses detail, return to that stage. If the old export was not actually reduced to 480 pixels high, the setting is not an established cause.\n\n**If comparison confirms the first loss at that downscale**, this creator chooses a local candidate retaining 1080-pixel height. Render from the clear picture master with OUTPUT_MAX_HEIGHT=0, OUTPUT_CRF=18 and OUTPUT_PRESET=veryfast in this composition path. Keep accepted subtitles, picture order and sound decisions; use a separate candidate workspace and output, retaining the old version. Removing the downscale does not establish readability; inspect the result.\n\n**Complete review:** Compare source, master, old export and candidate through piercing, tightening and knot completion. The needle must emerge, thread tighten and knot finish. Do not substitute a still or delete a step to appear sharper. Ensure subtitles do not obstruct the needlework after sizing changes, sound remains complete and synchronized, and probe candidate dimensions.\n\nIf detail is readable, record the file and observations for the creator’s adoption. Otherwise investigate source detail, enlarged crops and encoding separately rather than claiming the settings fixed it. A platform’s smaller-file requirement calls for a separate delivery and readability comparison; removing the cap here is not a universal delivery specification."
+        }
+      },
+      {
+        "id": "picture-only-revision",
+        "heading": {
+          "zh": "修画质时保住已经定下的内容",
+          "en": "Preserve accepted content while revising picture quality"
+        },
+        "body": {
+          "zh": "向AI交代哪些是已定内容：台词、字幕文本、剪点、动作顺序、配乐与完整混音。要求先定位首次损失，说明拟改的输入和输出设置，再出画面候选；不要因为你说“高清一点”便重写旁白、换声线或重剪故事。\n\n已有完整混音时，按[保留已定声音](/video-recap/keep-audio-when-changing-video)采用与新画面兼容的处理办法，不能从新默认流程悄悄生成另一版声音。交付时提供实际文件、探测值、查看过的关键段及尚未确认的问题。渲染成功只证明文件生成，不是观看已经满意。",
+          "en": "Tell the AI which content is accepted: speech, subtitle text, cuts, action order, music and complete mix. Request diagnosis of the first loss and proposed input/output changes before rendering a picture candidate. “Make it clearer” does not authorize rewriting narration, changing a voice or recutting the story.\n\nFor an existing complete mix, follow [keeping approved audio](/video-recap/keep-audio-when-changing-video) with a treatment compatible with the new picture rather than silently producing new sound. Deliver actual files, probe values, inspected passages and unresolved questions. Render success establishes file creation, not satisfactory viewing."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "把720p导出成4K会恢复细节吗？",
+          "en": "Does exporting 720p as 4K restore detail?"
+        },
+        "a": {
+          "zh": "尺寸变大不等于原有细节回来。先检查可用原始文件与实际主体像素；本文所引路径不做超分辨率，不能把放大结果当真实恢复。",
+          "en": "Larger dimensions do not restore missing detail. Check available originals and the pixels occupied by the subject. The cited path does not perform super-resolution."
+        }
+      },
+      {
+        "q": {
+          "zh": "本地清楚，上传YouTube后模糊怎么办？",
+          "en": "What if only YouTube playback looks blurry?"
+        },
+        "a": {
+          "zh": "先区分上传处理与本地导出。YouTube说明视频初期会先有低清版本，较高清晰度在处理完成后可用；检查处理状态与实际播放选项，再比较。参见[YouTube低清播放说明](https://support.google.com/youtube/answer/71674?hl=zh-Hans)，不要给所有平台套固定等待分钟数。",
+          "en": "Separate platform processing from the local export. YouTube says initial processing provides lower quality, with higher qualities available after processing. Check status and playback options before comparing. See [YouTube’s quality guidance](https://support.google.com/youtube/answer/71674?hl=en); do not assign one fixed waiting time to every platform."
+        }
+      }
+    ],
+    "skill": {
+      "name": "video-recap",
+      "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-recap/SKILL.md",
+      "text": {
+        "zh": "使用 /video-recap（Codex中用 $video-recap）核对我提供的原片、剪后母版、导出文件及输出设置，先给首次画质损失的证据与修改方案。本轮保留已定台词、字幕文本、镜序与混音；只讨论时不运行剪辑、配音或合成。批准制作候选后再按真实支持路径执行。",
+        "en": "Use /video-recap ($video-recap in Codex) to review the supplied source, edited master, export and output settings. First identify evidence of the earliest detail loss and propose a revision. Preserve accepted speech, subtitle text, shot order and mix. For discussion only, run no editing, voice production or assembly. Execute a candidate through a supported path after its production is requested."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "实际输出尺寸与编码配置",
+          "en": "Actual output size and encoding configuration"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/scripts/lib.py"
+      },
+      {
+        "label": {
+          "zh": "重编码与视频流复制分支",
+          "en": "Re-encoding and video stream copying"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/scripts/assemble.py"
+      },
+      {
+        "label": {
+          "zh": "只缩小的高度限制",
+          "en": "Downscale-only height cap"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-assemble/scripts/visual_render.py"
+      },
+      {
+        "label": {
+          "zh": "显示几何与多来源画布选择",
+          "en": "Display geometry and multi-source canvas choice"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-cut/scripts/media_geometry.py"
+      },
+      {
+        "label": {
+          "zh": "剪后母版缩放与编码",
+          "en": "Edited-master scaling and encoding"
+        },
+        "url": "https://github.com/zenstory-ai/video-recap-skills/blob/e7eb0a82f13aab930f64a669e91ece78b82f65f5/skills/video-cut/scripts/cut_render.py"
+      }
+    ],
+    "related": [
+      "/video-recap/combine-landscape-and-portrait-videos",
+      "/video-recap/keep-audio-when-changing-video",
+      "/video-recap/add-a-brand-frame-to-video",
+      "/video-recap/fix-a-video-export-with-no-sound"
+    ]
   }
 ]
