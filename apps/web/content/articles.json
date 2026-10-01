@@ -11048,6 +11048,17 @@
         }
       },
       {
+        "id": "complete-cover-brief",
+        "heading": {
+          "zh": "把《雾港回声簿》补成完整制作简报",
+          "en": "Complete the production brief for 雾港回声簿"
+        },
+        "body": {
+          "zh": "沿用上面的无字底图方案。为本例原创增加笔名“林渡”，作者选择3:4练习画幅和保存目录`covers/雾港回声簿`；画幅不是某平台当前规范。执行者仍需确认本次实际用途和交付尺寸。准确文字、图像和排版分开交代：\n\n> Create a text-free portrait illustration for the urban mystery '雾港回声簿', by '林渡', in the author-selected 3:4 composition. One young archivist stands in profile in a narrow archive, holding an open ledger with faint sound-wave traces. Keep a red alteration mark in the foreground, the archivist and desk lamp in the midground, and metal shelves fading into mist behind. Use ink blue and grey-white with restrained dark red, and a cool light from above. Reserve a quiet upper title area and lower byline area. Render no readable text, watermark or slogan. Save a separate background candidate in the chosen folder.\n\n这里前景被涂改的姓名栏只表现涂改痕迹，不要求无字图出现可读姓名。底图生成后先核一个人物、登记簿、声波和层次，再在作者选择的排版工具中输入准确书名“雾港回声簿”、笔名“林渡”。这一步是另行排版，不能把原生技能描述成自动提供可编辑文字层。\n\n完成排版再导出独立上传版，核每个字、字与人物互挡、最终比例和四边。缩到实际显示大小，确认书名与档案线索还能辨认，再看当前上传预览；底图无字不是已交付封面。以上为完整方案，没有实际生成或上传；需要直接一次生图含字时，则按技能默认给准确书名与笔名，并核成图。\n\n遇到具体问题，可接[修封面错字](/oh-story/fix-ai-book-cover-text)、[缩略图看不清](/oh-story/make-a-book-cover-readable-as-a-thumbnail)、[题材不符](/oh-story/match-a-book-cover-to-your-story)或[参考图用途](/oh-story/use-reference-images-for-a-book-cover)。",
+          "en": "Retain the text-free-background route above. Add the original example pen name `林渡`, an author-selected 3:4 exercise canvas and save folder `covers/雾港回声簿`. This ratio is not a current platform rule; confirm actual use and delivery dimensions separately. Specify illustration and lettering as distinct steps:\n\n> Create a text-free portrait illustration for the urban mystery '雾港回声簿', by '林渡', in the author-selected 3:4 composition. One young archivist stands in profile in a narrow archive, holding an open ledger with faint sound-wave traces. Keep a red alteration mark in the foreground, the archivist and desk lamp in the midground, and metal shelves fading into mist behind. Use ink blue and grey-white with restrained dark red, and a cool light from above. Reserve a quiet upper title area and lower byline area. Render no readable text, watermark or slogan. Save a separate background candidate in the chosen folder.\n\nThe crossed-out name field communicates alteration marks, not readable names in a text-free picture. Inspect the generated person count, ledger, sound traces and depth. Then enter the exact title `雾港回声簿` and byline `林渡` in the author’s chosen layout tool. This is separate typesetting, not a claim that the native skill provides editable type layers automatically.\n\nExport a distinct upload version after lettering. Check every character, overlap with the figure, final ratio and edges. At the actual display size, verify title and archive cue, then inspect the current upload preview. A text-free background is not a delivered cover. This is a complete plan, with no generation or upload performed. For a single generated image with text, follow the skill’s default using exact title and byline and inspect the result.\n\nContinue with [incorrect lettering](/oh-story/fix-ai-book-cover-text), [thumbnail readability](/oh-story/make-a-book-cover-readable-as-a-thumbnail), [genre mismatch](/oh-story/match-a-book-cover-to-your-story) or [reference purpose](/oh-story/use-reference-images-for-a-book-cover) as needed."
+        }
+      },
+      {
         "id": "review",
         "heading": {
           "zh": "生成或设计后检查什么",
@@ -11092,7 +11103,11 @@
     "related": [
       "/oh-story/agent-skills-for-writers",
       "/oh-story/claude-code-novel-writing",
-      "/oh-story"
+      "/oh-story",
+      "/oh-story/fix-ai-book-cover-text",
+      "/oh-story/make-a-book-cover-readable-as-a-thumbnail",
+      "/oh-story/match-a-book-cover-to-your-story",
+      "/oh-story/use-reference-images-for-a-book-cover"
     ],
     "topic": "book-covers",
     "sources": [
@@ -47170,6 +47185,502 @@
       "/video-recap/fix-blurry-video-export",
       "/video-recap/keep-audio-when-changing-video",
       "/video-recap/make-a-video-with-original-audio-and-no-voiceover"
+    ]
+  },
+  {
+    "owner": "oh-story",
+    "slug": "fix-ai-book-cover-text",
+    "topic": "book-covers",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "AI小说封面文字写错怎么办：修书名和笔名，保住画面",
+      "en": "How to Fix Incorrect Text on an AI Book Cover"
+    },
+    "seo_title": {
+      "zh": "AI小说封面文字写错怎么办｜ZenStory",
+      "en": "Fix Incorrect Text on an AI Book Cover | ZenStory"
+    },
+    "description": {
+      "zh": "书名或笔名被AI写错，先区分错字、裁剪和字号问题。附准确文字修改简报、参考图保留要求与另行排字方案。",
+      "en": "Separate wrong lettering from cropping or small type. Use exact text, declare what an edit should retain, and compare a separate lettering workflow."
+    },
+    "answer": {
+      "zh": "先把作者确认的书名和笔名逐字列出，核原图错在哪里，再决定用现有封面作编辑目标，还是用无字底图另行排字。把应保留的人物、构图和色调说清，生成新候选后检查全图与最终上传版。只把正确字写进提示词，不等于已经改对。",
+      "en": "List the author’s exact title and byline, inspect the original error, and choose between editing the existing cover and lettering a text-free background separately. Declare the character, composition and palette to retain, then inspect the whole new candidate and final export. Correct text in a prompt does not prove a correct image."
+    },
+    "sections": [
+      {
+        "id": "identify-the-text-error",
+        "heading": {
+          "zh": "先分清是错字，还是字没有显示完整",
+          "en": "Identify wrong letters, cropping or illegible type"
+        },
+        "body": {
+          "zh": "拿准确文字与实际原图并排逐字比，不凭对书名的印象扫一眼。把多字、缺字、同音字和笔画异常分别记下来，书名与笔名都检查。\n\n| 问题 | 先处理什么 |\n|---|---|\n| 原图把“处”写成“外” | 重新提供准确文字，修生成字样或另行排字。 |\n| 原图完整，导出少了半个字 | 先查[裁剪发生在哪一步](/oh-story/fix-cropped-book-cover-text)。 |\n| 放大正确，缩小认不清 | 处理[缩略图可读性](/oh-story/make-a-book-cover-readable-as-a-thumbnail)，不改书名内容。 |\n\n花体笔画难辨时，先换更清楚的字形候选，不让装饰效果把书名变成需要猜的图案。不要为迁就生成错误，擅自替作者换笔名。",
+          "en": "Compare the actual original against exact wording character by character. Record additions, omissions, substitutions and malformed strokes; inspect both title and byline.\n\n| Problem | First response |\n|---|---|\n| Wrong character in the original | Supply exact wording and revise the generated lettering or set type separately. |\n| Complete original; clipped export | Locate [the cropping step](/oh-story/fix-cropped-book-cover-text). |\n| Correct at full size; unreadable small | Address [thumbnail legibility](/oh-story/make-a-book-cover-readable-as-a-thumbnail) without renaming the book. |\n\nWhen ornamental strokes obscure letters, try a clearer treatment. The title should not become a guessing game. Do not change the author’s pen name to accommodate a generation error."
+        }
+      },
+      {
+        "id": "choose-a-lettering-route",
+        "heading": {
+          "zh": "选择改现有图，还是另行排字",
+          "en": "Choose an image edit or separate lettering"
+        },
+        "body": {
+          "zh": "`story-cover` 默认做含书名和署名的完整封面。固定版本也支持参考图，并要求先查看图片、说明是编辑目标还是风格参考、列出保留内容。修改已有封面时，把这一版明确作为编辑目标，另存结果，不能只传图再说“改正确”。\n\n文字、人物和背景已经合成在一张图片里时，不存在可直接拖动的独立文字层。图像编辑可以作为候选办法，但可能改变附近笔画、人物或底纹，需要检查全图。\n\n作者选择无字底图加后期排字时，要明确这是替代流程。先把旧字清除或使用真正无字的底图，再在排版工具中输入准确书名、笔名并导出完整封面；不能把新字盖在旧错字上，就认定问题消失。",
+          "en": "`story-cover` normally produces a cover with title and byline. The pinned workflow also accepts a reference, requires viewing it, distinguishes an editing target from a style reference and calls for preservation requirements. Mark an existing cover as the editing target and save another result, rather than supplying an image with “make it correct.”\n\nA flattened cover has no automatically movable type layer. Image editing is a candidate route, but adjacent strokes, character art or texture may change; inspect the whole result.\n\nIf the author chooses a text-free background and separate typesetting, declare that alternative. Use a genuinely text-free base or remove old lettering, then enter the exact title and byline in a layout tool and export a complete cover. New type laid over visible old errors does not solve the problem."
+        }
+      },
+      {
+        "id": "exact-text-example",
+        "heading": {
+          "zh": "修改示例：《夜班寄存处》的两处错字",
+          "en": "Correction example: two errors on a luggage-office mystery cover"
+        },
+        "body": {
+          "zh": "原创悬疑《夜班寄存处》，笔名“江澄”，讲夜班寄存员追查一件无人认领行李的来历。假设作者已有满意封面：一名寄存员、深蓝寄存柜和一件暗红行李；但书名成了“夜班寄存外”，笔名成了“江橙”。以下是修改方案，没有实际图片或生成结果。\n\n作者先确认准确字符串：书名`夜班寄存处`，笔名`江澄`。本轮选现有封面作编辑目标，保住一个人物、柜子布局、行李颜色、冷光方向与原有画幅；不增加警察、尸体或新的剧情暗示。可给出完整简报：\n\n> Use the supplied cover as the editing target. Correct the title to exactly '夜班寄存处' and the byline to exactly '江澄'. Keep the single luggage-office attendant, deep-blue lockers, dark-red suitcase, cool light direction and existing portrait composition. Keep the title at the top and byline at the bottom, with readable contrast and room inside the final crop. Add no slogan, watermark or extra text. Save a new candidate without replacing the original.\n\n实际生成后先逐字核两处，再确认人物人数、行李、背景与光线。若字改对但行李变成了刀，仍不采用；把这项偏差列入下一次修改。若反复改字影响画面，作者可改选无字底图另排准确文字，再检查旧字残留、笔名和上传预览。",
+          "en": "The original mystery is titled `夜班寄存处`, with pen name `江澄`, about a night-shift attendant tracing unclaimed luggage. Assume an approved composition has one attendant, deep-blue lockers and a dark-red suitcase, but the image shows `夜班寄存外` and `江橙`. This is a proposed correction, with no actual image or generation result.\n\nConfirm the exact Chinese strings first. Select the cover as an editing target and retain the person count, locker layout, suitcase colour, cool light direction and aspect ratio. Add no police, corpse or new plot implication. Use this complete brief:\n\n> Use the supplied cover as the editing target. Correct the title to exactly '夜班寄存处' and the byline to exactly '江澄'. Keep the single luggage-office attendant, deep-blue lockers, dark-red suitcase, cool light direction and existing portrait composition. Keep the title at the top and byline at the bottom, with readable contrast and room inside the final crop. Add no slogan, watermark or extra text. Save a new candidate without replacing the original.\n\nAfter generation, check both strings and the whole composition. Correct letters do not justify adopting a suitcase changed into a knife. Record that deviation for revision. If repeated text edits disturb the art, the author may choose a text-free background and separate accurate lettering, checking old-text remnants, byline and upload preview afterward."
+        }
+      },
+      {
+        "id": "check-the-export",
+        "heading": {
+          "zh": "最后检查的是哪份文件",
+          "en": "Inspect the file that will actually be used"
+        },
+        "body": {
+          "zh": "保留原图、对应提示词和参考图说明；新候选与上传版各自标清。按“准确文字—人物与关键物件—画幅与裁边—缩略辨识—实际预览”顺序检查当前文件。\n\n字体描边、阴影或发光不是越多越好。若笔画粘连，先减装饰、拉开文字与背景的明暗；书名正确但不可读，也要继续修。不要把提示词中已经写对的字、旧版本截图或一次出图成功当作最终文字检查。",
+          "en": "Keep the original, prompt and reference note, identifying the new candidate and upload export separately. Inspect exact wording, character and key objects, canvas and crop, thumbnail recognition, then the current publishing preview.\n\nMore outline, shadow or glow need not help. If strokes merge, reduce decoration and separate lettering from the background. Correct yet unreadable text still needs revision. A correct prompt, an old screenshot or successful generation is no substitute for checking the final lettering."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "提示词里写了准确书名，为什么还要核对？",
+          "en": "Why check the image when the prompt has the correct title?"
+        },
+        "a": {
+          "zh": "生成图片与文本指令是不同结果。成图仍可能缺笔、多字或替换字符，导出也可能裁字，所以要核实际使用的版本。",
+          "en": "The image is separate from its instruction. It can still omit strokes, add letters or substitute characters, and export may crop them. Inspect the version actually used."
+        }
+      },
+      {
+        "q": {
+          "zh": "能不能直接移动图里的书名？",
+          "en": "Can I just move the title in the image?"
+        },
+        "a": {
+          "zh": "只有已有独立文字层时才能直接移动那一层。扁平图片需编辑像素或重新排字，不能假定原书名仍是可编辑文本。",
+          "en": "Only a separate type layer can be moved directly. A flattened image needs pixel editing or new lettering; its title is not automatically editable text."
+        }
+      }
+    ],
+    "skill": {
+      "name": "story-cover",
+      "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/SKILL.md",
+      "text": {
+        "zh": "实际生成或修改封面时，使用 /story-cover（Codex 用 $story-cover），给出准确书名、笔名、用途、保存目录与本页的具体简报。有参考图先说明它的用途和保留项，另存候选，再核文字、画面与上传版。技能会调用图像工具并保存文件，不能用提示词代替成图检查。",
+        "en": "For actual cover generation or revision, use /story-cover, or $story-cover in Codex, with exact title, byline, intended use, save directory and this page’s concrete brief. Declare reference purpose and preservation requirements, save a separate candidate, then inspect lettering, picture and upload export. The skill calls an image tool and saves files; a prompt cannot replace checking the result."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "文字、参考图、版本保存与质量检查",
+          "en": "Lettering, references, version saving and review"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/SKILL.md"
+      },
+      {
+        "label": {
+          "zh": "题材、构图、色彩与字体选项",
+          "en": "Genre, composition, palette and lettering options"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/references/cover-styles.md"
+      }
+    ],
+    "related": [
+      "/oh-story/novel-cover-prompts",
+      "/oh-story/fix-cropped-book-cover-text",
+      "/oh-story/make-a-book-cover-readable-as-a-thumbnail"
+    ]
+  },
+  {
+    "owner": "oh-story",
+    "slug": "make-a-book-cover-readable-as-a-thumbnail",
+    "topic": "book-covers",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "小说封面缩小后看不清怎么办：书名、主体与明暗层次",
+      "en": "How to Make a Book Cover Readable as a Thumbnail"
+    },
+    "seo_title": {
+      "zh": "小说封面缩略图看不清怎么办｜ZenStory",
+      "en": "Make a Book Cover Readable as a Thumbnail | ZenStory"
+    },
+    "description": {
+      "zh": "大图好看，小图却读不出书名？从实际缩略尺寸检查文字、主体和背景，附旧书店封面的完整简化方案。",
+      "en": "Check title, subject and background at the actual small display size. Follow a complete bookshop-cover revision plan without claiming a fixed font rule."
+    },
+    "answer": {
+      "zh": "先用真实展示大小看准备上传的那版，分别判断书名能否读出、主体能否辨认、文字和背景是否互相淹没。保留一个核心视觉焦点，清理书名周围细节，调整字形与明暗；另存候选后检查大图、小图和裁剪。字号或安全区写进提示词，不代表实际成图已经可读。",
+      "en": "Inspect the upload version at its real display size. Check whether the title reads, the subject is recognisable and text separates from background. Keep a clear focal point, simplify around the title, and adjust letterforms and contrast. Review full size, small size and crop in a separate candidate; requested type size or margins do not prove legibility."
+    },
+    "sections": [
+      {
+        "id": "test-at-display-size",
+        "heading": {
+          "zh": "不要只放大看封面",
+          "en": "Test the size readers will see"
+        },
+        "body": {
+          "zh": "把最终上传文件缩到作品列表、手机卡片或分享图的实际显示大小，再用正常阅读距离看。不同界面大小不同，不设全平台统一的字号下限；也不把放大后的清晰当缩略图合格。\n\n先看书名是否能准确读出，再看核心人物或物件是否可辨。笔名要完整且满足这次交付要求，但不应挤占书名和主体。如果上传版已缺字，先处理[裁剪问题](/oh-story/fix-cropped-book-cover-text)。\n\n| 小图现象 | 优先试什么 |\n|---|---|\n| 书名像一块发光斑 | 减少发光与复杂笔画，重试清楚字形和对比。 |\n| 人物、道具全挤在一起 | 留主焦点，减少重复题材装饰。 |\n| 主体清楚，文字没入背景 | 清理文字区纹理，调整字色、背景明暗或位置。 |\n\n这张表用于定位候选改法，仍须看修改后的实际小图。",
+          "en": "Reduce the final upload file to the actual book-list, phone-card or sharing display size and inspect it at normal reading distance. Interfaces differ, so there is no universal minimum type size here. Sharp enlarged lettering does not establish thumbnail readability.\n\nRead the title accurately, then identify the main person or object. Keep the byline complete and suitable for delivery without displacing title and subject. For missing letters in an export, address [cropping first](/oh-story/fix-cropped-book-cover-text).\n\n| Small-image symptom | First trial |\n|---|---|\n| Title becomes a glowing blob | Reduce glow and intricate strokes; try clearer lettering and contrast. |\n| People and props merge | Keep a focal point and remove redundant genre decoration. |\n| Clear subject, lost title | Simplify texture behind type; revise colour, brightness or placement. |\n\nThese are candidate fixes, followed by inspecting the actual small result."
+        }
+      },
+      {
+        "id": "choose-the-hierarchy",
+        "heading": {
+          "zh": "先决定读者第一眼看什么",
+          "en": "Choose the first thing readers should recognise"
+        },
+        "body": {
+          "zh": "先从故事提炼一项主要承诺。封面可以有前中远景，但不必把每个重要角色、地点和伏笔都画出来。`story-cover` 的方法分文字、风格和画面层，并比较特写、全身或场景构图；先选适合本书的层级，再用风格库作候选。\n\n书名字体、位置和颜色要单列，笔名也要明确。清晰不等于每个字都巨大：减少周围竞争、保住字的轮廓与间距，往往比再加一层光效更有效。顶部或底部只是初始安排，最终看实际画面与裁边。\n\n适当简化背景不代表删掉题材。留下最能传递本书气质的主体与一项场景证据，别把悬疑改成空白商业海报，只为让字容易看见。",
+          "en": "Extract one main story promise. Foreground, midground and background need not include every important character, place and clue. `story-cover` separates text, style and picture and compares close-up, full-body and scene compositions. Choose the hierarchy for this book before treating style-library options as candidates.\n\nSpecify title lettering, placement and colour separately, along with the byline. Clarity does not mean every letter must be enormous: reducing competition and preserving strokes and spacing can help more than another glow. Top and bottom positions are starting choices, checked against actual art and crop.\n\nSimplification should retain genre. Keep the focal subject and a useful setting cue rather than turning a mystery into a blank commercial poster merely to expose its text."
+        }
+      },
+      {
+        "id": "bookshop-thumbnail-example",
+        "heading": {
+          "zh": "简化示例：《雨天留灯》的旧书店封面",
+          "en": "Simplification example: a bookshop cover for 雨天留灯"
+        },
+        "body": {
+          "zh": "原创《雨天留灯》，笔名“顾禾”，是旧书店重新开门的都市日常故事。假设初案把三位人物、货架、雨伞、猫和发光书名都塞在一起。作者在本例选择3:4构图和120×160显示预览，发现书名难读；这只是示例尺寸和假设观察，没有真实封面或测试结果。\n\n新候选保留“雨天开门，店灯亮起”这一视觉焦点，去掉不是这张封面必要的猫、伞和另外两人，以一名主角与门灯传递日常温度。书架只在店内作简洁背景，书名放较干净的深色上方，笔名独立放下方。可用完整简报：\n\n> Author-selected 3:4 portrait illustrated cover for a warm contemporary bookshop story. One protagonist opens the old bookshop door on a rainy evening; a warm doorway lamp is the main accent. Keep interior shelves simple and subordinate. Use muted blue-grey rain and warm cream light. Title exactly '雨天留灯' in clear cream lettering in a quiet upper area; byline exactly '顾禾' in smaller readable lettering below, with a restrained divider. Keep both inside the final retained canvas. No other people, cat, umbrella, slogan or watermark. Save a separate candidate.\n\n作者并未删改小说里的配角，只选择封面呈现的重点。实际出图后在大图核准确文字和人数，再在本例120×160看书名与门灯能否分别识别，并检查准备上传那版。若人物或书名仍混成一片，继续调整这一项；不凭“高清”“专业”几个词宣布通过。",
+          "en": "The original contemporary story `雨天留灯`, by `顾禾`, concerns reopening an old bookshop. Assume a first concept crowds three people, shelves, umbrellas, a cat and glowing type. The author selects a 3:4 composition and 120×160 preview and hypothetically finds the title unreadable. This is an example size and observation, with no actual cover or test result.\n\nKeep the rainy opening and lit doorway as the focal idea. Remove the cat, umbrellas and other two people from this cover, using one protagonist and a lamp for everyday warmth. Shelves become a simple interior background, with title on a quiet dark upper area and a distinct lower byline. Use this complete brief:\n\n> Author-selected 3:4 portrait illustrated cover for a warm contemporary bookshop story. One protagonist opens the old bookshop door on a rainy evening; a warm doorway lamp is the main accent. Keep interior shelves simple and subordinate. Use muted blue-grey rain and warm cream light. Title exactly '雨天留灯' in clear cream lettering in a quiet upper area; byline exactly '顾禾' in smaller readable lettering below, with a restrained divider. Keep both inside the final retained canvas. No other people, cat, umbrella, slogan or watermark. Save a separate candidate.\n\nThis changes cover emphasis without removing characters from the novel. Inspect full-size letters and person count, then title and lamp separately at this example’s 120×160, followed by the intended upload file. If they still merge, adjust that issue. “High resolution” and “professional” do not establish a pass."
+        }
+      },
+      {
+        "id": "compare-candidates",
+        "heading": {
+          "zh": "比较候选时固定同一展示条件",
+          "en": "Compare candidates under the same conditions"
+        },
+        "body": {
+          "zh": "用同一显示尺寸、同一背景和同一文件版本比较候选。记录“书名某两字粘连”“人物脸与背景同暗”“缩小后门灯与署名混在一起”等具体问题，避免只说更高级。\n\n先实际核文字，再问一个未看简介的试读者“你读到什么书名，像什么题材”。这只是帮助发现表达偏差的反馈，不是点击率保证；作者仍决定哪种气质符合本书。检查完整上传版后，再看实际发布预览。",
+          "en": "Compare candidates at the same display size, background and version. Record specific issues such as merged letters, a face lost in shadow or a lamp competing with the byline, rather than “more premium.”\n\nCheck the lettering, then ask a reader who has not seen the synopsis which title and genre they perceive. This can reveal communication problems, without guaranteeing clicks. The author chooses the tone that fits the book. Check the complete upload export and actual publishing preview."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "是不是把书名放得越大越好？",
+          "en": "Should the title always be as large as possible?"
+        },
+        "a": {
+          "zh": "不是。书名要可读，也要保住主体和画幅；过大可能挡脸或被裁。一起调整文字区、字形、背景与实际大小。",
+          "en": "No. It needs to read while preserving subject and canvas. Oversized type can cover faces or get cropped. Adjust placement, letterforms, background and actual display size together."
+        }
+      },
+      {
+        "q": {
+          "zh": "有没有通用的缩略图测试尺寸？",
+          "en": "Is there one universal thumbnail test size?"
+        },
+        "a": {
+          "zh": "没有。按实际用途查看。本文120×160只是一组示例决定，不能代替平台或界面的真实显示大小。",
+          "en": "No. Use the intended display. This example’s 120×160 is an illustrative choice, not a platform or interface requirement."
+        }
+      }
+    ],
+    "skill": {
+      "name": "story-cover",
+      "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/SKILL.md",
+      "text": {
+        "zh": "实际生成或修改封面时，使用 /story-cover（Codex 用 $story-cover），给出准确书名、笔名、用途、保存目录与本页的具体简报。有参考图先说明它的用途和保留项，另存候选，再核文字、画面与上传版。技能会调用图像工具并保存文件，不能用提示词代替成图检查。",
+        "en": "For actual cover generation or revision, use /story-cover, or $story-cover in Codex, with exact title, byline, intended use, save directory and this page’s concrete brief. Declare reference purpose and preservation requirements, save a separate candidate, then inspect lettering, picture and upload export. The skill calls an image tool and saves files; a prompt cannot replace checking the result."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "文字、参考图、版本保存与质量检查",
+          "en": "Lettering, references, version saving and review"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/SKILL.md"
+      },
+      {
+        "label": {
+          "zh": "题材、构图、色彩与字体选项",
+          "en": "Genre, composition, palette and lettering options"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/references/cover-styles.md"
+      }
+    ],
+    "related": [
+      "/oh-story/novel-cover-prompts",
+      "/oh-story/fix-ai-book-cover-text",
+      "/oh-story/fix-cropped-book-cover-text"
+    ]
+  },
+  {
+    "owner": "oh-story",
+    "slug": "match-a-book-cover-to-your-story",
+    "topic": "book-covers",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "小说封面和题材不符怎么办：从简介确定视觉重点",
+      "en": "How to Make a Book Cover Match the Story’s Genre"
+    },
+    "seo_title": {
+      "zh": "小说封面和题材不符怎么办｜ZenStory",
+      "en": "Make a Book Cover Match Its Story | ZenStory"
+    },
+    "description": {
+      "zh": "封面精美却让人误认题材？从简介、主要行动和情绪确定视觉承诺，附空间站悬疑的完整封面简报。",
+      "en": "Use the synopsis, main action and tone to diagnose a misleading cover. Follow a complete space-station mystery brief without relying on title keywords alone."
+    },
+    "answer": {
+      "zh": "先比较书名、简介与封面分别给出的期待，确定本书主要卖点和气质，再选人物、场景、物件、配色与光线。标题关键词只是题材判断起点，混合题材和含糊书名需要简介补足。修改封面承诺，不为迁就模板换掉故事，也不把结局全画出来。",
+      "en": "Compare expectations from title, synopsis and cover. Establish the main promise and tone, then choose character, setting, objects, palette and light. Title keywords are a starting point; mixed genres and ambiguous titles need synopsis context. Revise the visual promise without changing the story to fit a template or illustrating its whole ending."
+    },
+    "sections": [
+      {
+        "id": "diagnose-the-wrong-promise",
+        "heading": {
+          "zh": "先说清封面让读者误认了什么",
+          "en": "Identify the expectation the cover creates"
+        },
+        "body": {
+          "zh": "把简介压成一句“谁在什么处境下，反复要做什么”，另写读者主要期待：恋爱关系、追查真相、修炼成长或温暖日常。再看封面是否传达了同一体验。\n\n| 偏差 | 检查重点 |\n|---|---|\n| 写日常，却画末日大战 | 主体行动和环境规模是否夸大了故事。 |\n| 写追查，却只有甜蜜拥抱 | 两人关系是否抢走主要悬疑承诺。 |\n| 背景时代不对 | 服装、建筑、工具是否与设定一致。 |\n\n漂亮只是一个维度。读者以为会看到另一种故事，正文再好也难兑现那张封面的期待。处理偏差时先锁定本书内容，再改视觉选择。",
+          "en": "Condense the synopsis to who repeatedly does what in which circumstances. Separately state the main reading expectation: romance, investigation, progression or warm daily life. Compare the cover’s implied experience.\n\n| Mismatch | Check |\n|---|---|\n| Daily life shown as an apocalypse battle | Is action or setting scale overstated? |\n| Investigation shown only as an embrace | Has romance displaced the main mystery promise? |\n| Wrong historical setting | Do clothing, buildings and tools fit the story? |\n\nBeauty is one dimension. A cover promising a different story creates expectations the manuscript may not meet. Preserve the book’s content before revising its visual choices."
+        }
+      },
+      {
+        "id": "use-the-synopsis",
+        "heading": {
+          "zh": "书名关键词不够时，把简介补进去",
+          "en": "Add synopsis context when title keywords are insufficient"
+        },
+        "body": {
+          "zh": "固定版本`story-cover`用书名关键词、必要时简介来判题材，并有多类命中的优先级和无命中时的都市默认。它们是工作流的起点，不能替作者判断实际故事。\n\n混合题材先说主次：“以空间站调查为主，关系线为辅”；再给核心设定、主角的主要行动与整体气质。风格库里的人物、背景、配色和光源供选，不必把每项都用上，也不把粉色或黑色当题材的唯一身份证。\n\n有多个构图候选时，比较的是哪版最清楚传递本书，而不是哪版最像某个热门封面。不要加入正文没有的武器、情侣关系或超自然能力来凑题材符号。",
+          "en": "The pinned `story-cover` workflow checks title keywords, using the synopsis when needed, with priorities for multiple matches and an urban default when none match. Those are workflow starting points, not a substitute for the author’s actual story.\n\nDeclare the hierarchy in a mixed genre: for example, space-station investigation first, relationship subplot second. Supply the core setting, protagonist’s main action and tone. Select among the library’s people, backgrounds, palettes and light sources rather than using all of them or treating pink and black as unique genre identifiers.\n\nCompare which composition communicates this book, rather than resembling another popular cover. Add no weapon, romance or supernatural ability absent from the manuscript merely to supply a symbol."
+        }
+      },
+      {
+        "id": "space-station-cover-example",
+        "heading": {
+          "zh": "题材修正示例：《下班以后》不是写字楼日常",
+          "en": "Genre correction example: 下班以后 takes place on a space station"
+        },
+        "body": {
+          "zh": "原创《下班以后》，笔名“程舟”：空间站维修员在轮班交接发现空气循环记录被改，沿记录追查并寻找责任人，核心体验是科幻环境里的悬疑。书名本身含糊。假设初案画西装青年、写字楼和金色都市字体，读者可能以为是普通职场故事。\n\n作者决定保书名和笔名，封面主视觉改为维修员、空间站走廊与一份被改动的记录；不揭是谁改的，也不增加机甲大战。画面最多突出一个维修员、一处维护设施和一项记录异常，记录不承担必须读清的小字信息。完整简报可写：\n\n> Illustrated portrait cover for a science-fiction mystery, not an office romance. Title exactly '下班以后'; byline exactly '程舟'. A station maintenance worker examines a visibly altered record beside an air-circulation service panel in a confined station corridor. Keep the record markings abstract, with no readable diagnostic text. Use deep blue and grey with one cold white work light and a restrained red alteration mark. No business suit, city skyline, romantic couple, combat mech or revealed culprit. Keep clear title and byline areas within the final retained canvas.\n\n实际生成后核人物衣着、环境和记录是否符合简报，再在小图看空间站与追查的感觉是否还成立。找试读者反馈“像写字楼恋爱”时，先查画面证据，不只把“科幻”二字再重复十遍。这个示例提供方案，不声称已生成或证明读者反应。",
+          "en": "The original `下班以后`, by `程舟`, follows a space-station maintenance worker who discovers altered air-circulation records at a shift handover and investigates responsibility. Its main experience is mystery in a science-fiction setting. The title is ambiguous. Assume an initial cover shows a business suit, office tower and gold urban lettering, implying conventional workplace fiction.\n\nKeep title and byline. Replace that visual emphasis with the worker, station corridor and altered record, without revealing the culprit or adding mech warfare. Feature one worker, a maintenance fixture and a record anomaly; the record does not require readable tiny text. Use this complete brief:\n\n> Illustrated portrait cover for a science-fiction mystery, not an office romance. Title exactly '下班以后'; byline exactly '程舟'. A station maintenance worker examines a visibly altered record beside an air-circulation service panel in a confined station corridor. Keep the record markings abstract, with no readable diagnostic text. Use deep blue and grey with one cold white work light and a restrained red alteration mark. No business suit, city skyline, romantic couple, combat mech or revealed culprit. Keep clear title and byline areas within the final retained canvas.\n\nInspect clothing, setting and record against the brief, then whether station and investigation cues survive at small size. If a reader perceives office romance, check the pictured evidence rather than repeating “science fiction” ten more times. This example supplies a plan, without claiming generation or demonstrated reader feedback."
+        }
+      },
+      {
+        "id": "compare-story-and-cover",
+        "heading": {
+          "zh": "和正文核对，再比较风格",
+          "en": "Compare with the manuscript before choosing style"
+        },
+        "body": {
+          "zh": "把候选与简介、主角设定和故事主要场景核对：人物身份、工具、时代、关系、能力都不越界。已有画面要保留时，说明参考图是编辑目标和本轮可改范围，另存版本。\n\n然后核书名、笔名、画幅、缩略图和实际预览。若还在试概念，就交代候选方向与待检点；不把“看起来更科幻”当作全书题材已被正确表达。提示词写法见[封面提示词教程](/oh-story/novel-cover-prompts)，参考图的具体用途见[参考图简报](/oh-story/use-reference-images-for-a-book-cover)。",
+          "en": "Check the candidate against synopsis, protagonist and main settings: identity, tools, era, relationship and abilities must fit. If retaining existing art, identify the reference as an editing target and declare what this revision may change, saving another version.\n\nThen review title, byline, dimensions, thumbnail and actual preview. A concept trial should identify direction and remaining checks; “looks more futuristic” does not establish a correctly communicated genre. See [cover prompts](/oh-story/novel-cover-prompts) and [reference-image briefs](/oh-story/use-reference-images-for-a-book-cover) for the next steps."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "混合题材一定要把所有元素放上封面吗？",
+          "en": "Should every mixed-genre element appear on the cover?"
+        },
+        "a": {
+          "zh": "不用。先明确主体验，再选少量能证明它的主体和场景；次要关系或伏笔可留给正文，不用堆满。",
+          "en": "No. Establish the main experience and choose a few subjects or setting cues that support it. Subplots and clues can remain in the manuscript."
+        }
+      },
+      {
+        "q": {
+          "zh": "题材风格库是不是固定配色规则？",
+          "en": "Is the style library a mandatory palette rule?"
+        },
+        "a": {
+          "zh": "它提供候选方向。作者的故事气质与实际辨识更重要，最终要看成图是否兑现本书，而非只符合色卡。",
+          "en": "It offers candidate directions. Story tone and actual recognition matter more; judge the result against the book rather than only a palette."
+        }
+      }
+    ],
+    "skill": {
+      "name": "story-cover",
+      "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/SKILL.md",
+      "text": {
+        "zh": "实际生成或修改封面时，使用 /story-cover（Codex 用 $story-cover），给出准确书名、笔名、用途、保存目录与本页的具体简报。有参考图先说明它的用途和保留项，另存候选，再核文字、画面与上传版。技能会调用图像工具并保存文件，不能用提示词代替成图检查。",
+        "en": "For actual cover generation or revision, use /story-cover, or $story-cover in Codex, with exact title, byline, intended use, save directory and this page’s concrete brief. Declare reference purpose and preservation requirements, save a separate candidate, then inspect lettering, picture and upload export. The skill calls an image tool and saves files; a prompt cannot replace checking the result."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "文字、参考图、版本保存与质量检查",
+          "en": "Lettering, references, version saving and review"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/SKILL.md"
+      },
+      {
+        "label": {
+          "zh": "题材、构图、色彩与字体选项",
+          "en": "Genre, composition, palette and lettering options"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/references/cover-styles.md"
+      }
+    ],
+    "related": [
+      "/oh-story/novel-cover-prompts",
+      "/oh-story/make-a-book-cover-readable-as-a-thumbnail",
+      "/oh-story/use-reference-images-for-a-book-cover"
+    ]
+  },
+  {
+    "owner": "oh-story",
+    "slug": "use-reference-images-for-a-book-cover",
+    "topic": "book-covers",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "小说封面参考图怎么用：说明用途和必须保留的内容",
+      "en": "How to Use a Reference Image for a Book Cover"
+    },
+    "seo_title": {
+      "zh": "小说封面参考图怎么用｜ZenStory",
+      "en": "Use a Reference Image for a Book Cover | ZenStory"
+    },
+    "description": {
+      "zh": "给AI参考封面前，先说明是修改原图还是参考风格。附修理铺封面的完整简报，保住人物、构图和准确文字。",
+      "en": "Declare whether an image is an editing target or style reference. Use a complete repair-shop cover brief with preserved identity, composition and exact text."
+    },
+    "answer": {
+      "zh": "先查看作者提供且可使用的参考图，说明它是要修改的那张图，还是只参考风格。把要借的特征、必须保留的事实、允许改动的部分和准确文字分别写清。生成独立候选后逐项比对；传入参考图不保证人物、构图或字样自动保持一致。",
+      "en": "Inspect a usable author-provided reference and declare whether it is the image to edit or a style reference. Separate borrowed features, preserved facts, permitted changes and exact wording. Compare a separate candidate against those requirements; supplying a reference does not automatically preserve identity, composition or lettering."
+    },
+    "sections": [
+      {
+        "id": "declare-reference-purpose",
+        "heading": {
+          "zh": "先说明你要借什么",
+          "en": "Declare what the reference is for"
+        },
+        "body": {
+          "zh": "“参考这张”容易混在一起：可能要保人物，可能只喜欢配色，也可能要修改已采用的封面。先看实际图，再具体说明。\n\n| 用途 | 简报要说清什么 |\n|---|---|\n| 编辑目标 | 就修改这张，列保留项与允许改动范围。 |\n| 风格参考 | 借配色、光线或笔触，不默认复制人物和题字。 |\n| 构图参考 | 借人物与文字的位置关系，另给本书设定和准确文字。 |\n\n后两项是作者对参考用途的描述，不是另一个原生模式名称。固定版本`story-cover`要求区分编辑目标与风格参考，并列出必须保持的内容。只写“差不多”，无法知道哪些相似是你要的。",
+          "en": "“Use this as reference” can mean retaining a character, borrowing a palette or revising an adopted cover. Inspect the actual picture and specify the intent.\n\n| Purpose | Declare |\n|---|---|\n| Editing target | Edit this image, with preservation requirements and allowed changes. |\n| Style reference | Borrow palette, light or brushwork without assuming its people and lettering transfer. |\n| Composition reference | Borrow subject–type placement while supplying this book’s setting and exact text. |\n\nThe latter two describe author intent, not extra native mode names. The pinned `story-cover` workflow distinguishes an editing target from a style reference and requires what must stay. “Something similar” leaves the desired similarities unclear."
+        }
+      },
+      {
+        "id": "supply-the-reference",
+        "heading": {
+          "zh": "参考图不能代替书名、笔名和简介",
+          "en": "Supply the book information separately"
+        },
+        "body": {
+          "zh": "`story-cover` 支持可选参考图；实际调用前先查看本地图像，确认你提供的内容。此处使用作者自有或有权用于本次制作的素材。给执行者明确文件、准确书名、笔名、目标用途、保存目录和简介，不让它从别人的参考封面上抄书名。\n\n工作流有一个`REF_IMAGE`入口，不等于多张图片会自动按角色、风格或构图分别绑定。需要多种要求时写进一份清楚的简报，执行者根据当前工具实际支持决定如何制作；不要虚构“角色锁定”开关。\n\n没有参考图也可直接描述构图。现有封面只有扁平图片时，先确认修改方式；不得把画面中的字当已经存在的独立排版层。",
+          "en": "`story-cover` accepts an optional reference. View a local image before use so its actual content is known. Use material the author owns or can use for this production. Provide the file, exact title, byline, intended use, save directory and synopsis rather than copying a title from someone else’s cover.\n\nThe workflow has one `REF_IMAGE` input; this does not establish automatic multi-image binding by character, style or composition. Describe combined requirements in a clear brief and let the operator use capabilities actually available. Invent no “character lock” toggle.\n\nA reference is optional; composition can be described directly. With only a flattened cover, establish the edit route instead of treating pictured lettering as a separate type layer."
+        }
+      },
+      {
+        "id": "repair-shop-reference-example",
+        "heading": {
+          "zh": "参考图示例：修理铺封面只改光线与文字",
+          "en": "Reference example: revise light and lettering on a repair-shop cover"
+        },
+        "body": {
+          "zh": "原创《街角修理铺》，笔名“周青”，讲年轻修理师维持小店生意。假设作者有一张自己的封面：一名短发、戴圆框眼镜、穿棕色围裙的修理师在木工作台前，左侧窗户、后方工具架；喜欢人物与布局，但希望把橙色傍晚改成阴天冷光，书名和笔名更清楚。这是方案练习，没有实际图片。\n\n先实际查看提供的图，确认上述事实再做编辑。选择它作为编辑目标，不只是色调参考。简报可以是：\n\n> Edit the supplied cover for '街角修理铺', by '周青'. Preserve one short-haired repairer with round glasses and a brown apron, the wooden workbench, window on the left and tool rack behind. Keep the existing portrait framing and character pose. Change the orange evening light to soft overcast daylight from that same window. Render the title exactly '街角修理铺' in a clear upper area and the byline exactly '周青' below. Add no second person, weapon, slogan or watermark. Save a separate candidate and preserve the original.\n\n实际候选与原图并排：先数人、核头发眼镜围裙，再看窗户方向、工作台和工具架布局，核光源仍来自同一窗；最后逐字检查两组文字、裁边和缩略大小。若光线变了但眼镜消失，或窗换到右边，记录偏差再修，不能因“整体像”就略过。\n\n若作者其实只想借原图的暖色笔触做新书封面，就改说“风格参考”，提供新书人物与场景；那是另一份任务，不能同时要求保原角色又默认换成参考图以外的人。",
+          "en": "The original `街角修理铺`, by `周青`, follows a young repairer running a small shop. Assume the author owns a cover with one short-haired repairer, round glasses and brown apron at a wooden bench, a left-hand window and rear tool rack. They like identity and layout but want soft overcast light instead of orange evening light, plus clearer wording. This is a planning exercise without an actual image.\n\nView the supplied picture and confirm those facts before editing. Select it as the editing target, not merely a colour reference. Use this brief:\n\n> Edit the supplied cover for '街角修理铺', by '周青'. Preserve one short-haired repairer with round glasses and a brown apron, the wooden workbench, window on the left and tool rack behind. Keep the existing portrait framing and character pose. Change the orange evening light to soft overcast daylight from that same window. Render the title exactly '街角修理铺' in a clear upper area and the byline exactly '周青' below. Add no second person, weapon, slogan or watermark. Save a separate candidate and preserve the original.\n\nCompare candidate and original: person count, hair, glasses, apron, window direction, bench and rack positions, with the same window remaining the light source. Then check exact text, crop and small display. Missing glasses or a window moved right remains a deviation despite broadly similar style.\n\nIf the author only wants warm brushwork for a new book, declare a style reference and supply the new people and setting. That is a different task; do not simultaneously request the old identity and silently replace it."
+        }
+      },
+      {
+        "id": "retain-version-context",
+        "heading": {
+          "zh": "保存参考用途，方便下一轮修改",
+          "en": "Keep the reference’s purpose with the version"
+        },
+        "body": {
+          "zh": "固定工作流另存版本，并保存提示词和参考图说明。作者可以在简报中列“保留、修改、检查”三项，复核时逐项对照。参考图本身、当前候选与实际上传版不要混用，旧版通过不代表新版相同。\n\n如果书名已正确而小图认不清，接[缩略图教程](/oh-story/make-a-book-cover-readable-as-a-thumbnail)；文字写错则接[准确字样修订](/oh-story/fix-ai-book-cover-text)。当一轮同时改了人物、色调和构图，很难判断哪项解决问题；优先围绕当前缺口修改，再检查全图。",
+          "en": "The pinned workflow saves another version with prompt and reference notes. A brief can list preserve, change and check requirements for comparison. Keep reference, current candidate and upload export distinct; approval of the old version does not transfer to the new one.\n\nFor correct but unreadable small lettering, use [thumbnail review](/oh-story/make-a-book-cover-readable-as-a-thumbnail); for wrong wording, use [text correction](/oh-story/fix-ai-book-cover-text). Changing identity, palette and composition at once obscures which fix helped. Address the current issue, then inspect the entire result."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "给参考图就能保证人物不变吗？",
+          "en": "Does a reference guarantee the character stays identical?"
+        },
+        "a": {
+          "zh": "不能。说明需要保留的外观、人数和姿态，实际候选仍逐项比对；相似风格不等于同一人物。",
+          "en": "No. Declare appearance, count and pose to retain, then compare the actual candidate. Similar style does not establish the same identity."
+        }
+      },
+      {
+        "q": {
+          "zh": "构图参考是不是一个专门的开关？",
+          "en": "Is composition reference a dedicated switch?"
+        },
+        "a": {
+          "zh": "本文说的是简报用途。当前引用工作流没有为每种用途提供独立开关，执行者须按实际图像工具支持处理。",
+          "en": "Here it describes brief intent. The cited workflow does not supply a dedicated switch for every purpose; use the image tool’s actual capabilities."
+        }
+      }
+    ],
+    "skill": {
+      "name": "story-cover",
+      "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/SKILL.md",
+      "text": {
+        "zh": "实际生成或修改封面时，使用 /story-cover（Codex 用 $story-cover），给出准确书名、笔名、用途、保存目录与本页的具体简报。有参考图先说明它的用途和保留项，另存候选，再核文字、画面与上传版。技能会调用图像工具并保存文件，不能用提示词代替成图检查。",
+        "en": "For actual cover generation or revision, use /story-cover, or $story-cover in Codex, with exact title, byline, intended use, save directory and this page’s concrete brief. Declare reference purpose and preservation requirements, save a separate candidate, then inspect lettering, picture and upload export. The skill calls an image tool and saves files; a prompt cannot replace checking the result."
+      }
+    },
+    "sources": [
+      {
+        "label": {
+          "zh": "文字、参考图、版本保存与质量检查",
+          "en": "Lettering, references, version saving and review"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/SKILL.md"
+      },
+      {
+        "label": {
+          "zh": "题材、构图、色彩与字体选项",
+          "en": "Genre, composition, palette and lettering options"
+        },
+        "url": "https://github.com/zenstory-ai/oh-story-claudecode/blob/4a50d5583590eb7f207037e35136c1168bc02201/skills/story-cover/references/cover-styles.md"
+      }
+    ],
+    "related": [
+      "/oh-story/novel-cover-prompts",
+      "/oh-story/match-a-book-cover-to-your-story",
+      "/oh-story/fix-ai-book-cover-text"
     ]
   }
 ]

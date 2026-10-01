@@ -220,6 +220,10 @@ Guides index: https://zenstory.ai/guides (中文: https://zenstory.ai/zh/guides)
 - [Book covers](https://zenstory.ai/guides/book-covers) — Plan cover art and lettering, then check upload crops and thumbnail readability.
 - [Writing Novel-Cover Prompts: Separate Genre, Composition and Text](https://zenstory.ai/oh-story/novel-cover-prompts) — Translate a genre promise into subject, background, colour and light. Treat the title and author name as separate text layers.
 - [How to Fix a Book Cover Title That Gets Cropped](https://zenstory.ai/oh-story/fix-cropped-book-cover-text) — Locate cropped cover lettering in the original, upload file, and preview. Adjust the canvas or text, preserve the original, and check thumbnail readability.
+- [How to Fix Incorrect Text on an AI Book Cover](https://zenstory.ai/oh-story/fix-ai-book-cover-text) — Separate wrong lettering from cropping or small type. Use exact text, declare what an edit should retain, and compare a separate lettering workflow.
+- [How to Make a Book Cover Readable as a Thumbnail](https://zenstory.ai/oh-story/make-a-book-cover-readable-as-a-thumbnail) — Check title, subject and background at the actual small display size. Follow a complete bookshop-cover revision plan without claiming a fixed font rule.
+- [How to Make a Book Cover Match the Story’s Genre](https://zenstory.ai/oh-story/match-a-book-cover-to-your-story) — Use the synopsis, main action and tone to diagnose a misleading cover. Follow a complete space-station mystery brief without relying on title keywords alone.
+- [How to Use a Reference Image for a Book Cover](https://zenstory.ai/oh-story/use-reference-images-for-a-book-cover) — Declare whether an image is an editing target or style reference. Use a complete repair-shop cover brief with preserved identity, composition and exact text.
 
 ### Short-drama scripts / 短剧改编与剧本
 - [Short-drama scripts](https://zenstory.ai/guides/short-drama) — Adapt a story into episodes, scenes, and shootable dialogue.
