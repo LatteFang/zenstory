@@ -44943,5 +44943,291 @@
       "/oh-story/show-vs-tell-fiction",
       "/oh-story/ai-fiction-consistency-check"
     ]
+  },
+  {
+    "owner": "drama-skills",
+    "slug": "fix-character-face-changes-after-turning",
+    "topic": "ai-video",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "AI视频人物转身后变脸怎么办：参考角度与身份连续性",
+      "en": "AI Video Character Changes Face After Turning: How to Fix It"
+    },
+    "seo_title": {
+      "zh": "AI视频人物转身后变脸怎么办：参考角度与身份连续性",
+      "en": "AI Video Character Changes Face After Turning: How to Fix It"
+    },
+    "description": {
+      "zh": "检查正侧背识别、真实参考和转身动作，保住同一人物与剧情结果。附完整提示词示例及候选片复核，不靠重复“保持一致”。",
+      "en": "Check identity across front, side and back views, real references and the turn itself. Includes a complete prompt and review without consistency guarantees."
+    },
+    "answer": {
+      "zh": "先比较转身前后是不是同一人物的既定脸型、头部轮廓与稳定特征，再检查参考是否覆盖当前角度、是否实际传入及转身有没有混进换装、运镜或多人动作。保留已接受的转身与剧情结果，按可用参考写起点、动作和终点；候选片需要逐段实际观看，提示词写了“同一个人”还不是验证。",
+      "en": "Compare established facial structure, head silhouette and stable features before and after the turn. Check whether usable references cover the relevant views and were actually supplied, and whether wardrobe changes, camera motion or multiple actors complicate the action. Preserve the accepted turn and story result through a clear start, action and end, then inspect the actual candidate."
+    },
+    "sections": [
+      {
+        "id": "find-the-change",
+        "heading": {
+          "zh": "先区分变脸、换角度与光线变化",
+          "en": "Distinguish identity drift from a changed view"
+        },
+        "body": {
+          "zh": "转到侧脸时鼻梁轮廓变得明显，背光时皮肤变暗，都不自动表示换人。要比较的是已接受的结构：下颌形状、头部与颈肩关系、发际和永久特征是否仍能对应。表情也会改变外观，不能把每一帧都要求成正脸证件照。\n\n资产方法要求正面之外仍有可观察的识别通道。若唯一识别点是正面眉眼，背影段便很难认人；可从本来就确定的头发剪影、肩背轮廓等取用，不能为方便生成新增疤痕和配饰。\n\n先定位第一次漂移：参考图本身已经不像，起始帧挂错，转到侧面时改变结构，还是回到正面才变成另一张脸。不同位置需要不同修法，不能全部写成“模型不稳定”。\n\n本页处理一镜运动中的身份；换装前后怎样选择造型，见[人物换装](/drama-skills/character-look-variants)。",
+          "en": "A profile reveals the nose differently; backlight darkens skin. Neither alone proves a new identity. Compare accepted structure: jaw shape, head-to-neck/shoulder relationships, hairline and permanent features. Expression also changes appearance; every frame need not resemble a frontal ID photo.\n\nThe asset method calls for observable recognition beyond the front. If eyebrows and eyes are the only identifiers, the back view has little support. Use already-established hair silhouette or shoulder shape without inventing scars and accessories.\n\nLocate the first drift: inconsistent references, a wrong start frame, structural change in profile, or a different face on returning front. These need different repairs rather than one diagnosis of instability.\n\nThis page addresses identity during motion. For selecting looks across wardrobe changes, see [look continuity](/drama-skills/character-look-variants)."
+        }
+      },
+      {
+        "id": "reference-check",
+        "heading": {
+          "zh": "参考图要真能承担当前角度",
+          "en": "Give each actual reference a clear role"
+        },
+        "body": {
+          "zh": "| 检查项 | 怎样判断 |\n|---|---|\n| 人物是否同一 | 正侧背图对应同一已接受身份与本镜造型，不混青年版、伤后版或另一人物。 |\n| 图是否真实存在 | 打开实际文件检查；写过图片提示词不代表已经出图。 |\n| 本镜如何用图 | 起始帧管开场状态，身份图管认人；按目标模型实际支持的方式绑定。 |\n| 哪些事实不能跟着变 | 当前衣服、发型、年龄与持物来自已定设定，不由示例图顺手替换。 |\n| 是否已经传入 | 检查本次任务实际素材，不以文档列了文件名证明服务收到了图。 |\n\n不是每个工具都支持同时输入正侧背图，也不是图越多越好。先按当前模型的真实参考方式准备；本文不提供通用的多图槽位参数。只有正脸参考而运动需要背侧识别时，把缺口说明白，再补本镜所需角度。\n\n侧身、背影和转头都还是同一人物，不必为每个姿势另建角色。长期造型变化与镜头瞬时朝向分别记录，避免身份描述被重复改写。",
+          "en": "| Check | What to establish |\n|---|---|\n| Same identity | Front, side and back references match the accepted person and current look, without mixing age stages or injuries. |\n| Actual image | Open the file; an image prompt does not establish a generated picture. |\n| Role | The start frame owns the opening state; identity reference owns recognition. Bind through the target’s supported method. |\n| Retained facts | Clothing, hair, age and held objects follow the accepted setup rather than accidental reference differences. |\n| Actual input | Check submitted media, not merely filenames listed in a document. |\n\nNot every tool accepts front, side and back inputs together; more images are not automatically better. Use the target’s actual reference method. This article supplies no universal multi-image parameter. If a frontal reference cannot support needed side/back recognition, state the gap and prepare the relevant view.\n\nProfile, back view and turning remain one person. Record lasting look changes separately from momentary orientation rather than repeatedly rewriting identity."
+        }
+      },
+      {
+        "id": "turn-example",
+        "heading": {
+          "zh": "原创示例：转回来认人，不能删掉这个动作",
+          "en": "Original example: the turn delivers recognition"
+        },
+        "body": {
+          "zh": "原创阅览室场景：纪舟背对摄影机整理书车，听见入口值班员叫“纪舟”，转身看向门口，在终点露出正脸，观众认出他。摄影机位于入口一侧，看向书车，固定中景，不绕人走；没有换衣或新伤。已接受外观是窄长脸、左眉尾短缺口、自然卷黑发、肩背略前倾，头发低束。书车停在原处，双手离开车把后才转身。\n\n这镜需要真实起始帧与可用身份参考。本页只有纸面示例，没有图片文件或生成结果，下面的正文不能当作已绑定素材的生产任务。\n\n容易含混的写法：\n\n> 人物华丽转身，镜头旋转，保持漂亮的脸，背影变正面，服装飘动，氛围越来越震撼。\n\n它把机位运动与人物转身混在一起，“漂亮”也没有回答是哪一个人。不能靠删除转身来修，因为正脸揭示正是本镜结果。先回到已接受的动作与机位。",
+          "en": "Original reading-room scene: Ji Zhou faces away, arranging a book cart. The entrance attendant calls “Ji Zhou.” He turns toward the entrance, ending with his face visible so viewers recognize him. The camera holds a fixed medium shot from the entrance side, looking toward the cart rather than orbiting. Clothing and injury state do not change. Accepted appearance: narrow long face, a short notch at the left eyebrow tip, naturally curly black hair tied low, and slightly forward shoulders. The cart stays put; both hands leave its handle before the turn.\n\nProduction needs an actual start frame and usable identity reference. This page provides only a paper example, with no image files or generated result. Its text is not an already-bound production task.\n\nAmbiguous draft:\n\n> The person turns beautifully as the camera rotates. Keep a beautiful face, back to front, flowing clothes and increasingly dramatic atmosphere.\n\nIt mixes camera motion with the body’s turn and does not identify the person. Removing the turn would remove the required recognition. Return to the accepted action and camera."
+        }
+      },
+      {
+        "id": "complete-turn-prompt",
+        "heading": {
+          "zh": "可读的核心提示词：谁转，怎样停下",
+          "en": "A complete core prompt: who turns and where it ends"
+        },
+        "body": {
+          "zh": "先补真实参考与目标方言，再使用以下不绑定模型的核心说明：\n\n> 从已确认的阅览室背面起始帧开始。纪舟正在书车旁，双手放在车把上；摄影机固定中景，入口方向来自本镜分镜。画外值班员叫“纪舟”。纪舟听见后先放开车把，身体转向入口，头部随身体转过来，最后面向入口停住，让正脸进入当前机位的可见范围。转身过程保持同一人物的头部轮廓、肩背关系与当前低束卷发；正脸出现后对应已接受身份参考的脸型和左眉尾短缺口。书车保持原位，当前服装不变。摄影机保持固定，转身完成后留出认人的停留；声音中的名字由值班员说，纪舟不跟着开口。\n\n核心说明保留触发、手离把、身体与头部转向、终点正脸和识别时间。没有再加递书、奔跑、脱外套和绕拍。停留多长要按已定镜头时长与实际动作判断，不套所有转身都三秒。\n\n若真实首帧不是双手扶车，就先修本例起点，不能命令人物保持图中不存在的手位。若当前机位看不到入口方向的正脸，需要回分镜调整机位或终点；运动提示词不能偷偷移动摄影机。\n\n若仍失败，先检查漂移角度和实际参考，再决定补图、局部重生成或提出分镜修订。允许拆镜的项目可比较连续转身与在真实动作边界切镜的方案；需要连续揭示时仍保留完整转身，不把背影替换成无因果的正脸照。",
+          "en": "Prepare actual references and the target dialect before using this model-independent core:\n\n> Begin from the accepted rear-view reading-room start frame. Ji Zhou is beside the cart with both hands on its handle. Hold the established medium shot; the storyboard defines the entrance direction. The offscreen attendant calls “Ji Zhou.” He releases the handle, turns his body toward the entrance and brings his head around with it. He stops facing the entrance with his face visible from the current camera. Retain the same head silhouette, shoulder relationship and current low-tied curls through the turn. When the face becomes visible, match the accepted facial structure and left eyebrow notch. Keep the cart in place and clothing unchanged. The camera remains fixed, with time after the turn for recognition. The attendant speaks the name; Ji Zhou does not mouth it.\n\nThis retains trigger, release, body/head movement, face visibility and recognition. It adds no handoff, running, wardrobe change or orbit. Duration follows the accepted shot and actual action, not a universal three-second turn.\n\nIf the actual start frame does not show both hands on the cart, correct the starting description. If this camera cannot see his face toward the entrance, revise the storyboard’s camera or endpoint rather than quietly moving the camera in the motion prompt.\n\nIf drift persists, inspect the angle and submitted references before preparing a view, regenerating locally or proposing a storyboard revision. Projects permitting cuts can compare a continuous turn with cuts at actual action boundaries. A required continuous reveal retains the full turn rather than replacing it with an unrelated frontal portrait."
+        }
+      },
+      {
+        "id": "review-the-candidate",
+        "heading": {
+          "zh": "验收看实际候选片，不只看首尾截图",
+          "en": "Review the candidate through the turn"
+        },
+        "body": {
+          "zh": "正常速度看完整动作，再定位背侧过渡与正脸出现的片段：\n\n- 人物是否真放开车把、转向入口并停住，而不是头转了、身体仍反向。\n- 正侧背特征能否对应同一人物；固定痣疤或眉缺口是否被删、移位或新增。\n- 姿势与光线造成的正常变化，是否被误判为必须重新生成。\n- 摄影机是否仍固定，书车与服装是否保留，名字有没有被纪舟自己念出来。\n- 认人的终点有没有真正出现，后续镜能否从这个状态接上。\n\n首尾都像同一个人，中间仍可能漂移；截图能找位置，不能证明运动自然。记录本次在哪个角度失败、改了哪些参考或动作说明，再比较新候选，不把“已写保持一致”作为通过依据。",
+          "en": "Watch the complete action at normal speed, then locate the side/back transition and return to a visible face:\n\n- Are hands released, body turned toward the entrance and movement stopped, rather than head and body facing opposite ways?\n- Do front, side and back cues belong to the same person? Are established marks retained rather than moved or invented?\n- Are normal pose/light differences mistaken for identity failure?\n- Do camera, cart and clothing remain consistent, and does the attendant speak the name?\n- Is the recognition endpoint actually delivered, with a usable state for the next shot?\n\nMatching endpoints can conceal drift between them. Stills locate issues without proving natural movement. Record the failed view and changed references or instructions before comparing the candidate. A consistency instruction is not a passing result."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "只加一句“保持人物一致”够吗？",
+          "en": "Is “keep the same character” enough?"
+        },
+        "a": {
+          "zh": "它可以概括目标，不能补缺少的识别依据、真实参考或清楚动作。先查哪里开始不像、参考是否实际传入，再检查候选片。",
+          "en": "It states a goal without supplying identity evidence, real references or clear action. Locate the first drift, check submitted inputs and inspect the candidate."
+        }
+      },
+      {
+        "q": {
+          "zh": "能把转身改成正脸静止镜头吗？",
+          "en": "Can I replace the turn with a static frontal shot?"
+        },
+        "a": {
+          "zh": "要看本镜要交付什么。若转身承担认人、发现或回应，替换会改剧情与镜头边界，应当作为分镜选择提出，不能在提示词返修里悄悄删掉。",
+          "en": "Only if it preserves the accepted purpose. A turn delivering recognition, discovery or response cannot be silently removed during prompt revision; propose a storyboard choice."
+        }
+      }
+    ],
+    "skill": {
+      "name": "short-drama-video-prompts",
+      "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/SKILL.md",
+      "text": {
+        "zh": "用 $short-drama-video-prompts 检查这一镜转身后变脸的问题。附当前分镜、起止状态、已接受人物造型、真实参考和目标模型的参考方式。先定位身份还是角度/绑定/动作错误，再局部改提示词；保留转身终点、剧情信息和已定机位，不擅自删掉转身。缺必要参考先列缺口，不把图片提示词当真实图。",
+        "en": "Use $short-drama-video-prompts to diagnose this face change. Supply storyboard boundaries, accepted identity/look, actual references and the target reference method. Distinguish identity, view, binding and action errors before a local prompt revision. Retain the turn, story information and camera; list missing references instead of treating image prompts as files."
+      }
+    },
+    "related": [
+      "/drama-skills/character-turnaround-prompt",
+      "/drama-skills/reference-image-roles",
+      "/drama-skills/character-look-variants",
+      "/drama-skills/shot-continuity-checklist"
+    ],
+    "sources": [
+      {
+        "label": {
+          "zh": "正侧背识别与人物造型分工",
+          "en": "Identity across views and look separation"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-assets/references/character-and-look.md"
+      },
+      {
+        "label": {
+          "zh": "视角变化不新建人物",
+          "en": "View changes do not create new identities"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-assets/references/identity-vs-variant.md"
+      },
+      {
+        "label": {
+          "zh": "动作条件、方向与完成状态",
+          "en": "Action conditions, direction and completion"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/references/performance-action-timing.md"
+      },
+      {
+        "label": {
+          "zh": "参考起点与前后状态比较",
+          "en": "Reference starts and state comparison"
+        },
+        "url": "https://github.com/zenstory-ai/drama-skills/blob/0afa4ea253cf4d1aa2d134863b15a592547cfb54/skills/short-drama-video-prompts/references/production-prompt-grammar.md"
+      }
+    ]
+  },
+  {
+    "owner": "novel-to-game",
+    "slug": "fix-story-state-after-loading-a-save",
+    "topic": "interactive-games",
+    "langs": [
+      "zh",
+      "en"
+    ],
+    "published_on": "2026-09-30",
+    "updated_on": "2026-09-30",
+    "title": {
+      "zh": "游戏读档后剧情错乱怎么办：保存状态与版本兼容",
+      "en": "Game Story Changes After Loading a Save: How to Fix It"
+    },
+    "seo_title": {
+      "zh": "游戏读档后剧情错乱怎么办：保存状态与版本兼容",
+      "en": "Game Story Changes After Loading a Save: How to Fix It"
+    },
+    "description": {
+      "zh": "排查读档后丢失选择、重复奖励与角色乱知情。附保存、加载、继续游玩的完整纸面路径，分清存档快照、事件记录和旧版本兼容。",
+      "en": "Diagnose lost choices, duplicate rewards and leaked knowledge after loading. Includes a complete save/load path and version-compatibility checks."
+    },
+    "answer": {
+      "zh": "先固定出错的存档和游戏版本，对比保存前与加载后的当前状态、已经发生的选择和角色知情，再继续走同一条动作路径。载入恢复状态，不能把渲染、提示或旧事件重新当玩家动作结算。规则和节点语义变了时，明确迁移或拒绝旧档，不静默把旧选择解释成另一条历史。",
+      "en": "Fix the failing save and game version, then compare current state, committed choices and character knowledge before saving and after loading. Continue the same action path. Loading restores state; rendering, prompts and old events must not settle again as new actions. When rule or node meaning changes, migrate explicitly or reject incompatible saves without rewriting history."
+    },
+    "sections": [
+      {
+        "id": "locate-the-difference",
+        "heading": {
+          "zh": "先保住出错存档，复现哪一步变了",
+          "en": "Keep the failing save and locate the first difference"
+        },
+        "body": {
+          "zh": "不要先用“重新开局就好了”结束排查。保留原存档副本，记下对应内容、规则与存档格式版本；记录玩家怎样走到保存点、存在哪里、加载后先看哪一处偏差。\n\n| 现象 | 先对比什么 |\n|---|---|\n| 道具又回背包 | 保存前实际归属、加载后归属，以及载入是否再次发道具。 |\n| NPC说出没见过的秘密 | 谁已看过证据、哪次事件让他知道，是否把玩家所知复制给所有人。 |\n| 已领奖励再领一次 | 完成与领取状态，以及场景进入/渲染回调是否重复提交。 |\n| 期限忽然归零或已结事项复活 | 保存的时间与到期状态，加载是否重新创建或提前触发事件。 |\n| 老存档进入错路线 | 节点与变量含义是否在新版改变，而旧值仍按新语义读取。 |\n\n这个问题发生在“保存后恢复并继续”。[失败与重开](/novel-to-game/game-failure-and-restart)主要决定重开回到哪里、保留什么；两者都要明确，但不是同一种操作。",
+          "en": "Do not finish diagnosis with “start again.” Retain a copy of the failing save and its content, rule and save-format versions. Record the path to saving, the save location and the first mismatch after load.\n\n| Symptom | Compare first |\n|---|---|\n| Returned item reappears | Ownership before/after load and whether loading grants it again. |\n| NPC quotes an unseen secret | Evidence access and the event informing them; check copying player knowledge to everyone. |\n| Reward claimed twice | Completion/claim state and repeated settlement during scene entry or rendering. |\n| Deadline resets or a settled matter returns | Saved time/status and recreated or prematurely triggered events. |\n| Old save enters the wrong route | Changed node/variable meaning interpreted through new rules. |\n\nThis concerns restoring and continuing. [Failure and restart](/novel-to-game/game-failure-and-restart) decides the restart point and retained progress. Both need definition, but they are different operations."
+        }
+      },
+      {
+        "id": "snapshot-and-events",
+        "heading": {
+          "zh": "当前是什么，与发生过什么要相互对应",
+          "en": "Connect current state with committed history"
+        },
+        "body": {
+          "zh": "game-build 把快照用于快速载入，事件记录用于定位与重演。当前状态告诉游戏“钥匙现在在谁那里”，历史告诉它“谁借过、何时归还、谁见过那次展示”。只存当前钥匙数量，无法还原人物记忆；只存一串事件，载入时又无条件重新发钥匙，也会改变结果。\n\n按本项目实际需要保存会被后续读取的事实，例如位置、物件归属、已接受承诺、证据知情、任务完成、奖励领取与到期事项。不需要把每个无作用的闲聊词语都变成持久状态。\n\n界面与对白读取恢复后的事实。生成模型可以根据已确认结果组织表达，不能把“他已经原谅你”的新句子直接写成信任状态。在线解析参与动作时，回放使用已保存的规范化候选，不重新问一次模型来决定旧动作究竟是什么。",
+          "en": "game-build uses snapshots for quick loading and events for diagnosis and replay. State answers who currently holds the key; history answers who borrowed it, returned it or witnessed evidence. A key count alone cannot recover memory; replaying events as unconditional new grants changes the result.\n\nPersist facts actually read later: location, ownership, accepted promises, evidence access, completion, claimed rewards or pending consequences. Every inconsequential chat word need not become a state variable.\n\nUI and dialogue read restored facts. Generated expression cannot turn a new “he forgives you” line into committed trust. When online parsing participates in actions, replay consumes recorded normalized candidates rather than asking the model to reinterpret an old move."
+        }
+      },
+      {
+        "id": "complete-load-path",
+        "heading": {
+          "zh": "原创完整路径：钥匙归还后再读档",
+          "en": "Original path: loading after the key is returned"
+        },
+        "body": {
+          "zh": "原创旧馆调查例，以下是纸面验证设计，尚未实现或运行。馆员保管阅览柜钥匙；玩家可借钥匙看柜内修订目录，也可暂不查看。目录的内容只向实际打开阅读的人揭示。到期事项与随机性在此例都未采用，避免为模板凑字段。\n\n| 步骤 | 应保存或读取的结果 |\n|---|---|\n| 新开局 | 钥匙在馆员手中；玩家未读目录；馆员知道钥匙可借，但不知道玩家之后会选哪条路。 |\n| 借钥匙、开柜、读目录 | 馆员同意后钥匙归玩家；玩家实际开柜阅读，玩家知情更新，馆员没有在柜前看见内容。 |\n| 归还钥匙 | 玩家把钥匙交回，馆员实际接收；钥匙归馆员，借阅与归还历史保留，玩家仍记得读过目录。 |\n| 此时保存，再加载 | 仍是馆员持钥匙、玩家已读、馆员未见内容；加载本身不再次借出或归还。 |\n| 继续询问馆员 | 他可以记得已归还，不能引用没看过的目录文字。玩家选择出示内容后，才更新馆员知情。 |\n\n这条路径已经有当前物件、历史和两人知识的区别。如果加载后钥匙出现在玩家背包，问题不是换一句对白就能修好；如果钥匙正确但馆员忽然知道内容，要查知识恢复与分支历史。\n\n再走相邻路线：借到钥匙但未读目录就归还，保存并加载。此时玩家和馆员都不能引用内容，钥匙同样在馆员手中。两条路线共享持物终态，却有不同阅读历史，能揭露“只按当前物件推剧情”的错误。\n\n本例借阅没有额外金币奖励，不需要虚构一项领奖测试。项目确有奖励时，再检查读取已领取状态，重复进场、加载或按完成按钮不能再次发放。",
+          "en": "Original archive investigation, as a paper validation design rather than an implemented test. The keeper holds the reading-cabinet key. The player may borrow it and read a revised catalog or leave it unread. Contents are revealed only through actual inspection. This example has no timers or randomness.\n\n| Step | Expected saved/read result |\n|---|---|\n| Fresh start | Keeper holds key; player has not read; keeper knows lending is possible without knowing the future route. |\n| Borrow, open, read | Keeper agrees and transfers the key. Actual reading informs the player; keeper did not witness the contents. |\n| Return | Player hands back the key and keeper receives it. Current ownership returns while borrowing/return history and player knowledge remain. |\n| Save here, then load | Keeper still holds the key, player has read and keeper has not seen contents. Load does not lend or return again. |\n| Continue questioning | Keeper may remember the return but cannot quote unseen contents. Choosing to show them later updates knowledge then. |\n\nCurrent ownership, history and each person’s knowledge differ. A key reappearing in inventory needs a state fix, not new dialogue. Correct ownership alongside leaked contents points to knowledge restoration or branch history.\n\nCompare a neighboring route: borrow, return without reading, save and load. Neither person can quote contents, and the keeper still holds the key. Shared ownership with different reading history exposes deriving story solely from current items.\n\nThis loan has no coin reward, so it needs no invented claim test. Where a project has rewards, inspect claimed state and prevent repeated scene entry, load or completion clicks from granting it again."
+        }
+      },
+      {
+        "id": "version-compatibility",
+        "heading": {
+          "zh": "更新后出错，别静默改写旧历史",
+          "en": "Do not silently reinterpret old saves after an update"
+        },
+        "body": {
+          "zh": "只改一段文案，可能不影响存档；改节点编号、变量含义、行动效果或知识权限，则需要检查旧档怎样被新版读取。先声明本次改变了什么与影响哪条路径，再选择迁移或明确拒绝不兼容旧档。\n\n例如旧版用一个“目录已查看”状态表示玩家读过，新版却把同一状态解释成馆员也读过。直接沿用旧值，会制造从未发生的展示。可把旧状态迁移为“玩家已读”；馆员是否见过要从已有可证明的历史恢复，缺少依据不能填成已见。\n\n拒绝不兼容存档时，应保留旧档副本并说明支持的继续方式，不能先覆盖成新初态再弹一句提示。迁移方案也需要实际加载与后续操作验证；写了版本号不会自动修复语义。",
+          "en": "Copy edits may preserve save compatibility. Changed node identifiers, variable meaning, effects or knowledge permissions require checking how the new build reads old saves. Declare affected paths before choosing migration or explicit incompatibility.\n\nSuppose “catalog inspected” formerly meant the player read it, but now also means the keeper did. Reusing that value invents a disclosure. Migrate the old fact to player knowledge; recover keeper access only from supported history, not a guessed value.\n\nOn incompatibility, retain the original save and explain supported continuation rather than overwriting it with a fresh state before a warning. Validate a migration through actual loading and subsequent input. A version number alone does not repair meaning."
+        }
+      },
+      {
+        "id": "verify-the-repair",
+        "heading": {
+          "zh": "修后跑原路径，再跑能区别历史的相邻路径",
+          "en": "Replay the failure and a distinguishing neighboring route"
+        },
+        "body": {
+          "zh": "固定实际内容、规则和存档版本，重放原来出错的保存、加载、继续操作；对比持物、知识、承诺和已经结算的结果。项目采用随机时也固定 seed，纯确定性项目不为表格新增随机系统。\n\n再走共用前段但选择不同的路线，观察未选事件有没有混入、NPC是否只使用自己所知。修复应针对定位的状态或读取点，不把原设计的选择删掉来取得“正常显示”。\n\n记录这次实际运行的版本、输入、预期与观察结果。截图可证明某个界面显示过，不能独自证明状态恢复和后续操作都正确。",
+          "en": "Fix the actual content, rule and save versions, replay the failing save/load/continue sequence and compare ownership, knowledge, commitments and settled results. Fix the seed where randomness exists; deterministic projects need no added random system.\n\nRun a neighboring choice sharing the earlier path. Check unchosen events and each NPC’s knowledge. Repair the located state or reader rather than deleting the designed choice to obtain a normal display.\n\nRecord tested versions, input, expected and observed results. A screenshot establishes one visible screen, not correct restoration and subsequent operation."
+        }
+      }
+    ],
+    "faq": [
+      {
+        "q": {
+          "zh": "读档是不是把此前事件全部再执行一遍？",
+          "en": "Does loading execute every previous event again?"
+        },
+        "a": {
+          "zh": "看实现的恢复方式，但不能把恢复变成重复玩家结算。快照与事件记录各有用途；重演应重建同一历史，不重新发奖励、改变归属或触发已结事项。",
+          "en": "Restoration methods vary, but load must not duplicate settlement. Snapshots and events serve different roles; reconstruction retains history without repeated grants, ownership changes or settled consequences."
+        }
+      },
+      {
+        "q": {
+          "zh": "所有更新都要让旧存档失效吗？",
+          "en": "Must every update invalidate old saves?"
+        },
+        "a": {
+          "zh": "不用。按实际节点、规则和格式变化判断兼容性。可兼容的局部文字修改不必强迫重开；改变语义时再迁移或明确拒绝，并验证受影响路径。",
+          "en": "No. Assess actual node, rule and format changes. Compatible copy edits need no forced restart; semantic changes need migration or explicit rejection and affected-path validation."
+        }
+      }
+    ],
+    "skill": {
+      "name": "game-build",
+      "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-build/SKILL.md",
+      "text": {
+        "zh": "用 $game-build 局部修复这个读档问题。附已批准设计、当前运行版本、出错存档、保存前状态和加载后的实际偏差。定位持物、知识、承诺、期限或奖励的写入/读取点，声明兼容性与受影响路径；保留旧存档副本，修后重放失败路径及一条相邻未选路线，不改玩法和结局来绕过错误。",
+        "en": "Use $game-build to repair this load bug locally. Provide approved design, runtime version, failing save, pre-save state and observed load differences. Locate ownership, knowledge, commitments, deadlines or reward readers/writers, declare compatibility and affected paths, and retain the old save copy. Replay the failing route plus a neighboring unchosen route without changing gameplay or endings to bypass the bug."
+      }
+    },
+    "related": [
+      "/novel-to-game/game-failure-and-restart",
+      "/novel-to-game/map-a-branching-game-story",
+      "/novel-to-game/stop-characters-knowing-secrets-too-early",
+      "/novel-to-game/playtest-a-novel-game-adaptation"
+    ],
+    "sources": [
+      {
+        "label": {
+          "zh": "快照、事件、回放与存档兼容",
+          "en": "Snapshots, events, replay and compatibility"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-build/references/playable-model-contract.md"
+      },
+      {
+        "label": {
+          "zh": "版本与固定验证路径",
+          "en": "Versions and reproducible validation paths"
+        },
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/ca29145983acead0fc4f7751b80ebc34c68a1200/skills/game-build/references/build-brief-contract.md"
+      }
+    ]
   }
 ]
