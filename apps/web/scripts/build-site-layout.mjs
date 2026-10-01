@@ -81,20 +81,39 @@ function pageHead(shell,route,origin,title) {
 /** English route of a site route (`/zh/x` → `/x`, `/zh` → `/`), or null when it is not a Chinese page. */
 const englishRoute=route=>route==='/zh' ? '/' : route.startsWith('/zh/') ? route.slice(3) : null
 const chineseRoute=route=>route==='/' ? '/zh' : `/zh${route}`
+/** Read the page's own editorial date, never the build clock or filesystem mtime. */
+function pageModifiedOn(html, url) {
+  const dates = []
+  for (const [, source] of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi)) {
+    const document = JSON.parse(source)
+    for (const node of document['@graph'] ?? [document]) {
+      if (node.url !== url || !['Article', 'TechArticle'].includes(node['@type']) || node.dateModified === undefined) continue
+      const date = node.dateModified
+      const parsed = new Date(`${date}T00:00:00Z`)
+      assert.ok(typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+        Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date,
+      `Invalid page dateModified: ${url}`)
+      dates.push(date)
+    }
+  }
+  assert.ok(new Set(dates).size <= 1, `Conflicting page dateModified: ${url}`)
+  return dates[0]
+}
 /**
  * Sitemap with hreflang pairs: a route whose Chinese counterpart exists lists
  * both languages (zh-CN plus language-only zh, so Chinese searchers outside
  * mainland China also get the Chinese page, and x-default = English) on each
  * of the two entries.
  */
-const sitemap=(origin,routes)=>{
+const sitemap=(origin,routes,modifiedOn=new Map())=>{
   const set=new Set(routes)
   const entry=route=>{
     const en=englishRoute(route) ?? route
     const zh=chineseRoute(en)
     const paired=set.has(en) && set.has(zh)
     const alternates=paired ? [['en',en],['zh-CN',zh],['zh',zh],['x-default',en]].map(([lang,r])=>`<xhtml:link rel="alternate" hreflang="${lang}" href="${esc(origin+r)}"/>`).join('') : ''
-    return `  <url><loc>${esc(origin+route)}</loc>${alternates}</url>`
+    const date = modifiedOn.get(route)
+    return `  <url><loc>${esc(origin+route)}</loc>${date ? `<lastmod>${date}</lastmod>` : ''}${alternates}</url>`
   }
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${routes.map(entry).join('\n')}\n</urlset>\n`
 }
@@ -122,7 +141,13 @@ export function finalizeSite(outDir) {
   }
   writeFileSync(join(outDir,'_app/home.html'),pageHead(shell,'/',APP,'ZenStory — AI novel-writing workbench'))
   writeFileSync(join(outDir,'_app/pricing.html'),pageHead(shell,'/pricing',APP,'ZenStory pricing — AI writing workbench'))
-  writeFileSync(join(outDir,'_site/sitemap.xml'),sitemap(SITE,[...new Set(siteRoutes)].sort()))
+  const modifiedOn = new Map()
+  for (const route of siteRoutes) {
+    const path = route === '/' ? 'org-home' : route.slice(1)
+    const date = pageModifiedOn(readFileSync(join(outDir,path,'index.html'), 'utf8'), SITE+route)
+    if (date) modifiedOn.set(route, date)
+  }
+  writeFileSync(join(outDir,'_site/sitemap.xml'),sitemap(SITE,[...new Set(siteRoutes)].sort(),modifiedOn))
   writeFileSync(join(outDir,'_app/sitemap.xml'),sitemap(APP,['/','/pricing']))
   writeFileSync(join(outDir,'_site/robots.txt'),`# Public organization corpus and legacy redirects are crawlable.\nUser-agent: *\nAllow: /\nDisallow: /api\n\nSitemap: ${SITE}/sitemap.xml\n`)
   writeFileSync(join(outDir,'_app/robots.txt'),`User-agent: *\nAllow: /\nDisallow: /api\n${contract.appPrefixes.filter(p=>p!=='pricing').map(p=>`Disallow: /${p}`).join('\n')}\n\nSitemap: ${APP}/sitemap.xml\n`)

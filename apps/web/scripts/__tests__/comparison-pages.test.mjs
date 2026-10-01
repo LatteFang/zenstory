@@ -160,7 +160,7 @@ test('writing workflow comparison renders three source-backed choices across the
   finalizeSite(outDir)
   const siteMap = readFileSync(join(outDir, '_site/sitemap.xml'), 'utf8')
   const appMap = readFileSync(join(outDir, '_app/sitemap.xml'), 'utf8')
-  for (const lang of LANGS) assert.equal(siteMap.split(`<loc>${urlIn(lang, route)}</loc>`).length - 1, 1)
+  for (const lang of LANGS) assert.equal(siteMap.split(`<loc>${urlIn(lang, route)}</loc><lastmod>${comparison.checked_on}</lastmod>`).length - 1, 1)
   assert.ok(!appMap.includes('/compare/'))
   // Organization routes × 2 languages (home, /projects, /guides, /glossary, projects, guides, bilingual
   // articles, comparisons, terms) + Chinese-only articles + 25 workbench docs + 2 legal pages on the
