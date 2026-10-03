@@ -90,3 +90,10 @@ test("real CLI metadata and pre-write live source checks cannot be omitted", asy
   const receipt = await readFile("scripts/ci/deployment-receipt.mjs", "utf8");
   assert.ok(receipt.indexOf("const finalRun") > receipt.indexOf("const proof = validateDeploymentCiProof"));
 });
+
+test("receipt input values enter shell commands only through environment variables", async () => {
+  const workflow = await readFile(".github/workflows/zenstory-online-smoke.yml", "utf8");
+  const command = workflow.split("\n").find((line) => line.includes("node scripts/ci/deployment-receipt.mjs"));
+  assert.doesNotMatch(command, /\$\{\{ inputs\./);
+  assert.match(command, /"\$SOURCE_SHA" "\$CI_RUN_ID"/);
+});

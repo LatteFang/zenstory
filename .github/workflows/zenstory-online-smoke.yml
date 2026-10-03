@@ -64,9 +64,11 @@ jobs:
     - name: Prove exact source and successful CI summary
       env:
         GITHUB_TOKEN: ${{ github.token }}
+        SOURCE_SHA: ${{ inputs.source_sha }}
+        CI_RUN_ID: ${{ inputs.ci_run_id }}
       run: |
         mkdir -p artifacts
-        node scripts/ci/deployment-receipt.mjs "$GITHUB_REPOSITORY" "${{ inputs.source_sha }}" "${{ inputs.ci_run_id }}" artifacts/ci-proof.json
+        node scripts/ci/deployment-receipt.mjs "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$CI_RUN_ID" artifacts/ci-proof.json
 
     - name: Checkout the proven provider source
       uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
