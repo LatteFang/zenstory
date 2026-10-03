@@ -1,0 +1,267 @@
+[
+  {
+    "slug": "writing-desk",
+    "owner": "oh-story",
+    "title": {
+      "en": "Keep the manuscript, not just the chat",
+      "zh": "留下书稿，不只是一段对话"
+    },
+    "kind": {
+      "en": "42-second product demo",
+      "zh": "42 秒产品演示"
+    },
+    "description": {
+      "en": "Oh Story product demo: outline, prose and revision all work on project files.",
+      "zh": "Oh Story 产品演示：大纲、正文与改稿都围绕项目文件进行。"
+    },
+    "input": {
+      "en": "An idea or an existing draft",
+      "zh": "点子或已有书稿"
+    },
+    "output": {
+      "en": "Organized manuscript files",
+      "zh": "项目中的正文文件"
+    },
+    "method": "/oh-story/outline-to-chapter",
+    "demo": null,
+    "checked_on": "2026-10-03",
+    "source": "https://github.com/zenstory-ai/oh-story-claudecode/blob/d821ee60745a7842d5debfa3e0a09ff2691a23f7/README.md",
+    "video": {
+      "id": "writing",
+      "url": "https://github.com/user-attachments/assets/8f9cc11b-1fb8-4cc5-a084-e0deb05ec791",
+      "content_type": "video/mp4",
+      "bytes": 1997538,
+      "sha256": "43613bafb6c98fa06d1df0d9e604137763bc0aedad53bd8fcac710fd09e90a2a",
+      "width": 1920,
+      "height": 1080,
+      "duration": "42.400000",
+      "poster": "/org/demos/writing-poster.jpg",
+      "poster_frame_seconds": 23
+    }
+  },
+  {
+    "slug": "drama-workflow",
+    "owner": "drama-skills",
+    "title": {
+      "en": "A novel becomes a short-drama scene",
+      "zh": "从小说，走到一段短剧成片"
+    },
+    "kind": {
+      "en": "68-second vertical short-drama sample",
+      "zh": "68 秒竖屏短剧样片"
+    },
+    "description": {
+      "en": "Episode one of “Let You Manage the Account”: 20 generated shots, assembled with subtitles, a system panel and sound effects.",
+      "zh": "《让你管账号》第 1 集开头：20 镜逐镜生成，再叠加字幕、系统面板与音效。"
+    },
+    "input": {
+      "en": "A novel excerpt",
+      "zh": "小说片段"
+    },
+    "output": {
+      "en": "A finished short-drama sample",
+      "zh": "短剧成片样例"
+    },
+    "method": "/drama-skills/novel-to-short-drama",
+    "demo": null,
+    "checked_on": "2026-10-03",
+    "source": "https://github.com/zenstory-ai/drama-skills/blob/7504553b7717c5a3b93f3d391fbc39c398cd77cb/README.md",
+    "video": {
+      "id": "drama",
+      "url": "https://github.com/user-attachments/assets/640db65d-bd57-4924-83de-9c5852c1db26",
+      "content_type": "video/mp4",
+      "bytes": 9013059,
+      "sha256": "3401aea567187236bc7284add24f3e944a13e8894da2889c5f67db2eb0a31cb6",
+      "width": 720,
+      "height": 1280,
+      "duration": "68.500000",
+      "poster": "/org/demos/drama-poster.jpg",
+      "poster_frame_seconds": 50
+    }
+  },
+  {
+    "slug": "recap-workflow",
+    "owner": "video-recap",
+    "title": {
+      "en": "Footage becomes a 59-second narrated edit",
+      "zh": "把视频素材，剪成 59 秒解说"
+    },
+    "kind": {
+      "en": "59-second finished video recap",
+      "zh": "59 秒解说成片"
+    },
+    "description": {
+      "en": "“This Second Burns”: short-drama footage selected, edited, scripted, voiced and mixed.",
+      "zh": "《这一秒过火》：从短剧素材选段，剪辑、写稿、配音、混音成片。"
+    },
+    "input": {
+      "en": "Video footage you can use",
+      "zh": "有权使用的视频素材"
+    },
+    "output": {
+      "en": "A narrated, mixed and packaged edit",
+      "zh": "旁白、混音与包装后的成片"
+    },
+    "method": "/video-recap/video-to-narration",
+    "demo": null,
+    "checked_on": "2026-10-03",
+    "source": "https://github.com/zenstory-ai/video-recap-skills/blob/a4c4fca03652de4b6ba1445948d32473d1a4f1cc/README.md",
+    "video": {
+      "id": "recap",
+      "url": "https://github.com/user-attachments/assets/f3c2df0c-6869-4f5b-8f4c-cce70b58b667",
+      "content_type": "video/mp4",
+      "bytes": 9720072,
+      "sha256": "fc1a4aee175f7d30fa32019acb2eef3549ff24bb96b6734996e5badafb964abb",
+      "width": 1920,
+      "height": 1080,
+      "duration": "58.960000",
+      "poster": "/org/demos/recap-poster.jpg",
+      "captions": "/org/demos/recap-zh.vtt",
+      "poster_frame_seconds": 1
+    },
+    "transcript_source": "https://github.com/zenstory-ai/video-recap-skills/blob/a4c4fca03652de4b6ba1445948d32473d1a4f1cc/examples/guohuo-60s/captions.json"
+  },
+  {
+    "slug": "story-game",
+    "owner": "novel-to-game",
+    "title": {
+      "en": "Play a scene from Journey to the West",
+      "zh": "走进《西游记》的游戏世界"
+    },
+    "kind": {
+      "en": "Playable prototype",
+      "zh": "可玩原型"
+    },
+    "description": {
+      "en": "Chapters 59–61 become a walkable village, quests and turn-based battles.",
+      "zh": "第 59–61 回改成可走动的火焰山村落、任务与回合制战斗。"
+    },
+    "input": {
+      "en": "Novel chapters",
+      "zh": "小说章节"
+    },
+    "output": {
+      "en": "Playable RPG + adaptation documents",
+      "zh": "RPG 原型与改编文档"
+    },
+    "image": {
+      "file": "/org/demos/story-game.jpg",
+      "source": "https://github.com/zenstory-ai/novel-to-game/blob/e2695b720591335321738039b869f418593b1985/examples/journey-to-the-west/screenshots/hero.jpg",
+      "source_sha256": "e3b2969bf4aa40f1df3374d50a5202f932fe2516cd60c2a68f0338b0c37c47eb",
+      "asset_sha256": "c7b1afa7c54e0708ae18db751a157f74e6059ee885c112ae4d13a75b1632275b",
+      "transform": "JPEG, max dimension 1200, quality70",
+      "width": 1200,
+      "height": 750,
+      "alt": {
+        "en": "Game screenshot: Wukong’s party in the painted Flame Mountain village with a quest tracker.",
+        "zh": "游戏实截图：悟空一行在火焰山村落，右侧显示任务追踪。"
+      }
+    },
+    "method": "/novel-to-game/quick-start",
+    "demo": "https://xiyouji.vibecoco.ai",
+    "checked_on": "2026-10-03",
+    "source": "https://github.com/zenstory-ai/novel-to-game/blob/e2695b720591335321738039b869f418593b1985/README.md",
+    "chain": {
+      "example": "https://github.com/zenstory-ai/novel-to-game/tree/e2695b720591335321738039b869f418593b1985/examples/journey-to-the-west",
+      "source": {
+        "file": "source/西游记.txt",
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/e2695b720591335321738039b869f418593b1985/examples/journey-to-the-west/source/%E8%A5%BF%E6%B8%B8%E8%AE%B0.txt",
+        "heading": "第五九回　唐三藏路阻火焰山　孫行者一調芭蕉扇",
+        "excerpt": "師徒四眾進前行處，漸覺熱氣蒸人。三藏勒馬道：「如今正是秋天，卻怎返有熱氣？」",
+        "note": {
+          "en": "Chapters 59–61 · Project Gutenberg public-domain text",
+          "zh": "第 59–61 回 · Project Gutenberg 公版百回本"
+        }
+      },
+      "rule": {
+        "file": "analysis/SOURCE_BIBLE.md",
+        "url": "https://github.com/zenstory-ai/novel-to-game/blob/e2695b720591335321738039b869f418593b1985/examples/journey-to-the-west/analysis/SOURCE_BIBLE.md",
+        "name": {
+          "en": "The westward road is constrained",
+          "zh": "西行是一条受约束的路"
+        },
+        "fact": {
+          "en": "Flaming Mountain blocks the only road west (ch. 59).",
+          "zh": "火焰山挡住必经之路（第59回）"
+        },
+        "design": {
+          "en": "The level goal is to reopen the road—no somersault-cloud skip.",
+          "zh": "关卡目标是恢复通路，不能用筋斗云直接跳过整段责任"
+        },
+        "translated": true
+      },
+      "files": [
+        "design/GAME_DESIGN.md",
+        "design/ART_DIRECTION.md",
+        "build/app/",
+        "qa/evidence/"
+      ],
+      "result": {
+        "file": "/org/demos/story-game-battle.jpg",
+        "width": 1200,
+        "height": 750,
+        "source": "https://github.com/zenstory-ai/novel-to-game/blob/e2695b720591335321738039b869f418593b1985/examples/journey-to-the-west/qa/evidence/browser/03_boss_command.jpg",
+        "source_sha256": "cbd5ee40201dfe769a2800f017d7a9e48ea4cccea27a7644ea31070f45eaa03a",
+        "asset_sha256": "32a900956fae9a2aa0f82159633171bff8fe09f740cd193d8da1732d98bbd389",
+        "transform": "JPEG, 1200×750, quality 78",
+        "alt": {
+          "en": "Playable prototype, browser QA capture: the final battle at Jilei Mountain against the Bull Demon King, with the turn-based command menu.",
+          "zh": "可玩原型的浏览器 QA 截图：积雷山决战牛魔王，下方为回合制指令菜单。"
+        }
+      },
+      "figure": {
+        "file": "/org/demos/wukong.webp",
+        "width": 420,
+        "height": 630,
+        "source": "https://github.com/zenstory-ai/novel-to-game/blob/e2695b720591335321738039b869f418593b1985/examples/journey-to-the-west/build/app/assets/units/wukong.webp",
+        "source_sha256": "4ae9cac68d66b17329fd327e74ac15652a1854b2f75a2660758339a2ce24a3c2",
+        "asset_sha256": "60a83109d35cf23dfd94f18e301467d3e24e796fdb3b8a44082b7a5bf36d69fe",
+        "transform": "WebP, 420×630, quality 82",
+        "alt": {
+          "en": "Sun Wukong, the game’s own character art",
+          "zh": "游戏中的孙悟空角色立绘"
+        }
+      }
+    }
+  },
+  {
+    "slug": "plateau",
+    "owner": "novel-to-game",
+    "title": {
+      "en": "Step into The Lost World",
+      "zh": "走进《失落的世界》"
+    },
+    "kind": {
+      "en": "15-second gameplay capture · desktop WebGL2",
+      "zh": "15 秒实机预览 · 桌面 WebGL2"
+    },
+    "description": {
+      "en": "A first-person field-photography prototype adapted from The Lost World, playable in a desktop browser.",
+      "zh": "根据《失落的世界》改编的第一人称野外摄影原型，可在桌面浏览器试玩。"
+    },
+    "input": {
+      "en": "A source novel",
+      "zh": "原著小说"
+    },
+    "output": {
+      "en": "Playable 3D photography prototype",
+      "zh": "可玩的 3D 摄影原型"
+    },
+    "video": {
+      "id": "plateau",
+      "url": "https://github.com/user-attachments/assets/5ad62a58-1abe-4d73-b86e-1c8c6563fdb2",
+      "content_type": "video/mp4",
+      "bytes": 2717965,
+      "sha256": "b44131b6b7ecefde93e4fc5d688ad2fbbe8a9c45865409cb2996ffcc0489a653",
+      "width": 1440,
+      "height": 900,
+      "duration": "14.960000",
+      "poster": "/org/demos/plateau-poster.jpg",
+      "poster_frame_seconds": 13.5
+    },
+    "method": "/novel-to-game/quick-start",
+    "demo": "https://plateau.vibecoco.ai",
+    "source": "https://github.com/zenstory-ai/novel-to-game/blob/9cbed7a3f866a239c5e647ec4ca7c40c126e0874/README.md",
+    "checked_on": "2026-10-03"
+  }
+]
