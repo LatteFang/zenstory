@@ -306,14 +306,13 @@ class LLMClient:
             model: Model to use
             temperature: Sampling temperature
             max_tokens: Maximum tokens
-            thinking_enabled: Reserved reasoning hint. NOTE: currently a no-op on
-                             the DeepSeek Chat Completions endpoint, which does not
-                             expose a first-class reasoning toggle for
-                             deepseek-chat / deepseek-v4-flash — sending a guessed
-                             field risks a 400/422 (see openai_agents/runner.py).
-                             The parameter is kept so callers can express intent and
-                             so the lever can be wired up once DeepSeek confirms the
-                             field, but it does NOT disable reasoning today.
+            thinking_enabled: Whether the model may reason before answering.
+                             deepseek-flash reasons by default and reasoning tokens
+                             count against ``max_tokens``. False sends
+                             ``thinking={"type": "disabled"}`` (verified against the
+                             live API on 2026-10-03), so short-budget calls spend the
+                             whole budget on the answer. True sends nothing and the
+                             model uses its default effort.
 
         Returns:
             Generated text
@@ -331,10 +330,12 @@ class LLMClient:
             thinking_enabled=thinking_enabled,
         )
 
-        # Intentionally empty: no provider-supported reasoning toggle for this
-        # endpoint yet (see docstring + openai_agents/runner.py). thinking_enabled
-        # is a documented no-op rather than a silently-dropped promise.
+        # deepseek-flash 默认先推理，reasoning token 计入 max_tokens；小预算调用
+        # （如输入建议的 150 token）会被推理吃光、正文为空。调用方声明不需要推理时
+        # 显式关闭。
         extra_body: dict[str, object] = {}
+        if not thinking_enabled:
+            extra_body["thinking"] = {"type": "disabled"}
 
         try:
             response = await self.async_client.chat.completions.create(

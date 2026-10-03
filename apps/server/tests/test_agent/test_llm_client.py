@@ -110,6 +110,22 @@ async def test_acomplete_disables_thinking_via_extra_body(monkeypatch):
     result = await client.acomplete([{"role": "user", "content": "hi"}], thinking_enabled=False)
 
     assert result == "done"
+    # deepseek-flash 默认推理且 reasoning token 计入 max_tokens；关闭时必须显式下发。
+    assert dummy_client.chat.completions.calls[0].get("extra_body") == {
+        "thinking": {"type": "disabled"}
+    }
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_acomplete_keeps_default_thinking_without_extra_body(monkeypatch):
+    _set_deepseek_env(monkeypatch)
+    client = LLMClient()
+    dummy_client = _DummyAsyncClient([_response(content="done")])
+    client._async_client = dummy_client
+
+    await client.acomplete([{"role": "user", "content": "hi"}])
+
     assert dummy_client.chat.completions.calls[0].get("extra_body") is None
 
 

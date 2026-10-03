@@ -2,6 +2,7 @@ import pytest
 from httpx import AsyncClient
 from sqlmodel import Session
 
+from agent.suggest_service import FALLBACK_SUGGESTIONS_EN, FALLBACK_SUGGESTIONS_ZH
 from models import File
 
 
@@ -56,3 +57,7 @@ async def test_suggest_real_llm_returns_quality_envelope(
     assert len(suggestions) == 3
     assert all(isinstance(s, str) and len(s.strip()) >= 3 for s in suggestions)
     assert len(set(suggestions)) >= 2
+    # 兜底文案同样满足上面的形状检查；必须确认是模型真的产出了建议
+    # （deepseek-flash 的推理曾吃光 150 token 预算，导致静默回退）。
+    fallback = set(FALLBACK_SUGGESTIONS_ZH) | set(FALLBACK_SUGGESTIONS_EN)
+    assert not set(suggestions) <= fallback, suggestions

@@ -157,7 +157,7 @@ docker compose exec server python scripts/migrate_skills.py --db-url sqlite:////
 
 每个账号（包括管理员）默认都是免费套餐：每天 20 次 AI 对话、最多 3 个项目。要放开，先运行 `docker compose exec server python scripts/seed_subscription_plans.py` 创建 Pro 套餐（也会建好免费套餐这一行），再在管理后台「订阅管理」里给账号开通 Pro，或在「订阅计划」里改免费套餐的额度。
 
-写作 Agent 固定用 DeepSeek 的 `deepseek-v4-flash`，只需要这一个 Key。其他功能各要各的配置：用上面的快速启动时，后端变量加到 `docker-compose.yml` 里 `server` 的 `environment` 下，`VITE_*` 加到 `web` 下，再运行 `docker compose up -d`；仓库根目录的 `.env` 只给 compose 文件里的 `${…}` 取值（比如 `DEEPSEEK_API_KEY`、`JWT_SECRET_KEY`），不会把别的变量带进容器。换成 `docker-compose.full.yml` 时，变量写进 `apps/server/.env.docker` 和 `apps/web/.env.docker`。
+写作 Agent 固定用 DeepSeek 的 `deepseek-flash`（DeepSeek-V4.1-Flash），只需要这一个 Key。其他功能各要各的配置：用上面的快速启动时，后端变量加到 `docker-compose.yml` 里 `server` 的 `environment` 下，`VITE_*` 加到 `web` 下，再运行 `docker compose up -d`；仓库根目录的 `.env` 只给 compose 文件里的 `${…}` 取值（比如 `DEEPSEEK_API_KEY`、`JWT_SECRET_KEY`），不会把别的变量带进容器。换成 `docker-compose.full.yml` 时，变量写进 `apps/server/.env.docker` 和 `apps/web/.env.docker`。
 
 <details>
 <summary>可选功能需要的配置</summary>
@@ -312,7 +312,7 @@ Agent 用自己的模型写，ZenStory 负责存稿和整理上下文。`files p
 
 ### 能换别的大模型吗？
 
-目前不能在设置里换。模型名 `deepseek-v4-flash` 写在代码里（[`apps/server/agent/core/deepseek_client.py`](apps/server/agent/core/deepseek_client.py)），`DEEPSEEK_BASE_URL` 可以指向别的 OpenAI 兼容地址，但请求里的模型名不变。支持更多模型的需求在 [#13](https://github.com/zenstory-ai/zenstory/issues/13)。
+目前不能在设置里换。模型名 `deepseek-flash` 写在代码里（[`apps/server/agent/core/deepseek_client.py`](apps/server/agent/core/deepseek_client.py)），`DEEPSEEK_BASE_URL` 可以指向别的 OpenAI 兼容地址，但请求里的模型名不变。支持更多模型的需求在 [#13](https://github.com/zenstory-ai/zenstory/issues/13)。
 
 ### 能导出 Word，或者直接发布到小说平台吗？
 
@@ -388,7 +388,7 @@ zenstory/
 | --- | --- |
 | 前端 | React 19 · TypeScript · Vite 7 · Tailwind CSS 4 · Zustand · TanStack Query |
 | 后端 | FastAPI · SQLModel · Server-Sent Events |
-| AI | DeepSeek `deepseek-v4-flash`（OpenAI 兼容接口）· openai-agents-python |
+| AI | DeepSeek `deepseek-flash`（DeepSeek-V4.1-Flash，OpenAI 兼容接口）· openai-agents-python |
 | 检索 | LlamaIndex · ChromaDB · 智谱 embedding-3，向量与关键词结果按 RRF 融合 |
 | 数据 | SQLite（默认）/ PostgreSQL · Redis · Alembic |
 | 部署 | Docker Compose；在线版前端在 Vercel，后端与 Prefect 在 Railway |
