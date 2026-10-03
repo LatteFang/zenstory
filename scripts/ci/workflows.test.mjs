@@ -97,3 +97,10 @@ test("receipt input values enter shell commands only through environment variabl
   assert.doesNotMatch(command, /\$\{\{ inputs\./);
   assert.match(command, /"\$SOURCE_SHA" "\$CI_RUN_ID"/);
 });
+
+test("readiness runs trusted controls rather than executing a supplied source checkout", async () => {
+  const workflow = await readFile(".github/workflows/zenstory-online-smoke.yml", "utf8");
+  assert.doesNotMatch(workflow, /ref: \$\{\{ inputs\.source_sha \}\}/);
+  assert.match(workflow, /Checkout trusted main receipt controls/);
+  assert.match(workflow, /node scripts\/ci\/deployment-receipt\.mjs "\$GITHUB_REPOSITORY" "\$SOURCE_SHA" "\$CI_RUN_ID"/);
+});

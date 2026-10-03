@@ -70,13 +70,8 @@ jobs:
         mkdir -p artifacts
         node scripts/ci/deployment-receipt.mjs "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$CI_RUN_ID" artifacts/ci-proof.json
 
-    - name: Checkout the proven provider source
-      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      with:
-        ref: ${{ inputs.source_sha }}
-        persist-credentials: false
-        clean: false
-
+    # The supplied source is evidence only. Execute trusted main controls, not
+    # a user-selected checkout, and do not write or restore a build cache.
     - name: Run credential-free public readiness checks
       env:
         ZENSTORY_BACKEND_URL: https://api.zenstory.ai

@@ -68,6 +68,7 @@ as part of this contract.
 `zenstory Online Smoke` is a manual, read-only, source-bound receipt workflow.
 It requires a 40-character deployed source SHA and the exact successful main CI
 run ID, checks only the canonical public origins, uses no credentials, and
+executes only the trusted main readiness controls (never supplied-source code), and
 records `providerSourceBinding: NOT_VERIFIED` until provider deployment metadata
 is read back independently. It is post-deployment observability, **not** a
 pre-deployment or pre-promotion gate. The workflow is currently disabled and
