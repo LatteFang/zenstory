@@ -31,7 +31,9 @@ independent channel:
 The checked-in `0.2.0` is an **Unreleased candidate**, not a claim that it has
 been published. The public registry currently labels `0.1.0` as `latest`; this
 repository change does not alter that registry state. Before a future `cli-v0.2.0` tag, move its notes to an exact
-dated `## [0.2.0] - YYYY-MM-DD` heading.
+dated `## [0.2.0] - YYYY-MM-DD` heading. PR/manual metadata validation
+accepts that prepared dated version but remains nonpublishing; it does not require
+a misleading duplicate Unreleased candidate marker.
 
 `.github/workflows/cli-release.yml` has two paths:
 

@@ -33,13 +33,16 @@ async function commandNpmVersion() {
 
 export function validateReleaseMetadata({ tag, packageVersion, changelog, publishing = false }) {
   invariant(/^\d+\.\d+\.\d+$/.test(packageVersion), `invalid package version: ${packageVersion}`);
+  const releasedVersions = [...changelog.matchAll(/^## \[([^\]]+)\] - \d{4}-\d{2}-\d{2}$/gm)]
+    .map((match) => match[1]);
   if (!publishing) {
     invariant(!tag, "dry-run metadata validation must not receive a tag");
     invariant(/^## \[Unreleased\]$/m.test(changelog), "missing Unreleased CLI changelog heading");
-    const candidates = [...changelog.matchAll(/^Candidate: (\d+\.\d+\.\d+)$/gm)].map((match) => match[1]);
+    const unreleased = changelog.split(/^## \[Unreleased\]$/m)[1].split(/^## /m)[0];
+    const candidates = [...unreleased.matchAll(/^Candidate: (\d+\.\d+\.\d+)$/gm)].map((match) => match[1]);
     invariant(
-      candidates.includes(packageVersion),
-      `missing Unreleased candidate marker for ${packageVersion}`,
+      candidates.includes(packageVersion) || releasedVersions.includes(packageVersion),
+      `missing Unreleased candidate marker or dated heading for ${packageVersion}`,
     );
     return { version: packageVersion, tag: null, publishing: false };
   }
@@ -47,8 +50,6 @@ export function validateReleaseMetadata({ tag, packageVersion, changelog, publis
   invariant(match, `expected stable CLI release tag cli-vX.Y.Z, received ${tag}`);
   const version = tag.slice("cli-v".length);
   invariant(version === packageVersion, `tag/package version mismatch: ${version} != ${packageVersion}`);
-  const releasedVersions = [...changelog.matchAll(/^## \[([^\]]+)\] - \d{4}-\d{2}-\d{2}$/gm)]
-    .map((match) => match[1]);
   invariant(releasedVersions.includes(version), `missing dated CLI changelog heading for ${version}`);
   return { version, tag, publishing: true };
 }
@@ -335,6 +336,17 @@ async function fetchLiveCiProof({ repository, sourceSha, token }) {
   });
 }
 
+export async function verifyPublicationSource({ repository, sourceSha, tag, token },
+  { ciProof = fetchLiveCiProof, compare = githubJson, tagSha = resolveRemoteTag } = {}) {
+  invariant(repository === "zenstory-ai/zenstory", "unexpected publication repository");
+  await ciProof({ repository, sourceSha, token });
+  const main = await compare(`https://api.github.com/repos/${repository}/compare/${sourceSha}...main`, { token });
+  invariant(main.status === "identical" || main.status === "ahead", "publication source is not on main");
+  const resolved = await tagSha(repository, tag, token);
+  invariant(resolved === sourceSha, "remote CLI tag moved before publication");
+  return resolved;
+}
+
 async function commandCiProof(args) {
   const token = process.env.GITHUB_TOKEN;
   invariant(token, "GITHUB_TOKEN is required for CI proof");
@@ -483,9 +495,8 @@ async function commandGithubPublish(args) {
   const manifest = await loadJson(args.manifest);
   await verifyReleaseManifest({ manifest, directory: args.directory, expectedSourceSha: args.sha });
   invariant(manifest.tag === args.tag, "manifest tag mismatch");
-  const remoteTagSha = await resolveRemoteTag(args.repository, args.tag, token);
-  invariant(remoteTagSha === manifest.sourceSha, `remote tag moved: ${remoteTagSha} != ${manifest.sourceSha}`);
   let release = await findRelease(args.repository, args.tag, token);
+  const remoteTagSha = await verifyPublicationSource({ repository: args.repository, sourceSha: manifest.sourceSha, tag: args.tag, token });
   if (!release) {
     release = await githubJson(`https://api.github.com/repos/${args.repository}/releases`, {
       token,
@@ -562,14 +573,13 @@ async function commandNpmPublish(args) {
   await verifyReleaseManifest({ manifest, directory: args.directory, expectedSourceSha: args.sha });
   invariant(args.repository === "zenstory-ai/zenstory", `unexpected repository: ${args.repository}`);
   invariant(args.tag === manifest.tag, "npm publication tag does not match the manifest");
-  invariant(await resolveRemoteTag(args.repository, args.tag, token) === manifest.sourceSha, "remote CLI tag moved");
-  await fetchLiveCiProof({ repository: args.repository, sourceSha: manifest.sourceSha, token });
   const { status, metadata } = await registryMetadata(manifest.package, manifest.version);
   const decision = npmPublicationDecision({
     status,
     remoteIntegrity: metadata?.dist?.integrity,
     localIntegrity: manifest.files[0].integrity,
   });
+  await verifyPublicationSource({ repository: args.repository, sourceSha: manifest.sourceSha, tag: args.tag, token });
   if (decision === "publish") {
     await run("npm", ["publish", path.join(args.directory, manifest.files[0].name), "--access", "public", "--provenance", "--ignore-scripts"]);
   }

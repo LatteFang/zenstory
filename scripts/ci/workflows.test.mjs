@@ -74,3 +74,19 @@ test("regression controls are required CI and npm version comes from the npm exe
   assert.match(ci, /node --test scripts\/cli-release\.test\.mjs/);
   assert.match(ci, /'scripts\/cli-release\*\.mjs'/);
 });
+
+test("real CLI metadata and pre-write live source checks cannot be omitted", async () => {
+  const ci = await readFile(".github/workflows/ci.yml", "utf8");
+  assert.match(ci, /node scripts\/cli-release\.mjs check --publishing false/);
+  const {stdout} = await execFileAsync("node", ["scripts/cli-release.mjs", "check", "--publishing", "false"]);
+  assert.equal(JSON.parse(stdout).publishing, false);
+  const helper = await readFile("scripts/cli-release.mjs", "utf8");
+  const github = helper.slice(helper.indexOf("async function commandGithubPublish"), helper.indexOf("async function registryMetadata"));
+  assert.ok(github.indexOf("verifyPublicationSource") > github.indexOf("findRelease"));
+  assert.ok(github.indexOf("verifyPublicationSource") < github.indexOf('method: "POST"'));
+  const npm = helper.slice(helper.indexOf("async function commandNpmPublish"), helper.indexOf("async function retry"));
+  assert.ok(npm.indexOf("verifyPublicationSource") > npm.indexOf("registryMetadata"));
+  assert.ok(npm.indexOf("verifyPublicationSource") < npm.indexOf('await run("npm"'));
+  const receipt = await readFile("scripts/ci/deployment-receipt.mjs", "utf8");
+  assert.ok(receipt.indexOf("const finalRun") > receipt.indexOf("const proof = validateDeploymentCiProof"));
+});

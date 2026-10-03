@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import { writeFile } from "node:fs/promises";
+import { validateRunStability } from "../cli-release.mjs";
+export { validateRunStability };
 
 const shaPattern = /^[a-f0-9]{40}$/;
 const githubActionsAppId = 15368;
@@ -25,6 +27,10 @@ export function validateDeploymentCiProof({ repository, sourceSha, requestedRunI
   invariant(run?.head_branch === "main" && run?.event === "push", "CI proof must be a main push run");
   invariant(run?.status === "completed" && run?.conclusion === "success", "CI run did not succeed");
   invariant(Number(checkSuite?.app?.id) === githubActionsAppId, "CI check suite is not GitHub Actions");
+  invariant(Number(checkSuite?.id) === Number(run.check_suite_id), "CI check suite ID mismatch");
+  invariant(checkSuite?.head_sha === sourceSha, "CI check suite source mismatch");
+  invariant(checkSuite?.status === "completed" && checkSuite?.conclusion === "success", "CI check suite did not succeed");
+  invariant(Number.isSafeInteger(Number(run.run_attempt)) && Number(run.run_attempt) > 0, "CI run attempt missing");
   const summaries = jobs.filter((job) => job.name === "ci-summary");
   invariant(summaries.length === 1, "missing or ambiguous ci-summary job");
   invariant(
@@ -89,6 +95,8 @@ async function main() {
   const jobs = await collectJobs(repository, requestedRunId, run.run_attempt, token);
   const checkSuite = await githubJson(`${base}/check-suites/${run.check_suite_id}`, token);
   const proof = validateDeploymentCiProof({ repository, sourceSha, requestedRunId, workflow, run, jobs, checkSuite });
+  const finalRun = await githubJson(`${base}/actions/runs/${requestedRunId}`, token);
+  validateRunStability(run, finalRun);
   await writeFile(output, `${JSON.stringify(proof, null, 2)}\n`);
   process.stdout.write(`${JSON.stringify(proof)}\n`);
 }

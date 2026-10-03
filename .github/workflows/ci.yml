@@ -412,8 +412,10 @@ jobs:
     - name: Install CLI dependencies
       run: pnpm install --frozen-lockfile --filter zenstory
 
-    - name: Test CLI release controls
-      run: node --test scripts/cli-release.test.mjs
+    - name: Test CLI release controls and real metadata
+      run: |
+        node --test scripts/cli-release.test.mjs
+        node scripts/cli-release.mjs check --publishing false
 
     - name: Run CLI tests
       run: pnpm --filter zenstory test

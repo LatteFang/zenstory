@@ -13,10 +13,11 @@ import {
   validateReleaseMetadata,
   validateRunStability,
   validateNpmVersion,
+  verifyPublicationSource,
   verifyReleaseManifest,
 } from "./cli-release.mjs";
 
-test("CLI dry-run accepts only the explicit Unreleased package candidate", () => {
+test("CLI dry-run accepts an explicit Unreleased candidate without publication", () => {
   assert.deepEqual(
     validateReleaseMetadata({
       packageVersion: "0.2.0",
@@ -197,4 +198,21 @@ test("npm Trusted Publishing validates the actual CLI version at or above 11.5.1
   for (const version of ["10.9.0", "11.4.9", "11.5.0", "undefined", "11.5.1-rc.1"]) {
     assert.throws(() => validateNpmVersion(version), /Trusted Publishing/);
   }
+});
+
+test("the live publication gate validates CI/main then resolves the tag last", async () => {
+  const order = [];
+  const deps = {
+    ciProof: async () => {order.push("ci");},
+    compare: async () => {order.push("main"); return {status: "ahead"};},
+    tagSha: async () => {order.push("tag"); return "b".repeat(40);},
+  };
+  await assert.rejects(verifyPublicationSource({repository: "zenstory-ai/zenstory", sourceSha: "a".repeat(40), tag: "cli-v0.2.0"}, deps), /tag moved/);
+  assert.deepEqual(order, ["ci", "main", "tag"]);
+  await assert.doesNotReject(verifyPublicationSource({repository: "zenstory-ai/zenstory", sourceSha: "a".repeat(40), tag: "cli-v0.2.0"}, {...deps, tagSha: async () => "a".repeat(40)}));
+});
+
+test("a prepared dated CLI version remains nonpublishing in PR and manual verification", () => {
+  assert.equal(validateReleaseMetadata({packageVersion: "0.2.0", changelog: "## [Unreleased]\n\n## [0.2.0] - 2026-10-03\n"}).publishing, false);
+  assert.throws(() => validateReleaseMetadata({packageVersion: "0.2.0", changelog: "## [Unreleased]\n\n## [0.1.0] - 2026-10-03\nCandidate: 0.2.0\n"}), /candidate|dated/);
 });

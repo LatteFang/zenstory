@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { validateDeploymentCiProof } from "./deployment-receipt.mjs";
+import { validateDeploymentCiProof, validateRunStability } from "./deployment-receipt.mjs";
 
 const sourceSha = "a".repeat(40);
 const input = {
@@ -22,7 +22,7 @@ const input = {
     check_suite_id: 8,
   },
   jobs: [{ name: "ci-summary", status: "completed", conclusion: "success" }],
-  checkSuite: { app: { id: 15368 } },
+  checkSuite: { id: 8, head_sha: sourceSha, status: "completed", conclusion: "success", app: { id: 15368 } },
 };
 
 test("deployment receipt binds a successful ci-summary to an exact main source and attempt", () => {
@@ -52,4 +52,11 @@ test("deployment receipt rejects source, event, workflow, app, and summary misma
   for (const [patch, expected] of cases) {
     assert.throws(() => validateDeploymentCiProof({ ...input, ...patch }), expected);
   }
+});
+
+test("readiness proof validates suite identity and closes a same-run attempt race", () => {
+  for (const patch of [{id: 9}, {head_sha: "b".repeat(40)}, {status: "in_progress"}, {conclusion: "failure"}]) {
+    assert.throws(() => validateDeploymentCiProof({...input, checkSuite: {...input.checkSuite, ...patch}}), /suite/);
+  }
+  assert.throws(() => validateRunStability(input.run, {...input.run, run_attempt: 3, status: "in_progress", conclusion: null}), /rerun|changed/);
 });
