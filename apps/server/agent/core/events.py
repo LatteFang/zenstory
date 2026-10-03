@@ -78,6 +78,15 @@ class EventType(StrEnum):
     STEERING_RECEIVED = "steering_received"  # Steering message received
 
 
+# 只读请求拦下「交接给有写权限的 agent」时，WORKFLOW_STOPPED 提示卡片的 reason。
+# 这张卡片在工作流收尾时（终止事件之前）才发出，只是一条说明，不代表流结束：
+# api/agent.py 判定「是否收到终止事件」（决定兜底 error 帧与计费分类）时必须跳过它。
+READ_ONLY_HANDOFF_BLOCKED_REASON = "read_only_handoff_blocked"
+NON_TERMINAL_WORKFLOW_STOPPED_REASONS: frozenset[str] = frozenset(
+    {READ_ONLY_HANDOFF_BLOCKED_REASON}
+)
+
+
 class StreamEvent(BaseModel):
     """
     A single SSE event.

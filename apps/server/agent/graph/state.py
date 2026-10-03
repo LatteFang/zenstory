@@ -101,6 +101,14 @@ class WritingState(TypedDict, total=False):
     # Types: "quick" | "standard" | "full" | "hook_focus" | "review_only"
     workflow_plan: str | None  # Planned workflow path
     workflow_agents: list[str] | None  # Ordered list of agents to execute
+    # 用户范围约束（只读 / 不要正文 / 交付范围），由 writing_graph 按路由结果
+    # 生成，nodes.run_streaming_agent 追加到每个 agent 的系统提示末尾。
+    scope_directive: str | None
+    # 用户明确要求本轮不改文件：tools_adapter 对写文件工具的调用一律拒绝执行。
+    read_only: bool
+    # 本次请求共享的 ToolFailureBreaker（工具重复失败熔断），由 writing_graph 创建，
+    # 每次 agent run 复用同一个，writer ↔ 审稿人往返不会让失败计数归零。
+    tool_failure_breaker: Any
 
     # Collaboration state
     next_agent: str | None  # Agent to hand off to (None = done)

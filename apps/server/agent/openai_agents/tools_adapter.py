@@ -13,7 +13,8 @@ from agent.core.metrics import (
     get_metrics_collector,
 )
 from agent.openai_agents.events import extract_tool_result_text, tool_error_text
-from agent.tools.registry import TOOL_FUNCTIONS, get_agent_tools
+from agent.openai_agents.tool_failure_breaker import ToolFailureBreaker
+from agent.tools.registry import FILE_WRITE_TOOL_NAMES, TOOL_FUNCTIONS, get_agent_tools
 from utils.logger import get_logger, log_with_context
 
 logger = get_logger(__name__)
@@ -102,8 +103,37 @@ async def invoke_project_tool(tool_name: str, raw_arguments: str) -> str:
             return tool_error_text(str(exc), tool_name=tool_name)
 
 
-def build_agent_function_tools(agent_type: str) -> list[Any]:
-    """Build SDK FunctionTool instances for the given writing agent role."""
+# 只读请求下写文件工具的描述前缀：模型在工具清单里就能看到本轮不能写。
+READ_ONLY_TOOL_DESCRIPTION_PREFIX = "【本轮不可用：用户要求只回答、不修改文件，调用会被拒绝】"
+
+
+def read_only_refusal_text(tool_name: str) -> str:
+    """只读请求下写文件工具的拒绝结果：可恢复错误，交还模型改为直接回答。"""
+    return tool_error_text(
+        "用户本轮明确要求不修改任何文件（只回答/只分析），该写操作未执行。"
+        "不要重试任何写文件工具，请直接在对话里给出回答或分析。",
+        error_type="read_only_request",
+        tool_name=tool_name,
+    )
+
+
+def build_agent_function_tools(
+    agent_type: str,
+    *,
+    failure_breaker: ToolFailureBreaker | None = None,
+    read_only: bool = False,
+) -> list[Any]:
+    """Build SDK FunctionTool instances for the given writing agent role.
+
+    failure_breaker：本次请求的工具失败熔断器。每个工具结果都经它记账；
+    熔断后同一轮里剩下的调用不再执行（尤其是写工具），直接返回熔断说明。
+    read_only：用户明确要求本轮不改文件。写文件工具（FILE_WRITE_TOOL_NAMES）
+    仍留在工具集里，但调用一律不执行、返回 error_type=read_only_request 的
+    可恢复错误（见 read_only_refusal_text）。不直接从工具集里拿掉：writer/planner
+    的提示词和会话历史都在用 create_file，模型照样会调；SDK 对「不存在的工具」
+    默认抛 ModelBehaviorError，整轮以致命 ERROR 结束。留着工具、拒绝执行，模型
+    拿到的是能看懂的拒绝说明，拒绝也经熔断器记账，乱试有上限。
+    """
     from agents import FunctionTool
 
     function_tools: list[Any] = []
@@ -111,14 +141,32 @@ def build_agent_function_tools(agent_type: str) -> list[Any]:
         name = str(tool_schema.get("name") or "").strip()
         if not name:
             continue
+        refuse_as_read_only = read_only and name in FILE_WRITE_TOOL_NAMES
+        description = str(tool_schema.get("description") or "")
+        if refuse_as_read_only:
+            description = f"{READ_ONLY_TOOL_DESCRIPTION_PREFIX}{description}"
 
-        async def _on_invoke_tool(_ctx: Any, raw_arguments: str, *, _tool_name: str = name) -> str:
-            return await invoke_project_tool(_tool_name, raw_arguments)
+        async def _on_invoke_tool(
+            _ctx: Any,
+            raw_arguments: str,
+            *,
+            _tool_name: str = name,
+            _refuse: bool = refuse_as_read_only,
+        ) -> str:
+            if failure_breaker is not None and failure_breaker.is_open:
+                return failure_breaker.short_circuit_text(_tool_name)
+            if _refuse:
+                output = read_only_refusal_text(_tool_name)
+            else:
+                output = await invoke_project_tool(_tool_name, raw_arguments)
+            if failure_breaker is not None:
+                output = failure_breaker.observe(_tool_name, raw_arguments, output)
+            return output
 
         function_tools.append(
             FunctionTool(
                 name=name,
-                description=str(tool_schema.get("description") or ""),
+                description=description,
                 params_json_schema=_extract_params_schema(tool_schema),
                 on_invoke_tool=_on_invoke_tool,
                 strict_json_schema=False,

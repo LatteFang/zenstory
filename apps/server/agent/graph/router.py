@@ -27,7 +27,8 @@ AgentType = Literal["planner", "hook_designer", "writer", "quality_reviewer"]
 WorkflowType = Literal["quick", "standard", "full", "hook_focus", "review_only"]
 
 # Workflow type to agent sequence mapping
-# 每个工作流定义了初始 Agent 之后的 Agent 序列
+# 每个工作流定义了初始 Agent 之后的 Agent 序列（上限）。实际计划交接序列由
+# plan_workflow_agents() 按用户范围（write_content / read_only）裁剪。
 WORKFLOW_AGENTS: dict[str, list[str]] = {
     "quick": [],  # writer only (review is triggered explicitly or via auto-review gate)
     "standard": ["writer"],  # planner -> writer
@@ -36,14 +37,47 @@ WORKFLOW_AGENTS: dict[str, list[str]] = {
     "review_only": [],  # quality_reviewer only
 }
 
+# 用户范围（scope）摘要的硬上限：它会进系统提示和交接包，只需一句话。
+# ROUTER_PROMPT 要求模型写在 40 字以内（提示目标）；这里按 80 字截断，
+# 给模型偶尔超出留余量，同时防止异常长的输出灌进每个 agent 的系统提示。
+MAX_SCOPE_CHARS = 80
+
 
 class RouterDecision(BaseModel):
-    """Structured routing decision with schema validation."""
+    """Structured routing decision with schema validation.
+
+    write_content / read_only / scope 是对**用户本轮请求**的事实判断，
+    与 workflow_type（协作路径形状）分开问：
+    - write_content: 用户是否要求本轮产出/改写正文。False 时计划序列里的
+      writer 会被剔除（只要大纲/人设/设定/爽点思路时不再自动写正文）；
+      None 表示模型没给出（旧格式输出），沿用 workflow_type 的原始序列。
+    - read_only: 用户明确要求不改文件（只回答/只分析/只看看）。为 True 时
+      不安排任何计划交接，图也不会交接给有写权限的 agent。
+    - scope: 用户明确限定的交付范围（如“只写第1章”），没有则为空。
+    """
 
     agent_type: AgentType
     workflow_type: WorkflowType
     reason: str = ""
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    write_content: bool | None = None
+    read_only: bool = False
+    scope: str = ""
+
+
+def plan_workflow_agents(decision: RouterDecision) -> list[str]:
+    """按用户范围裁剪 workflow_type 的计划交接序列。
+
+    计划交接是「agent 没显式交接时也照走」的兜底路径，它一旦超出用户的
+    请求范围就会凭空写出正文（只要大纲却被自动交给 writer 写章节）。
+    因此只在用户确实要求写正文时保留 writer；明确只读时整条序列清空。
+    """
+    planned = list(WORKFLOW_AGENTS.get(decision.workflow_type, []))
+    if decision.read_only:
+        return []
+    if decision.write_content is False:
+        planned = [agent for agent in planned if agent != "writer"]
+    return planned
 
 
 async def router_node(state: WritingState) -> dict:
@@ -89,7 +123,7 @@ async def router_node(state: WritingState) -> dict:
         # rejects response_format json_schema, so it could never succeed.)
         response = await _route_with_deepseek_chat(user_message)
         decision = _parse_router_response(response)
-        workflow_agents = WORKFLOW_AGENTS.get(decision.workflow_type, [])
+        workflow_agents = plan_workflow_agents(decision)
 
         log_with_context(
             logger,
@@ -98,6 +132,8 @@ async def router_node(state: WritingState) -> dict:
             agent_type=decision.agent_type,
             workflow_type=decision.workflow_type,
             workflow_agents=workflow_agents,
+            write_content=decision.write_content,
+            read_only=decision.read_only,
             confidence=decision.confidence,
             user_message_preview=user_message[:50],
         )
@@ -381,12 +417,40 @@ def _normalize_router_payload(payload: dict[str, object]) -> dict[str, object]:
 
     reason = str(payload.get("reason", "")).strip()
 
+    scope_raw = payload.get("scope")
+    scope = str(scope_raw).strip() if isinstance(scope_raw, str) else ""
+    scope = scope[:MAX_SCOPE_CHARS]
+
     return {
         "agent_type": agent_type,
         "workflow_type": workflow_type,
         "reason": reason,
         "confidence": confidence,
+        "write_content": _coerce_optional_bool(payload.get("write_content")),
+        # read_only 只认明确的 true：判断不出时按「可以写」处理，
+        # 由 write_content 和各 agent 提示词去约束范围。
+        "read_only": _coerce_optional_bool(payload.get("read_only")) is True,
+        "scope": scope,
     }
+
+
+_TRUE_STRINGS = frozenset({"true", "yes", "y", "1", "是", "对"})
+_FALSE_STRINGS = frozenset({"false", "no", "n", "0", "否", "不"})
+
+
+def _coerce_optional_bool(value: object) -> bool | None:
+    """宽松解析布尔字段；无法识别（缺失/null/乱写）时返回 None。"""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and value in (0, 1):
+        return bool(value)
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in _TRUE_STRINGS:
+            return True
+        if lowered in _FALSE_STRINGS:
+            return False
+    return None
 
 
 def _infer_workflow_from_agent(agent_type: AgentType) -> WorkflowType:

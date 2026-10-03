@@ -1212,3 +1212,459 @@ class TestWritingGraphSteeringFollowup:
 
         # planner -> writer（计划交接），writer 收尾后无新 steering，不再追加
         assert calls == ["planner", "writer"]
+
+
+@pytest.mark.unit
+class TestWritingGraphUserScope:
+    """Agent 只做用户要求的事：计划交接/自动质检门不能越过用户的范围。
+
+    这里走真实的 router_node（只 mock 路由那次 LLM 调用），覆盖
+    「路由判定 → 计划序列裁剪 → 图的交接决策」整条链路。
+    """
+
+    @staticmethod
+    def _route(payload: dict[str, object]):
+        return AsyncMock(
+            return_value={
+                "content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}]
+            }
+        )
+
+    @staticmethod
+    async def _run(
+        route_mock,
+        fake_agent,
+        *,
+        message: str,
+        max_iterations: int = 6,
+        env=None,
+        generation_mode: str | None = None,
+        get_steering_messages=None,
+    ):
+        from agent.graph.writing_graph import run_writing_workflow_streaming
+
+        environ = {"AGENT_ROUTER_STRATEGY": "llm", "AGENT_ENABLE_GRAPH_AUTO_REVIEW": "false"}
+        environ.update(env or {})
+        with (
+            patch.dict("os.environ", environ),
+            patch("agent.graph.router._route_with_deepseek_chat", route_mock),
+            patch("agent.graph.writing_graph.run_streaming_agent", new=fake_agent),
+        ):
+            return [
+                event async for event in run_writing_workflow_streaming(
+                    state={
+                        "user_message": message,
+                        "router_message": message,
+                        "messages": [],
+                        "system_prompt": "",
+                        **({"generation_mode": generation_mode} if generation_mode else {}),
+                    },
+                    thread_id="user-scope",
+                    max_iterations=max_iterations,
+                    auto_review_threshold=50,
+                    get_steering_messages=get_steering_messages,
+                )
+            ]
+
+    @staticmethod
+    def _assert_notice_closes_the_run(events) -> StreamEvent:
+        """只读提示卡片只发一次，且是收尾时的最后一个事件（之后至多跟一个
+        WORKFLOW_COMPLETE / ITERATION_EXHAUSTED / ERROR 终止事件）。"""
+        stopped = [e for e in events if e.type == StreamEventType.WORKFLOW_STOPPED]
+        assert len(stopped) == 1
+        notice = stopped[0]
+        assert notice.data["reason"] == "read_only_handoff_blocked"
+        after = events[events.index(notice) + 1:]
+        assert len(after) <= 1, [e.type for e in after]
+        assert all(
+            e.type in (
+                StreamEventType.WORKFLOW_COMPLETE,
+                StreamEventType.ITERATION_EXHAUSTED,
+                StreamEventType.ERROR,
+            )
+            for e in after
+        )
+        return notice
+
+    @staticmethod
+    def _selected(events) -> list[str]:
+        return [
+            event.data["agent_type"]
+            for event in events
+            if event.type == StreamEventType.AGENT_SELECTED
+        ]
+
+    @pytest.mark.asyncio
+    async def test_outline_only_request_stays_with_planner(self):
+        """「先给我故事大纲」：planner 完成后不再被计划交接给 writer 写正文。"""
+        captured: dict[str, str] = {}
+
+        async def fake_agent(state, agent_type, **_kwargs):
+            captured[agent_type] = str(state.get("scope_directive") or "")
+            yield StreamEvent(
+                type=StreamEventType.TOOL_USE,
+                data={"id": "t1", "name": "create_file", "status": "complete", "input": {}},
+            )
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": "故事大纲已创建。"})
+
+        events = await self._run(
+            self._route({
+                "agent_type": "planner",
+                "workflow_type": "standard",
+                "write_content": False,
+                "read_only": False,
+                "scope": "只要故事大纲",
+            }),
+            fake_agent,
+            message="帮我构思一个都市异能小说，先给我故事大纲",
+        )
+
+        assert self._selected(events) == ["planner"]
+        assert not any(event.type == StreamEventType.HANDOFF for event in events)
+        decided = next(e for e in events if e.type == StreamEventType.ROUTER_DECIDED)
+        assert decided.data["workflow_agents"] == []
+        # planner 自己也收到了「不要交接 writer 写正文」的范围约束
+        assert "不要撰写或续写章节正文" in captured["planner"]
+        assert "只要故事大纲" in captured["planner"]
+
+    @pytest.mark.asyncio
+    async def test_plan_then_write_hands_off_with_user_scope(self):
+        """「规划后只写第1章」仍然 planner -> writer，且交接包/系统提示都带上范围。"""
+        captured: dict[str, str] = {}
+
+        async def fake_agent(state, agent_type, **_kwargs):
+            captured[agent_type] = str(state.get("scope_directive") or "")
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": f"{agent_type} 完成。"})
+
+        events = await self._run(
+            self._route({
+                "agent_type": "planner",
+                "workflow_type": "standard",
+                "write_content": True,
+                "scope": "大纲+只写第1章",
+            }),
+            fake_agent,
+            message="帮我规划整本书的大纲，然后只写第1章",
+        )
+
+        assert self._selected(events) == ["planner", "writer"]
+        handoff = next(e for e in events if e.type == StreamEventType.HANDOFF)
+        assert handoff.data["target_agent"] == "writer"
+        assert "大纲+只写第1章" in handoff.data["context"]
+        assert handoff.data["handoff_packet"]["todo"] == ["按用户要求的范围完成：大纲+只写第1章"]
+        assert "大纲+只写第1章" in captured["writer"]
+
+    @pytest.mark.asyncio
+    async def test_question_to_user_stops_planned_handoff(self):
+        """planner 以提问收尾时等用户回答，不能按计划自动交给 writer。"""
+        calls: list[str] = []
+
+        async def fake_agent(_state, agent_type, **_kwargs):
+            calls.append(agent_type)
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": "我先列了三个方向。"})
+            yield StreamEvent(
+                type=StreamEventType.TOOL_USE,
+                data={"id": "t1", "name": "query_files", "status": "complete", "input": {}},
+            )
+            yield StreamEvent(
+                type=StreamEventType.TEXT,
+                data={"text": "你更倾向哪个方向？\n\n1. 热血升级\n2. 悬疑探案"},
+            )
+
+        events = await self._run(
+            self._route({"agent_type": "planner", "workflow_type": "standard", "write_content": True}),
+            fake_agent,
+            message="规划一下然后写第一章",
+        )
+
+        assert calls == ["planner"]
+        assert not any(event.type == StreamEventType.HANDOFF for event in events)
+        assert not any(event.type == StreamEventType.ITERATION_EXHAUSTED for event in events)
+
+    @pytest.mark.asyncio
+    async def test_question_before_last_tool_call_does_not_block_handoff(self):
+        """只看最后一次工具调用之后的收尾文本：中途自问自答不算在等用户。"""
+        calls: list[str] = []
+
+        async def fake_agent(_state, agent_type, **_kwargs):
+            calls.append(agent_type)
+            if agent_type == "planner":
+                yield StreamEvent(type=StreamEventType.TEXT, data={"text": "现有大纲有哪些？"})
+                yield StreamEvent(
+                    type=StreamEventType.TOOL_RESULT,
+                    data={"tool_use_id": "t1", "name": "query_files", "result": {}},
+                )
+                yield StreamEvent(type=StreamEventType.TEXT, data={"text": "大纲已更新。"})
+                return
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": "第一章写好了。"})
+
+        await self._run(
+            self._route({"agent_type": "planner", "workflow_type": "standard", "write_content": True}),
+            fake_agent,
+            message="规划一下然后写第一章",
+        )
+
+        assert calls == ["planner", "writer"]
+
+    @pytest.mark.asyncio
+    async def test_explicit_handoff_wins_over_question_ending(self):
+        """显式 handoff 是 agent 自己的决定，即便收尾带问号也照常交接。"""
+        calls: list[str] = []
+
+        async def fake_agent(_state, agent_type, **_kwargs):
+            calls.append(agent_type)
+            if agent_type == "planner":
+                yield StreamEvent(type=StreamEventType.TEXT, data={"text": "大纲好了，开写？"})
+                yield StreamEvent(
+                    type=StreamEventType.HANDOFF,
+                    data={"target_agent": "writer", "reason": "开始写", "context": "写第1章"},
+                )
+                return
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": "第一章写好了。"})
+
+        await self._run(
+            self._route({"agent_type": "planner", "workflow_type": "standard", "write_content": False}),
+            fake_agent,
+            message="规划一下",
+        )
+
+        assert calls == ["planner", "writer"]
+
+    @pytest.mark.asyncio
+    async def test_read_only_request_blocks_handoff_to_writer(self):
+        """「只分析，不要改文件」：审稿人的显式交接 writer 也必须被拦下。"""
+        calls: list[str] = []
+        captured: dict[str, str] = {}
+
+        async def fake_agent(state, agent_type, **_kwargs):
+            calls.append(agent_type)
+            captured[agent_type] = str(state.get("scope_directive") or "")
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": "第三章节奏偏慢。"})
+            yield StreamEvent(
+                type=StreamEventType.HANDOFF,
+                data={"target_agent": "writer", "reason": "修正问题", "context": "改节奏"},
+            )
+
+        events = await self._run(
+            self._route({
+                "agent_type": "quality_reviewer",
+                "workflow_type": "review_only",
+                "write_content": False,
+                "read_only": True,
+            }),
+            fake_agent,
+            message="帮我看看第三章有什么问题，不要改文件，只分析",
+        )
+
+        assert calls == ["quality_reviewer"]
+        assert not any(event.type == StreamEventType.HANDOFF for event in events)
+        assert "禁止调用 create_file" in captured["quality_reviewer"]
+        # 用户能看到交接为什么没发生：一条非澄清原因的 workflow_stopped 提示卡片，
+        # 收尾时才发（前端收到 workflow_stopped 就结束流式状态）。
+        notice = self._assert_notice_closes_the_run(events)
+        assert notice.data["target_agent"] == "writer"
+        assert "不改文件" in notice.data["message"]
+        assert not any(event.type == StreamEventType.ERROR for event in events)
+
+    @pytest.mark.asyncio
+    async def test_read_only_notice_waits_for_steering_followup_round(self):
+        """拦下写交接后还有一轮 steering 追加轮：提示卡片不能在两轮之间发出，
+        必须等追加轮跑完、紧挨着收尾才发。"""
+        calls: list[str] = []
+        polls = {"n": 0}
+
+        async def get_steering_messages():
+            polls["n"] += 1
+            if polls["n"] == 1:
+                return [{"id": "steer-ro", "content": "顺便看看第四章"}]
+            return []
+
+        async def fake_agent(_state, agent_type, **_kwargs):
+            calls.append(agent_type)
+            yield StreamEvent(type=StreamEventType.MESSAGE_START, data={})
+            if len(calls) == 1:
+                yield StreamEvent(type=StreamEventType.TEXT, data={"text": "第三章节奏偏慢。"})
+                yield StreamEvent(
+                    type=StreamEventType.HANDOFF,
+                    data={"target_agent": "writer", "reason": "修正问题", "context": "改节奏"},
+                )
+                return
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": "第四章也有同样问题。"})
+
+        events = await self._run(
+            self._route({
+                "agent_type": "quality_reviewer",
+                "workflow_type": "review_only",
+                "write_content": False,
+                "read_only": True,
+            }),
+            fake_agent,
+            message="帮我看看第三章有什么问题，不要改文件，只分析",
+            get_steering_messages=get_steering_messages,
+        )
+
+        # 追加轮沿用只读的审稿人，不会升级成 writer
+        assert calls == ["quality_reviewer", "quality_reviewer"]
+        notice = self._assert_notice_closes_the_run(events)
+        notice_index = events.index(notice)
+        followup_text_index = max(
+            i for i, e in enumerate(events)
+            if e.type == StreamEventType.TEXT and "第四章" in e.data.get("text", "")
+        )
+        assert notice_index > followup_text_index
+        assert notice_index > max(
+            i for i, e in enumerate(events) if e.type == StreamEventType.AGENT_SELECTED
+        )
+
+    @pytest.mark.asyncio
+    async def test_read_only_notice_precedes_error_when_followup_round_raises(self):
+        """拦下写交接后，后面的轮次抛异常：提示卡片赶在 ERROR 之前发出，
+        ERROR 仍是最后一个事件（终止判定交给 ERROR，而不是提示卡片）。"""
+        calls: list[str] = []
+        polls = {"n": 0}
+
+        async def get_steering_messages():
+            polls["n"] += 1
+            if polls["n"] == 1:
+                return [{"id": "steer-ro-2", "content": "再看看第四章"}]
+            return []
+
+        async def fake_agent(_state, agent_type, **_kwargs):
+            calls.append(agent_type)
+            yield StreamEvent(type=StreamEventType.MESSAGE_START, data={})
+            if len(calls) == 1:
+                yield StreamEvent(type=StreamEventType.TEXT, data={"text": "第三章节奏偏慢。"})
+                yield StreamEvent(
+                    type=StreamEventType.HANDOFF,
+                    data={"target_agent": "writer", "reason": "修正问题", "context": "改节奏"},
+                )
+                return
+            raise RuntimeError("boom")
+
+        events = await self._run(
+            self._route({
+                "agent_type": "quality_reviewer",
+                "workflow_type": "review_only",
+                "write_content": False,
+                "read_only": True,
+            }),
+            fake_agent,
+            message="帮我看看第三章有什么问题，不要改文件，只分析",
+            get_steering_messages=get_steering_messages,
+        )
+
+        self._assert_notice_closes_the_run(events)
+        assert events[-1].type == StreamEventType.ERROR
+        assert events[-1].data["error"] == "boom"
+
+    @pytest.mark.asyncio
+    async def test_read_only_request_still_allows_handoff_to_read_only_agent(self):
+        calls: list[str] = []
+
+        async def fake_agent(_state, agent_type, **_kwargs):
+            calls.append(agent_type)
+            if agent_type == "writer":
+                yield StreamEvent(type=StreamEventType.TEXT, data={"text": "我的看法如下。"})
+                yield StreamEvent(
+                    type=StreamEventType.HANDOFF,
+                    data={"target_agent": "quality_reviewer", "reason": "评估", "context": "评估设定"},
+                )
+                return
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": "设定合理。[TASK_COMPLETE]"})
+
+        await self._run(
+            self._route({"agent_type": "writer", "workflow_type": "quick", "read_only": True}),
+            fake_agent,
+            message="这个设定合理吗？只回答，别动我的文件",
+        )
+
+        assert calls == ["writer", "quality_reviewer"]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("env", "generation_mode"),
+        [({"AGENT_ENABLE_GRAPH_AUTO_REVIEW": "true"}, None), (None, "quality")],
+        ids=["env-auto-review", "generation-mode-quality"],
+    )
+    async def test_auto_review_gate_fires_even_when_writer_ends_with_question(
+        self, env, generation_mode
+    ):
+        """writer 写完后习惯性问“要继续写第2章吗？”：提问只拦计划交接，
+        用户开了自动质检（含高质量模式）时已写完的稿子照常送审。"""
+        calls: list[str] = []
+
+        async def fake_agent(_state, agent_type, **_kwargs):
+            calls.append(agent_type)
+            if agent_type == "writer":
+                yield StreamEvent(
+                    type=StreamEventType.TEXT,
+                    data={"text": f"<file>{'正' * 200}</file>\n\n第1章写好了，需要我继续写第2章吗？"},
+                )
+                return
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": "通过 [TASK_COMPLETE]"})
+
+        events = await self._run(
+            self._route({"agent_type": "writer", "workflow_type": "quick", "write_content": True}),
+            fake_agent,
+            message="写第1章",
+            env=env,
+            generation_mode=generation_mode,
+        )
+
+        assert calls == ["writer", "quality_reviewer"]
+        handoff = next(e for e in events if e.type == StreamEventType.HANDOFF)
+        assert handoff.data["target_agent"] == "quality_reviewer"
+
+    @pytest.mark.asyncio
+    async def test_auto_review_gate_still_fires_for_finished_draft(self):
+        """回归保护：正常写完（不提问）时自动质检门照旧触发。"""
+        calls: list[str] = []
+
+        async def fake_agent(_state, agent_type, **_kwargs):
+            calls.append(agent_type)
+            if agent_type == "writer":
+                yield StreamEvent(
+                    type=StreamEventType.TEXT,
+                    data={"text": f"<file>{'正' * 200}</file>\n\n第1章已完成。"},
+                )
+                return
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": "通过 [TASK_COMPLETE]"})
+
+        await self._run(
+            self._route({"agent_type": "writer", "workflow_type": "quick", "write_content": True}),
+            fake_agent,
+            message="写第1章",
+            env={"AGENT_ENABLE_GRAPH_AUTO_REVIEW": "true"},
+        )
+
+        assert calls == ["writer", "quality_reviewer"]
+
+
+@pytest.mark.unit
+class TestScopeDirectiveBuilder:
+    def test_read_only_takes_precedence_over_no_content(self):
+        from agent.graph.writing_graph import (
+            SCOPE_DIRECTIVE_NO_CONTENT,
+            SCOPE_DIRECTIVE_READ_ONLY,
+            _build_scope_directive,
+        )
+
+        directive = _build_scope_directive({"read_only": True, "write_content": False})
+        assert SCOPE_DIRECTIVE_READ_ONLY in directive
+        assert SCOPE_DIRECTIVE_NO_CONTENT not in directive
+
+    def test_missing_metadata_yields_no_directive(self):
+        from agent.graph.writing_graph import _build_scope_directive
+
+        assert _build_scope_directive(None) == ""
+        assert _build_scope_directive({}) == ""
+        # write_content=None（旧格式）不等于「不要正文」
+        assert _build_scope_directive({"write_content": None, "scope": ""}) == ""
+
+    def test_read_only_steering_followup_uses_read_only_wording(self):
+        from agent.graph.writing_graph import (
+            STEERING_FOLLOWUP_CONTEXT_READONLY,
+            _steering_followup_context,
+        )
+
+        assert _steering_followup_context("writer", read_only=True) == STEERING_FOLLOWUP_CONTEXT_READONLY

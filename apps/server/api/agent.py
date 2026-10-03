@@ -13,6 +13,7 @@ Provides FastAPI router for agent endpoints:
 
 import asyncio
 import contextlib
+import json
 from typing import Any
 from uuid import uuid4
 
@@ -22,7 +23,7 @@ from pydantic import BaseModel, Field
 from services.auth import get_current_active_user
 from sqlmodel import Session
 
-from agent.core.events import error_event
+from agent.core.events import NON_TERMINAL_WORKFLOW_STOPPED_REASONS, error_event
 from agent.service import get_agent_service
 from core.error_codes import ErrorCode
 from core.error_handler import APIException
@@ -329,6 +330,21 @@ async def stream_request(
                         return line.split(":", 1)[1].strip()
                 return ""
 
+            def _is_non_terminal_workflow_stopped(sse_payload: str) -> bool:
+                # 只读请求拦下写交接的提示卡片也走 workflow_stopped，但它只是一条
+                # 说明：之后若异常中断，仍须补发兜底 error 帧、按内部错误退款。
+                for line in sse_payload.splitlines():
+                    if line.startswith("data:"):
+                        try:
+                            data = json.loads(line.split(":", 1)[1])
+                        except ValueError:
+                            return False
+                        return (
+                            isinstance(data, dict)
+                            and data.get("reason") in NON_TERMINAL_WORKFLOW_STOPPED_REASONS
+                        )
+                return False
+
             try:
                 async for event in service.process_stream(
                     project_id=body.project_id,
@@ -344,7 +360,10 @@ async def stream_request(
                     saw_any_event = True
                     if isinstance(event, str):
                         event_type = _extract_sse_event_type(event)
-                        if event_type in {"done", "workflow_complete", "workflow_stopped"}:
+                        if event_type in {"done", "workflow_complete"} or (
+                            event_type == "workflow_stopped"
+                            and not _is_non_terminal_workflow_stopped(event)
+                        ):
                             saw_terminal_event = True
                         elif event_type == "error":
                             saw_internal_error_event = True

@@ -5,19 +5,23 @@ Provides streaming multi-agent orchestration with router, planner, writer, and q
 """
 
 import contextlib
+import json
 import os
 from collections.abc import AsyncIterator
 from typing import Any
 
 from agent.constants import CONTENT_FILE_TYPES
+from agent.core.events import READ_ONLY_HANDOFF_BLOCKED_REASON
 from agent.core.workflow_events import StreamEvent, StreamEventType
 from agent.graph.nodes import (
     detect_task_complete,
+    ends_with_question_to_user,
     evaluate_agent_output,
     run_streaming_agent,
 )
 from agent.graph.router import get_next_node, router_node
 from agent.graph.state import WritingState
+from agent.openai_agents.tool_failure_breaker import ToolFailureBreaker
 from agent.tools.mcp_tools import ToolContext, update_project
 from config.agent_runtime import (
     AGENT_AUTO_REVIEW_THRESHOLD_CHARS,
@@ -30,7 +34,7 @@ from utils.logger import get_logger, log_with_context
 
 logger = get_logger(__name__)
 
-# Max times the workflow will re-run the writer to finish a file it created but
+# Max times the workflow will re-run the creating agent to finish a file it created but
 # left empty (created via create_file but never completed the <file>…</file>
 # write). Bounded so a model that keeps failing cannot loop indefinitely.
 MAX_FILE_CORRECTION_ATTEMPTS = 2
@@ -167,8 +171,6 @@ STEERING_FOLLOWUP_CONTEXT_READONLY = (
     "如果引导无需额外工作，请简要回应说明。"
 )
 
-# 写文件类工具：用于判断某个 agent 类型本轮是否具备改动文件的能力。
-_WRITE_TOOL_NAMES = frozenset({"create_file", "edit_file", "delete_file"})
 
 
 def _agent_can_write_files(agent_type: str | None) -> bool:
@@ -181,7 +183,9 @@ def _agent_can_write_files(agent_type: str | None) -> bool:
     if not agent_type:
         return False
     try:
-        from agent.tools.registry import AGENT_TOOL_NAME_MAP
+        # 写文件工具集合与 runner 的只读拒绝共用 registry.FILE_WRITE_TOOL_NAMES，
+        # 「谁算有写权限」与「只读请求下拒绝哪些工具」不会各说各话。
+        from agent.tools.registry import AGENT_TOOL_NAME_MAP, FILE_WRITE_TOOL_NAMES
 
         tool_names = AGENT_TOOL_NAME_MAP.get(agent_type)
     except Exception as e:  # pragma: no cover - registry 导入失败属异常路径
@@ -190,16 +194,67 @@ def _agent_can_write_files(agent_type: str | None) -> bool:
     if tool_names is None:
         # 未知 agent 类型走 registry 的 writer 兜底，视为有写权限。
         return True
-    return bool(_WRITE_TOOL_NAMES.intersection(tool_names))
+    return bool(FILE_WRITE_TOOL_NAMES.intersection(tool_names))
 
 
-def _steering_followup_context(agent_type: str | None) -> str:
-    """按 agent 是否有写权限选择追加轮提示文案。"""
+def _steering_followup_context(agent_type: str | None, *, read_only: bool = False) -> str:
+    """按 agent 是否有写权限（以及用户是否要求只读）选择追加轮提示文案。"""
     return (
         STEERING_FOLLOWUP_CONTEXT
-        if _agent_can_write_files(agent_type)
+        if _agent_can_write_files(agent_type) and not read_only
         else STEERING_FOLLOWUP_CONTEXT_READONLY
     )
+
+
+# 用户明确要求不改文件时注入的范围约束。
+SCOPE_DIRECTIVE_READ_ONLY = (
+    "用户明确要求本轮不修改任何文件（只回答/只分析/只讨论）。"
+    "禁止调用 create_file / edit_file / delete_file，也不要交接给其他 Agent 去改写；"
+    "直接在对话里给出回答或分析即可。"
+)
+# 路由判定用户没要正文（只要大纲/人设/设定/爽点思路）时注入的范围约束。
+SCOPE_DIRECTIVE_NO_CONTENT = (
+    "用户本轮没有要求写正文：只做用户要求的事（规划/设定/设计/回答等），完成后直接结束；"
+    "不要撰写或续写章节正文，也不要交接给 writer 去写。"
+)
+
+
+def _build_scope_directive(routing_metadata: dict[str, Any] | None) -> str:
+    """把路由对用户范围的判断（read_only / write_content / scope）转成系统提示约束。
+
+    交接包和 handoff 文本只在交接时出现，而本轮第一个 agent 也需要知道范围，
+    因此统一走系统提示，由 nodes.run_streaming_agent 追加到每个 agent 的提示末尾。
+    """
+    if not isinstance(routing_metadata, dict):
+        return ""
+    parts: list[str] = []
+    if routing_metadata.get("read_only") is True:
+        parts.append(SCOPE_DIRECTIVE_READ_ONLY)
+    elif routing_metadata.get("write_content") is False:
+        parts.append(SCOPE_DIRECTIVE_NO_CONTENT)
+    scope = str(routing_metadata.get("scope") or "").strip()
+    if scope:
+        parts.append(
+            f"用户要求的交付范围：{scope}。只交付这个范围内的内容，"
+            "不要额外续写后续章节或创建范围外的文件；范围内的工作完成后即结束。"
+        )
+    return "\n".join(parts)
+
+
+def _tool_result_failed(result: Any) -> bool:
+    """TOOL_RESULT 事件的 result（MCP 文本载荷）是否是 status=error 的失败结果。"""
+    if not isinstance(result, dict):
+        return False
+    for block in result.get("content") or []:
+        if not isinstance(block, dict):
+            continue
+        try:
+            payload = json.loads(str(block.get("text") or ""))
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if isinstance(payload, dict) and payload.get("status") == "error":
+            return True
+    return False
 
 
 def _extract_review_payload(agent_content: str) -> str:
@@ -530,6 +585,27 @@ async def run_writing_workflow_streaming(
     carried_agent_content: str = ""
     carried_writer_used_write_tools: bool = False
     carried_writer_emitted_file_markers: bool = False
+    # 被纠偏打断那一轮是否以向用户提问收尾：纠偏轮只补正文，它的收尾文本
+    # （「已补齐」）不能把原 agent 还在等用户回答的问题冲掉。
+    carried_ended_with_question: bool = False
+
+    # 工具失败熔断器按请求共享：每个 agent run 都从 state 取同一个（见 runner），
+    # writer → 审稿人 → writer 的往返不会让「同一调用连续失败」的计数归零。
+    state["tool_failure_breaker"] = ToolFailureBreaker()
+
+    # 只读请求拦下写交接时的提示卡片：拦下时只记录（每个请求只记第一次），
+    # 等工作流收尾、紧挨着终止事件（WORKFLOW_COMPLETE / 澄清 / 无效交接 /
+    # 轮数耗尽）或自然结束之前才发。WORKFLOW_STOPPED 在前端会结束流式状态
+    # （重新启用发送、隐藏取消、关闭 steering），运行中途发出会让用户以为
+    # 本轮已经结束，而后面的 steering 追加轮等其实还在跑。
+    pending_read_only_notice: StreamEvent | None = None
+    read_only_notice_recorded = False
+
+    def _take_read_only_notice() -> StreamEvent | None:
+        nonlocal pending_read_only_notice
+        notice = pending_read_only_notice
+        pending_read_only_notice = None
+        return notice
 
     try:
         generation_mode = str(state.get("generation_mode") or "").strip().lower()
@@ -638,6 +714,22 @@ async def run_writing_workflow_streaming(
             # 路由调用抛异常：可能已经烧了 token，但拿不到 usage，只能记空
             routing_usage = None
 
+        # 用户范围：只读请求不交接给有写权限的 agent；范围约束注入每个 agent 的系统提示。
+        read_only_request = (
+            isinstance(routing_metadata, dict) and routing_metadata.get("read_only") is True
+        )
+        user_scope = (
+            str(routing_metadata.get("scope") or "").strip()
+            if isinstance(routing_metadata, dict)
+            else ""
+        )
+        scope_directive = _build_scope_directive(routing_metadata)
+        if scope_directive:
+            state["scope_directive"] = scope_directive
+        if read_only_request:
+            # 工具层强制：写文件工具的调用一律拒绝执行（见 tools_adapter），不只靠系统提示约束。
+            state["read_only"] = True
+
         yield StreamEvent(
             type=StreamEventType.ROUTER_DECIDED,
             data={
@@ -658,6 +750,8 @@ async def run_writing_workflow_streaming(
             workflow_agents=workflow_agents,
             router_strategy=router_strategy,
             enable_graph_auto_review=enable_graph_auto_review,
+            read_only_request=read_only_request,
+            user_scope=user_scope,
         )
 
         # Set when the loop exits via a terminal break (WORKFLOW_COMPLETE /
@@ -770,12 +864,21 @@ async def run_writing_workflow_streaming(
             # Stream from the current agent
             next_agent: str | None = None
             agent_content: str = ""  # Track this agent's output
+            # 最后一次工具调用之后的文本：agent 收尾时对用户说的话，用于识别
+            # 「以向用户提问结束」（此时不能替用户做决定继续自动交接）。
+            agent_tail_text: str = ""
             handoff_packet: dict[str, Any] | None = None
             explicit_handoff_event_data: dict[str, Any] | None = None
             clarification_stopped = False
             tool_call_exhausted = False
             invalid_handoff_stopped = False
             writer_used_write_tools = False
+            # writer 本轮写工具调用数 / 其中失败数：全部失败（例如数据库被锁）时
+            # 不算「动过写工具」，否则自动质检会把一篇没落库的稿子送审，审稿人再
+            # 把 writer 叫回来重试同一个失败的写入。
+            writer_write_calls = 0
+            writer_write_failures = 0
+            writer_write_call_ids: set[str] = set()
             writer_emitted_file_markers = False
             agent_message_started = False
             mid_run_steering_seen = False
@@ -801,6 +904,9 @@ async def run_writing_workflow_streaming(
                     text = event.data.get("text", "")
                     agent_content += text
                     accumulated_content += text
+                    agent_tail_text += text
+                elif event.type in (StreamEventType.TOOL_USE, StreamEventType.TOOL_RESULT):
+                    agent_tail_text = ""
 
                 if (
                     current_agent_type == "writer"
@@ -809,13 +915,23 @@ async def run_writing_workflow_streaming(
                 ):
                     tool_name = str(event.data.get("name") or "").strip()
                     if tool_name in {"create_file", "edit_file"}:
-                        writer_used_write_tools = True
+                        writer_write_calls += 1
+                        writer_write_call_ids.add(str(event.data.get("id") or ""))
+                elif (
+                    current_agent_type == "writer"
+                    and event.type == StreamEventType.TOOL_RESULT
+                    and str(event.data.get("tool_use_id") or "") in writer_write_call_ids
+                    and _tool_result_failed(event.data.get("result"))
+                ):
+                    writer_write_failures += 1
 
                 # Check for handoff event
                 if event.type == StreamEventType.HANDOFF:
                     next_agent = event.data.get("target_agent")
                     if next_agent == current_agent_type:
                         invalid_handoff_stopped = True
+                        if (notice := _take_read_only_notice()) is not None:
+                            yield notice
                         yield StreamEvent(
                             type=StreamEventType.WORKFLOW_STOPPED,
                             data={
@@ -863,15 +979,27 @@ async def run_writing_workflow_streaming(
                     and event.data.get("reason") == "clarification_needed"
                 ):
                     clarification_stopped = True
+                    if (notice := _take_read_only_notice()) is not None:
+                        yield notice
                     yield event
                 elif (
                     event.type == StreamEventType.ITERATION_EXHAUSTED
                     and event.data.get("layer") == "tool_call"
                 ):
                     tool_call_exhausted = True
+                    if (notice := _take_read_only_notice()) is not None:
+                        yield notice
                     yield event
                 else:
+                    if event.type == StreamEventType.ERROR and (
+                        notice := _take_read_only_notice()
+                    ) is not None:
+                        # error 帧在前端同样结束流，提示卡片要赶在它前面。
+                        yield notice
                     yield event
+
+            writer_used_write_tools = writer_write_calls > writer_write_failures
+            ended_with_question = ends_with_question_to_user(agent_tail_text)
 
             # Carry forward conversation evolution from this agent turn so that
             # downstream agents can see full assistant/tool history.
@@ -896,6 +1024,9 @@ async def run_writing_workflow_streaming(
                 carried_agent_content = ""
                 carried_writer_used_write_tools = False
                 carried_writer_emitted_file_markers = False
+            if carried_ended_with_question:
+                ended_with_question = True
+                carried_ended_with_question = False
 
             if current_agent_type == "writer" and agent_content:
                 lowered = agent_content.lower()
@@ -952,8 +1083,11 @@ async def run_writing_workflow_streaming(
                 )
                 body_state = probed_states[0] if probed_states else _PENDING_BODY_UNVERIFIABLE
 
+                # 只读请求（用户明确说了别改文件）不安排补写：写工具调用本就会被拒绝，
+                # 万一仍出现空文件，直接走下面的回滚分支，而不是让 agent 去写正文。
                 can_schedule_correction = (
-                    iteration < max_iterations
+                    not read_only_request
+                    and iteration < max_iterations
                     and file_correction_attempts < MAX_FILE_CORRECTION_ATTEMPTS
                 )
                 if not unfinished:
@@ -1009,10 +1143,20 @@ async def run_writing_workflow_streaming(
                         )
                 else:
                     file_correction_attempts += 1
+                    # 纠偏轮由「建了空文件的那个 agent」自己补写：空文件是它建的
+                    # （它必然有写权限），交给 writer 会让 writer 去补 planner 的大纲/
+                    # 人设——只要大纲的请求因此凭空多出一轮 writer，还会顺带触发自动
+                    # 质检；计划序列里排着的 writer 也会在纠偏后撞上自交接被判无效。
+                    correction_agent = (
+                        current_agent_type
+                        if _agent_can_write_files(current_agent_type)
+                        else "writer"
+                    )
                     log_with_context(
                         logger,
                         30,  # WARNING
-                        "Empty file detected after agent turn; re-running writer to complete it",
+                        "Empty file detected after agent turn; re-running the creating agent to complete it",
+                        correction_agent=correction_agent,
                         file_id=pending_file_id,
                         title=pending_title,
                         attempt=file_correction_attempts,
@@ -1033,6 +1177,7 @@ async def run_writing_workflow_streaming(
                     carried_agent_content = agent_content
                     carried_writer_used_write_tools = writer_used_write_tools
                     carried_writer_emitted_file_markers = writer_emitted_file_markers
+                    carried_ended_with_question = ended_with_question
                     handoff_context = (
                         f"[系统提醒] 你创建的文件《{pending_title}》{id_hint} 正文仍为空——"
                         "上一轮没有用 <file>…</file> 完成流式写入（很可能漏了结尾的 </file>）。"
@@ -1053,7 +1198,7 @@ async def run_writing_workflow_streaming(
                             f"请在同一轮内一并补齐：{others}。"
                         )
                     previous_agent = current_agent_type
-                    current_agent_type = "writer"
+                    current_agent_type = correction_agent
                     continue
 
             # Structured clarification stop is canonical and must block planned/auto handoff.
@@ -1075,9 +1220,9 @@ async def run_writing_workflow_streaming(
                 if next_agent:
                     deferred_handoff = None
                 elif deferred_handoff.get("next_agent") == current_agent_type:
-                    # 纠偏轮恰好就是交接目标（例如 planner 建了空文件并交接给
-                    # writer，纠偏轮本身就是 writer）：目标 agent 已经跑过，再交接
-                    # 一次就是自交接，丢弃并留痕。
+                    # 防御：纠偏轮恰好就是交接目标时，目标 agent 已经跑过，再交接
+                    # 一次就是自交接，丢弃并留痕。纠偏轮现在由建空文件的 agent 自己
+                    # 跑，而自交接在流内就被判无效、不会被暂存，正常不会走到这里。
                     log_with_context(
                         logger,
                         30,  # WARNING
@@ -1099,6 +1244,57 @@ async def run_writing_workflow_streaming(
                         agent_type=current_agent_type,
                     )
                     deferred_handoff = None
+
+            # 只读请求（用户明确说了别改文件）：交接给有写权限的 agent 就等于
+            # 替用户改文件，显式交接也一并拦下；交接给只读 agent（审稿人）不受影响。
+            if read_only_request and next_agent and _agent_can_write_files(next_agent):
+                log_with_context(
+                    logger,
+                    30,  # WARNING
+                    "Dropping handoff to a write-capable agent on a read-only request",
+                    from_agent=current_agent_type,
+                    to_agent=next_agent,
+                )
+                if not read_only_notice_recorded:
+                    # 前端已经看到了 handoff_to_agent 的工具卡片，交接却没有发生：
+                    # 用已有的 WORKFLOW_STOPPED（非澄清原因渲染为一条提示卡片、随消息
+                    # 落库）告诉用户为什么没去改。这里只记录、不发：前端收到任何
+                    # workflow_stopped 都会结束流式状态，所以推迟到收尾时发（见
+                    # _take_read_only_notice 的调用点）；不 break，同一轮的
+                    # steering 追加轮等后续逻辑照常。
+                    read_only_notice_recorded = True
+                    pending_read_only_notice = StreamEvent(
+                        type=StreamEventType.WORKFLOW_STOPPED,
+                        data={
+                            "reason": READ_ONLY_HANDOFF_BLOCKED_REASON,
+                            "agent_type": current_agent_type,
+                            "message": (
+                                f"你要求本轮只回答、不改文件，已跳过交接给 {next_agent} 去修改。"
+                                "需要改动时，直接告诉我改哪里即可。"
+                            ),
+                            "target_agent": next_agent,
+                        },
+                    )
+                next_agent = None
+                explicit_handoff_event_data = None
+                handoff_packet = None
+
+            # agent 以向用户提问收尾：它在等用户回答，计划交接不能越过用户继续跑
+            # （否则 planner 刚问完“这个方向可以吗？”，writer 已经按没确认的方向写完
+            # 了正文）。显式 handoff 是 agent 自己的明确决定，不受影响。
+            # 自动质检门不看这个信号：它只审已经写完的稿子（审稿人没有写权限），
+            # 而 writer 收尾时习惯性地问一句“需要我继续写第二章吗？”——按提问拦下
+            # 会让用户选了高质量模式（generation_mode=quality）的请求实际不送审。
+            awaiting_user_reply = not next_agent and ended_with_question
+            if awaiting_user_reply and workflow_agents:
+                log_with_context(
+                    logger,
+                    20,  # INFO
+                    "Agent ended with a question to the user; skipping planned handoff",
+                    agent_type=current_agent_type,
+                    skipped_workflow_agents=list(workflow_agents),
+                )
+                workflow_agents.clear()
 
             # Determine upcoming handoff after stop checks.
             # Explicit handoff requests still take precedence over completion checks.
@@ -1128,6 +1324,8 @@ async def run_writing_workflow_streaming(
                 has_pending_handoff = True
                 next_planned = workflow_agents.pop(0)
                 if next_planned == current_agent_type:
+                    if (notice := _take_read_only_notice()) is not None:
+                        yield notice
                     yield StreamEvent(
                         type=StreamEventType.WORKFLOW_STOPPED,
                         data={
@@ -1142,12 +1340,18 @@ async def run_writing_workflow_streaming(
                     terminated_via_break = True
                     break
                 handoff_context = f"按照工作流计划，从 {current_agent_type} 自动交接"
+                planned_todo: list[str] = []
+                if user_scope:
+                    # 计划交接没有 agent 写的交接说明，必须把用户的范围带过去，
+                    # 否则下游 writer 只看到「自动交接」，会按大纲把整本书往下写。
+                    handoff_context += f"。用户要求的交付范围：{user_scope}，只完成该范围内的内容"
+                    planned_todo.append(f"按用户要求的范围完成：{user_scope}")
                 handoff_packet = {
                     "target_agent": next_planned,
                     "reason": "工作流自动交接",
                     "context": handoff_context,
                     "completed": [],
-                    "todo": [],
+                    "todo": planned_todo,
                     "evidence": [f"workflow_plan={workflow_plan}"],
                 }
 
@@ -1169,8 +1373,8 @@ async def run_writing_workflow_streaming(
                 pending_next_agent = next_planned
             elif (
                 enable_graph_auto_review
-                and
-                current_agent_type == "writer"
+                and not read_only_request
+                and current_agent_type == "writer"
                 and len(agent_content) >= auto_review_threshold
                 and (writer_emitted_file_markers or writer_used_write_tools)
             ):
@@ -1250,7 +1454,9 @@ async def run_writing_workflow_streaming(
                         mid_run_consumed=mid_run_steering_seen,
                         boundary_consumed=len(boundary_steering),
                     )
-                    handoff_context = _steering_followup_context(current_agent_type)
+                    handoff_context = _steering_followup_context(
+                        current_agent_type, read_only=read_only_request
+                    )
                     previous_agent = current_agent_type
                     continue
 
@@ -1284,6 +1490,9 @@ async def run_writing_workflow_streaming(
                     auto_task_update_events = await _auto_finalize_task_board_on_completion()
                     for auto_task_update_event in auto_task_update_events:
                         yield auto_task_update_event
+
+                    if (notice := _take_read_only_notice()) is not None:
+                        yield notice
 
                     # 发送工作流完成事件
                     yield StreamEvent(
@@ -1327,6 +1536,11 @@ async def run_writing_workflow_streaming(
 
         ToolContext.set_current_agent(None)
 
+        # 自然结束（没有 WORKFLOW_COMPLETE）或协作轮数耗尽：只读提示卡片在这里、
+        # 轮数耗尽卡片之前发出。上面的终止分支已经发过的，这里取到的是 None。
+        if (notice := _take_read_only_notice()) is not None:
+            yield notice
+
         if iteration >= max_iterations and not terminated_via_break:
             log_with_context(
                 logger,
@@ -1358,6 +1572,8 @@ async def run_writing_workflow_streaming(
             error=str(e),
             error_type=type(e).__name__,
         )
+        if (notice := _take_read_only_notice()) is not None:
+            yield notice
         yield StreamEvent(
             type=StreamEventType.ERROR,
             data={"error": str(e), "error_type": type(e).__name__},

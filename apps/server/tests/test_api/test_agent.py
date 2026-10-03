@@ -1041,3 +1041,127 @@ async def test_agent_stream_auth_failure_paths_unchanged_after_txn_release(
         headers={"Authorization": f"Bearer {intruder_token}"},
     )
     assert response.status_code == 403
+
+
+async def _login_with_project(client: AsyncClient, db_session: Session, username: str):
+    user = User(
+        username=username,
+        email=f"{username}@example.com",
+        hashed_password=hash_password("password123"),
+        email_verified=True,
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    login_response = await client.post(
+        "/api/auth/login", data={"username": username, "password": "password123"}
+    )
+    assert login_response.status_code == 200
+    project = Project(name=f"{username} project", owner_id=user.id)
+    db_session.add(project)
+    db_session.commit()
+    return login_response.json()["access_token"], project
+
+
+_READ_ONLY_NOTICE_SSE = (
+    'event: workflow_stopped\ndata: {"reason": "read_only_handoff_blocked", '
+    '"agent_type": "quality_reviewer", "message": "已跳过交接", "target_agent": "writer"}\n\n'
+)
+
+
+@pytest.mark.integration
+async def test_agent_stream_exception_after_read_only_notice_still_sends_fallback_error(
+    client: AsyncClient,
+    db_session: Session,
+):
+    """只读提示卡片（workflow_stopped/read_only_handoff_blocked）不是终止事件：
+    之后 process_stream 抛异常时仍要补发兜底 error 帧，并按内部错误退款。"""
+    from httpx import ASGITransport
+
+    from main import app
+
+    token, project = await _login_with_project(client, db_session, "agent_ro_notice_exc")
+
+    class MockAgentService:
+        async def process_stream(self, **_kwargs):
+            yield 'event: content\ndata: {"text": "第三章节奏偏慢。"}\n\n'
+            yield _READ_ONLY_NOTICE_SSE
+            raise RuntimeError("history save failed")
+
+    with (
+        patch("api.agent.get_agent_service", return_value=MockAgentService()),
+        patch("api.agent.quota_service.consume_ai_conversation", return_value=True),
+        patch("api.agent.quota_service.release_ai_conversation", return_value=True) as mock_refund,
+    ):
+        # 默认 transport 会把应用异常直接抛给测试、丢掉已流出的帧；这里要检查帧本身。
+        async with AsyncClient(
+            transport=ASGITransport(app=app, raise_app_exceptions=False),
+            base_url="http://test",
+        ) as raw_client:
+            response = await raw_client.post(
+                "/api/v1/agent/stream",
+                json={"project_id": str(project.id), "message": "只分析，别改文件"},
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+    body = response.text
+    assert "read_only_handoff_blocked" in body
+    assert "event: error" in body
+    assert body.index("read_only_handoff_blocked") < body.index("event: error")
+    assert "INTERNAL_ERROR" in body
+    mock_refund.assert_called_once()
+
+
+@pytest.mark.integration
+async def test_agent_stream_read_only_notice_alone_is_not_terminal(
+    client: AsyncClient,
+    db_session: Session,
+):
+    """流只发了只读提示卡片就结束（没有 done）：仍按缺失终止事件退款。"""
+    token, project = await _login_with_project(client, db_session, "agent_ro_notice_noterm")
+
+    class MockAgentService:
+        async def process_stream(self, **_kwargs):
+            yield _READ_ONLY_NOTICE_SSE
+
+    with (
+        patch("api.agent.get_agent_service", return_value=MockAgentService()),
+        patch("api.agent.quota_service.consume_ai_conversation", return_value=True),
+        patch("api.agent.quota_service.release_ai_conversation", return_value=True) as mock_refund,
+    ):
+        response = await client.post(
+            "/api/v1/agent/stream",
+            json={"project_id": str(project.id), "message": "只分析，别改文件"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code == 200
+    mock_refund.assert_called_once()
+
+
+@pytest.mark.integration
+async def test_agent_stream_read_only_notice_then_done_is_charged(
+    client: AsyncClient,
+    db_session: Session,
+):
+    """提示卡片之后正常收尾（done）：照常计费，不退款。"""
+    token, project = await _login_with_project(client, db_session, "agent_ro_notice_done")
+
+    class MockAgentService:
+        async def process_stream(self, **_kwargs):
+            yield _READ_ONLY_NOTICE_SSE
+            yield 'event: done\ndata: {}\n\n'
+
+    with (
+        patch("api.agent.get_agent_service", return_value=MockAgentService()),
+        patch("api.agent.quota_service.consume_ai_conversation", return_value=True),
+        patch("api.agent.quota_service.release_ai_conversation", return_value=True) as mock_refund,
+    ):
+        response = await client.post(
+            "/api/v1/agent/stream",
+            json={"project_id": str(project.id), "message": "只分析，别改文件"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code == 200
+    mock_refund.assert_not_called()
