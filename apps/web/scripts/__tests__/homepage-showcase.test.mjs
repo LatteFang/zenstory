@@ -158,6 +158,14 @@ test('generator rejects a missing article referenced by a homepage path', (t) =>
   assert.ok(!existsSync(join(fixture.outputDir, 'org-home/index.html')), 'generator must fail before publishing a homepage')
 })
 
+test('generator rejects a homepage path whose steps belong to a tool it does not name', (t) => {
+  const fixture = isolatedGenerator(t)
+  mutateJson(fixture.content('home-reading.json'), (reading) => { reading.paths[2][7] = ['oh-story'] })
+  const result = fixture.run()
+  assert.notEqual(result.status, 0, 'a path must not point readers at the wrong starting tool')
+  assert.ok(!existsSync(join(fixture.outputDir, 'org-home/index.html')), 'generator must fail before publishing a homepage')
+})
+
 test('generator rejects a missing article referenced by a homepage knowledge level', (t) => {
   const fixture = isolatedGenerator(t)
   mutateJson(fixture.content('home-reading.json'), (reading) => { reading.levels[0][4][0] = 'nonexistent-home-reading-slug' })
@@ -167,7 +175,8 @@ test('generator rejects a missing article referenced by a homepage knowledge lev
 })
 
 test('homepage presents the showcase and learning journey in the agreed order', () => {
-  const ids = ['examples-h', 'choose-h', 'start-h', 'guides-h', 'model-h']
+  // Results first, then the visitor's material, then the tool for it, then reference.
+  const ids = ['examples-h', 'start-h', 'choose-h', 'guides-h', 'model-h']
   for (const [lang, html] of Object.entries(pages)) {
     const positions = ids.map((id) => html.indexOf(`id="${id}"`))
     positions.forEach((position, index) => assert.ok(position >= 0, `${lang}: missing ${ids[index]}`))
@@ -175,15 +184,86 @@ test('homepage presents the showcase and learning journey in the agreed order', 
   }
 })
 
-test('homepage hero links directly to outcomes and a primary getting-started route', () => {
+test('homepage hero links to outcomes, the material paths and the hero case’s own setup', () => {
+  const chainCase = showcases.find((item) => item.chain)
   for (const [lang, html] of Object.entries(pages)) {
+    const prefix = lang === 'zh' ? '/zh' : ''
     const hero = html.slice(html.indexOf('<main'), html.indexOf('<section'))
     const heroLinks = anchors(hero)
     assert.ok(heroLinks.some(({ href }) => href === '#examples-h'), `${lang}: hero needs an outcomes link`)
-    assert.ok(heroLinks.some(({ tag, href }) => {
+    const primary = heroLinks.filter(({ tag }) => {
       const classes = attribute(tag, 'class')?.split(/\s+/) ?? []
-      return href === languages[lang].guides && classes.includes('btn') && !classes.includes('ghost')
-    }), `${lang}: hero needs a primary guides CTA`)
+      return classes.includes('btn') && !classes.includes('ghost')
+    })
+    assert.deepEqual(primary.map(({ href }) => href), ['#start-h'], `${lang}: the one primary hero action leads to the material paths`)
+    assert.ok(html.includes('id="start-h"'), `${lang}: primary hero target is missing`)
+    // The case on the stage gets its own next step, owned by the project that made it.
+    const setup = `${prefix}/${chainCase.owner}#start-h`
+    assert.ok(heroLinks.some(({ href }) => href === setup), `${lang}: hero case needs a link to ${setup}`)
+    const owner = readFileSync(join(out, `${prefix}/${chainCase.owner}`.replace(/^\//, ''), 'index.html'), 'utf8')
+    assert.ok(owner.includes('id="start-h"') && owner.includes(`zenstory-ai/${chainCase.owner}`), `${lang}: ${setup} must hold the install steps`)
+    // No unrelated install command sits next to the case.
+    assert.doesNotMatch(hero, /npx skills add/, `${lang}: hero must not carry a generic install command`)
+  }
+})
+
+test('hero caption stays short: one case line and three actions, no setup manual', () => {
+  const chainCase = showcases.find((item) => item.chain)
+  for (const [lang, html] of Object.entries(pages)) {
+    const prefix = lang === 'zh' ? '/zh' : ''
+    const hero = html.slice(html.indexOf('<main'), html.indexOf('<section'))
+    const caption = hero.match(/<figure class="stage">[\s\S]*<figcaption>([\s\S]*?)<\/figcaption>/)[1]
+    assert.deepEqual(anchors(caption).map(({ href }) => href), [`${prefix}/${chainCase.owner}#start-h`, chainCase.chain.example, '#examples-h'], `${lang}: caption actions`)
+    assert.ok(textOf(caption).length <= (lang === 'en' ? 90 : 40), `${lang}: caption is too long: ${textOf(caption)}`)
+    // Host names, licence counts and environment explanations belong to the tool table, not the hero.
+    assert.doesNotMatch(hero, /Antigravity|OpenClaw|Reasonix|MIT/, `${lang}: hero repeats the host and licence strip`)
+    // The source chapter and its public-domain edition stay attached to the pinned source link.
+    assert.ok(hero.includes(`href="${chainCase.chain.source.url}" title="${chainCase.chain.source.note[lang]}"`), `${lang}: source note left the pinned source link`)
+  }
+})
+
+test('homepage next steps land where they say: case → path → tool row → install', () => {
+  const projects = JSON.parse(readFileSync(new URL('../../content/projects.json', import.meta.url), 'utf8'))
+  for (const [lang, html] of Object.entries(pages)) {
+    const prefix = lang === 'zh' ? '/zh' : ''
+    assert.ok(anchors(section(html, 'examples-h')).some(({ href }) => href === '#start-h'), `${lang}: after the cases, point to the material paths`)
+    const choose = section(html, 'choose-h')
+    const rows = elementsWithClass(choose, 'tool-choice', 'article')
+    const rowIds = rows.map((row) => attribute(row.match(/<article\b[^>]*>/i)[0], 'id'))
+    for (const path of elementsWithClass(section(html, 'start-h'), 'learning-path')) {
+      const tools = anchors(elementsWithClass(path, 'path-tools')[0] ?? '')
+      assert.ok(tools.length >= 1, `${lang}: every path names the tool it starts with`)
+      for (const { href } of tools) assert.ok(rowIds.includes(href.slice(1)), `${lang}: path tool ${href} has no row in the tool table`)
+    }
+    const branches = elementsWithClass(section(html, 'start-h'), 'path-branches', 'ul')[0]
+    for (const [route, name] of [['/drama-skills/', 'Drama Skills'], ['/novel-to-game/', 'Novel to Game']]) {
+      const branch = anchors(branches).find(({ href }) => href.startsWith(`${prefix}${route}`))
+      assert.ok(branch && branch.text.includes(name), `${lang}: adaptation branch must name ${name}`)
+    }
+    for (const row of rows) {
+      const slug = attribute(row.match(/<article\b[^>]*>/i)[0], 'id').replace(/^tool-/, '')
+      const project = projects.find((p) => p.slug === slug)
+      if (!project.install) continue
+      const setup = anchors(row).find(({ href }) => href === `${prefix}/${slug}#start-h`)
+      assert.ok(setup, `${lang}: ${slug} row needs a link to its install steps`)
+      const landing = readFileSync(join(out, `${prefix}/${slug}`.replace(/^\//, ''), 'index.html'), 'utf8')
+      assert.ok(landing.includes('id="start-h"') && landing.includes(project.install.split(' ').slice(0, 4).join(' ')), `${lang}: ${slug}#start-h must show the install command`)
+    }
+  }
+})
+
+test('knowledge layers say where their more-link lands, and the anchor exists', () => {
+  for (const [lang, html] of Object.entries(pages)) {
+    const levels = elementsWithClass(section(html, 'guides-h'), 'knowledge-level')
+    const more = levels.map((level) => anchors(level).find(({ tag }) => (attribute(tag, 'class') ?? '').split(/\s+/).includes('topic-more')))
+    assert.equal(new Set(more.map(({ text }) => text)).size, levels.length, `${lang}: each layer needs its own more-link label`)
+    for (const { href } of more) {
+      const [path, fragment] = href.split('#')
+      assert.ok(localPathExists(path), `${lang}: missing ${path}`)
+      if (fragment) assert.ok(readFileSync(join(out, path.replace(/^\/+/, ''), 'index.html'), 'utf8').includes(`id="${fragment}"`), `${lang}: ${href} has no target`)
+    }
+    assert.ok(!more[2].href.endsWith('/guides/ai-video'), `${lang}: techniques span more than the AI-video category`)
+    assert.match(more[3].text, lang === 'en' ? /term|glossary/i : /术语/, `${lang}: the glossary link must say it looks up terms`)
   }
 })
 

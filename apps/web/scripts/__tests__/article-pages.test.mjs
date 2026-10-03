@@ -28,7 +28,8 @@ const scratch = (t, articles) => {
   for (const file of GENERATOR_FILES) cpSync(join(scriptsDir, file), join(root, 'scripts', file))
   if (articles) {
     writeFileSync(join(root, 'content/articles.json'), JSON.stringify(articles))
-    writeFileSync(join(root, 'content/home-reading.json'), JSON.stringify({ paths: [], levels: [] }))
+    // Paths and layers cite the real article library; the tool notes do not.
+    writeFileSync(join(root, 'content/home-reading.json'), JSON.stringify({ ...JSON.parse(readFileSync(join(root, 'content/home-reading.json'), 'utf8')), paths: [], levels: [] }))
   }
   return root
 }

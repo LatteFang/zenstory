@@ -13,8 +13,8 @@
       ],
       [
         {
-          "en": "Choose an agent or workbench",
-          "zh": "选择 Agent 或工作台"
+          "en": "Pick your first writing skill",
+          "zh": "了解写作 skill，选好入口"
         },
         {
           "en": "Build the premise and outline",
@@ -24,14 +24,18 @@
           "en": "Draft and check the opening",
           "zh": "写出开篇并检查"
         }
+      ],
+      [
+        "oh-story",
+        "workbench"
       ]
     ],
     [
       "02",
       "A manuscript",
       "已经有小说",
-      "Continue writing, or choose one adaptation: drama or a game.",
-      "继续写作，或从短剧、游戏中选择一种改编方向。",
+      "Import it and keep writing; adapt it when you are ready.",
+      "导入书稿接着写，需要时再改编。",
       [
         "import-and-continue",
         "novel-to-short-drama",
@@ -50,14 +54,17 @@
           "en": "Game: build a playable prototype",
           "zh": "游戏：制作可玩原型"
         }
+      ],
+      [
+        "oh-story"
       ]
     ],
     [
       "03",
       "Video footage",
       "已经有视频",
-      "Plan the narration, preserve useful audio and assemble the edit.",
-      "写解说、保留有用原声，再组装剪辑。",
+      "From footage to a finished recap.",
+      "从素材到一条完整的解说。",
       [
         "video-to-narration",
         "original-audio-and-narration",
@@ -65,17 +72,20 @@
       ],
       [
         {
-          "en": "Analyze footage and plan narration",
-          "zh": "分析素材，规划解说"
+          "en": "Build a grounded narrated recap",
+          "zh": "做出有依据的解说成片"
         },
         {
-          "en": "Balance original audio and narration",
-          "zh": "组织原声与旁白"
+          "en": "Refine original sound and narration",
+          "zh": "细化原声与旁白分配"
         },
         {
-          "en": "Export a CapCut draft",
-          "zh": "导出剪映草稿"
+          "en": "Optional: finish in a CapCut draft",
+          "zh": "可选：导出剪映草稿精剪"
         }
+      ],
+      [
+        "video-recap"
       ]
     ]
   ],
@@ -89,7 +99,11 @@
         "agent-skills-for-writers",
         "claude-code-novel-writing"
       ],
-      "/guides/getting-started"
+      "/guides/getting-started",
+      {
+        "en": "More getting-started guides",
+        "zh": "更多入门文章"
+      }
     ],
     [
       "Complete workflows",
@@ -101,7 +115,11 @@
         "quick-start",
         "video-to-narration"
       ],
-      "/guides"
+      "/guides#learning-paths",
+      {
+        "en": "Complete workflows in the library",
+        "zh": "知识库里的完整路径"
+      }
     ],
     [
       "Techniques & templates",
@@ -113,7 +131,11 @@
         "script-to-storyboard",
         "ai-image-prompt-template"
       ],
-      "/guides/ai-video"
+      "/guides#browse-topics",
+      {
+        "en": "Browse techniques by creative task",
+        "zh": "按创作任务查技法"
+      }
     ],
     [
       "Revision & reference",
@@ -125,7 +147,37 @@
         "character-consistency",
         "fix-audio-video-sync-after-editing"
       ],
-      "/glossary"
+      "/glossary",
+      {
+        "en": "Look up a term in the glossary",
+        "zh": "查术语表"
+      }
     ]
-  ]
+  ],
+  "tools": {
+    "oh-story": {
+      "en": "Chart research, deconstruction, drafting, de-AI editing, covers.",
+      "zh": "扫榜、拆文、写作、去AI味、封面图。"
+    },
+    "drama-skills": {
+      "en": "Episode scripts, visual bible, storyboards, generation prompts.",
+      "zh": "分集剧本、视觉设定、分镜、生成提示词。"
+    },
+    "novel-to-game": {
+      "en": "A cited source bible, gameplay design, a playable build and QA.",
+      "zh": "带出处的设定集、玩法设计、可玩版本与 QA。"
+    },
+    "video-recap": {
+      "en": "Scene understanding, script, voiceover, edit, subtitles.",
+      "zh": "场景理解、写稿、配音、剪辑、字幕。"
+    },
+    "dsh": {
+      "en": "The four skill packs inside DeepSeek Harness, with GUI workbenches.",
+      "zh": "在 DeepSeek Harness 里用图形工作台跑这四套 skill。"
+    },
+    "workbench": {
+      "en": "Novel writing only: files, characters, chapters and versions in one browser workspace.",
+      "zh": "只写小说：素材、人设、章节、版本都在一个浏览器工作区。"
+    }
+  }
 }

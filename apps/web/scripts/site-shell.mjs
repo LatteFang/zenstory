@@ -66,6 +66,8 @@ input.value=new URL(location.href).searchParams.get('q')||'';form.hidden=false;u
 })()</script>`
 
 export const FONTS = 'https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Plus+Jakarta+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap'
+/** The homepage's own type system (see the `body[data-page="home"]` block in org-pages.css). */
+export const HOME_FONTS = 'https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap'
 
 /** Header language switch: two links, the current language marked. */
 export const langSwitch = (lang, links) => `<div class="lang-switch" role="group" aria-label="${t(lang, 'Language', '语言')}">
@@ -137,8 +139,10 @@ export const footer = (lang) => `
  * A complete document. `route` is this page's own path (already localized);
  * `alternates` is `{en, zh}` of the two language paths, or null when the page
  * has no counterpart (then `switchLinks` must be given, e.g. in-page anchors).
+ * `pageId` marks `<body data-page>` for a page with its own visual system; `fonts`
+ * is the Google Fonts stylesheet that system loads.
  */
-export const page = ({ lang, route, alternates = null, switchLinks = alternates, section = null, title, description, ogType = 'article', ld, body, head = '' }) => {
+export const page = ({ lang, route, alternates = null, switchLinks = alternates, section = null, title, description, ogType = 'article', ld, body, head = '', pageId = null, fonts = FONTS }) => {
   if (!switchLinks) throw new Error(`${route}: a page needs alternates or switchLinks`)
   const other = lang === 'zh' ? 'en' : 'zh'
   return `<!doctype html>
@@ -168,12 +172,12 @@ ${alternates ? `<meta property="og:locale:alternate" content="${OG_LOCALE[other]
 <link rel="stylesheet" href="/org/org.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="${FONTS}">
-<link rel="stylesheet" href="${FONTS}" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="${FONTS}"></noscript>
+<link rel="preload" as="style" href="${fonts}">
+<link rel="stylesheet" href="${fonts}" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="${fonts}"></noscript>
 ${head}${jsonld({ '@context': 'https://schema.org', '@graph': ld })}
 </head>
-<body>
+<body${pageId ? ` data-page="${esc(pageId)}"` : ''}>
 <a class="skip" href="#main">${t(lang, 'Skip to content', '跳到正文')}</a>
 ${nav(lang, { section, switchLinks })}
 <main id="main">
