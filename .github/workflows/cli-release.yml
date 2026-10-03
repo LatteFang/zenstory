@@ -1,0 +1,287 @@
+name: CLI Release
+
+on:
+  push:
+    tags: ["cli-v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: cli-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  ARTIFACT_NAME: zenstory-cli-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+jobs:
+  verify:
+    name: Verify and package CLI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      manifest-sha256: ${{ steps.digests.outputs.manifest-sha256 }}
+      promotion-proof-sha256: ${{ steps.digests.outputs.promotion-proof-sha256 }}
+      ci-proof-sha256: ${{ steps.digests.outputs.ci-proof-sha256 }}
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      with:
+        fetch-depth: 0
+
+    - name: Require a stable CLI tag or a nonpublishing main dry-run
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        SOURCE_REF: ${{ github.ref }}
+      run: |
+        if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+          [[ "$SOURCE_REF" == "refs/heads/main" ]] || {
+            echo "::error::Manual CLI release checks are nonpublishing dry-runs and must select main."
+            exit 1
+          }
+        elif [[ ! "$SOURCE_REF" =~ ^refs/tags/cli-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "::error::CLI publication requires a cli-vX.Y.Z tag."
+          exit 1
+        fi
+
+    - name: Validate CLI version and changelog before build
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_name || '' }}
+      run: |
+        args=(--publishing false)
+        if [[ "$EVENT_NAME" == "push" ]]; then
+          args=(--publishing true --tag "$RELEASE_TAG")
+        fi
+        node scripts/cli-release.mjs check "${args[@]}"
+
+    - name: Prove exact source passed the newest main CI attempt
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_name || '' }}
+      run: |
+        args=(--repository "$GITHUB_REPOSITORY" --sha "$GITHUB_SHA" --output release/ci-proof.json)
+        if [[ -n "$RELEASE_TAG" ]]; then args+=(--tag "$RELEASE_TAG"); fi
+        mkdir -p release
+        node scripts/cli-release.mjs ci-proof "${args[@]}"
+
+    - uses: pnpm/action-setup@eae0cfeb286e66ffb5155f1a79b90583a127a68b # v2
+      with:
+        version: 10.29.3
+
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: '20'
+        cache: pnpm
+        cache-dependency-path: pnpm-lock.yaml
+
+    - name: Install CLI dependencies
+      run: pnpm install --frozen-lockfile --filter zenstory
+
+    - name: Test and build CLI
+      run: |
+        pnpm --filter zenstory test
+        pnpm --filter zenstory build
+
+    - name: Pack the only promotable npm tarball
+      working-directory: apps/cli
+      run: npm pack --pack-destination ../../release
+
+    - name: Inspect package and exercise the packed binary without an API
+      run: |
+        version="$(node -p "require('./apps/cli/package.json').version")"
+        tarball="release/zenstory-$version.tgz"
+        node scripts/cli-release.mjs inspect-package --tarball "$tarball"
+        temp="$(mktemp -d)"
+        trap 'rm -rf "$temp"' EXIT
+        npm install --prefix "$temp" --ignore-scripts --no-audit --no-fund --package-lock=false "$tarball"
+        env -u ZENSTORY_API_KEY -u ZENSTORY_API_BASE "$temp/node_modules/.bin/zenstory" --help
+
+    - name: Create source-bound release manifest
+      run: |
+        version="$(node -p "require('./apps/cli/package.json').version")"
+        node scripts/cli-release.mjs manifest \
+          --tarball "release/zenstory-$version.tgz" \
+          --sha "$GITHUB_SHA" \
+          --version "$version" \
+          --run-id "$GITHUB_RUN_ID" \
+          --run-attempt "$GITHUB_RUN_ATTEMPT" \
+          --artifact-name "$ARTIFACT_NAME" \
+          --output release/RELEASE-MANIFEST.json
+
+    - name: Export independent producer record digests
+      id: digests
+      working-directory: release
+      run: |
+        {
+          echo "manifest-sha256=$(sha256sum RELEASE-MANIFEST.json | cut -d' ' -f1)"
+          echo "promotion-proof-sha256=$(sha256sum PROMOTION-PROOF.json | cut -d' ' -f1)"
+          echo "ci-proof-sha256=$(sha256sum ci-proof.json | cut -d' ' -f1)"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Upload the only promotable artifact
+      id: upload
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      with:
+        name: ${{ env.ARTIFACT_NAME }}
+        path: |
+          release/*.tgz
+          release/SHA256SUMS
+          release/RELEASE-MANIFEST.json
+          release/PROMOTION-PROOF.json
+          release/ci-proof.json
+        if-no-files-found: error
+        retention-days: 14
+
+  publication-ready:
+    name: Require configured CLI publisher
+    needs: verify
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/cli-v')
+    runs-on: ubuntu-latest
+    steps:
+    - name: Fail closed until npm publishing is explicitly configured
+      env:
+        CLI_NPM_PUBLISH_ENABLED: ${{ vars.CLI_NPM_PUBLISH_ENABLED }}
+      run: |
+        [[ "$CLI_NPM_PUBLISH_ENABLED" == "true" ]] || {
+          echo "::error::CLI_NPM_PUBLISH_ENABLED is not true. Verify npm package ownership and the cli-release.yml trusted-publisher binding before publication."
+          exit 1
+        }
+
+  github-release:
+    name: Publish CLI GitHub Release
+    needs: [verify, publication-ready]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      checks: read
+      contents: write
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      with:
+        artifact-ids: ${{ needs.verify.outputs.artifact-id }}
+        path: release
+    - name: Verify producer record bytes before granting a credential
+      working-directory: release
+      env:
+        EXPECTED_MANIFEST_SHA256: ${{ needs.verify.outputs.manifest-sha256 }}
+        EXPECTED_PROMOTION_PROOF_SHA256: ${{ needs.verify.outputs.promotion-proof-sha256 }}
+        EXPECTED_CI_PROOF_SHA256: ${{ needs.verify.outputs.ci-proof-sha256 }}
+      run: |
+        printf '%s  %s\n' "$EXPECTED_MANIFEST_SHA256" RELEASE-MANIFEST.json | sha256sum -c -
+        printf '%s  %s\n' "$EXPECTED_PROMOTION_PROOF_SHA256" PROMOTION-PROOF.json | sha256sum -c -
+        printf '%s  %s\n' "$EXPECTED_CI_PROOF_SHA256" ci-proof.json | sha256sum -c -
+
+    - name: Revalidate exact artifact and publish append-only assets
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        node scripts/cli-release.mjs verify-manifest \
+          --manifest release/RELEASE-MANIFEST.json \
+          --promotion-proof release/PROMOTION-PROOF.json \
+          --ci-proof release/ci-proof.json \
+          --directory release \
+          --sha "$GITHUB_SHA" \
+          --run-id "$GITHUB_RUN_ID" \
+          --run-attempt "$GITHUB_RUN_ATTEMPT" \
+          --artifact-name "$ARTIFACT_NAME"
+        node scripts/cli-release.mjs github-publish --manifest release/RELEASE-MANIFEST.json --directory release --sha "$GITHUB_SHA" --repository "$GITHUB_REPOSITORY" --tag "$GITHUB_REF_NAME"
+
+  npm:
+    name: Publish CLI npm package
+    needs: [verify, publication-ready]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      id-token: write
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      with:
+        persist-credentials: false
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: '24'
+        registry-url: https://registry.npmjs.org
+    - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      with:
+        artifact-ids: ${{ needs.verify.outputs.artifact-id }}
+        path: release
+    - name: Verify producer record bytes before granting a credential
+      working-directory: release
+      env:
+        EXPECTED_MANIFEST_SHA256: ${{ needs.verify.outputs.manifest-sha256 }}
+        EXPECTED_PROMOTION_PROOF_SHA256: ${{ needs.verify.outputs.promotion-proof-sha256 }}
+        EXPECTED_CI_PROOF_SHA256: ${{ needs.verify.outputs.ci-proof-sha256 }}
+      run: |
+        printf '%s  %s\n' "$EXPECTED_MANIFEST_SHA256" RELEASE-MANIFEST.json | sha256sum -c -
+        printf '%s  %s\n' "$EXPECTED_PROMOTION_PROOF_SHA256" PROMOTION-PROOF.json | sha256sum -c -
+        printf '%s  %s\n' "$EXPECTED_CI_PROOF_SHA256" ci-proof.json | sha256sum -c -
+
+    - name: Revalidate and publish with npm Trusted Publishing
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        node scripts/cli-release.mjs npm-version
+        node scripts/cli-release.mjs verify-manifest \
+          --manifest release/RELEASE-MANIFEST.json \
+          --promotion-proof release/PROMOTION-PROOF.json \
+          --ci-proof release/ci-proof.json \
+          --directory release \
+          --sha "$GITHUB_SHA" \
+          --run-id "$GITHUB_RUN_ID" \
+          --run-attempt "$GITHUB_RUN_ATTEMPT" \
+          --artifact-name "$ARTIFACT_NAME"
+        node scripts/cli-release.mjs npm-publish \
+          --manifest release/RELEASE-MANIFEST.json \
+          --directory release \
+          --sha "$GITHUB_SHA" \
+          --repository "$GITHUB_REPOSITORY" \
+          --tag "$GITHUB_REF_NAME"
+
+  verify-public:
+    name: Verify public CLI channels
+    needs: [verify, github-release, npm]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      with:
+        persist-credentials: false
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: '20'
+    - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      with:
+        artifact-ids: ${{ needs.verify.outputs.artifact-id }}
+        path: release
+    - name: Verify producer record bytes before granting a credential
+      working-directory: release
+      env:
+        EXPECTED_MANIFEST_SHA256: ${{ needs.verify.outputs.manifest-sha256 }}
+        EXPECTED_PROMOTION_PROOF_SHA256: ${{ needs.verify.outputs.promotion-proof-sha256 }}
+        EXPECTED_CI_PROOF_SHA256: ${{ needs.verify.outputs.ci-proof-sha256 }}
+      run: |
+        printf '%s  %s\n' "$EXPECTED_MANIFEST_SHA256" RELEASE-MANIFEST.json | sha256sum -c -
+        printf '%s  %s\n' "$EXPECTED_PROMOTION_PROOF_SHA256" PROMOTION-PROOF.json | sha256sum -c -
+        printf '%s  %s\n' "$EXPECTED_CI_PROOF_SHA256" ci-proof.json | sha256sum -c -
+
+    - name: Verify anonymous release bytes, npm integrity, and installed help
+      env:
+        NODE_AUTH_TOKEN: ''
+      run: node scripts/cli-release.mjs verify-public --manifest release/RELEASE-MANIFEST.json --directory release --sha "$GITHUB_SHA" --repository "$GITHUB_REPOSITORY"
