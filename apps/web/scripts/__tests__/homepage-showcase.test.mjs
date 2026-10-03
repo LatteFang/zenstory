@@ -47,9 +47,8 @@ const attribute = (tag, name) => {
   return match?.[1] ?? match?.[2]
 }
 
+// Text extraction for trusted, generated fixture fragments; this is not an HTML sanitizer.
 const textOf = (html) => html
-  .replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
-  .replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
   .replace(/<[^>]+>/g, ' ')
   .replace(/&(?:nbsp|#160);/gi, ' ')
   .replace(/&(?:amp|#38);/gi, '&')
