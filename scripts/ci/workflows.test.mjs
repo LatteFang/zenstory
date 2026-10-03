@@ -64,3 +64,13 @@ test("online smoke is read-only, source-bound, canonical-origin only, and not a 
     /Refusing noncanonical frontend origin/,
   );
 });
+
+test("regression controls are required CI and npm version comes from the npm executable", async () => {
+  const workflow = await readFile(".github/workflows/cli-release.yml", "utf8");
+  assert.doesNotMatch(workflow, /process\.versions\.npm/);
+  assert.match(workflow, /node scripts\/cli-release\.mjs npm-version/);
+  const ci = await readFile(".github/workflows/ci.yml", "utf8");
+  assert.match(ci, /node --test scripts\/ci\/\*\.test\.mjs/);
+  assert.match(ci, /node --test scripts\/cli-release\.test\.mjs/);
+  assert.match(ci, /'scripts\/cli-release\*\.mjs'/);
+});

@@ -160,6 +160,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       actions: read
+      checks: read
       contents: write
     steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -233,7 +234,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
       run: |
-        node -e 'const [major, minor] = process.versions.npm.split(".").map(Number); if (major < 11 || (major === 11 && minor < 5)) throw new Error("npm " + process.versions.npm + " lacks Trusted Publishing support")'
+        node scripts/cli-release.mjs npm-version
         node scripts/cli-release.mjs verify-manifest \
           --manifest release/RELEASE-MANIFEST.json \
           --promotion-proof release/PROMOTION-PROOF.json \

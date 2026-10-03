@@ -38,6 +38,7 @@ jobs:
             - 'apps/web/**'
           cli:
             - 'apps/cli/**'
+            - 'scripts/cli-release*.mjs'
             - 'pnpm-lock.yaml'
           ci:
             - '.github/workflows/**'
@@ -92,6 +93,14 @@ jobs:
     - name: Lint CI workflows
       run: |
         yamllint .github/workflows/ .github/actions/
+
+    - name: Setup Node.js for control regressions
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: '20'
+
+    - name: Test CI and deployment control regressions
+      run: node --test scripts/ci/*.test.mjs
 
   backend-test:
     needs: detect-changes
@@ -402,6 +411,9 @@ jobs:
 
     - name: Install CLI dependencies
       run: pnpm install --frozen-lockfile --filter zenstory
+
+    - name: Test CLI release controls
+      run: node --test scripts/cli-release.test.mjs
 
     - name: Run CLI tests
       run: pnpm --filter zenstory test

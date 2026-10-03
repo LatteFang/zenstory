@@ -17,6 +17,20 @@ function invariant(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+export function validateNpmVersion(version) {
+  const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+  invariant(match, `npm ${version} lacks supported Trusted Publishing`);
+  const [major, minor, patch] = match.slice(1).map(Number);
+  invariant(major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1))),
+    `npm ${version} lacks Trusted Publishing support; require >=11.5.1`);
+  return version;
+}
+
+async function commandNpmVersion() {
+  const { stdout } = await execFileAsync("npm", ["--version"]);
+  process.stdout.write(`${validateNpmVersion(stdout.trim())}\n`);
+}
+
 export function validateReleaseMetadata({ tag, packageVersion, changelog, publishing = false }) {
   invariant(/^\d+\.\d+\.\d+$/.test(packageVersion), `invalid package version: ${packageVersion}`);
   if (!publishing) {
@@ -631,6 +645,7 @@ async function main() {
     "verify-manifest": commandVerifyManifest,
     "github-publish": commandGithubPublish,
     "npm-publish": commandNpmPublish,
+    "npm-version": commandNpmVersion,
     "verify-public": commandVerifyPublic,
   };
   invariant(commands[command], `unknown release command: ${command ?? "missing"}`);

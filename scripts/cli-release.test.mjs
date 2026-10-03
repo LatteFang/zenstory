@@ -12,6 +12,7 @@ import {
   validatePackageEntries,
   validateReleaseMetadata,
   validateRunStability,
+  validateNpmVersion,
   verifyReleaseManifest,
 } from "./cli-release.mjs";
 
@@ -189,4 +190,11 @@ test("CI proof rejects a concurrent rerun or selected-run identity change", () =
   assert.throws(() => validateRunStability(before, { ...before, run_attempt: 2 }), /rerun during proof collection/);
   assert.throws(() => validateRunStability(before, { ...before, head_sha: "b".repeat(40) }), /source changed/);
   assert.throws(() => validateRunStability(before, { ...before, conclusion: "failure" }), /run changed/);
+});
+
+test("npm Trusted Publishing validates the actual CLI version at or above 11.5.1", () => {
+  for (const version of ["11.5.1", "11.6.0", "12.0.0"]) assert.equal(validateNpmVersion(version), version);
+  for (const version of ["10.9.0", "11.4.9", "11.5.0", "undefined", "11.5.1-rc.1"]) {
+    assert.throws(() => validateNpmVersion(version), /Trusted Publishing/);
+  }
 });
