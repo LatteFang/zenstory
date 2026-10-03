@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import functools
 import json
 from collections.abc import AsyncIterator, Callable
 from typing import Any
@@ -18,8 +19,10 @@ from agent.openai_agents.events import (
     merge_unique_strings,
     normalize_str_list,
     parse_json_object,
+    tool_error_text,
 )
 from agent.openai_agents.model import DEEPSEEK_WRITING_MODEL, get_deepseek_chat_model
+from agent.openai_agents.tool_failure_breaker import ToolFailureBreaker
 from agent.openai_agents.tools_adapter import build_agent_function_tools
 from config.agent_runtime import (
     AGENT_COLLABORATION_MAX_ITERATIONS,
@@ -58,7 +61,16 @@ def _control_flow_status_of(tool_name: str, output_text: str) -> bool:
     return isinstance(payload, dict) and payload.get("status") == expected
 
 
-def _stop_run_on_control_flow_tool(_ctx: Any, tool_results: list[Any]) -> Any:
+# 工具失败熔断后 MESSAGE_END 的 stop_reason（随 assistant 消息元数据落库）。
+TOOL_FAILURE_STOP_REASON = "tool_failure_circuit_open"
+
+
+def _stop_run_on_control_flow_tool(
+    _ctx: Any,
+    tool_results: list[Any],
+    *,
+    failure_breaker: ToolFailureBreaker | None = None,
+) -> Any:
     """SDK 的 tool_use_behavior 回调：控制流工具生效后立即结束当前 run。
 
     为什么不能只靠 result.cancel(mode="after_turn")：cancel 是异步落地的——
@@ -73,8 +85,17 @@ def _stop_run_on_control_flow_tool(_ctx: Any, tool_results: list[Any]) -> Any:
     用可调用对象而非 StopAtTools(dict) 的原因：StopAtTools 只看工具名，
     控制流工具报错（例如 target_agent 非法）时也会把 run 掐断，模型将失去在同一个
     run 内纠错的机会；这里按返回 status 精确判定。
+
+    工具失败熔断（failure_breaker）走同一个出口：熔断器在工具回调里同步记账，
+    本轮工具一跑完这里就能看到，run-loop 不会再为「原样重试」发起下一次模型调用。
     """
     from agents.agent import ToolsToFinalOutputResult
+
+    if failure_breaker is not None and failure_breaker.trip is not None:
+        return ToolsToFinalOutputResult(
+            is_final_output=True,
+            final_output=failure_breaker.trip.user_message(),
+        )
 
     for tool_result in tool_results or []:
         tool_name = str(getattr(getattr(tool_result, "tool", None), "name", "") or "")
@@ -311,7 +332,35 @@ def _usage_dict_from_result(result: Any) -> dict[str, int]:
     return {key: value for key, value in totals.items() if value}
 
 
-def _build_agent(agent_type: str, system_prompt: str) -> Any:
+def _format_tool_error(args: Any, *, failure_breaker: ToolFailureBreaker | None = None) -> str | None:
+    """RunConfig.tool_error_formatter：把「工具不存在」改写成项目统一的结构化错误。
+
+    只处理 kind == "tool_not_found"（其余返回 None 走 SDK 默认文案）。结果经
+    请求级熔断器记账：模型反复调用不存在的工具时，与普通工具失败一样受
+    「同一调用连续失败」与「累计失败」两条上限约束；前者触发时熔断原因是
+    TRIP_REASON_TOOL_NOT_FOUND（调用没执行，文案不说「以相同参数失败」）。
+    """
+    if getattr(args, "kind", None) != "tool_not_found":
+        return None
+    tool_name = str(getattr(args, "tool_name", "") or "")
+    text = tool_error_text(
+        f"工具 {tool_name} 不在你本轮可用的工具集里，调用未执行。"
+        "请只使用已提供的工具；需要改文件但没有写工具时，直接在回答里说明。",
+        error_type="tool_not_found",
+        tool_name=tool_name,
+    )
+    if failure_breaker is not None:
+        text = failure_breaker.observe(tool_name, "", text)
+    return text
+
+
+def _build_agent(
+    agent_type: str,
+    system_prompt: str,
+    *,
+    failure_breaker: ToolFailureBreaker | None = None,
+    read_only: bool = False,
+) -> Any:
     # NOTE — Agent.as_tool was evaluated and rejected.
     # Agent.as_tool wraps an agent as a callable tool for a parent agent, which
     # would collapse each sub-agent's SSE events into a single opaque tool result
@@ -347,10 +396,14 @@ def _build_agent(agent_type: str, system_prompt: str) -> Any:
             # MESSAGE_END 的 usage 恒为空，用量统计只能退化成「字符数/4」的估算。
             include_usage=True,
         ),
-        tools=build_agent_function_tools(agent_type),
-        # 控制流工具生效即结束 run，避免 SDK 在「工作流已暂停」之后再跑一整轮
-        # 模型调用并真实执行其工具（详见 _stop_run_on_control_flow_tool）。
-        tool_use_behavior=_stop_run_on_control_flow_tool,
+        tools=build_agent_function_tools(
+            agent_type, failure_breaker=failure_breaker, read_only=read_only
+        ),
+        # 控制流工具生效、或工具失败熔断时即结束 run，避免 SDK 在「工作流已暂停」
+        # 之后再跑一整轮模型调用并真实执行其工具（详见 _stop_run_on_control_flow_tool）。
+        tool_use_behavior=functools.partial(
+            _stop_run_on_control_flow_tool, failure_breaker=failure_breaker
+        ),
     )
 
 
@@ -449,8 +502,13 @@ async def run_openai_agents_streaming_agent(
     agent_type: str,
     system_prompt: str,
     get_steering_messages: Callable[[], Any] | None = None,
+    failure_breaker: ToolFailureBreaker | None = None,
 ) -> AsyncIterator[StreamEvent]:
-    """Run one writing agent via openai-agents-python and yield workflow events."""
+    """Run one writing agent via openai-agents-python and yield workflow events.
+
+    failure_breaker：工具失败熔断器。不传时取 state["tool_failure_breaker"]
+    （writing_graph 每个请求建一个、跨 agent run 共享）；都没有时本次 run 自建一个。
+    """
     api_messages = build_history_messages(state)
     assistant_text_parts: list[str] = []
     thinking_text_parts: list[str] = []
@@ -463,6 +521,17 @@ async def run_openai_agents_streaming_agent(
     clarification_event_data: dict[str, Any] | None = None
     # 控制流工具已生效：本 run 不应再有新的模型轮次（见 _is_new_model_turn_event）。
     control_flow_stopped = False
+    # 工具失败熔断器按请求共享：writer → 审稿人 → writer 的往返不能让「同一调用
+    # 连续失败」的计数归零。消费循环在 tool_output 处看到它已熔断后，与控制流
+    # 工具一样不再接受新的模型轮次。
+    if failure_breaker is None:
+        shared_breaker = state.get("tool_failure_breaker")
+        failure_breaker = (
+            shared_breaker
+            if isinstance(shared_breaker, ToolFailureBreaker)
+            else ToolFailureBreaker()
+        )
+    failure_stopped = False
 
     # Read-only co-call instrumentation (item 1.4).
     # Approximation: within a single assistant turn, the SDK emits all tool_called events
@@ -493,7 +562,13 @@ async def run_openai_agents_streaming_agent(
 
         from .intra_run_trimmer import IntraRunToolOutputTrimmer
 
-        sdk_agent = _build_agent(agent_type, system_prompt)
+        sdk_agent = _build_agent(
+            agent_type,
+            system_prompt,
+            failure_breaker=failure_breaker,
+            # 用户明确要求不改文件：写工具调用一律拒绝执行（由 writing_graph 按路由结果置位）。
+            read_only=state.get("read_only") is True,
+        )
         # Install the progress emitter only across run_streamed. The SDK creates
         # its background task synchronously inside run_streamed, copying the
         # current context (with the emitter) into it; that snapshot is
@@ -519,6 +594,15 @@ async def run_openai_agents_streaming_agent(
                     # outputs are never touched. See intra_run_trimmer for why the stock SDK
                     # ToolOutputTrimmer is a no-op for this project's history shape.
                     call_model_input_filter=IntraRunToolOutputTrimmer(),
+                    # 模型调用了本 agent 工具集里没有的工具（例如审稿人照着共享历史调
+                    # edit_file、或幻觉出的工具名）：SDK 默认抛 ModelBehaviorError，整轮
+                    # 以致命 ERROR 结束、原始异常文本直接展示给用户。改为把结构化错误
+                    # 交还模型让它自行纠正；这类错误同样经熔断器记账（见
+                    # _format_tool_error），乱试有上限。
+                    tool_not_found_behavior="return_error_to_model",
+                    tool_error_formatter=functools.partial(
+                        _format_tool_error, failure_breaker=failure_breaker
+                    ),
                 ),
             )
         finally:
@@ -539,7 +623,7 @@ async def run_openai_agents_streaming_agent(
                 if kind == "error":
                     raise payload
                 sdk_event = payload
-                if control_flow_stopped and _is_new_model_turn_event(sdk_event):
+                if (control_flow_stopped or failure_stopped) and _is_new_model_turn_event(sdk_event):
                     # 兜底护栏：正常情况下 tool_use_behavior 已经让 run-loop 在控制流
                     # 工具返回的那一刻结束，走不到这里。一旦走到（工具改名、SDK 行为
                     # 变化等），说明 SDK 又开了新的一轮——立即硬取消并截断消费循环，
@@ -547,7 +631,7 @@ async def run_openai_agents_streaming_agent(
                     log_with_context(
                         logger,
                         30,  # WARNING
-                        "Control-flow tool did not stop the SDK run; truncating extra turn",
+                        "Control-flow/failure stop did not end the SDK run; truncating extra turn",
                         agent_type=agent_type,
                         sdk_event_type=str(getattr(sdk_event, "type", "") or ""),
                     )
@@ -696,6 +780,12 @@ async def run_openai_agents_streaming_agent(
                         control_flow_stopped = True
                         _safe_cancel(result, "after_turn")
 
+                    if failure_breaker.is_open and not failure_stopped:
+                        # 熔断由 tool_use_behavior 在 SDK turn 内同步生效；这里同样只是
+                        # 第二道保险，并让上面的护栏截断任何越界的新一轮。
+                        failure_stopped = True
+                        _safe_cancel(result, "after_turn")
+
                     # 工具输出边界是 run 内唯一能消费 steering 的时机（SDK 事件
                     # 消费循环的其余位置都在等模型流式输出）。
                     async for steering_event in _consume_boundary_steering(
@@ -719,6 +809,37 @@ async def run_openai_agents_streaming_agent(
                     "last_agent": agent_type,
                 },
             )
+
+        failure_trip = failure_breaker.trip
+        if failure_trip is not None:
+            # 工具重复失败熔断：先发 MESSAGE_END 让本 run 已消耗的 usage 照常入账，
+            # 再以 ERROR 结束——StreamAdapter 把 ERROR 当作致命错误：中断并关闭整个
+            # 工作流生成器（不会再跑计划内交接/自动质检），并以 error 帧作为 SSE
+            # 终止帧；api/agent.py 据此按 internal_error 退还本次对话额度。
+            # 同一 run 里若还有生效的 handoff/clarification，一律让位给熔断。
+            log_with_context(
+                logger,
+                30,  # WARNING
+                "Tool failure circuit breaker opened; stopping agent run",
+                agent_type=agent_type,
+                trip_reason=failure_trip.reason,
+                tool_name=failure_trip.tool_name,
+                failures=failure_trip.failures,
+                total_failures=failure_breaker.total_failures,
+                last_error=failure_trip.last_error,
+            )
+            yield StreamEvent(
+                type=StreamEventType.MESSAGE_END,
+                data={
+                    "stop_reason": TOOL_FAILURE_STOP_REASON,
+                    "usage": _usage_dict_from_result(result),
+                },
+            )
+            yield StreamEvent(
+                type=StreamEventType.ERROR,
+                data=failure_trip.as_event_data(agent_type),
+            )
+            return
 
         if clarification_event_data is not None:
             from agent.core.metrics import AGENT_CLARIFICATION_TOTAL, get_metrics_collector

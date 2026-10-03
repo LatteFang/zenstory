@@ -152,3 +152,113 @@ class TestAgentToolsMap:
 
         reviewer_tools = get_agent_tools("quality_reviewer")
         assert AGENT_TOOLS_MAP["quality_reviewer"] == reviewer_tools
+
+
+@pytest.mark.unit
+class TestQuestionToUserDetection:
+    """ends_with_question_to_user：保守地识别「agent 以向用户提问收尾」。"""
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "大纲已完成。你觉得这个方向如何？",
+            "Should I start writing chapter 1?",
+            "需要我开始写第一章吗？😊",
+            "**要不要继续写第二章？**",
+            "你更倾向哪个方向？\n\n1. 热血升级\n2. 悬疑探案",
+            "请选择：主角是男是女？\n- 男\n- 女",
+            "<file>第一章正文……</file>\n\n正文已写好，需要调整节奏吗？",
+            "开写前请确认：\n1. 主角叫什么？\n2. 故事发生在哪个年代？",
+            "你更倾向哪个方向？\n1、热血升级\n2）悬疑探案\nA. 都市\n(b) 仙侠",
+            # 中文写法常省掉「.」后的空格，照样是选项列表
+            "你更倾向哪个方向？\n1.甜宠路线\n2.虐恋路线",
+        ],
+    )
+    def test_detects_question_endings(self, text):
+        from agent.graph.nodes import ends_with_question_to_user
+
+        assert ends_with_question_to_user(text) is True
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "",
+            "   ",
+            "大纲已创建完成。",
+            "你好吗？我已经把大纲写好了。",
+            "已创建以下文件：\n- 第1章 大纲\n- 主角人设",
+            # 台词里的问句不是在问用户
+            "“你到底是谁？”",
+            "<file>他问：“你是谁？”</file>",
+            # 未闭合的 <file> 块是正文，不是对话
+            "<file>他抬头问：你是谁？",
+            # 加粗的陈述行不是列表项，也不是问句
+            "大纲写好了，请过目：\n**第一卷 已完成。**",
+            # 大纲要点的最后一条恰好是悬念问句，不等于在问用户
+            "大纲要点：\n- 开场：林风被逐出宗门\n- 悬念：谁在暗中观察他？",
+            # 「1.5万字」「e.g.」开头的陈述句不是列表项：不能借上一行的问句被判成「提问 + 选项」
+            "开头节奏你满意吗？\n1.5万字的第一章已经写完。",
+            "要不要加一段回忆？\ne.g. 回忆放到第三章更自然。",
+            "要不要再压缩一点？\ne.g.回忆放到第三章更自然。",
+            # 只有一条列表项、恰好是问句：多半是要点里的设问，不算逐条提问
+            "大纲如下：\n- 悬念：谁在暗中观察？",
+        ],
+    )
+    def test_ignores_statements_dialogue_and_file_bodies(self, text):
+        from agent.graph.nodes import ends_with_question_to_user
+
+        assert ends_with_question_to_user(text) is False
+
+
+@pytest.mark.unit
+class TestScopeDirectiveInjection:
+    """state.scope_directive 必须进入每个 agent 的系统提示。"""
+
+    @pytest.mark.asyncio
+    async def test_scope_directive_appended_to_system_prompt(self):
+        from agent.graph.nodes import run_streaming_agent
+
+        captured: dict[str, str] = {}
+
+        async def fake_openai_runner(state, agent_type, system_prompt, get_steering_messages=None):
+            captured["system_prompt"] = system_prompt
+            if False:  # pragma: no cover - 让函数成为异步生成器
+                yield None
+
+        state = {
+            "user_message": "只写第1章",
+            "messages": [],
+            "system_prompt": "base prompt",
+            "scope_directive": "用户要求的交付范围：只写第1章。",
+        }
+        with patch("agent.graph.nodes.run_openai_agents_streaming_agent", new=fake_openai_runner):
+            _ = [event async for event in run_streaming_agent(state=state, agent_type="writer")]
+
+        prompt = captured["system_prompt"]
+        assert prompt.startswith("base prompt")
+        assert "本轮用户范围约束" in prompt
+        assert prompt.rstrip().endswith("用户要求的交付范围：只写第1章。")
+
+    @pytest.mark.asyncio
+    async def test_no_scope_directive_leaves_prompt_unchanged(self):
+        from agent.graph.nodes import run_streaming_agent
+
+        captured: dict[str, str] = {}
+
+        async def fake_openai_runner(state, agent_type, system_prompt, get_steering_messages=None):
+            captured["system_prompt"] = system_prompt
+            if False:  # pragma: no cover - 让函数成为异步生成器
+                yield None
+
+        state = {"user_message": "写", "messages": [], "system_prompt": "base prompt"}
+        with patch("agent.graph.nodes.run_openai_agents_streaming_agent", new=fake_openai_runner):
+            _ = [event async for event in run_streaming_agent(state=state, agent_type="writer")]
+
+        assert "本轮用户范围约束" not in captured["system_prompt"]
+
+
+@pytest.mark.unit
+def test_full_width_parenthesized_options_count_as_question():
+    from agent.graph.nodes import ends_with_question_to_user
+
+    assert ends_with_question_to_user("你更倾向哪个方向？\n（1）甜宠\n（2）虐恋") is True

@@ -115,6 +115,8 @@ agent/
    │ hook_focus  : hook_designer → writer（必要时再 review）│
    │ review_only : quality_reviewer          │
    └───────────────────────────────────────┘
+   上表是计划序列的上限：用户没要正文（write_content=false）时剔除 writer，
+   用户明确只读（read_only=true）时整条序列清空（router.plan_workflow_agents）。
        │
        ▼
 ┌─────────────┐     handoff      ┌─────────────┐     handoff      ┌─────────────┐
@@ -129,6 +131,35 @@ Agent 可以通过两种方式交接：
 
 1. **显式 handoff**: Agent 调用 `handoff_to_agent` 工具
 2. **工作流自动交接**: 按照 router 规划的 workflow_agents 顺序执行
+3. **自动质检门**: writer 写出超过阈值的正文后自动交给 quality_reviewer
+
+用户范围优先于交接（writing_graph.py）：
+
+- agent 以向用户提问收尾（最后一次工具调用之后的文本以问号结尾，见
+  `nodes.ends_with_question_to_user`）时，计划交接不触发，本轮停下等用户回答；
+  结构化的 `request_clarification` 仍是首选信号。显式 handoff 不受影响。自动质检门不看这个
+  信号（writer 收尾"需要我继续写第二章吗？"时，开启了自动质检/高质量模式仍照常送审）。
+- 只读请求（router `read_only=true`）不交接给有写权限的 agent，显式 handoff 也拦下，并给一张
+  `WORKFLOW_STOPPED(reason="read_only_handoff_blocked")` 提示卡片；交接给 quality_reviewer 这类
+  只读 agent 照常。前端收到任何 workflow_stopped 都会结束流式状态，所以拦下时只记录、不 break，
+  提示推迟到收尾才发：紧挨在终止事件（WORKFLOW_COMPLETE / 澄清或无效交接 / 轮数耗尽 / ERROR）
+  之前，或自然结束时作为图的最后一个事件。`api/agent.py` 判定终止事件时跳过这个 reason
+  （`core/events.NON_TERMINAL_WORKFLOW_STOPPED_REASONS`），之后若异常仍补发兜底 error 帧并退款。
+  graph 同时置 `state["read_only"]`，`tools_adapter` 对
+  `registry.FILE_WRITE_TOOL_NAMES`（create/edit/delete_file、parallel_execute）的调用一律拒绝执行、
+  返回 `error_type="read_only_request"` 的可恢复错误（工具仍在清单里，描述标明本轮不可用），
+  拒绝经熔断器记账；`parallel_execute` 整次拒绝，即使这一批只有 query_files / hybrid_search
+  子任务；`update_project`（项目信息/任务计划，不是文件）不在其中，只读请求下照常执行。
+  只读请求万一留下空文件，直接回滚、不安排补写。
+- runner 的 `RunConfig` 设 `tool_not_found_behavior="return_error_to_model"`：模型调用工具集里
+  没有的工具（如审稿人调 edit_file）时得到 `error_type="tool_not_found"` 的结构化错误并经熔断器
+  记账（同名连续 3 次的熔断原因为 `repeated_unavailable_tool_call`），而不是 SDK 抛
+  `ModelBehaviorError` 以致命 ERROR 结束。
+- 路由的范围判断转成 `state["scope_directive"]`，由 `nodes.run_streaming_agent` 追加到本轮每个
+  agent 的系统提示末尾；计划交接的 handoff_packet.todo 也带上用户的 `scope`。
+- 空文件纠偏轮由建了空文件的 agent 自己补写（不再硬编码 writer）；被纠偏打断的那一轮若以提问
+  收尾，「等用户回答」会带过纠偏轮，纠偏完成后照样停下。
+- 自动质检门只认「至少一次写工具成功」：writer 的 create_file/edit_file 全部失败时不送审。
 
 ## 关键组件详解
 
@@ -168,7 +199,9 @@ async def process_stream(
 **输出**:
 - `current_agent`: 初始 agent (planner/writer/quality_reviewer)
 - `workflow_plan`: 工作流类型 (quick/standard/full/hook_focus/review_only)
-- `workflow_agents`: 后续要执行的 agent 列表
+- `workflow_agents`: 后续要执行的 agent 列表（已按用户范围裁剪）
+- `routing_metadata`: RouterDecision 全量，含用户范围字段 `write_content`（是否要正文，
+  None=旧格式未给出）、`read_only`（明确不改文件）、`scope`（交付范围摘要：ROUTER_PROMPT 要求 <=40 字，`MAX_SCOPE_CHARS`=80 为硬截断上限）
 
 ### OpenAI Agents SDK Runner (openai_agents/runner.py)
 
@@ -180,7 +213,9 @@ async def run_openai_agents_streaming_agent(...):
     api_messages = build_history_messages(state)
 
     # 2. 构建 SDK Agent（DeepSeek deepseek-flash + 项目工具）
-    sdk_agent = _build_agent(agent_type, system_prompt)
+    #    熔断器取 state["tool_failure_breaker"]（writing_graph 每个请求建一个，跨 agent run 共享）；
+    #    state["read_only"] 为 True 时写文件工具仍在工具集里，但调用一律拒绝执行（read_only_request）
+    sdk_agent = _build_agent(agent_type, system_prompt, failure_breaker=..., read_only=...)
 
     # 3. 运行 Runner.run_streamed 并映射 SDK 事件
     async for sdk_event in result.stream_events():
@@ -188,6 +223,7 @@ async def run_openai_agents_streaming_agent(...):
         # reasoning delta -> THINKING
         # tool_called -> TOOL_USE
         # tool_output -> TOOL_RESULT / HANDOFF / WORKFLOW_STOPPED
+        #               （工具失败熔断后：MESSAGE_END(stop_reason=tool_failure_circuit_open) + ERROR）
         yield mapped_event
 
     # 4. 写回 assistant/tool turn，供后续 graph agent 使用

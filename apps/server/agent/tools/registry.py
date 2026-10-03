@@ -38,6 +38,16 @@ QUALITY_REVIEWER_TOOL_NAMES: list[str] = [
     "read_skill_resource",
 ]
 
+# 会改动项目文件的工具（parallel_execute 的子任务就是 create/edit/delete，一并算写工具）。
+# 两处共用：writing_graph._agent_can_write_files 据此判断 agent 是否有写权限；
+# 用户明确要求「本轮不要改文件」时，tools_adapter 对这些工具的调用一律拒绝执行。
+FILE_WRITE_TOOL_NAMES: frozenset[str] = frozenset({
+    "create_file",
+    "edit_file",
+    "delete_file",
+    "parallel_execute",
+})
+
 AGENT_TOOL_NAME_MAP: dict[str, list[str]] = {
     "planner": DEFAULT_TOOL_NAMES,
     "hook_designer": DEFAULT_TOOL_NAMES,

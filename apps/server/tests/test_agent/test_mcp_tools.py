@@ -1400,3 +1400,62 @@ async def test_create_folder_still_blocked_while_file_awaits_content(db_session)
     finally:
         ToolContext.clear_pending_empty_file()
         ToolContext.clear_context()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_file_clears_stale_pending_marker_after_edit_file_wrote_body(db_session):
+    """上一个空文件的正文已经用 edit_file(op=append) 写进去：标记陈旧，不能再挡新文件。"""
+    from agent.tools.mcp_tools import ToolContext, edit_file
+
+    user, project = _make_user_and_project(db_session, "stale")
+    ToolContext.set_context(
+        session=db_session, user_id=user.id, project_id=project.id, session_id="sess-stale"
+    )
+    try:
+        first = _parse_payload(await create_file({"title": "陈砚", "file_type": "character"}))
+        assert first["status"] == "success"
+        first_id = first["data"]["id"]
+
+        edited = _parse_payload(
+            await edit_file({"id": first_id, "edits": [{"op": "append", "text": "陈砚，二十七岁。"}]})
+        )
+        assert edited["status"] == "success"
+        # edit_file 不清标记（这是陈旧标记的来源）
+        assert ToolContext.has_pending_empty_file() is True
+
+        second = _parse_payload(await create_file({"title": "苏晚", "file_type": "character"}))
+        assert second["status"] == "success"
+        pending_ids = [entry["file_id"] for entry in ToolContext.get_pending_empty_files()]
+        assert pending_ids == [second["data"]["id"]]
+    finally:
+        ToolContext.clear_pending_empty_file()
+        ToolContext.clear_context()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_file_rejection_names_the_unblocking_action(db_session):
+    """上一个空文件确实还没正文：拒绝信息点名文件 id 和解除办法，并带顺序性 error_type。"""
+    from agent.tools.mcp_tools import ToolContext
+
+    user, project = _make_user_and_project(db_session, "unwritten")
+    ToolContext.set_context(
+        session=db_session, user_id=user.id, project_id=project.id, session_id="sess-unwritten"
+    )
+    try:
+        first = _parse_payload(await create_file({"title": "沈砚", "file_type": "character"}))
+        first_id = first["data"]["id"]
+
+        rejected = _parse_payload(await create_file({"title": "苏晚", "file_type": "character"}))
+        assert rejected["status"] == "error"
+        assert rejected["error_type"] == "pending_empty_file_unwritten"
+        assert rejected["pending_file_id"] == first_id
+        assert "<file>" in rejected["error"]
+        assert f"edit_file(id={first_id}" in rejected["error"]
+        assert "苏晚" in rejected["error"]
+        # 标记仍指向那个真正没写正文的文件
+        assert [entry["file_id"] for entry in ToolContext.get_pending_empty_files()] == [first_id]
+    finally:
+        ToolContext.clear_pending_empty_file()
+        ToolContext.clear_context()

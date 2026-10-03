@@ -1186,6 +1186,64 @@ def _is_folder_file_type(result: dict[str, Any], args: dict[str, Any]) -> bool:
     return isinstance(raw, str) and raw.strip().lower() == "folder"
 
 
+def _clear_settled_pending_empty_files() -> bool:
+    """落库核验待写入空文件标记，清掉正文已写入或文件已不存在的条目。
+
+    标记只在 <file>…</file> 流式写入收尾时清除；模型改用 edit_file(op=append)
+    写完正文时标记会一直留着，后续每次不带 content 的 create_file 都会被它挡回。
+    用列级查询读数据库当前值（绕开 ORM 身份映射里可能陈旧的实例）；查询失败时
+    保守地不清除任何条目。返回是否清掉了至少一个条目。
+    """
+    from models import File
+
+    cleared = False
+    for entry in ToolContext.get_pending_empty_files():
+        file_id = str(entry.get("file_id") or "")
+        if not file_id:
+            continue
+        try:
+            row = ToolContext.get_session().exec(
+                select(File.content, File.is_deleted).where(File.id == file_id)
+            ).first()
+        except Exception as e:
+            logger.debug(f"Pending empty-file probe failed: {e}")
+            return cleared
+        if row is None or row[1] or str(row[0] or "").strip():
+            ToolContext.clear_pending_empty_file(file_id)
+            cleared = True
+    return cleared
+
+
+def _pending_empty_file_rejection(blocking_title: str | None, title: str) -> dict[str, Any]:
+    """create_file 被「上一个空文件还没写正文」挡回时的错误，点名解除方法。
+
+    error_type 让工具失败熔断器把它识别为顺序性拒绝（先做前置动作即可成功），
+    不按「同一调用连续失败」熔断；pending_file_id 让模型能直接 edit_file 补写。
+    """
+    blocking_name = blocking_title or "未知"
+    blocking_id = ""
+    for entry in ToolContext.get_pending_empty_files():
+        if entry.get("title") == blocking_title:
+            blocking_id = str(entry.get("file_id") or "")
+    id_part = f"（id={blocking_id}）" if blocking_id else ""
+    edit_part = (
+        f"，或调用 edit_file(id={blocking_id}, op=append) 写入正文" if blocking_id else ""
+    )
+    payload: dict[str, Any] = {
+        "status": "error",
+        "error_type": "pending_empty_file_unwritten",
+        "error": (
+            f"文件「{title}」未创建：上一个文件「{blocking_name}」{id_part}正文还是空的，"
+            "一次只能流式写入一个文件。"
+            f"下一步：先在回复里用 <file>完整内容</file> 写出「{blocking_name}」的正文{edit_part}；"
+            f"写完后再调用 create_file 创建「{title}」。在此之前重复调用 create_file 只会再次被拒绝。"
+        ),
+    }
+    if blocking_id:
+        payload["pending_file_id"] = blocking_id
+    return _make_mcp_payload(payload, tool_name="create_file")
+
+
 async def create_file(args: dict[str, Any]) -> dict[str, Any]:
     """创建新文件。"""
     if _should_offload_tool_execution():
@@ -1221,13 +1279,14 @@ def _create_file_sync(args: dict[str, Any]) -> dict[str, Any]:
         acquired, blocking_title = ToolContext.try_reserve_pending_empty_file(
             reservation, title
         )
-        if not acquired:
-            return _make_error(
-                f"请先完成上一个文件「{blocking_title or '未知'}」的内容写入"
-                f"（使用 <file>内容</file> 标记），"
-                f"然后再创建新文件「{title}」。一次只能流式写入一个文件。",
-                tool_name=tool_name,
+        if not acquired and _clear_settled_pending_empty_files():
+            # 挡路的标记已陈旧（正文已经用 edit_file 等方式写进去了，或文件已删）：
+            # 清掉后再占一次坑，不让模型为一个早已完成的文件反复撞墙。
+            acquired, blocking_title = ToolContext.try_reserve_pending_empty_file(
+                reservation, title
             )
+        if not acquired:
+            return _pending_empty_file_rejection(blocking_title, title)
 
     try:
         order_value = args.get("order") if "order" in args else None

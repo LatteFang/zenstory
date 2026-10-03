@@ -187,13 +187,11 @@ class AgentService:
                         )
                     ).all()
 
-                    changed = False
                     deactivated = False
                     for stale in other_actives:
                         if stale.is_active:
                             stale.is_active = False
                             session.add(stale)
-                            changed = True
                             deactivated = True
 
                     if not candidate.is_active:
@@ -205,16 +203,22 @@ class AgentService:
                         if deactivated:
                             session.flush()
                         candidate.is_active = True
-                        changed = True
 
                     candidate.updated_at = utcnow()
                     session.add(candidate)
 
-                    if changed:
-                        session.commit()
-                        session.refresh(candidate)
-
-                    return candidate.id
+                    # 即使没有去激活/重新激活，也必须立即提交 updated_at 的刷新。
+                    # SQLite 分支传入的是请求级 session（autoflush=True）：脏
+                    # UPDATE 若留在 session 里，会被随后 SessionLoader 的第一条
+                    # 读查询顺手 flush，pysqlite 在 DML 前隐式 BEGIN，于是这个
+                    # 写事务连同 RESERVED 锁一直挂到整轮 SSE 结束才随历史保存
+                    # 提交；期间工具在独立连接上的每次写入都会等满 busy_timeout
+                    # 后报 "database is locked"。PostgreSQL 分支用
+                    # `with create_session()` 包住本函数，未提交的修改在 close
+                    # 时被直接丢弃，刷新从未落库。
+                    resolved_id = candidate.id
+                    session.commit()
+                    return resolved_id
 
             else:
                 # Compatibility note:
@@ -849,6 +853,15 @@ class AgentService:
                 user_id=user_id,
                 total_messages=len(messages),
             )
+
+            # 进入工作流前结束请求级 session 上的事务。SQLite 分支前面的会话
+            # 解析、历史加载、技能目录都跑在它上面，而工具在独立连接上写库：
+            # 只要这里残留一个已 flush 的写事务，SQLite 的库级写锁就会被攥满
+            # 整轮 SSE，工具写入全部 "database is locked"。只读时 commit 不向
+            # 数据库发任何语句；PostgreSQL 分支此时请求级 session 没有事务
+            # （路由层已 rollback，前置步骤都 offload 到独立 session），不进分支。
+            if session.in_transaction():
+                session.commit()
 
             # Set tool context for tool execution
             # 工具上下文里放不放共享 session，必须与「工具是否 offload 到线程池」

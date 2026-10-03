@@ -154,24 +154,26 @@ class TestRound3EmptyFileCorrectionKeepsHandoff:
         assert any(e.type == StreamEventType.HANDOFF for e in events)
 
     @pytest.mark.asyncio
-    async def test_deferred_handoff_targeting_correction_agent_is_dropped(self):
-        """暂存的交接目标恰好就是纠偏轮本身时，必须丢弃而不是制造一次自交接。
+    async def test_empty_file_is_corrected_by_creating_agent_then_handoff_resumes(self):
+        """planner 建了空文件并交接给 writer：纠偏轮由 planner 自己补写，之后再执行它的交接。
 
-        planner 建了空文件并交接给 writer —— 纠偏轮本来就是 writer 跑的，
-        再交接一次等于让 writer 交接给自己。
+        旧行为是纠偏轮硬编码 writer：writer 去补 planner 的大纲文件，planner 的
+        「请按大纲写正文」交接被当成自交接丢弃——writer 实际收到的只有纠偏提示。
         """
-        calls: list[str] = []
+        calls: list[dict] = []
 
         async def fake_agent(state, agent_type, *_args, **_kwargs):
-            calls.append(agent_type)
-            if agent_type == "planner":
+            calls.append({"agent": agent_type, "user_message": state.get("user_message", "")})
+            if agent_type == "planner" and len(calls) == 1:
                 ToolContext.set_pending_empty_file("file-X", "第一章大纲")
                 yield _create_file_done()
                 yield _text("大纲文件已建好。")
                 yield _handoff("writer", context="请按大纲写正文")
-            else:
+            elif agent_type == "planner":
                 ToolContext.clear_pending_empty_file()
-                yield _text("正文补齐了。")
+                yield _text("大纲正文补齐了。")
+            else:
+                yield _text("第一章正文写好了。")
 
         events = await _run_graph(
             fake_agent,
@@ -184,8 +186,46 @@ class TestRound3EmptyFileCorrectionKeepsHandoff:
             },
         )
 
-        assert calls == ["planner", "writer"], "不能因为恢复暂存交接而多跑一轮 writer"
-        assert not [e for e in events if e.type == StreamEventType.HANDOFF]
+        assert [c["agent"] for c in calls] == ["planner", "planner", "writer"]
+        assert "正文仍为空" in calls[1]["user_message"], "纠偏提示发给建文件的 planner"
+        assert "请按大纲写正文" in calls[2]["user_message"], "writer 收到的是 planner 的交接"
+        handoffs = [e for e in events if e.type == StreamEventType.HANDOFF]
+        assert [h.data["target_agent"] for h in handoffs] == ["writer"]
+
+    @pytest.mark.asyncio
+    async def test_planned_writer_runs_after_planner_correction(self):
+        """standard 工作流：planner 留了空文件时先由 planner 补写，再按计划交接 writer。
+
+        旧行为：纠偏轮硬编码 writer，随后计划序列弹出的 writer 与当前 agent 相同，
+        被判「无效自动交接」整轮停掉（真实 deepseek-flash 复现过）。
+        """
+        calls: list[str] = []
+
+        async def fake_agent(state, agent_type, *_args, **_kwargs):
+            calls.append(agent_type)
+            if agent_type == "planner" and len(calls) == 1:
+                ToolContext.set_pending_empty_file("file-X", "第一章大纲")
+                yield _create_file_done()
+                yield _text("大纲文件已建好。")
+            elif agent_type == "planner":
+                ToolContext.clear_pending_empty_file()
+                yield _text("大纲正文补齐了。")
+            else:
+                yield _text("第一章正文写好了。")
+
+        events = await _run_graph(
+            fake_agent,
+            initial_agent="planner",
+            router_result={
+                "current_agent": "planner",
+                "workflow_plan": "standard",
+                "workflow_agents": ["writer"],
+                "routing_metadata": {},
+            },
+        )
+
+        assert calls == ["planner", "planner", "writer"]
+        assert not [e for e in events if e.type == StreamEventType.WORKFLOW_STOPPED]
 
 
 @pytest.mark.unit
@@ -378,3 +418,205 @@ class TestRound3PendingEmptyFileGuardPreservesFailureEvidence:
             )
         finally:
             ToolContext.clear_context()
+
+
+def _tool_result(call_id: str, payload: dict) -> StreamEvent:
+    import json
+
+    return StreamEvent(
+        type=StreamEventType.TOOL_RESULT,
+        data={
+            "tool_use_id": call_id,
+            "name": "edit_file",
+            "result": {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}]},
+        },
+    )
+
+
+def _edit_file_done(call_id: str) -> StreamEvent:
+    return StreamEvent(
+        type=StreamEventType.TOOL_USE,
+        data={"id": call_id, "name": "edit_file", "status": "complete"},
+    )
+
+
+@pytest.mark.unit
+class TestRequestScopedFailureBreakerAndWriteSignals:
+    """工具失败熔断按请求共享；写入全部失败时不触发自动质检。"""
+
+    @pytest.mark.asyncio
+    async def test_every_agent_run_shares_one_request_breaker(self):
+        from agent.openai_agents.tool_failure_breaker import ToolFailureBreaker
+
+        seen: list[object] = []
+
+        async def fake_agent(state, agent_type, *_args, **_kwargs):
+            seen.append(state.get("tool_failure_breaker"))
+            yield _text(f"{agent_type} 完成。")
+
+        await _run_graph(
+            fake_agent,
+            initial_agent="planner",
+            router_result={
+                "current_agent": "planner",
+                "workflow_plan": "standard",
+                "workflow_agents": ["writer"],
+                "routing_metadata": {},
+            },
+        )
+
+        assert len(seen) == 2
+        assert isinstance(seen[0], ToolFailureBreaker)
+        # writer 拿到的是同一个熔断器：planner 阶段的失败计数不会在交接时归零
+        assert seen[1] is seen[0]
+
+    @pytest.mark.asyncio
+    async def test_auto_review_skipped_when_every_writer_write_failed(self):
+        calls: list[str] = []
+
+        async def fake_agent(state, agent_type, *_args, **_kwargs):
+            calls.append(agent_type)
+            for idx in range(3):
+                yield _edit_file_done(f"e{idx}")
+                yield _tool_result(f"e{idx}", {"status": "error", "error": "database is locked"})
+            yield _text(LONG_TEXT)
+
+        await _run_graph(fake_agent, auto_review_threshold=100)
+
+        # 正文一个字都没落库：不送审（否则审稿人会把 writer 叫回来重试同一个失败写入）
+        assert calls == ["writer"]
+
+    @pytest.mark.asyncio
+    async def test_auto_review_still_fires_when_one_write_succeeded(self):
+        calls: list[str] = []
+
+        async def fake_agent(state, agent_type, *_args, **_kwargs):
+            calls.append(agent_type)
+            if agent_type == "writer":
+                yield _edit_file_done("e0")
+                yield _tool_result("e0", {"status": "error", "error": "找不到片段"})
+                yield _edit_file_done("e1")
+                yield _tool_result("e1", {"status": "success", "data": {"id": "file-X"}})
+            yield _text(LONG_TEXT)
+
+        await _run_graph(fake_agent, auto_review_threshold=100)
+
+        assert calls == ["writer", "quality_reviewer"]
+
+
+@pytest.mark.unit
+class TestCorrectionRoundKeepsUserScope:
+    """空文件纠偏轮不能冲掉「等用户回答」，只读请求不安排补写。"""
+
+    @pytest.mark.asyncio
+    async def test_question_survives_correction_round(self):
+        """planner 以提问收尾又留了空文件：纠偏补齐后仍要停下等用户，不跑计划内 writer。"""
+        calls: list[str] = []
+
+        async def fake_agent(state, agent_type, *_args, **_kwargs):
+            calls.append(agent_type)
+            if agent_type == "planner" and len(calls) == 1:
+                ToolContext.set_pending_empty_file("file-X", "大纲")
+                yield _create_file_done()
+                yield _text("大纲方向如上。这个方向可以吗？")
+            elif agent_type == "planner":
+                ToolContext.clear_pending_empty_file()
+                yield _text("已补齐大纲正文。")
+            else:
+                yield _text("第一章正文写好了。")
+
+        await _run_graph(
+            fake_agent,
+            initial_agent="planner",
+            router_result={
+                "current_agent": "planner",
+                "workflow_plan": "standard",
+                "workflow_agents": ["writer"],
+                "routing_metadata": {},
+            },
+        )
+
+        assert calls == ["planner", "planner"]
+
+    @pytest.mark.asyncio
+    async def test_writer_question_survives_correction_but_auto_review_still_fires(self):
+        """writer 以提问收尾又留了空文件：纠偏补齐后，提问信号跨过纠偏轮保留
+        （仍拦计划交接），但不拦用户开启的自动质检——补齐的稿子照常送审。"""
+        calls: list[str] = []
+
+        async def fake_agent(state, agent_type, *_args, **_kwargs):
+            calls.append(agent_type)
+            if len(calls) == 1:
+                ToolContext.set_pending_empty_file("file-X", "第五章")
+                yield _create_file_done()
+                yield _text(LONG_TEXT + "\n\n结尾要走悲剧还是圆满？")
+            elif agent_type == "writer":
+                ToolContext.clear_pending_empty_file()
+                yield _text("已补写第五章。")
+            else:
+                yield _text("审查完毕。[TASK_COMPLETE]")
+
+        await _run_graph(fake_agent, auto_review_threshold=100)
+
+        assert calls == ["writer", "writer", "quality_reviewer"]
+
+    @pytest.mark.asyncio
+    async def test_writer_question_survives_correction_and_blocks_planned_handoff(self):
+        """同一场景下排着计划交接（writer 之后是 quality_reviewer）：提问跨纠偏轮保留，
+        计划交接被拦下；自动质检阈值调高，排除它的干扰。"""
+        calls: list[str] = []
+
+        async def fake_agent(state, agent_type, *_args, **_kwargs):
+            calls.append(agent_type)
+            if len(calls) == 1:
+                ToolContext.set_pending_empty_file("file-X", "第五章")
+                yield _create_file_done()
+                yield _text(LONG_TEXT + "\n\n结尾要走悲剧还是圆满？")
+            elif agent_type == "writer":
+                ToolContext.clear_pending_empty_file()
+                yield _text("已补写第五章。")
+            else:
+                yield _text("审查完毕。[TASK_COMPLETE]")
+
+        await _run_graph(
+            fake_agent,
+            router_result={
+                "current_agent": "writer",
+                "workflow_plan": "full",
+                "workflow_agents": ["quality_reviewer"],
+                "routing_metadata": {},
+            },
+        )
+
+        assert calls == ["writer", "writer"]
+
+    @pytest.mark.asyncio
+    async def test_read_only_request_rolls_back_instead_of_correcting(self):
+        calls: list[str] = []
+        states: list[dict] = []
+
+        async def fake_agent(state, agent_type, *_args, **_kwargs):
+            calls.append(agent_type)
+            states.append(dict(state))
+            ToolContext.set_pending_empty_file("file-X", "笔记")
+            yield _create_file_done()
+            yield _text("我的分析如上。")
+
+        with patch(
+            "agent.graph.writing_graph._rollback_unfinished_empty_files",
+            return_value={"file-X"},
+        ) as rollback:
+            await _run_graph(
+                fake_agent,
+                router_result={
+                    "current_agent": "writer",
+                    "workflow_plan": "quick",
+                    "workflow_agents": [],
+                    "routing_metadata": {"read_only": True},
+                },
+            )
+
+        assert calls == ["writer"]
+        rollback.assert_called_once()
+        # runner 据此让写文件工具的调用一律被拒绝
+        assert states[0].get("read_only") is True

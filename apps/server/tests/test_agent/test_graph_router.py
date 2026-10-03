@@ -247,3 +247,135 @@ class TestExtractRouterPayloadUnifiedJsonRepair:
 
         assert payload.get("agent_type") == "writer"
         assert payload.get("workflow_type") == "quick"
+
+
+@pytest.mark.unit
+class TestRouterUserScope:
+    """用户范围字段（write_content / read_only / scope）与计划交接序列的裁剪。"""
+
+    def _decision(self, **overrides):
+        from agent.graph.router import RouterDecision
+
+        fields = {"agent_type": "planner", "workflow_type": "standard"}
+        fields.update(overrides)
+        return RouterDecision(**fields)
+
+    def test_planning_only_request_drops_planned_writer(self):
+        """只要大纲/人设（write_content=false）时，standard 不再计划 writer。"""
+        from agent.graph.router import plan_workflow_agents
+
+        assert plan_workflow_agents(self._decision(write_content=False)) == []
+
+    def test_plan_then_write_keeps_planned_writer(self):
+        from agent.graph.router import plan_workflow_agents
+
+        assert plan_workflow_agents(self._decision(write_content=True)) == ["writer"]
+
+    def test_missing_write_content_keeps_workflow_sequence(self):
+        """旧格式输出没有 write_content（None）时沿用 workflow_type 的原始序列。"""
+        from agent.graph.router import plan_workflow_agents
+
+        assert plan_workflow_agents(self._decision()) == ["writer"]
+
+    def test_full_workflow_without_content_keeps_non_writer_stages(self):
+        from agent.graph.router import plan_workflow_agents
+
+        decision = self._decision(workflow_type="full", write_content=False)
+        assert plan_workflow_agents(decision) == ["hook_designer"]
+
+    def test_hook_ideas_only_drops_planned_writer(self):
+        from agent.graph.router import plan_workflow_agents
+
+        decision = self._decision(
+            agent_type="hook_designer", workflow_type="hook_focus", write_content=False
+        )
+        assert plan_workflow_agents(decision) == []
+
+    @pytest.mark.parametrize("workflow_type", ["standard", "full", "hook_focus", "quick"])
+    def test_read_only_clears_every_planned_agent(self, workflow_type):
+        from agent.graph.router import plan_workflow_agents
+
+        decision = self._decision(workflow_type=workflow_type, write_content=True, read_only=True)
+        assert plan_workflow_agents(decision) == []
+
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [
+            (True, True),
+            (False, False),
+            ("true", True),
+            ("False", False),
+            ("是", True),
+            ("否", False),
+            (1, True),
+            (0, False),
+            (None, None),
+            ("maybe", None),
+            (7, None),
+        ],
+    )
+    def test_write_content_is_parsed_leniently(self, raw, expected):
+        from agent.graph.router import _normalize_router_payload
+
+        normalized = _normalize_router_payload(
+            {"agent_type": "planner", "workflow_type": "standard", "write_content": raw}
+        )
+        assert normalized["write_content"] is expected
+
+    def test_read_only_requires_explicit_true(self):
+        from agent.graph.router import _normalize_router_payload
+
+        base = {"agent_type": "writer", "workflow_type": "quick"}
+        assert _normalize_router_payload({**base, "read_only": "true"})["read_only"] is True
+        assert _normalize_router_payload({**base, "read_only": "unknown"})["read_only"] is False
+        assert _normalize_router_payload(base)["read_only"] is False
+
+    def test_scope_is_trimmed_and_capped(self):
+        from agent.graph.router import MAX_SCOPE_CHARS, _normalize_router_payload
+
+        normalized = _normalize_router_payload(
+            {"agent_type": "writer", "workflow_type": "quick", "scope": "  只写第1章  "}
+        )
+        assert normalized["scope"] == "只写第1章"
+
+        long_scope = _normalize_router_payload(
+            {"agent_type": "writer", "workflow_type": "quick", "scope": "章" * 500}
+        )
+        assert len(long_scope["scope"]) == MAX_SCOPE_CHARS
+
+        non_string = _normalize_router_payload(
+            {"agent_type": "writer", "workflow_type": "quick", "scope": ["x"]}
+        )
+        assert non_string["scope"] == ""
+
+    async def test_router_node_outline_only_request_plans_no_writer(self):
+        from agent.graph.router import router_node
+
+        route_response = {
+            "content": [
+                {
+                    "type": "text",
+                    "text": (
+                        '{"agent_type":"planner","workflow_type":"standard",'
+                        '"write_content":false,"read_only":false,'
+                        '"scope":"只要故事大纲","reason":"只要大纲","confidence":0.9}'
+                    ),
+                }
+            ]
+        }
+        with patch(
+            "agent.graph.router._route_with_deepseek_chat",
+            AsyncMock(return_value=route_response),
+        ):
+            result = await router_node({"user_message": "先给我故事大纲"})
+
+        assert result["current_agent"] == "planner"
+        assert result["workflow_agents"] == []
+        assert result["routing_metadata"]["write_content"] is False
+        assert result["routing_metadata"]["scope"] == "只要故事大纲"
+
+    def test_router_prompt_asks_for_scope_fields(self):
+        from agent.prompts.subagents import ROUTER_PROMPT
+
+        for field in ("write_content", "read_only", "scope"):
+            assert field in ROUTER_PROMPT

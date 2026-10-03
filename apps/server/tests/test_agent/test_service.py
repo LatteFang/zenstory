@@ -1372,6 +1372,10 @@ class TestAgentServiceProcessStream:
             )["session_id"]
 
             db_session.rollback()
+            # 测试 session 是 expire_on_commit=False，process_stream 在进入工作流
+            # 前会提交请求级 session；之后若没有新事务，rollback() 是空操作、不会
+            # 让 identity map 失效，get(ChatSession) 可能拿到 message_count=0 的旧对象。
+            db_session.expire_all()
             persisted = db_session.exec(
                 select(ChatMessage).where(ChatMessage.session_id == session_id)
             ).all()

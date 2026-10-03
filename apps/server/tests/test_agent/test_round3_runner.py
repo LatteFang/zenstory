@@ -360,9 +360,14 @@ def test_build_agent_wires_control_flow_stop_and_include_usage(monkeypatch):
 
     monkeypatch.setenv("DEEPSEEK_API_KEY", "dummy-local-test-key")
 
-    agent = _build_agent("writer", "system")
+    from agent.openai_agents.tool_failure_breaker import ToolFailureBreaker
 
-    assert agent.tool_use_behavior is _stop_run_on_control_flow_tool
+    breaker = ToolFailureBreaker()
+    agent = _build_agent("writer", "system", failure_breaker=breaker)
+
+    # tool_use_behavior 绑定了本次 run 的工具失败熔断器（同一个出口截断 run）
+    assert agent.tool_use_behavior.func is _stop_run_on_control_flow_tool
+    assert agent.tool_use_behavior.keywords == {"failure_breaker": breaker}
     assert agent.model_settings.include_usage is True
 
 
