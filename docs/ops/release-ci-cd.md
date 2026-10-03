@@ -12,10 +12,11 @@ fail-closed:
   check suite for every pushed commit.
 
 `E2E Tests` applies the same detector rules. Scheduled and manually dispatched
-runs force E2E execution even when there is no meaningful Git diff. The GitHub
-workflow is currently disabled and must not be reported as enabled until an
-offline-reviewed revision is explicitly enabled and its bounded smoke run is
-green. The local/mocked lane starts PostgreSQL, Redis, the backend, and the web
+runs force E2E execution even when there is no meaningful Git diff. Its reviewed
+revision was enabled after production-policy approval on 2026-10-03. Activation
+is not a passing-test claim: check the latest exact-SHA run and report a pending
+or failed E2E result explicitly. The local/mocked lane starts PostgreSQL, Redis,
+the backend, and the web
 app; it uses test API keys and does not call a paid model provider.
 
 ## ZenStory CLI release
@@ -43,7 +44,7 @@ a misleading duplicate Unreleased candidate marker.
    packages once, promotes the artifact by ID and digest, and separates GitHub
    `contents: write` from npm `id-token: write`.
 
-Publishing is currently `NOT_CONFIGURED` and fails closed unless
+Publishing fails closed unless
 `CLI_NPM_PUBLISH_ENABLED` is exactly `true`. Set that repository variable only after the npm owner has verified the Trusted
 Publisher binding for repository `zenstory-ai/zenstory` and workflow filename
 `cli-release.yml`. Existing versions and GitHub assets are append-only: lookup
@@ -65,14 +66,26 @@ second `vercel deploy` or Railway deploy path, and do not change routing,
 authentication, CORS, project roots, domains, or production environment values
 as part of this contract.
 
+After approval on 2026-10-03, the canonical Vercel `ergou-ai` project was
+configured with the GitHub `ci-summary` check for Production and verified after
+reloading its settings. The Railway production `server` service's existing
+`zenstory-ai/zenstory` / `main` trigger was changed from `checkSuites: false` to
+`true` (Wait for CI) and read back without changing its source identity. This
+proves saved configuration, not a new deployment's gate behavior. If unchanged
+application files cause native Git to skip deployment, retain and record the
+existing production SHA; do not force a deployment or claim that SHA is the new
+main commit. Ordinary push checks do not need a Vercel `repository_dispatch`
+status action.
+
 `zenstory Online Smoke` is a manual, read-only, source-bound receipt workflow.
 It requires a 40-character deployed source SHA and the exact successful main CI
 run ID, checks only the canonical public origins, uses no credentials, and
 executes only the trusted main readiness controls (never supplied-source code), and
 records `providerSourceBinding: NOT_VERIFIED` until provider deployment metadata
 is read back independently. It is post-deployment observability, **not** a
-pre-deployment or pre-promotion gate. The workflow is currently disabled and
-therefore remains `NOT_ENABLED` until separately activated.
+pre-deployment or pre-promotion gate. Its reviewed revision was enabled after
+production-policy approval on 2026-10-03. Query the live workflow state rather
+than inferring activation or successful execution from this file.
 
 After provider approval, enable the workflow and run a bounded receipt for a
 known deployed commit:

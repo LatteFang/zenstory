@@ -99,7 +99,7 @@ jobs:
         node scripts/cli-release.mjs inspect-package --tarball "$tarball"
         temp="$(mktemp -d)"
         trap 'rm -rf "$temp"' EXIT
-        npm install --prefix "$temp" --ignore-scripts --no-audit --no-fund --package-lock=false "$tarball"
+        npm install --prefix "$temp" --ignore-scripts --no-audit --no-fund --package-lock=false "./$tarball"
         env -u ZENSTORY_API_KEY -u ZENSTORY_API_BASE "$temp/node_modules/.bin/zenstory" --help
 
     - name: Create source-bound release manifest

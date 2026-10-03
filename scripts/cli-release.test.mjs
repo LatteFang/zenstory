@@ -184,6 +184,12 @@ test("CLI release workflow is immutable, least-privilege, and fail-closed", asyn
   assert.doesNotMatch(workflow, /--clobber|NPM_TOKEN|NODE_AUTH_TOKEN: \$\{\{ secrets/);
 });
 
+test("packed CLI installation uses a local tarball rather than GitHub shorthand", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const workflow = await readFile(".github/workflows/cli-release.yml", "utf8");
+  assert.match(workflow, /npm install[^\n]*--package-lock=false "\.\/\$tarball"/);
+});
+
 
 test("CI proof rejects a concurrent rerun or selected-run identity change", () => {
   const before = { id: 9, run_attempt: 1, head_sha: "a".repeat(40), check_suite_id: 10, status: "completed", conclusion: "success" };
