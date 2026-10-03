@@ -198,14 +198,16 @@ test('guide examples keep literal markup, line breaks and indentation as escaped
   mkdirSync(join(root, 'scripts'))
   cpSync(join(webRoot, 'content'), join(root, 'content'), { recursive: true })
   for (const file of GENERATOR_FILES) cpSync(join(scriptsDir, file), join(root, 'scripts', file))
-  const [guide] = JSON.parse(readFileSync(join(root, 'content/guides.json'), 'utf8'))
+  const fixtureGuides = JSON.parse(readFileSync(join(root, 'content/guides.json'), 'utf8'))
+  const [guide] = fixtureGuides
   guide.example = {
     en: 'A literal <script>alert("x")</script> & [link](https://example.com).\n\n/skill --flag "quoted"\n  keep indentation\n`code stays literal`',
     zh: '原文 <img src=x onerror="alert(1)"> 与 & 符号。\n\n第二段\n  保留缩进',
   }
   guide.faq = [{ q: { en: 'Where does `--out-dir` put <drafts> & files?', zh: '草稿保存在哪里？' }, a: { en: 'Next to the `--out-dir **x**` <b>folder</b>; see **the** [project](https://zenstory.ai/video-recap/).', zh: '在 `--out-dir` 指定的目录，见[项目页](https://zenstory.ai/video-recap)。' } }]
-  writeFileSync(join(root, 'content/guides.json'), JSON.stringify([guide]))
+  writeFileSync(join(root, 'content/guides.json'), JSON.stringify(fixtureGuides))
   writeFileSync(join(root, 'content/articles.json'), '[]')
+  writeFileSync(join(root, 'content/home-reading.json'), JSON.stringify({ paths: [], levels: [] }))
   const out = join(root, 'output')
   const result = spawnSync(process.execPath, [join(root, 'scripts/build-org-pages.mjs'), out], { encoding: 'utf8' })
   assert.equal(result.status, 0, result.stderr)
@@ -234,7 +236,7 @@ test('guide examples keep literal markup, line breaks and indentation as escaped
     [[{ q: { en: 'Link?', zh: '链接？' }, a: { en: 'See [x](/oh-story/missing).', zh: '见。' } }], /does not exist in en/],
   ]) {
     guide.faq = faq
-    writeFileSync(join(root, 'content/guides.json'), JSON.stringify([guide]))
+    writeFileSync(join(root, 'content/guides.json'), JSON.stringify(fixtureGuides))
     const bad = spawnSync(process.execPath, [join(root, 'scripts/build-org-pages.mjs'), join(root, 'bad')], { encoding: 'utf8' })
     assert.notEqual(bad.status, 0)
     assert.match(bad.stderr, pattern)
@@ -250,6 +252,7 @@ test('guide identities reject unknown owners, unsafe paths and duplicate routes 
   for (const file of GENERATOR_FILES) cpSync(join(scriptsDir, file), join(root, 'scripts', file))
   const valid = JSON.parse(readFileSync(join(root, 'content/guides.json'), 'utf8'))
   writeFileSync(join(root, 'content/articles.json'), '[]')
+  writeFileSync(join(root, 'content/home-reading.json'), JSON.stringify({ paths: [], levels: [] }))
   for (const invalid of [[{ ...valid[0], owner: 'unknown' }], [{ ...valid[0], slug: '../escape' }], [valid[0], valid[0]]]) {
     writeFileSync(join(root, 'content/guides.json'), JSON.stringify(invalid))
     const out = join(root, 'output')
@@ -404,13 +407,13 @@ test('organization generator writes every route in both languages, an apex homep
   for (const [lang, file] of [['en', 'org-home'], ['zh', 'zh']]) {
     const homepage = readOutput(outDir, file)
     assertHead(homepage, lang, '/')
-    assert.match(homepage, /<h1>ZenStory AI <span class="headline">/)
-    assert.match(homepage, lang === 'en' ? /write novels and adapt them/ : /用 AI 写小说，再改成/)
-    assert.match(homepage, /<p class="lede">[^<]*(?:story|open-source|故事|创作)/i)
-    assert.match(homepage, /href="https:\/\/app\.zenstory\.ai">(?:Open the web workbench|打开网页工作台)/)
-    assert.match(homepage, lang === 'en' ? /choose by task/i : /按任务选择/)
+    assert.match(homepage, /<h1>[^<]+<br>[^<]+<\/h1>/)
+    assert.match(homepage, lang === 'en' ? /Write novels with AI/ : /用 AI 写小说，再做成/)
+    assert.match(homepage, /<p class="lede">[^<]*(?:novels|drama|故事|创作)/i)
+    assert.match(homepage, /href="https:\/\/app\.zenstory\.ai">(?:Open the writing workbench|打开网页写作工作台)/)
+    assert.match(homepage, lang === 'en' ? /Choose by what you want to make/i : /按你想做的作品/)
     assert.match(homepage, lang === 'en' ? /Source on GitHub/ : /GitHub 源码/)
-    assert.equal(matches(homepage, /<article class="project-card">/g).length, 6)
+    assert.equal(matches(homepage, /<article class="tool-choice">/g).length, 6)
     const siteNav = matches(homepage, /<nav aria-label="(?:Site|站点)">([\s\S]*?)<\/nav>/g)[0][1]
     assert.deepEqual(matches(siteNav, /href="([^"]+)"/g).map((m) => m[1]), [routeIn(lang, '/projects'), routeIn(lang, '/guides'), routeIn(lang, '/glossary'), org.github])
     for (const project of projects) {

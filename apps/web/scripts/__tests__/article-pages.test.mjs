@@ -26,7 +26,10 @@ const scratch = (t, articles) => {
   mkdirSync(join(root, 'scripts'))
   cpSync(join(webRoot, 'content'), join(root, 'content'), { recursive: true })
   for (const file of GENERATOR_FILES) cpSync(join(scriptsDir, file), join(root, 'scripts', file))
-  if (articles) writeFileSync(join(root, 'content/articles.json'), JSON.stringify(articles))
+  if (articles) {
+    writeFileSync(join(root, 'content/articles.json'), JSON.stringify(articles))
+    writeFileSync(join(root, 'content/home-reading.json'), JSON.stringify({ paths: [], levels: [] }))
+  }
   return root
 }
 const build = (root) => {

@@ -1,0 +1,131 @@
+{
+  "paths": [
+    [
+      "01",
+      "An idea",
+      "只有一个想法",
+      "Build the premise, outline and first chapter.",
+      "从故事前提、大纲到第一章。",
+      [
+        "agent-skills-for-writers",
+        "novel-outline-template",
+        "novel-opening"
+      ],
+      [
+        {
+          "en": "Choose an agent or workbench",
+          "zh": "选择 Agent 或工作台"
+        },
+        {
+          "en": "Build the premise and outline",
+          "zh": "建立故事前提与大纲"
+        },
+        {
+          "en": "Draft and check the opening",
+          "zh": "写出开篇并检查"
+        }
+      ]
+    ],
+    [
+      "02",
+      "A manuscript",
+      "已经有小说",
+      "Continue writing, or choose one adaptation: drama or a game.",
+      "继续写作，或从短剧、游戏中选择一种改编方向。",
+      [
+        "import-and-continue",
+        "novel-to-short-drama",
+        "quick-start"
+      ],
+      [
+        {
+          "en": "Import and continue your manuscript",
+          "zh": "导入书稿，继续创作"
+        },
+        {
+          "en": "Drama: adapt into an episode script",
+          "zh": "短剧：改编成分集剧本"
+        },
+        {
+          "en": "Game: build a playable prototype",
+          "zh": "游戏：制作可玩原型"
+        }
+      ]
+    ],
+    [
+      "03",
+      "Video footage",
+      "已经有视频",
+      "Plan the narration, preserve useful audio and assemble the edit.",
+      "写解说、保留有用原声，再组装剪辑。",
+      [
+        "video-to-narration",
+        "original-audio-and-narration",
+        "capcut-draft"
+      ],
+      [
+        {
+          "en": "Analyze footage and plan narration",
+          "zh": "分析素材，规划解说"
+        },
+        {
+          "en": "Balance original audio and narration",
+          "zh": "组织原声与旁白"
+        },
+        {
+          "en": "Export a CapCut draft",
+          "zh": "导出剪映草稿"
+        }
+      ]
+    ]
+  ],
+  "levels": [
+    [
+      "Get started",
+      "入门",
+      "Choose an environment and make a first draft.",
+      "选好环境，开始第一份草稿。",
+      [
+        "agent-skills-for-writers",
+        "claude-code-novel-writing"
+      ],
+      "/guides/getting-started"
+    ],
+    [
+      "Complete workflows",
+      "完整工作流",
+      "Follow a project from source to deliverable.",
+      "从源材料走到一份可检查的产物。",
+      [
+        "novel-to-short-drama",
+        "quick-start",
+        "video-to-narration"
+      ],
+      "/guides"
+    ],
+    [
+      "Techniques & templates",
+      "技法与模板",
+      "Solve the next concrete writing or production task.",
+      "解决眼前的写作与制作问题。",
+      [
+        "character-dialogue",
+        "script-to-storyboard",
+        "ai-image-prompt-template"
+      ],
+      "/guides/ai-video"
+    ],
+    [
+      "Revision & reference",
+      "排错与参考",
+      "Inspect the result, fix drift and understand the terms.",
+      "检查产物、修复漂移，查清术语。",
+      [
+        "revise-ai-prose",
+        "character-consistency",
+        "fix-audio-video-sync-after-editing"
+      ],
+      "/glossary"
+    ]
+  ]
+}

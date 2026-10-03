@@ -379,89 +379,109 @@ const pipelineSvg = () => {
 
 // ---------- organization homepage ----------
 
-const featuredGuideSlugs = ['agent-skills-for-writers', 'novel-opening', 'import-and-continue', 'revise-ai-prose', 'novel-to-short-drama', 'quick-start']
-
+const homeReading = JSON.parse(readFileSync(join(webRoot, 'content/home-reading.json'), 'utf8'))
+const showcases = JSON.parse(readFileSync(join(webRoot, 'content/showcases.json'), 'utf8'))
+const showcaseIds = new Set()
+for (const item of showcases) {
+  assert.match(item.slug, /^[a-z0-9-]+$/, 'Invalid showcase identity')
+  assert.ok(!showcaseIds.has(item.slug), 'Duplicate showcase identity')
+  showcaseIds.add(item.slug)
+  const owner = projects.find((p) => p.slug === item.owner)
+  assert.ok(owner, 'Unknown showcase project')
+  assert.ok(item.source.startsWith(`${owner.github}/blob/`), 'Showcase source belongs to another project')
+  assert.ok(item.method.startsWith(`/${item.owner}/`) && LANGS.every((lang) => routeExists(lang, item.method)), `Unknown showcase method: ${item.method}`)
+  if (item.demo) assert.match(item.demo, /^https:\/\/[^\s"<>]+$/, 'Invalid showcase demo URL')
+  assert.match(item.source, /^https:\/\/github\.com\/zenstory-ai\/[^/]+\/blob\/[a-f0-9]{40}\/.+$/, 'Showcase source must be pinned')
+  for (const field of ['title', 'kind', 'description', 'input', 'output']) for (const lang of LANGS) assert.ok(item[field]?.[lang]?.trim(), `Missing showcase ${field}`)
+  if (item.video) {
+    assert.match(item.video.url, /^https:\/\/github\.com\/user-attachments\/assets\/[a-f0-9-]{36}$/, 'Invalid showcase video source')
+    assert.match(item.video.poster, /^\/org\/demos\/[a-z0-9-]+\.jpg$/, 'Invalid video poster')
+  } else {
+    assert.match(item.image.file, /^\/org\/demos\/[a-z0-9-]+\.jpg$/, 'Invalid showcase image')
+    for (const lang of LANGS) assert.ok(item.image.alt?.[lang]?.trim(), 'Missing showcase image description')
+  }
+}
+const showcaseImage = (item, eager = false) => `<img src="${esc(item.image.file)}" width="${item.image.width}" height="${item.image.height}" alt="${esc(pick(item.image.alt))}" loading="${eager ? 'eager' : 'lazy'}" decoding="async"${eager ? ' fetchpriority="high"' : ''}>`
+const showcaseCards = () => [...showcases.filter((item) => item.slug === 'writing-desk'), ...showcases.filter((item) => item.slug !== 'writing-desk')].map((item) => {
+  const owner = projects.find((p) => p.slug === item.owner)
+  return `<article class="case-card" aria-labelledby="case-${esc(item.slug)}">
+    <figure>${item.video ? `<video controls playsinline preload="none" poster="${esc(item.video.poster)}" width="${item.video.width}" height="${item.video.height}" aria-label="${esc(pick(item.title))}"><source src="${esc(item.video.url)}" type="video/mp4">${item.video.captions ? `<track kind="captions" src="${esc(item.video.captions)}" srclang="zh" label="中文">` : ''}<a href="${esc(item.video.url)}">${t('Watch the video', '观看视频')}</a></video>` : showcaseImage(item)}<figcaption>${esc(pick(item.kind))} · ${esc(owner.name.en)}</figcaption></figure>
+    <div class="case-copy"><h3 id="case-${esc(item.slug)}">${esc(pick(item.title))}</h3><p>${esc(pick(item.description))}</p>
+    <dl class="case-facts"><div><dt>${t('Input', '输入')}</dt><dd>${esc(pick(item.input))}</dd></div><div><dt>${t('Output', '产物')}</dt><dd>${esc(pick(item.output))}</dd></div></dl>
+    <p class="case-actions">${item.video ? `<a href="${esc(item.video.url)}">${t('Watch directly', '直接观看视频')}${extGlyph}</a>` : ''}${item.demo ? `<a href="${esc(item.demo)}">${t('Play the prototype', '试玩原型')}${extGlyph}</a>` : ''}<a href="${esc(item.method)}">${t('Follow the method', '看创作方法')}${arrowGlyph}</a></p><p class="case-provenance"><a href="${esc(item.source)}">${t('README source', 'README 来源')}</a>${item.transcript_source ? ` · <a href="${esc(item.transcript_source)}">${t('Caption transcript', '字幕稿')}</a>` : ''}</p></div>
+  </article>`
+}).join('')
+const homeReadingLinks = (slugs, labels, branching = false) => {
+  const items = slugs.map((slug) => {
+    const matches = readingOf().filter((item) => item.slug === slug)
+    assert.equal(matches.length, 1, `Unknown or ambiguous homepage reading slug: ${slug} (${LANG})`)
+    return matches[0]
+  })
+  const links = items.map((item, i) => `<li>${labels ? `<a href="/${item.owner}/${item.slug}" aria-label="${esc(pick(labels[i]))}: ${esc(pick(item.title))}">${esc(pick(labels[i]))}${arrowGlyph}</a>` : guideLink(item)}</li>`)
+  return branching ? `<ol>${links[0]}</ol><p class="path-branch-label">${t('To adapt it, choose one:', '需要改编时，任选一条：')}</p><ul class="path-branches">${links.slice(1).join('')}</ul>` : `<ol>${links.join('')}</ol>`
+}
+const toolCards = (list) => list.map((p) => {
+  const [en, zh] = taskChoices.find(([, , slug]) => slug === p.slug)
+  return `<article class="tool-choice"><span class="eyebrow">${esc(p.name.en)}</span><h3><a href="/${p.slug}">${t(esc(en), esc(zh))}${arrowGlyph}</a></h3><span class="tool-role">${t(esc(p.tagline.en), esc(p.tagline.zh))}</span><p class="tool-links"><a href="/${p.slug}">${t('Project & setup', '项目与安装')}</a> · <a href="${esc(p.github)}">${t('Source on GitHub', 'GitHub 源码')}${extGlyph}</a></p></article>`
+}).join('')
 const homePage = () => {
   const route = '/'
   const title = t('ZenStory AI — Open-source AI tools for writing and adapting stories', 'ZenStory AI — 开源 AI 写小说、做短剧、改游戏与视频解说工具')
-  const description = t(
-    'Open-source AI tools for writers: novel-writing skills for Claude Code and Codex, short-drama storyboards, novel-to-game adaptation and video recaps.',
-    '六个开源项目：用 Claude Code、Codex 写网文的 Oh Story，AI 短剧剧本与分镜，小说改游戏，视频解说，以及在线小说写作工作台。全部 MIT 许可。',
-  )
-  const ld = [
-    orgNode,
-    {
-      '@type': 'WebSite', '@id': `${SITE}/#website`, name: org.name, url: SITE,
-      description, publisher: { '@id': `${SITE}/#org` }, inLanguage: LOCALE[LANG],
-    },
-  ]
+  const description = t('Write novels with AI and adapt stories into short drama, playable games and video recaps. Explore real open-source demos, step-by-step workflows and practical guides.', '用 AI 写小说，再改成短剧、可玩游戏与视频解说。看真实开源项目演示，按步骤走完创作流程，从任务、案例与模板进入知识库。')
+  const ld = [orgNode, { '@type': 'WebSite', '@id': `${SITE}/#website`, name: org.name, url: SITE, description, publisher: { '@id': `${SITE}/#org` }, inLanguage: LOCALE[LANG] }]
   const flagship = projects[0]
-  const featured = featuredGuideSlugs.map((slug) => guides.find((g) => g.slug === slug) ?? articles.find((a) => a.slug === slug && a.langs.includes(LANG))).filter(Boolean)
-  const hosts = org.proof.harnesses
+  const heroDemo = showcases[0]
+  const { paths, levels } = homeReading
   const body = `
 <article class="home">
   <div class="hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <p class="eyebrow">${esc(pick(org.tagline))}</p>
-        <h1>ZenStory AI <span class="headline">${t('open-source AI tools to write novels and adapt them into drama, games and video', '用 AI 写小说，再改成短剧、游戏和解说视频')}</span></h1>
-        ${pair(`<p class="lede">${esc(org.intro.en)}</p>`, `<p class="lede">${esc(org.intro.zh)}</p>`)}
-        <p class="actions home-actions">
-          <a class="btn" href="/projects">${t('Explore the six projects', '浏览六个项目')}</a>
-          <a class="btn ghost" href="${APP}">${t('Open the web workbench', '打开网页工作台')}</a>
-        </p>
-        ${installBlock(flagship)}
-        <p class="hero-note">${t(`Then run <code>${esc(flagship.entry)}</code> in your writing-project folder. Works in ${hosts.slice(0, 3).map(esc).join(', ')}&nbsp;<a href="/projects#hosts-h">and ${hosts.length - 3} more hosts</a>.`, `然后在写作项目目录里运行 <code>${esc(flagship.entry)}</code>。支持 ${hosts.slice(0, 3).map(esc).join('、')}&nbsp;<a href="/projects#hosts-h">等 ${hosts.length} 个 Agent 宿主</a>。`)}</p>
-        <p class="hero-aside">${t('Not sure which? ', '不确定选哪个？')}${comparisons.map((comparison) => `<a href="/compare/${comparison.slug}">${esc(pick(comparison.title))}</a>`).join('')}${arrowGlyph}</p>
+        <p class="eyebrow">${t('Open-source story studio', '开源 AI 故事创作工具')}</p>
+        <h1>${t('Write stories.<br>Make them real.', '写下故事。<br>做出作品。')}</h1>
+        <p class="lede">${t('Write novels with AI. Turn stories into short drama, playable games and narrated video—with skills for your agent and a writing workbench for your browser.', '用 AI 写小说，再做成短剧、可玩的游戏和解说视频。用你熟悉的 Agent 与开源 skill 创作，也可以直接打开网页写作工作台。')}</p>
+        <p class="actions home-actions"><a class="btn" href="/guides">${t('Find your starting point', '找到创作起点')}${arrowGlyph}</a><a class="btn ghost" href="#examples-h">${t('See real demos', '看真实演示')}${arrowGlyph}</a></p>
       </div>
-      <figure class="hero-art">${pipelineSvg()}<figcaption class="sr-only">${t('Story pipeline: idea → novel → short drama, game or video recap', '故事流程：灵感 → 小说 → 短剧、游戏或视频解说')}</figcaption></figure>
+      <figure class="hero-demo">${showcaseImage(heroDemo, true)}<figcaption><span class="eyebrow">Novel to Game</span><strong>${t('A story you can walk into.', '故事里的世界，可以走进去。')}</strong><span>${t('Journey to the West · playable prototype', '《西游记》· 可玩原型')}</span><a href="${esc(heroDemo.demo)}">${t('Play in your browser', '在浏览器里试玩')}${extGlyph}</a></figcaption></figure>
+      <div class="hero-install">        ${installBlock(flagship)}
+        <p class="hero-note">${t('Agent users: install Oh Story, then run <code>/story-setup</code>. Prefer a browser? <a href="/workbench">Explore the workbench</a>.', 'Agent 用户：安装 Oh Story，再运行 <code>/story-setup</code>。想直接用浏览器？<a href="/workbench">了解网页工作台</a>。')}</p>
+        <p class="facts">${t(`Six open-source projects · ${esc(org.proof.license)} · Claude Code & Codex`, `六个开源项目 · ${esc(org.proof.license)} · Claude Code 与 Codex`)}</p>
+</div>
     </div>
-    <div class="wrap">${jumpNav([['choose-h', 'Choose by task', '按任务选择'], ['guides-h', 'Guides', '创作与改编指南'], ['model-h', 'How the pieces fit', '项目如何协作']], 'jump-row')}</div>
+    <div class="wrap">${jumpNav([['examples-h', 'Real demos', '真实演示'], ['choose-h', 'Choose a tool', '选择工具'], ['start-h', 'Creative paths', '创作路径'], ['guides-h', 'Knowledge library', '知识体系']], 'jump-row')}</div>
   </div>
-
-  <section class="band band-cream" aria-labelledby="choose-h">
-    <div class="wrap">
-    ${heading(2, 'Choose by task', '按任务选择', 'choose-h')}
-    <p class="section-lede">${t('Six open-source projects. Pick the card that matches what you want to make.', '六个开源项目，按你想做的东西选一张卡片。')}</p>
-    <div class="project-grid">${projects.map((p) => {
-      const [taskEn, taskZh] = taskChoices.find(([, , slug]) => slug === p.slug)
-      return projectCard(p, t(esc(taskEn), esc(taskZh)))
-    }).join('')}
-    </div>
-    </div>
-  </section>
-
-  <section class="band" aria-labelledby="guides-h">
-    <div class="wrap">
-    ${heading(2, 'Writing and adaptation guides', '创作与改编入门', 'guides-h')}
-    <p class="section-lede">${t('Each guide answers one working question with a worked example.', '每篇指南回答一个具体的创作问题，附完整示例。')}</p>
-    <h3 class="sub-h">${t('Start here', '先看这些')}</h3>
-    <div class="guide-cards">${featured.map((g) => {
-      const owner = projects.find((p) => p.slug === g.owner)
-      return `
-      <a class="guide-card" href="/${g.owner}/${g.slug}">
-        <span class="eyebrow">${esc(owner.name.en)}</span>
-        <span class="guide-card-title">${esc(pick(g.title))}</span>
-      </a>`
-    }).join('')}
-    </div>
-    <h3 class="sub-h">${t('Find a guide for your next task', '按你正在做的事找文章')}</h3>
-    ${topicCards(false)}
-    <p class="more"><a href="/guides">${t('Browse and search all guides', '浏览与搜索全部指南')}${arrowGlyph}</a></p>
-    </div>
-  </section>
-
-  <section class="band band-cream" aria-labelledby="model-h">
-    <div class="wrap">
-    ${heading(2, 'How the pieces fit together', '项目如何协作', 'model-h')}
-    <div class="model">${pair(steps(org.model.en), steps(org.model.zh), 'cols')}</div>
-    <p class="facts">${t(`${num(org.proof.stars_total)} GitHub stars across the organization as of ${esc(org.proof.as_of)}. All repositories listed here are ${esc(org.proof.license)}-licensed.`, `截至 ${esc(org.proof.as_of)}，组织合计 ${num(org.proof.stars_total)} 个 GitHub star。这里列出的仓库全部采用 ${esc(org.proof.license)} 许可。`)}</p>
-    </div>
-  </section>
-
-  <div class="wrap">
-    <p class="migration-note">${t('The writing workbench has moved to <a href="' + APP + '">app.zenstory.ai</a>; sign in there with your existing account.', '写作工作台已迁至 <a href="' + APP + '">app.zenstory.ai</a>，用原来的账号在新域名登录即可。')}</p>
-  </div>
+  <section class="band band-cream" aria-labelledby="examples-h"><div class="wrap">
+    <p class="eyebrow">${t('From source to something you can inspect', '从源材料，到看得见的产物')}</p>
+    ${heading(2, 'Real projects. Visible results.', '真实项目，看得见的产物', 'examples-h')}
+    <p class="section-lede">${t('Existing demos from our project READMEs. Watch a writing workflow, a short-drama sample, a narrated edit and gameplay—or try a public prototype. These are independent examples, not one story adapted four times.', '复用项目 README 的真实演示：写作流程、短剧样片、解说成片和游戏实机，也可以试玩公开原型。这些是独立案例，不冒充同一个故事的四次改编。')}</p>
+    <div class="showcase-grid">${showcaseCards()}</div>
+  </div></section>
+  <section class="band" aria-labelledby="choose-h"><div class="wrap">
+    ${heading(2, 'Choose by what you want to make', '按你想做的作品，选择工具', 'choose-h')}
+    <p class="section-lede">${t('Four creative skill packs, with two other ways to work. DSH is a host integration; the web workbench is a separate writing product.', '四套创作 skill，加上两种工作入口。DSH 是宿主集成，网页工作台是独立的写作产品。')}</p>
+    <h3 class="tool-group-title">${t('Creative tools', '创作工具')}</h3>
+    <div class="tool-grid">${toolCards(projects.filter((p) => !['dsh', 'workbench'].includes(p.slug)))}</div>
+    <h3 class="tool-group-title">${t('Where to work', '在哪里使用')}</h3>
+    <div class="environment-grid">${toolCards(projects.filter((p) => ['dsh', 'workbench'].includes(p.slug)))}</div>
+    <p class="more"><a href="/compare/writing-workflows">${t('Compare writing environments', '比较写作环境')}${arrowGlyph}</a> · <a href="/projects">${t('All projects and installation details', '全部项目与安装说明')}${arrowGlyph}</a></p>
+  </div></section>
+  <section class="band band-cream" aria-labelledby="start-h"><div class="wrap">
+    ${heading(2, 'Start with what you have', '从你现在拥有的东西开始', 'start-h')}
+    <p class="section-lede">${t('You do not need to learn every tool. Pick one path and follow it in order.', '不必先学会所有工具。选一条路径，按顺序完成一次创作。')}</p>
+    <div class="learning-paths home-paths">${paths.map(([number, en, zh, desc, descZh, slugs, labels]) => `<div class="learning-path"><span class="path-number">${number}</span><h3>${t(en, zh)}</h3><p>${t(desc, descZh)}</p>${homeReadingLinks(slugs, labels, number === '02')}</div>`).join('')}</div>
+  </div></section>
+  <section class="band" aria-labelledby="guides-h"><div class="wrap">
+    ${heading(2, 'A knowledge library, not a link dump', '从上手到排错，按层次找到方法', 'guides-h')}
+    <p class="section-lede">${t('Start with the whole workflow. Reach for a technique or troubleshooting guide when you need it. The full library remains searchable by creative task.', '先理解完整流程，再按需要查技法与排错。完整知识库仍按创作任务分类，并支持搜索。')}</p>
+    <div class="knowledge-grid">${levels.map(([en, zh, desc, descZh, slugs, more]) => `<article class="knowledge-level"><h3>${t(en, zh)}</h3><p>${t(desc, descZh)}</p>${homeReadingLinks(slugs)}<a class="topic-more" href="${more}">${t('Explore this layer', '继续查找')}${arrowGlyph}</a></article>`).join('')}</div>
+    <p class="more"><a href="/guides">${t('Browse and search the complete library', '浏览与搜索完整知识库')}${arrowGlyph}</a></p>
+  </div></section>
+  <section class="band band-cream" aria-labelledby="model-h"><div class="wrap">
+    ${heading(2, 'One story. Different ways to build.', '围绕故事，把创作连接起来', 'model-h')}
+    <div class="home-system"><figure>${pipelineSvg()}<figcaption>${t('A conceptual map of the projects—not a claim that the independent demos share one source.', '项目关系示意；上方独立案例并非同一个故事的全链路产物。')}</figcaption></figure><div class="model">${pair(steps(org.model.en), steps(org.model.zh), 'cols')}</div></div>
+    <p class="facts">${t(`${num(org.proof.stars_total)} GitHub stars across the organization as of ${esc(org.proof.as_of)}. Repositories listed here are ${esc(org.proof.license)}-licensed. Model services may have separate costs.`, `截至 ${esc(org.proof.as_of)}，组织合计 ${num(org.proof.stars_total)} 个 GitHub star。所列仓库为 ${esc(org.proof.license)} 许可，模型服务可能另有费用。`)}</p>
+    <p class="actions"><a class="btn" href="${APP}">${t('Open the writing workbench', '打开网页写作工作台')}${extGlyph}</a><a class="btn ghost" href="/projects">${t('Use skills in your agent', '在 Agent 中使用 skill')}${arrowGlyph}</a></p>
+  </div></section>
 </article>`
   write(route, page({ route, title, description, ogType: 'website', ld, body }))
 }
@@ -818,7 +838,7 @@ const topicPage = (topic, number = 1) => {
   const pagination = count > 1 ? `<nav class="library-pagination" aria-label="${t('Guide pages','文章分页')}">${number > 1 ? `<a href="${topicRoute(topic, number - 1)}" rel="prev">${t('Previous','上一页')}</a>` : ''}<span>${t(`Page ${number} of ${count}`,`第 ${number} / ${count} 页`)}</span>${number < count ? `<a href="${topicRoute(topic, number + 1)}" rel="next">${t('Next','下一页')}${arrowGlyph}</a>` : ''}</nav>` : ''
   const title = `${pick(topic.title)}${number > 1 ? t(` — Page ${number}`, ` — 第 ${number} 页`) : ''} | ZenStory AI`
   const description = pick(topic.description)
-  const ld = [orgNode, {'@type':'ItemList',name:pick(topic.title),url:U(route),itemListElement:current.map((item,i)=>({'@type':'ListItem',position:(number-1)*TOPIC_PAGE_SIZE+i+1,name:pick(item.title),url:U(`/${item.owner}/${item.slug}`)}))}, breadcrumb([['ZenStory AI',U('/')],[t('Guides','指南'),U('/guides')],[pick(topic.title),U(route)]])]
+  const ld = [orgNode, {'@type':'ItemList',name:pick(topic.title),url:U(route),itemListElement:current.map((item,i)=>({'@type':'ListItem',position:(number-1)*TOPIC_PAGE_SIZE+i+1,name:pick(item.title),url:U(`/${item.owner}/${esc(item.slug)}`)}))}, breadcrumb([['ZenStory AI',U('/')],[t('Guides','指南'),U('/guides')],[pick(topic.title),U(route)]])]
   const body = `<article class="guides-index"><header class="page-hero"><div class="wrap">
     <p class="crumbs"><a href="/guides">${t('All guides','全部指南')}</a></p>
     <h1>${esc(pick(topic.title))}${number > 1 ? t(`: page ${number}`, `：第 ${number} 页`) : ''}</h1><p class="lede">${esc(description)}</p>
