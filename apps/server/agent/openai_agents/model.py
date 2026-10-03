@@ -2,7 +2,7 @@
 
 The writing agent intentionally supports one provider/model only:
 DeepSeek's OpenAI-compatible Chat Completions endpoint with
-``deepseek-v4-flash``. Rollback is expected to happen via git revert rather
+``deepseek-flash``. Rollback is expected to happen via git revert rather
 than runtime engine switching, so this module does not expose provider routing.
 """
 

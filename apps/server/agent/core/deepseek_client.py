@@ -1,7 +1,7 @@
 """Shared DeepSeek OpenAI-compatible client wiring.
 
 ZenStory intentionally supports one chat model for agentic LLM calls:
-``deepseek-v4-flash`` through DeepSeek's OpenAI-compatible endpoint. API keys
+``deepseek-flash`` through DeepSeek's OpenAI-compatible endpoint. API keys
 must be supplied at runtime via ``DEEPSEEK_API_KEY``.
 """
 
@@ -16,7 +16,7 @@ from utils.logger import get_logger, log_with_context
 
 logger = get_logger(__name__)
 
-DEEPSEEK_CHAT_MODEL = "deepseek-v4-flash"
+DEEPSEEK_CHAT_MODEL = "deepseek-flash"
 DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 
 

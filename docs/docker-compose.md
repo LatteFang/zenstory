@@ -2,7 +2,7 @@
 
 ## Quick Start（推荐）
 
-写作 Agent 只需要 DeepSeek API Key（模型固定为 `deepseek-v4-flash`）：
+写作 Agent 只需要 DeepSeek API Key（模型固定为 `deepseek-flash`）：
 
 ```bash
 # 1. 设置 DeepSeek API Key（也可以写进与 docker-compose.yml 同目录的 .env 文件）

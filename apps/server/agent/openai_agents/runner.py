@@ -321,16 +321,15 @@ def _build_agent(agent_type: str, system_prompt: str) -> Any:
     # it impossible to surface per-agent exhaustion cleanly.  The current explicit
     # graph loop + handoff packet approach is intentional; do not replace with as_tool.
     #
-    # NOTE — reasoning lever (not yet activated).
-    # ModelSettings also accepts a ``reasoning`` field (maps to the model's reasoning-effort
-    # parameter) and an ``extra_body`` dict for provider-specific kwargs.  DeepSeek's
-    # Chat Completions API does not document a first-class reasoning-effort parameter for
-    # deepseek-chat / deepseek-v4-flash (it is a feature of the separate /beta/reasoner
-    # endpoint).  Activating it without confirmation risks a 400/422 from the API.
-    # When DeepSeek confirms the parameter for the chat endpoint, add:
-    #   model_settings=ModelSettings(..., reasoning={"effort": "medium"})
-    # or route through extra_body if the SDK does not yet expose it natively.
-    # Until then, do NOT set reasoning here.
+    # NOTE — reasoning lever (verified, intentionally not set).
+    # deepseek-flash's Chat Completions endpoint accepts two reasoning controls (live probe
+    # 2026-10-03): ``reasoning_effort`` (none|minimal|low|medium|high|xhigh|ultra|max;
+    # unknown values return 422) and ``extra_body={"thinking": {"type": "disabled"}}``.
+    # ModelSettings exposes them as ``reasoning={"effort": ...}`` / ``extra_body``.
+    # The writing agent deliberately runs at the model's default effort (high): lowering it
+    # trades writing/tool-planning quality for latency and tokens, and that trade has not
+    # been evaluated.  LLMClient.acomplete(thinking_enabled=False) already uses the
+    # ``thinking`` toggle for short single-shot calls (suggestions, polish).
     from agents import Agent, ModelSettings
 
     return Agent(
