@@ -15,7 +15,7 @@ async def test_deepseek_direct_chat_completions_smoke(require_deepseek_key):
             {"role": "user", "content": "Say migration smoke passed."},
         ],
         temperature=0.0,
-        # deepseek-v4-flash is a reasoning model: reasoning_tokens count against the
+        # deepseek-flash is a reasoning model: reasoning_tokens count against the
         # completion budget, so a tiny max_tokens (e.g. 32) is fully consumed by reasoning
         # and leaves message.content empty. Give enough room for reasoning + the sentence.
         max_tokens=512,

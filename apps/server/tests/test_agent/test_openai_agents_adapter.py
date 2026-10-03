@@ -288,7 +288,7 @@ async def test_runner_streams_through_openai_compatible_http_endpoint(monkeypatc
 
                 if self.path != "/chat/completions":
                     raise AssertionError(f"unexpected path: {self.path}")
-                if body.get("model") != "deepseek-v4-flash":
+                if body.get("model") != "deepseek-flash":
                     raise AssertionError(f"unexpected model: {body.get('model')}")
                 if body.get("stream") is not True:
                     raise AssertionError("expected streaming request")
@@ -304,7 +304,7 @@ async def test_runner_streams_through_openai_compatible_http_endpoint(monkeypatc
                         "id": "chatcmpl-local",
                         "object": "chat.completion.chunk",
                         "created": 1,
-                        "model": "deepseek-v4-flash",
+                        "model": "deepseek-flash",
                         "choices": [
                             {
                                 "index": 0,
@@ -317,7 +317,7 @@ async def test_runner_streams_through_openai_compatible_http_endpoint(monkeypatc
                         "id": "chatcmpl-local",
                         "object": "chat.completion.chunk",
                         "created": 1,
-                        "model": "deepseek-v4-flash",
+                        "model": "deepseek-flash",
                         "choices": [
                             {
                                 "index": 0,
@@ -330,7 +330,7 @@ async def test_runner_streams_through_openai_compatible_http_endpoint(monkeypatc
                         "id": "chatcmpl-local",
                         "object": "chat.completion.chunk",
                         "created": 1,
-                        "model": "deepseek-v4-flash",
+                        "model": "deepseek-flash",
                         "choices": [
                             {
                                 "index": 0,
@@ -343,7 +343,7 @@ async def test_runner_streams_through_openai_compatible_http_endpoint(monkeypatc
                         "id": "chatcmpl-local",
                         "object": "chat.completion.chunk",
                         "created": 1,
-                        "model": "deepseek-v4-flash",
+                        "model": "deepseek-flash",
                         "choices": [
                             {
                                 "index": 0,
@@ -414,14 +414,14 @@ async def test_runner_streams_through_openai_compatible_http_endpoint(monkeypatc
         f"event_types={[getattr(e, 'type', None) for e in events]}; "
         f"event_data={[getattr(e, 'data', None) for e in events][:6]}"
     )
-    assert requests[0]["model"] == "deepseek-v4-flash"
+    assert requests[0]["model"] == "deepseek-flash"
     assert [event.type for event in events] == [
         StreamEventType.MESSAGE_START,
         StreamEventType.TEXT,
         StreamEventType.TEXT,
         StreamEventType.MESSAGE_END,
     ]
-    assert events[0].data == {"model": "deepseek-v4-flash", "agent_type": "writer"}
+    assert events[0].data == {"model": "deepseek-flash", "agent_type": "writer"}
     assert "".join(event.data.get("text", "") for event in events) == "本地smoke"
     assert state["messages"][-1]["content"][0]["text"] == "本地smoke"
 

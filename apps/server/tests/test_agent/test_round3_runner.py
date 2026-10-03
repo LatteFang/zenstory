@@ -42,7 +42,7 @@ def _chunk(delta=None, finish=None, usage=None):
         "id": "chatcmpl-local",
         "object": "chat.completion.chunk",
         "created": 1,
-        "model": "deepseek-v4-flash",
+        "model": "deepseek-flash",
         "choices": [{"index": 0, "delta": delta or {}, "finish_reason": finish}],
     }
     if usage is not None:
@@ -135,7 +135,7 @@ class _ChatCompletionsStub:
                                     "id": "chatcmpl-local",
                                     "object": "chat.completion.chunk",
                                     "created": 1,
-                                    "model": "deepseek-v4-flash",
+                                    "model": "deepseek-flash",
                                     "choices": [],
                                     "usage": outer.usage_only_when_requested,
                                 }

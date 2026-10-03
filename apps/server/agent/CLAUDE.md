@@ -179,7 +179,7 @@ async def run_openai_agents_streaming_agent(...):
     # 1. 归一化会话历史和当前用户消息
     api_messages = build_history_messages(state)
 
-    # 2. 构建 SDK Agent（DeepSeek deepseek-v4-flash + 项目工具）
+    # 2. 构建 SDK Agent（DeepSeek deepseek-flash + 项目工具）
     sdk_agent = _build_agent(agent_type, system_prompt)
 
     # 3. 运行 Runner.run_streamed 并映射 SDK 事件

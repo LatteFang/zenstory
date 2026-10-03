@@ -161,7 +161,7 @@ Sign in at <http://localhost:5173>; the API reference is at <http://localhost:80
 
 Every account, the admin included, starts on the free plan: 20 AI conversations a day and up to 3 projects. To lift that, run `docker compose exec server python scripts/seed_subscription_plans.py` to create the Pro plan (it also creates the free-plan row), then give an account Pro under Subscriptions in the admin console, or raise the free plan's limits under Subscription Plans.
 
-The writing agents use DeepSeek `deepseek-v4-flash` and need only that key. Other features need their own settings. With the quick start above, add backend variables under `server.environment` in `docker-compose.yml` and `VITE_*` variables under `web.environment`, then run `docker compose up -d`; the repo-root `.env` only fills the `${…}` placeholders in the compose file (such as `DEEPSEEK_API_KEY` and `JWT_SECRET_KEY`) and passes nothing else into the containers. With `docker-compose.full.yml`, put them in `apps/server/.env.docker` and `apps/web/.env.docker` instead.
+The writing agents use DeepSeek `deepseek-flash` (DeepSeek-V4.1-Flash) and need only that key. Other features need their own settings. With the quick start above, add backend variables under `server.environment` in `docker-compose.yml` and `VITE_*` variables under `web.environment`, then run `docker compose up -d`; the repo-root `.env` only fills the `${…}` placeholders in the compose file (such as `DEEPSEEK_API_KEY` and `JWT_SECRET_KEY`) and passes nothing else into the containers. With `docker-compose.full.yml`, put them in `apps/server/.env.docker` and `apps/web/.env.docker` instead.
 
 <details>
 <summary>Settings for optional features</summary>
@@ -316,7 +316,7 @@ For a few people you trust, you can also run `create_admin.py` again with their 
 
 ### Can I use a different model?
 
-Not from a setting. The model name `deepseek-v4-flash` is written in code ([`apps/server/agent/core/deepseek_client.py`](apps/server/agent/core/deepseek_client.py)). `DEEPSEEK_BASE_URL` can point at another OpenAI-compatible endpoint, but requests still name the same model. Support for more models is requested in [#13](https://github.com/zenstory-ai/zenstory/issues/13).
+Not from a setting. The model name `deepseek-flash` is written in code ([`apps/server/agent/core/deepseek_client.py`](apps/server/agent/core/deepseek_client.py)). `DEEPSEEK_BASE_URL` can point at another OpenAI-compatible endpoint, but requests still name the same model. Support for more models is requested in [#13](https://github.com/zenstory-ai/zenstory/issues/13).
 
 ### Can I export to Word, or publish straight to a web-novel platform?
 
@@ -392,7 +392,7 @@ zenstory/
 | --- | --- |
 | Frontend | React 19 · TypeScript · Vite 7 · Tailwind CSS 4 · Zustand · TanStack Query |
 | Backend | FastAPI · SQLModel · Server-Sent Events |
-| AI | DeepSeek `deepseek-v4-flash` (OpenAI-compatible API) · openai-agents-python |
+| AI | DeepSeek `deepseek-flash` (DeepSeek-V4.1-Flash, OpenAI-compatible API) · openai-agents-python |
 | Retrieval | LlamaIndex · ChromaDB · Zhipu embedding-3, vector and keyword results fused with RRF |
 | Data | SQLite (default) / PostgreSQL · Redis · Alembic |
 | Deploy | Docker Compose; the hosted app runs the frontend on Vercel and the API plus Prefect on Railway |

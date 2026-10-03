@@ -3,72 +3,110 @@ name: zenstory Online Smoke
 on:
   workflow_dispatch:
     inputs:
-      backend_url:
-        description: "Override zenstory backend URL (optional)"
-        required: false
+      source_sha:
+        description: "Exact 40-character main commit deployed by the providers"
+        required: true
         type: string
-      frontend_url:
-        description: "Override zenstory frontend URL (optional)"
-        required: false
+      ci_run_id:
+        description: "Exact successful CI workflow run ID for source_sha"
+        required: true
         type: string
-  schedule:
-    - cron: "30 */6 * * *"
+      frontend_origin:
+        description: "Canonical public frontend origin"
+        required: true
+        default: "https://app.zenstory.ai"
+        type: choice
+        options:
+        - "https://app.zenstory.ai"
+        - "https://zenstory.ai"
 
 permissions:
   contents: read
 
 concurrency:
-  group: zenstory-online-smoke-${{ github.ref }}
-  cancel-in-progress: true
+  group: zenstory-online-smoke-${{ inputs.source_sha }}
+  cancel-in-progress: false
 
 jobs:
   smoke:
-    name: zenstory deployed smoke
+    name: Source-bound public readiness receipt
     runs-on: ubuntu-latest
-    if: always()
+    timeout-minutes: 8
+    permissions:
+      actions: read
+      checks: read
+      contents: read
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Resolve smoke target URLs
-      id: resolve
+    - name: Require main dispatch and validate input shapes
       env:
-        ZENSTORY_BACKEND_URL_DEFAULT: ${{ vars.ZENSTORY_BACKEND_URL || secrets.ZENSTORY_BACKEND_URL }}
-        ZENSTORY_FRONTEND_URL_DEFAULT: ${{ vars.ZENSTORY_FRONTEND_URL || secrets.ZENSTORY_FRONTEND_URL }}
-        ZENSTORY_BACKEND_URL_FROM_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.backend_url || '' }}
-        ZENSTORY_FRONTEND_URL_FROM_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.frontend_url || '' }}
+        SOURCE_REF: ${{ github.ref }}
+        SOURCE_SHA: ${{ inputs.source_sha }}
+        CI_RUN_ID: ${{ inputs.ci_run_id }}
       run: |
-        backend_url="${ZENSTORY_BACKEND_URL_FROM_INPUT:-$ZENSTORY_BACKEND_URL_DEFAULT}"
-        frontend_url="${ZENSTORY_FRONTEND_URL_FROM_INPUT:-$ZENSTORY_FRONTEND_URL_DEFAULT}"
-
-        if [[ -z "$backend_url" || -z "$frontend_url" ]]; then
-          echo "::error::Missing zenstory smoke URLs. Set ZENSTORY_BACKEND_URL and ZENSTORY_FRONTEND_URL (repo vars/secrets), or pass workflow_dispatch inputs."
+        [[ "$SOURCE_REF" == "refs/heads/main" ]] || {
+          echo "::error::Readiness receipts must be dispatched from main."
           exit 1
-        fi
+        }
+        [[ "$SOURCE_SHA" =~ ^[a-f0-9]{40}$ ]] || {
+          echo "::error::source_sha must be a lowercase 40-character commit SHA."
+          exit 1
+        }
+        [[ "$CI_RUN_ID" =~ ^[0-9]+$ ]] || {
+          echo "::error::ci_run_id must be numeric."
+          exit 1
+        }
 
-        echo "backend_url=$backend_url" >> "$GITHUB_OUTPUT"
-        echo "frontend_url=$frontend_url" >> "$GITHUB_OUTPUT"
+    - name: Checkout trusted main receipt controls
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      with:
+        persist-credentials: false
 
-        echo "## zenstory Smoke Targets" >> "$GITHUB_STEP_SUMMARY"
-        echo "- Backend: $backend_url" >> "$GITHUB_STEP_SUMMARY"
-        echo "- Frontend: $frontend_url" >> "$GITHUB_STEP_SUMMARY"
-
-    - name: Run online smoke checks
+    - name: Prove exact source and successful CI summary
       env:
-        ZENSTORY_BACKEND_URL: ${{ steps.resolve.outputs.backend_url }}
-        ZENSTORY_FRONTEND_URL: ${{ steps.resolve.outputs.frontend_url }}
-        ZENSTORY_SMOKE_USERNAME: ${{ secrets.ZENSTORY_SMOKE_USERNAME }}
-        ZENSTORY_SMOKE_PASSWORD: ${{ secrets.ZENSTORY_SMOKE_PASSWORD }}
-        ZENSTORY_SMOKE_TIMEOUT_SECONDS: ${{ vars.ZENSTORY_SMOKE_TIMEOUT_SECONDS || '480' }}
+        GITHUB_TOKEN: ${{ github.token }}
+        SOURCE_SHA: ${{ inputs.source_sha }}
+        CI_RUN_ID: ${{ inputs.ci_run_id }}
+      run: |
+        mkdir -p artifacts
+        node scripts/ci/deployment-receipt.mjs "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$CI_RUN_ID" artifacts/ci-proof.json
+
+    # The supplied source is evidence only. Execute trusted main controls, not
+    # a user-selected checkout, and do not write or restore a build cache.
+    - name: Run credential-free public readiness checks
+      env:
+        ZENSTORY_BACKEND_URL: https://api.zenstory.ai
+        ZENSTORY_FRONTEND_URL: ${{ inputs.frontend_origin }}
+        ZENSTORY_SMOKE_TIMEOUT_SECONDS: '120'
       run: |
         set -o pipefail
-        mkdir -p artifacts
         bash scripts/ci/zenstory-online-smoke.sh 2>&1 | tee artifacts/zenstory-online-smoke.log
 
-    - name: Upload smoke logs
+    - name: Write explicit provider receipt status
+      env:
+        SOURCE_SHA: ${{ inputs.source_sha }}
+        CI_RUN_ID: ${{ inputs.ci_run_id }}
+        FRONTEND_ORIGIN: ${{ inputs.frontend_origin }}
+      run: |
+        node - <<'NODE'
+        const { writeFileSync } = require('node:fs');
+        writeFileSync('artifacts/deployment-receipt.json', `${JSON.stringify({
+          schemaVersion: 1,
+          sourceSha: process.env.SOURCE_SHA,
+          ciRunId: Number(process.env.CI_RUN_ID),
+          frontendOrigin: process.env.FRONTEND_ORIGIN,
+          backendOrigin: 'https://api.zenstory.ai',
+          readiness: 'SUCCESS',
+          providerSourceBinding: 'NOT_VERIFIED',
+          providerGate: 'NOT_VERIFIED',
+          note: 'This is post-deployment public observability. Provider deployment IDs, source binding, and native promotion/deployment gates require separate readback.',
+        }, null, 2)}\n`);
+        NODE
+
+    - name: Upload source-bound readiness evidence
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
-        name: zenstory-online-smoke-logs
-        path: artifacts/zenstory-online-smoke.log
-        retention-days: 7
+        name: zenstory-readiness-${{ inputs.source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: artifacts/
+        if-no-files-found: error
+        retention-days: 14

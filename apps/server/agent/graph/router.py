@@ -148,7 +148,7 @@ def _int_usage_field(source: object, name: str) -> int:
 def _extract_usage(response: object) -> dict[str, int] | None:
     """把 Chat Completions 的 usage 归一化成**规范键**。
 
-    路由这次调用同样烧真金白银（deepseek-v4-flash 的 reasoning token 尤其多），
+    路由这次调用同样烧真金白银（deepseek-flash 的 reasoning token 尤其多），
     却一直没有进任何统计口径——整轮用量因此系统性偏低。
 
     键名必须与 openai_agents/runner.py 的 `_usage_dict_from_result` 完全一致
@@ -194,7 +194,7 @@ async def _route_with_deepseek_chat(user_message: str) -> dict[str, Any]:
             {"role": "user", "content": user_message},
         ],
         temperature=0.0,
-        # deepseek-v4-flash is a reasoning model: chain-of-thought reasoning_tokens count
+        # deepseek-flash is a reasoning model: chain-of-thought reasoning_tokens count
         # against completion tokens. A tight budget can be fully consumed by reasoning,
         # leaving an empty JSON answer and forcing a silent fallback to writer/quick.
         # Keep a generous budget so the short routing JSON always fits after reasoning.

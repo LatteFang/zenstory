@@ -30,16 +30,17 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.filter.outputs.server_backend }}
-      frontend: ${{ steps.filter.outputs.web_frontend }}
-      ci: ${{ steps.filter.outputs.ci }}
+      backend: ${{ steps.scope.outputs.backend }}
+      frontend: ${{ steps.scope.outputs.frontend }}
+      ci: ${{ steps.scope.outputs.ci }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-    - name: Detect changed paths
+    - name: Detect changed paths for push runs
+      if: github.event_name == 'push'
       id: filter
-      uses: dorny/paths-filter@v3
+      uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3
       with:
         filters: |
           server_backend:
@@ -51,16 +52,45 @@ jobs:
             - '.github/actions/**'
             - 'scripts/ci/**'
 
+    - name: Resolve validated E2E scope
+      id: scope
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        FILTER_BACKEND: ${{ steps.filter.outputs.server_backend }}
+        FILTER_FRONTEND: ${{ steps.filter.outputs.web_frontend }}
+        FILTER_CI: ${{ steps.filter.outputs.ci }}
+      run: |
+        if [[ "$EVENT_NAME" == "schedule" || "$EVENT_NAME" == "workflow_dispatch" ]]; then
+          backend=true
+          frontend=true
+          ci=true
+        else
+          backend="$FILTER_BACKEND"
+          frontend="$FILTER_FRONTEND"
+          ci="$FILTER_CI"
+        fi
+        for value in "$backend" "$frontend" "$ci"; do
+          [[ "$value" == "true" || "$value" == "false" ]] || {
+            echo "::error::Malformed paths-filter output: ${value:-empty}"
+            exit 1
+          }
+        done
+        {
+          echo "backend=$backend"
+          echo "frontend=$frontend"
+          echo "ci=$ci"
+        } >> "$GITHUB_OUTPUT"
+
   e2e-test:
     needs: detect-changes
-    if: needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.ci == 'true'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         browser: ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.suite == 'full')) && fromJson('["chromium", "firefox"]') || fromJson('["chromium"]') }}
         shard: ${{ (github.event_name == 'push' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.suite == 'full' || github.event.inputs.suite == 'default'))) && fromJson('["1/2", "2/2"]') || fromJson('["1/1"]') }}
-    services: &service-configs
+    services:
       postgres:
         image: postgres:15-alpine
         env:
@@ -86,7 +116,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
     - name: Setup frontend
       uses: ./.github/actions/setup-frontend
@@ -169,7 +199,7 @@ jobs:
         fi
 
     - name: Upload Playwright report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       if: failure()
       with:
         # matrix.shard contains "/" (for example "1/2"), which is not valid in
@@ -183,22 +213,15 @@ jobs:
     needs: [detect-changes, e2e-test]
     if: always()
     steps:
+    - name: Checkout result validator
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
     - name: Check E2E results
       env:
+        DETECT_CHANGES_RESULT: ${{ needs['detect-changes'].result }}
+        BACKEND_CHANGED: ${{ needs['detect-changes'].outputs.backend }}
+        FRONTEND_CHANGED: ${{ needs['detect-changes'].outputs.frontend }}
+        CI_CHANGED: ${{ needs['detect-changes'].outputs.ci }}
+        EVENT_NAME: ${{ github.event_name }}
         E2E_TEST_RESULT: ${{ needs['e2e-test'].result }}
-      run: |
-        echo "E2E tests: $E2E_TEST_RESULT"
-
-        check_job() {
-          local job_name="$1"
-          local job_result="$2"
-          if [[ "$job_result" == "success" || "$job_result" == "skipped" ]]; then
-            return
-          fi
-          echo "::error::$job_name failed with result: $job_result"
-          exit 1
-        }
-
-        check_job "e2e-test" "$E2E_TEST_RESULT"
-
-        echo "All E2E checks passed!"
+      run: node scripts/ci/check-workflow-results.mjs e2e
