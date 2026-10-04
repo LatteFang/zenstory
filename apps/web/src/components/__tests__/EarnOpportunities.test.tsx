@@ -5,6 +5,8 @@ import { EarnOpportunities } from '../points/EarnOpportunities'
 import * as pointsApi from '../../lib/pointsApi'
 import type { EarnOpportunity } from '../../types/points'
 
+const inspirationFeature = vi.hoisted(() => ({ enabled: true }))
+
 // Mock pointsApi
 vi.mock('../../lib/pointsApi', () => ({
   pointsApi: {
@@ -17,6 +19,10 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (_key: string, defaultValue: string) => defaultValue,
   }),
+}))
+
+vi.mock('../../config/inspirations', () => ({
+  inspirationsConfig: inspirationFeature,
 }))
 
 const mockPointsApi = vi.mocked(pointsApi.pointsApi)
@@ -61,6 +67,7 @@ const mockOpportunities: EarnOpportunity[] = [
 describe('EarnOpportunities', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    inspirationFeature.enabled = true
   })
 
   describe('Rendering', () => {
@@ -432,6 +439,19 @@ describe('EarnOpportunities', () => {
       // All should have icons
       const svgs = document.querySelectorAll('svg')
       expect(svgs.length).toBe(6)
+    })
+
+    it('filters stale inspiration contribution opportunities when disabled', async () => {
+      inspirationFeature.enabled = false
+      mockPointsApi.getEarnOpportunities.mockResolvedValue([
+        { type: 'inspiration_contribution', points: 25, description: 'Inspiration', is_completed: false, is_available: true },
+        { type: 'skill_contribution', points: 30, description: 'Skill', is_completed: false, is_available: true },
+      ])
+
+      render(<EarnOpportunities />, { wrapper: createWrapper() })
+
+      expect(await screen.findByText('Skill')).toBeInTheDocument()
+      expect(screen.queryByText('Inspiration')).not.toBeInTheDocument()
     })
   })
 

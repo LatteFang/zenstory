@@ -10,6 +10,12 @@ from models import File, Inspiration, Project, User
 from services.core.auth_service import hash_password
 
 
+@pytest.fixture(autouse=True)
+def _enable_inspirations_for_existing_feature_tests(monkeypatch):
+    """These tests exercise the module's behavior when explicitly enabled."""
+    monkeypatch.setenv("INSPIRATIONS_ENABLED", "true")
+
+
 async def create_user(
     db_session: Session,
     username: str,

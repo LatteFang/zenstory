@@ -10,6 +10,7 @@ let mockLanguage = 'zh-CN'
 let mockResolvedLanguage: string | undefined = 'zh-CN'
 let mockProjects: Array<{ id: string; name: string; project_type: 'novel'; updated_at?: string | null }> = []
 let mockProjectsLoading = false
+const inspirationFeature = vi.hoisted(() => ({ enabled: true }))
 
 const mockChangeLanguage = vi.fn()
 const mockSetTheme = vi.fn()
@@ -89,6 +90,10 @@ vi.mock('../../components/UserMenu', () => ({
   UserAvatar: ({ username }: { username: string }) => <span>{username}</span>,
 }))
 
+vi.mock('../../config/inspirations', () => ({
+  inspirationsConfig: inspirationFeature,
+}))
+
 import Dashboard from '../Dashboard'
 
 const renderDashboard = (initialEntries: string[] = ['/dashboard']) => {
@@ -116,6 +121,7 @@ describe('Dashboard user panel and quick switches', () => {
     mockResolvedLanguage = 'zh-CN'
     mockProjects = []
     mockProjectsLoading = false
+    inspirationFeature.enabled = true
   })
 
   it('opens user panel and closes on outside click', async () => {
@@ -174,6 +180,21 @@ describe('Dashboard user panel and quick switches', () => {
     const inspirationsButton = screen.getByRole('button', { name: 'Inspirations' })
     expect(inspirationsButton.className).toContain('accent-primary')
     expect(screen.getByText('Inspiration Detail Page')).toBeInTheDocument()
+  })
+
+  it('hides inspirations from desktop and mobile navigation when disabled', () => {
+    inspirationFeature.enabled = false
+    const { unmount } = renderDashboard()
+
+    expect(screen.queryByRole('button', { name: 'Inspirations' })).not.toBeInTheDocument()
+    unmount()
+
+    mockIsMobile = true
+    mockIsDesktop = false
+    renderDashboard()
+    fireEvent.click(screen.getByRole('button', { name: 'Open mobile menu' }))
+
+    expect(screen.queryByRole('button', { name: 'Inspirations' })).not.toBeInTheDocument()
   })
 
   it('does not render deprecated Lab nav entry', () => {

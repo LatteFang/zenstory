@@ -11,6 +11,7 @@ import { AdminPageState } from "../../components/admin";
 import { adminApi } from "../../lib/adminApi";
 import type { SubscriptionPlan, SubscriptionFeatures } from "../../types/subscription";
 import { toast } from "../../lib/toast";
+import { inspirationsConfig } from "../../config/inspirations";
 
 // Plan card component
 const PlanCard: React.FC<{
@@ -79,7 +80,9 @@ const PlanCard: React.FC<{
   const extraFeatureKeys = Object.keys(plan.features)
     .filter((key) => !featureDisplayOrder.includes(key))
     .sort();
-  const planFeatureKeys = [...knownFeatureKeys, ...extraFeatureKeys];
+  const planFeatureKeys = [...knownFeatureKeys, ...extraFeatureKeys].filter(
+    (key) => inspirationsConfig.enabled || key !== "inspiration_copies_monthly",
+  );
 
   return (
     <div className="admin-surface p-4 space-y-3">

@@ -44,7 +44,8 @@ def _start_flow_in_background(
     novel_title: str,
     author: str | None,
     user_id: str,
-    novel_id: int
+    novel_id: int,
+    job_id: int | None = None,
 ):
     """
     Wrapper to run flow deployment in background task.
@@ -58,6 +59,7 @@ def _start_flow_in_background(
         author: Author name (optional)
         user_id: User ID who uploaded the novel
         novel_id: Novel ID in the database
+        job_id: Exact ingestion job ID for new API dispatches
     """
     try:
         loop = asyncio.get_event_loop()
@@ -66,7 +68,14 @@ def _start_flow_in_background(
         asyncio.set_event_loop(loop)
 
     loop.run_until_complete(
-        _start_flow_deployment(file_path, novel_title, author, user_id, novel_id)
+        _start_flow_deployment(
+            file_path,
+            novel_title,
+            author,
+            user_id,
+            novel_id,
+            job_id=job_id,
+        )
     )
 
 
@@ -75,7 +84,8 @@ async def _start_flow_deployment(
     novel_title: str,
     author: str | None,
     user_id: str,
-    novel_id: int
+    novel_id: int,
+    job_id: int | None = None,
 ):
     """
     Start the novel ingestion flow via Prefect deployment.
@@ -90,95 +100,126 @@ async def _start_flow_deployment(
         author: Author name (optional)
         user_id: User ID who uploaded the novel
         novel_id: Novel ID in the database
+        job_id: Exact ingestion job ID; omitted only by legacy/manual callers
 
     Returns:
         Flow run ID if successful, None if failed
     """
-    def _mark_latest_job_failed(error_message: str) -> None:
+    def _get_target_job(session: Session) -> IngestionJob | None:
+        if job_id is not None:
+            job = session.get(IngestionJob, job_id)
+            if job is None or job.novel_id != novel_id:
+                return None
+            return job
+
+        # Compatibility for legacy/manual callers only. New API paths always
+        # pass job_id and never infer identity from the latest novel job.
+        return session.exec(
+            select(IngestionJob)
+            .where(IngestionJob.novel_id == novel_id)
+            .order_by(IngestionJob.created_at.desc())
+        ).first()
+
+    def _mark_target_job_failed(error_message: str) -> None:
         session = create_session()
         try:
-            latest_job = session.exec(
-                select(IngestionJob)
-                .where(IngestionJob.novel_id == novel_id)
-                .order_by(IngestionJob.created_at.desc())
-            ).first()
-            if not latest_job:
+            target_job = _get_target_job(session)
+            if not target_job:
                 return
 
-            latest_job.status = "failed"
-            latest_job.error_message = error_message
-            latest_job.error_details = json.dumps(
+            target_job.status = "failed"
+            target_job.error_message = error_message
+            target_job.error_details = json.dumps(
                 {"stage": "deployment_start", "message": error_message},
                 ensure_ascii=False,
             )
-            if hasattr(latest_job, "update_stage_progress"):
-                latest_job.update_stage_progress("queue", "failed", message=error_message)
-            latest_job.completed_at = utcnow()
-            session.add(latest_job)
+            if hasattr(target_job, "update_stage_progress"):
+                target_job.update_stage_progress("queue", "failed", message=error_message)
+            target_job.completed_at = utcnow()
+            session.add(target_job)
             session.commit()
         finally:
             session.close()
 
-    def _mark_latest_job_dispatched(flow_run_id: str) -> None:
+    def _mark_target_job_dispatched(flow_run_id: str) -> None:
         session = create_session()
         try:
-            latest_job = session.exec(
-                select(IngestionJob)
-                .where(IngestionJob.novel_id == novel_id)
-                .order_by(IngestionJob.created_at.desc())
-            ).first()
-            if not latest_job:
+            target_job = _get_target_job(session)
+            if not target_job:
                 return
 
-            latest_job.correlation_id = flow_run_id
-            if hasattr(latest_job, "update_stage_progress"):
-                latest_job.update_stage_progress(
+            target_job.correlation_id = flow_run_id
+            if hasattr(target_job, "update_stage_progress"):
+                target_job.update_stage_progress(
                     "queue",
                     "processing",
                     message="调度成功，等待工作流执行",
                     flow_run_id=flow_run_id,
                 )
-            latest_job.updated_at = utcnow()
-            session.add(latest_job)
+            target_job.updated_at = utcnow()
+            session.add(target_job)
             session.commit()
         finally:
             session.close()
+
+    if job_id is None:
+        logger.warning(
+            "Legacy material deployment without job_id: novel_id=%s", novel_id,
+        )
+    else:
+        validation_session = create_session()
+        try:
+            if _get_target_job(validation_session) is None:
+                logger.error(
+                    "Refusing material deployment for missing or mismatched job: "
+                    "novel_id=%s job_id=%s",
+                    novel_id,
+                    job_id,
+                )
+                return None
+        finally:
+            validation_session.close()
 
     try:
         from prefect.deployments import run_deployment
 
         logger.info(f"Starting novel ingestion deployment for user {user_id}: {novel_title}")
 
-        # Run deployment asynchronously (non-blocking)
-        # Use timeout=None to not wait for completion
+        # Create the deployment run and return immediately after Prefect accepts it.
+        parameters = {
+            "file_path": file_path,
+            "user_id": user_id,
+            "novel_title": novel_title,
+            "author": author,
+            "resume_from_checkpoint": True,
+            "novel_id": novel_id,
+        }
+        if job_id is not None:
+            parameters["job_id"] = job_id
+
         flow_run = await run_deployment(
             name="novel_ingestion_v3/novel_ingestion_v3",
-            parameters={
-                "file_path": file_path,
-                "user_id": user_id,
-                "novel_title": novel_title,
-                "author": author,
-                "resume_from_checkpoint": True,
-                "novel_id": novel_id,
-            },
-            timeout=None,  # Don't wait for completion
+            parameters=parameters,
+            timeout=0,
+            as_subflow=False,
         )
-
-        logger.info(f"Novel ingestion deployment started: flow_run_id={flow_run.id}")
-        try:
-            _mark_latest_job_dispatched(str(flow_run.id))
-        except Exception as db_err:
-            logger.error(f"Failed to persist flow run correlation id: {db_err}", exc_info=True)
-        return flow_run.id
-
     except Exception as e:
         logger.error(f"Failed to start novel ingestion deployment: {e}", exc_info=True)
         try:
-            _mark_latest_job_failed(f"Failed to start ingestion flow: {e}")
+            _mark_target_job_failed(f"Failed to start ingestion flow: {e}")
         except Exception as db_err:
             logger.error(f"Failed to mark ingestion job as failed: {db_err}", exc_info=True)
         # In production, don't fallback to direct execution - fail fast and allow retry.
         return None
+
+    logger.info(f"Novel ingestion deployment started: flow_run_id={flow_run.id}")
+    try:
+        _mark_target_job_dispatched(str(flow_run.id))
+    except Exception as db_err:
+        # Prefect accepting the run is authoritative. The V3 flow receives the
+        # exact job_id and can repair correlation without a duplicate dispatch.
+        logger.error(f"Failed to persist flow run correlation id: {db_err}", exc_info=True)
+    return flow_run.id
 
 
 __all__ = [

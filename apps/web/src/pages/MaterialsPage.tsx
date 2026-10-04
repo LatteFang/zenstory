@@ -809,13 +809,13 @@ function MaterialCard({
         )}
 
         {/* Error Message */}
-        {material.status === "failed" && material.error_message && (
+        {(material.status === "failed" || material.status === "completed_with_errors") && material.error_message && (
           <p className="text-xs text-[hsl(var(--error))] mt-2 line-clamp-2">
             {material.error_message}
           </p>
         )}
 
-        {material.status === "failed" && onRetry && (
+        {(material.status === "failed" || material.status === "completed_with_errors") && onRetry && (
           <button
             onClick={(e) => {
               e.stopPropagation();

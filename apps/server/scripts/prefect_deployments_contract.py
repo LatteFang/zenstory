@@ -1,17 +1,25 @@
-"""Assert that every production deployment was registered with Prefect Server."""
+"""Assert that Prefect Server contains exactly the active production deployments."""
 
 import asyncio
 
 from prefect.client.orchestration import get_client
 
-
 EXPECTED_DEPLOYMENTS = {
     "chapter_extraction",
-    "novel_ingestion_v2",
     "novel_ingestion_v3",
     "relationship_extraction",
     "story_aggregation",
 }
+
+
+def _assert_exact_deployments(registered: set[str]) -> None:
+    missing = EXPECTED_DEPLOYMENTS.difference(registered)
+    unexpected = registered.difference(EXPECTED_DEPLOYMENTS)
+    if missing or unexpected:
+        raise AssertionError(
+            "Prefect deployment mismatch: "
+            f"missing={sorted(missing)}, unexpected={sorted(unexpected)}"
+        )
 
 
 async def _check_deployments() -> None:
@@ -19,9 +27,7 @@ async def _check_deployments() -> None:
         deployments = await client.read_deployments()
 
     registered = {deployment.name for deployment in deployments}
-    missing = EXPECTED_DEPLOYMENTS.difference(registered)
-    if missing:
-        raise AssertionError(f"Missing Prefect deployments: {sorted(missing)}")
+    _assert_exact_deployments(registered)
 
     print(f"Registered Prefect deployments: {sorted(EXPECTED_DEPLOYMENTS)}")
 

@@ -19,6 +19,12 @@
 
 ---
 
+## 2026-10-04 Material Library Cleanup Note
+
+Unused `MaterialViewer` and `UploadNovelModal` components and their orphaned tests were removed. Active upload and result display remain in `MaterialsPage` and `MaterialDetailPage`. The dated coverage measurements below are retained as historical evidence, not current coverage claims.
+
+---
+
 ## Overall Coverage Summary
 
 | Metric | Coverage | Details |

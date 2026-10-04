@@ -9,6 +9,7 @@ const refetchStatus = vi.fn()
 const refetchCatalog = vi.fn()
 const refetchQuota = vi.fn()
 const assignSpy = vi.fn()
+const inspirationFeature = vi.hoisted(() => ({ enabled: true }))
 
 let statusResponse: Record<string, unknown> = {}
 let catalogResponse: Record<string, unknown> = {}
@@ -141,9 +142,14 @@ vi.mock('../../lib/analytics', () => ({
   trackEvent: (...args: unknown[]) => trackEvent(...args),
 }))
 
+vi.mock('../../config/inspirations', () => ({
+  inspirationsConfig: inspirationFeature,
+}))
+
 describe('BillingPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    inspirationFeature.enabled = true
     statusResponse = {
       data: {
         tier: 'free',
@@ -200,6 +206,14 @@ describe('BillingPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Redeem Code' }))
     expect(await screen.findByText('Redeem modal')).toBeInTheDocument()
+  })
+
+  it('hides inspiration quota usage when inspirations are disabled', () => {
+    inspirationFeature.enabled = false
+    render(<BillingPage />)
+
+    expect(screen.queryByText('Inspiration copies')).not.toBeInTheDocument()
+    expect(screen.queryByText('4/5')).not.toBeInTheDocument()
   })
 
   it('renders error recovery and empty catalog states', () => {

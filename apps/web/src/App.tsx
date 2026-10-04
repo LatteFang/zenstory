@@ -24,6 +24,7 @@ import { normalizePlanIntent } from "./lib/authFlow";
 import { shouldRequirePersonaOnboarding } from "./lib/onboardingPersona";
 import type { TreeNodeType } from "./types";
 import { lazyRoute } from "./lib/chunkRecovery";
+import { inspirationsConfig } from "./config/inspirations";
 
 // 懒加载路由组件 - 按需加载，减少首屏 bundle 大小
 const HomePage = lazyRoute(() => import("./pages/HomePage"), "HomePage");
@@ -460,8 +461,8 @@ function App() {
                       <Route path="materials" element={<MaterialsPage />} />
                       <Route path="skills" element={<SkillsPage />} />
                       <Route path="billing" element={<BillingPage />} />
-                      <Route path="inspirations" element={<InspirationsPage />} />
-                      <Route path="inspirations/:inspirationId" element={<InspirationDetailPage />} />
+                      <Route path="inspirations" element={inspirationsConfig.enabled ? <InspirationsPage /> : <Navigate to="/dashboard" replace />} />
+                      <Route path="inspirations/:inspirationId" element={inspirationsConfig.enabled ? <InspirationDetailPage /> : <Navigate to="/dashboard" replace />} />
                     </Route>
                     <Route
                       path="/project/:projectId"
@@ -514,7 +515,7 @@ function App() {
                       <Route path="subscriptions" element={<SubscriptionManagement />} />
                       <Route path="plans" element={<SubscriptionPlanManagement />} />
                       <Route path="audit-logs" element={<AuditLogPage />} />
-                      <Route path="inspirations" element={<InspirationManagement />} />
+                      <Route path="inspirations" element={inspirationsConfig.enabled ? <InspirationManagement /> : <Navigate to="/admin" replace />} />
                       <Route path="feedback" element={<FeedbackManagement />} />
                       {/* Commercial routes */}
                       <Route path="points" element={<PointsManagement />} />

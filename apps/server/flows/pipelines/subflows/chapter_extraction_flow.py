@@ -44,6 +44,7 @@ def _elapsed_ms(start: float) -> int:
 def _sync_stage1_job_progress(
     novel_id: int,
     *,
+    job_id: int | None = None,
     processed_chapters: int | None = None,
     stage_status: str = "processing",
     payload: dict[str, Any] | None = None,
@@ -57,7 +58,14 @@ def _sync_stage1_job_progress(
     try:
         with get_prefect_db_session() as session:
             svc = IngestionJobsService()
-            job = svc.get_latest_by_novel(session, novel_id)
+            if job_id is not None:
+                from models.material_models import IngestionJob
+
+                job = session.get(IngestionJob, job_id)
+                if job is None or job.novel_id != novel_id:
+                    return
+            else:
+                job = svc.get_latest_by_novel(session, novel_id)
             if not job:
                 return
             svc.update_processed(
@@ -87,6 +95,7 @@ def chapter_extraction_flow(
     novel_id: int,
     chapter_ids: list[int],
     correlation_id: str | None = None,  # noqa: ARG001
+    job_id: int | None = None,
 ) -> dict[str, Any]:
     """
     章节提取流程
@@ -107,6 +116,18 @@ def chapter_extraction_flow(
     flow_start = _def_now()
     stages = resolve_enabled_stages(settings)
 
+    if job_id is None:
+        from flows.database_session import get_prefect_db_session
+        from services.material.ingestion_jobs_service import IngestionJobsService
+
+        logger.warning(
+            "legacy chapter flow caller omitted job_id; resolving latest once for novel_id=%s",
+            novel_id,
+        )
+        with get_prefect_db_session() as session:
+            legacy_job = IngestionJobsService().get_latest_by_novel(session, novel_id)
+            job_id = legacy_job.id if legacy_job else None
+
     # 全局失败集合，避免未定义
     failed_chapters: list[int] = []
     failed_plot_chapters: list[int] = []
@@ -122,25 +143,46 @@ def chapter_extraction_flow(
         # 初始化监控与 checkpoint
         monitor = create_performance_monitor("chapter_extraction_flow")
         # 初始化 checkpoint 管理器（用于逐章追踪）
-        checkpoint = create_checkpoint_manager(novel_id)
+        checkpoint = create_checkpoint_manager(novel_id, job_id)
         # Older test fakes may not implement get_completed_chapters.
         if hasattr(checkpoint, "get_completed_chapters"):
-            baseline_completed = len(set(checkpoint.get_completed_chapters("stage1")))
+            enabled_capabilities = [
+                capability
+                for capability, enabled in (
+                    ("summaries", stages.chapter_summaries),
+                    ("plots", stages.plots),
+                    ("mentions", stages.characters),
+                )
+                if enabled
+            ]
+            completed_sets = [
+                set(checkpoint.get_completed_chapters("stage1", capability))
+                for capability in enabled_capabilities
+            ]
+            baseline_completed = len(set.intersection(*completed_sets)) if completed_sets else 0
         else:
             baseline_completed = 0
 
-        # 仅处理 pending 章节（若存在checkpoint记录）
-        pending_ids = checkpoint.get_pending_chapters("stage1", all_chapter_ids=chapter_ids)
-        if pending_ids:
-            chapter_ids = pending_ids
+        # Each capability resumes independently. An explicit empty list means zero
+        # submissions and must never fall back to the full chapter list.
+        summary_ids = checkpoint.get_pending_chapters(
+            "stage1", all_chapter_ids=all_chapter_ids, capability="summaries"
+        )
+        plot_ids = checkpoint.get_pending_chapters(
+            "stage1", all_chapter_ids=all_chapter_ids, capability="plots"
+        )
+        mention_ids = checkpoint.get_pending_chapters(
+            "stage1", all_chapter_ids=all_chapter_ids, capability="mentions"
+        )
 
         _sync_stage1_job_progress(
             novel_id,
+            job_id=job_id,
             processed_chapters=baseline_completed,
             stage_status="processing",
             payload={
                 "chapters_total": len(all_chapter_ids),
-                "pending_chapters": len(chapter_ids),
+                "pending_chapters": max(len(summary_ids), len(plot_ids), len(mention_ids)),
             },
             status="processing",
         )
@@ -151,15 +193,15 @@ def chapter_extraction_flow(
 
         summaries_count = 0
         if stages.chapter_summaries:
-            logger.info("任务1: 并行生成 %d 个章节摘要", len(chapter_ids))
+            logger.info("任务1: 并行生成 %d 个章节摘要", len(summary_ids))
 
             # 按并发上限分批提交，避免一次性堆积
             summary_futures = []
             batch = settings.MAX_CONCURRENT_CHAPTERS
 
             with monitor.measure("chapter_summaries"):
-                for i in range(0, len(chapter_ids), batch):
-                    for chapter_id in chapter_ids[i:i+batch]:
+                for i in range(0, len(summary_ids), batch):
+                    for chapter_id in summary_ids[i:i+batch]:
                         future = generate_chapter_summary_task.submit(chapter_id=chapter_id)
                         summary_futures.append(future)
 
@@ -172,13 +214,13 @@ def chapter_extraction_flow(
                 try:
                     result = future.result()
                     summary_results.append(result)
-                    completed_chapter_ids.append(result.get("chapter_id", chapter_ids[i]))
+                    completed_chapter_ids.append(result.get("chapter_id", summary_ids[i]))
                 except Exception as e:
                     logger.error(
-                        f"章节 {chapter_ids[i]} 摘要生成失败: {e}",
+                        f"章节 {summary_ids[i]} 摘要生成失败: {e}",
                         exc_info=True
                     )
-                    failed_chapters.append(chapter_ids[i])
+                    failed_chapters.append(summary_ids[i])
 
                     # 尝试从章节内容生成简单摘要（降级方案）
                     try:
@@ -186,32 +228,32 @@ def chapter_extraction_flow(
                         from services.material.chapters_service import ChaptersService
 
                         with get_db_session() as db:
-                            ch = ChaptersService().get_by_id(db, chapter_ids[i])
+                            ch = ChaptersService().get_by_id(db, summary_ids[i])
 
                             if ch and getattr(ch, "original_content", None):
                                 # 使用前200字作为简单摘要
                                 simple_summary = ch.original_content[:200] + "..."
                                 summary_results.append({
-                                    "chapter_id": chapter_ids[i],
+                                    "chapter_id": summary_ids[i],
                                     "summary": simple_summary,
                                     "fallback": True
                                 })
                                 logger.warning(
-                                    f"章节 {chapter_ids[i]} 使用降级摘要（前200字）"
+                                    f"章节 {summary_ids[i]} 使用降级摘要（前200字）"
                                 )
                             else:
                                 # 完全失败，使用占位符
                                 summary_results.append({
-                                    "chapter_id": chapter_ids[i],
+                                    "chapter_id": summary_ids[i],
                                     "summary": "[摘要生成失败，章节内容不可用]",
                                     "error": str(e)
                                 })
                     except Exception as fallback_error:
                         logger.error(
-                            f"章节 {chapter_ids[i]} 降级摘要也失败: {fallback_error}"
+                            f"章节 {summary_ids[i]} 降级摘要也失败: {fallback_error}"
                         )
                         summary_results.append({
-                            "chapter_id": chapter_ids[i],
+                            "chapter_id": summary_ids[i],
                             "summary": "[摘要生成失败]",
                             "error": str(e)
                         })
@@ -219,12 +261,13 @@ def chapter_extraction_flow(
                 if (i + 1) % batch == 0 or i == len(summary_futures) - 1:
                     _sync_stage1_job_progress(
                         novel_id,
+                        job_id=job_id,
                         processed_chapters=baseline_completed + len(set(completed_chapter_ids)),
                         stage_status="processing",
                         payload={
                             "summaries_completed": len(set(completed_chapter_ids)),
                             "summary_failed": len(failed_chapters),
-                            "pending_chapters": len(chapter_ids),
+                            "pending_chapters": len(summary_ids),
                         },
                         status="processing",
                     )
@@ -243,15 +286,18 @@ def chapter_extraction_flow(
             [f.result() for f in update_futures]
 
             # 更新 checkpoint：记录已完成/失败章节
-            if completed_chapter_ids or failed_chapters:
-                checkpoint.update_checkpoint(
-                    "stage1",
-                    status="processing",
-                    data={
-                        "completed_chapter_ids": completed_chapter_ids,
-                        "failed_chapter_ids": failed_chapters,
-                    },
-                )
+            old_completed = set(checkpoint.get_completed_chapters("stage1", "summaries"))
+            old_failed = set(checkpoint.get_failed_chapters("stage1", "summaries"))
+            merged_completed = old_completed | set(completed_chapter_ids)
+            merged_failed = (old_failed | set(failed_chapters)) - merged_completed
+            checkpoint.update_checkpoint(
+                "stage1",
+                status="processing",
+                data={
+                    "completed_chapter_ids": sorted(merged_completed),
+                    "failed_chapter_ids": sorted(merged_failed),
+                },
+            )
 
             summaries_count = len([r for r in summary_results if "error" not in r])
 
@@ -271,15 +317,15 @@ def chapter_extraction_flow(
 
         plots_count = 0
         if stages.plots:
-            logger.info("任务2: 并行提取 %d 个章节的情节点", len(chapter_ids))
+            logger.info("任务2: 并行提取 %d 个章节的情节点", len(plot_ids))
 
             # 按并发上限分批提交
             plot_futures = []
             batch = settings.MAX_CONCURRENT_CHAPTERS
 
             with monitor.measure("plot_extraction"):
-                for i in range(0, len(chapter_ids), batch):
-                    for chapter_id in chapter_ids[i:i+batch]:
+                for i in range(0, len(plot_ids), batch):
+                    for chapter_id in plot_ids[i:i+batch]:
                         future = extract_chapter_plots_task.submit(chapter_id=chapter_id)
                         plot_futures.append(future)
 
@@ -293,10 +339,10 @@ def chapter_extraction_flow(
                     plot_results.append(result)
                 except Exception as e:
                     logger.error(
-                        f"章节 {chapter_ids[i]} 情节点提取失败: {e}",
+                        f"章节 {plot_ids[i]} 情节点提取失败: {e}",
                         exc_info=True
                     )
-                    failed_plot_chapters.append(chapter_ids[i])
+                    failed_plot_chapters.append(plot_ids[i])
 
                     # 记录失败章节，但不阻塞流程
                     # 后续可以通过检查点重试这些章节
@@ -311,6 +357,7 @@ def chapter_extraction_flow(
 
             # 保存情节点
             save_futures = []
+            completed_plot_chapter_ids: list[int] = []
             for i, result in enumerate(plot_results):
                 if validated_results[i]["valid"]:
                     future = save_plots_task.submit(
@@ -319,35 +366,30 @@ def chapter_extraction_flow(
                         plots=result["plots"],
                     )
                     save_futures.append(future)
+                    completed_plot_chapter_ids.append(result["chapter_id"])
                 else:
                     logger.warning(
                         f"章节 {result['chapter_id']} 情节点验证失败: "
                         f"{validated_results[i].get('errors', [])}"
                     )
+                    failed_plot_chapters.append(result["chapter_id"])
 
             # 等待所有保存完成
             save_results = [f.result() for f in save_futures]
             plots_count = sum(r["saved_count"] for r in save_results)
 
-            # 记录完成情节点处理的章节（通过 save_results 的 chapter_id）
-            from typing import cast
-            completed_plot_chapter_ids: list[int] = []
-            try:
-                raw_ids = [r.get("chapter_id") for r in save_results if isinstance(r, dict) and r.get("saved_count", 0) > 0]
-                completed_plot_chapter_ids = [cast(int, cid) for cid in raw_ids if isinstance(cid, int)]
-            except Exception:
-                completed_plot_chapter_ids = []
-
-            # 更新 checkpoint：追加 plots 阶段的完成/失败章节
-            if completed_plot_chapter_ids or failed_plot_chapters:
-                checkpoint.update_checkpoint(
-                    "stage1",
-                    status="processing",
-                    data={
-                        "completed_plot_chapter_ids": completed_plot_chapter_ids,
-                        "failed_plot_chapter_ids": failed_plot_chapters,
-                    },
-                )
+            old_completed = set(checkpoint.get_completed_chapters("stage1", "plots"))
+            old_failed = set(checkpoint.get_failed_chapters("stage1", "plots"))
+            merged_completed = old_completed | set(completed_plot_chapter_ids)
+            merged_failed = (old_failed | set(failed_plot_chapters)) - merged_completed
+            checkpoint.update_checkpoint(
+                "stage1",
+                status="processing",
+                data={
+                    "completed_plot_chapter_ids": sorted(merged_completed),
+                    "failed_plot_chapter_ids": sorted(merged_failed),
+                },
+            )
 
             if failed_plot_chapters:
                 logger.warning(
@@ -366,30 +408,47 @@ def chapter_extraction_flow(
         mentions_extracted = False
         failed_mention_chapters: list[int] = []
         if stages.characters:
-            logger.info("任务3: 并行提取 %d 个章节的角色提及", len(chapter_ids))
+            logger.info("任务3: 并行提取 %d 个章节的角色提及", len(mention_ids))
 
             # 提取角色提及（轻量级，仅本章信息）
             mention_futures = []
             batch = settings.MAX_CONCURRENT_CHAPTERS
 
             with monitor.measure("character_mention_extraction"):
-                for i in range(0, len(chapter_ids), batch):
-                    for chapter_id in chapter_ids[i:i+batch]:
+                for i in range(0, len(mention_ids), batch):
+                    for chapter_id in mention_ids[i:i+batch]:
                         future = extract_character_mentions_task.submit(chapter_id=chapter_id)
                         mention_futures.append(future)
 
             # 等待所有提及提取完成
             mention_results = []
+            completed_mention_chapter_ids: list[int] = []
             for i, future in enumerate(mention_futures):
                 try:
                     result = future.result()
                     mention_results.append(result)
+                    completed_mention_chapter_ids.append(
+                        result.get("chapter_id", mention_ids[i])
+                    )
                 except Exception as e:
                     logger.error(
-                        f"章节 {chapter_ids[i]} 角色提及提取失败: {e}",
+                        f"章节 {mention_ids[i]} 角色提及提取失败: {e}",
                         exc_info=True
                     )
-                    failed_mention_chapters.append(chapter_ids[i])
+                    failed_mention_chapters.append(mention_ids[i])
+
+            old_completed = set(checkpoint.get_completed_chapters("stage1", "mentions"))
+            old_failed = set(checkpoint.get_failed_chapters("stage1", "mentions"))
+            merged_completed = old_completed | set(completed_mention_chapter_ids)
+            merged_failed = (old_failed | set(failed_mention_chapters)) - merged_completed
+            checkpoint.update_checkpoint(
+                "stage1",
+                status="processing",
+                data={
+                    "completed_mention_chapter_ids": sorted(merged_completed),
+                    "failed_mention_chapter_ids": sorted(merged_failed),
+                },
+            )
 
             mentions_extracted = len(mention_results) > 0
             logger.info(
@@ -408,6 +467,18 @@ def chapter_extraction_flow(
         all_failed_chapters = list(set(failed_chapters + failed_plot_chapters + failed_mention_chapters))
         total_failed = len(all_failed_chapters)
 
+        completed_by_capability = []
+        if stages.chapter_summaries:
+            completed_by_capability.append(set(checkpoint.get_completed_chapters("stage1", "summaries")))
+        if stages.plots:
+            completed_by_capability.append(set(checkpoint.get_completed_chapters("stage1", "plots")))
+        if stages.characters:
+            completed_by_capability.append(set(checkpoint.get_completed_chapters("stage1", "mentions")))
+        processed_chapters = (
+            len(set.intersection(*completed_by_capability))
+            if completed_by_capability
+            else len(all_chapter_ids)
+        )
         result = {
             "novel_id": novel_id,
             "summaries_count": summaries_count,
@@ -416,6 +487,13 @@ def chapter_extraction_flow(
             "failed_chapters": all_failed_chapters,
             "failed_mention_chapters": failed_mention_chapters,
             "failed_count": total_failed,
+            "processed_chapters": processed_chapters,
+            "completed_chapter_ids": checkpoint.get_completed_chapters("stage1", "summaries"),
+            "failed_chapter_ids": checkpoint.get_failed_chapters("stage1", "summaries"),
+            "completed_plot_chapter_ids": checkpoint.get_completed_chapters("stage1", "plots"),
+            "failed_plot_chapter_ids": checkpoint.get_failed_chapters("stage1", "plots"),
+            "completed_mention_chapter_ids": checkpoint.get_completed_chapters("stage1", "mentions"),
+            "failed_mention_chapter_ids": checkpoint.get_failed_chapters("stage1", "mentions"),
             "status": "completed_with_errors" if total_failed > 0 else "completed",
             "elapsed_ms": _elapsed_ms(flow_start),
         }
@@ -437,10 +515,10 @@ def chapter_extraction_flow(
             _elapsed_ms(flow_start),
         )
 
-        stage1_success = max(0, len(chapter_ids) - total_failed)
         _sync_stage1_job_progress(
             novel_id,
-            processed_chapters=baseline_completed + stage1_success,
+            job_id=job_id,
+            processed_chapters=processed_chapters,
             stage_status=result["status"],
             payload={
                 "summaries_count": summaries_count,
@@ -458,6 +536,7 @@ def chapter_extraction_flow(
         logger.error("章节提取流程失败: %s", str(e), exc_info=True)
         _sync_stage1_job_progress(
             novel_id,
+            job_id=job_id,
             stage_status="failed",
             payload={"error": str(e)},
             status="failed",

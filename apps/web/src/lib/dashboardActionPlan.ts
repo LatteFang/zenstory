@@ -2,6 +2,7 @@ import { buildUpgradeUrl } from "../config/upgradeExperience";
 import type { ProjectType } from "../types";
 import type { PersonaRecommendation } from "./onboardingPersonaApi";
 import type { ActivationGuideResponse } from "../types/writingStats";
+import { inspirationsConfig } from "../config/inspirations";
 
 type TranslateFn = (key: string, options?: { defaultValue?: string; [key: string]: unknown }) => string;
 
@@ -35,6 +36,16 @@ interface BuildTodayActionPlanInput {
 function normalizeActionPath(path: string | null | undefined, fallback = "/dashboard"): string {
   const value = (path ?? "").trim();
   return value || fallback;
+}
+
+function isInspirationPath(path: string | null | undefined): boolean {
+  const normalizedPath = normalizeActionPath(path);
+  return normalizedPath === "/dashboard/inspirations"
+    || normalizedPath.startsWith("/dashboard/inspirations/");
+}
+
+function isInspirationRecommendation(recommendation: PersonaRecommendation): boolean {
+  return isInspirationPath(resolvePersonaRecommendationActionPath(recommendation));
 }
 
 function createActionId(item: TodayActionPlanItem): string {
@@ -138,7 +149,12 @@ export function buildTodayActionPlan({
   const ctaLabel = t("todayActionPlan.cta", { defaultValue: "一键执行" });
 
   const pendingActivationSteps = activationGuide?.within_first_day
-    ? activationGuide.steps?.filter((step) => !step.completed) ?? []
+    ? activationGuide.steps?.filter((step) => {
+        if (step.completed) return false;
+        if (inspirationsConfig.enabled) return true;
+        const resolvedPath = normalizeActionPath(step.action_path, activationGuide.next_action ?? "/dashboard");
+        return !isInspirationPath(resolvedPath);
+      }) ?? []
     : [];
   const hasPendingActivationSteps = pendingActivationSteps.length > 0;
   const hasPendingActivationProjectStep = pendingActivationSteps.some(
@@ -164,6 +180,10 @@ export function buildTodayActionPlan({
   }
 
   for (const recommendation of personaRecommendations) {
+    if (!inspirationsConfig.enabled && isInspirationRecommendation(recommendation)) {
+      continue;
+    }
+
     candidates.push({
       id: `persona-${recommendation.id}`,
       title: resolvePersonaRecommendationTitle(recommendation, t),
@@ -243,20 +263,22 @@ export function buildTodayActionPlan({
     },
   });
 
-  candidates.push({
-    id: "fallback-inspirations",
-    title: t("todayActionPlan.defaults.inspirations.title", {
-      defaultValue: "补充灵感素材",
-    }),
-    description: t("todayActionPlan.defaults.inspirations.description", {
-      defaultValue: "浏览精选灵感，快速补齐创作输入。",
-    }),
-    ctaLabel,
-    action: {
-      type: "navigate",
-      path: "/dashboard/inspirations",
-    },
-  });
+  if (inspirationsConfig.enabled) {
+    candidates.push({
+      id: "fallback-inspirations",
+      title: t("todayActionPlan.defaults.inspirations.title", {
+        defaultValue: "补充灵感素材",
+      }),
+      description: t("todayActionPlan.defaults.inspirations.description", {
+        defaultValue: "浏览精选灵感，快速补齐创作输入。",
+      }),
+      ctaLabel,
+      action: {
+        type: "navigate",
+        path: "/dashboard/inspirations",
+      },
+    });
+  }
 
   const uniqueItems: TodayActionPlanItem[] = [];
   const seen = new Set<string>();

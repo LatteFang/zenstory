@@ -31,19 +31,6 @@ deployments:
     job_variables: {}
   schedules: []
 
-- name: novel_ingestion_v2
-  version: null
-  tags: ["materials", "novel", "legacy"]
-  concurrency_limit: 3
-  description: "[Legacy] 小说导入主流程 V2：文件解析、章节提取、情节分析、人物关系"
-  entrypoint: flows/pipelines/novel_ingestion_v2_flow.py:novel_ingestion_v2
-  parameters: {}
-  work_pool:
-    name: zenstory-pool
-    work_queue_name: null
-    job_variables: {}
-  schedules: []
-
 - name: chapter_extraction
   version: null
   tags: ["materials", "chapter"]

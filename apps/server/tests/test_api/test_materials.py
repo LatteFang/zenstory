@@ -13,15 +13,18 @@ Tests material library endpoints:
 import io
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
-from sqlmodel import select
+from sqlmodel import Session, select
+from starlette.datastructures import UploadFile
 
 import api.materials.upload as materials_upload_api
 from api.materials.constants import MAX_TEXT_CHARACTERS
 from core.error_codes import ErrorCode
+from core.error_handler import APIException
 from models import File, Project, User
 from models.material_models import (
     Chapter,
@@ -177,6 +180,206 @@ async def test_upload_material_success(client: AsyncClient, db_session):
     assert data["status"] == "pending"
     assert "novel_id" in data
     assert "job_id" in data
+
+    quota = db_session.exec(
+        select(UsageQuota).where(UsageQuota.user_id == user.id)
+    ).first()
+    assert quota is not None
+    db_session.refresh(quota)
+    assert quota.material_decompositions_used == 1
+
+
+@pytest.mark.integration
+async def test_upload_material_passes_response_job_id_to_dispatch(
+    client: AsyncClient,
+    db_session,
+    monkeypatch,
+    tmp_path,
+):
+    from config.material_settings import material_settings
+
+    _, token = await create_test_user(client, db_session, "upload_exact_job")
+    monkeypatch.setattr(material_settings, "UPLOAD_FOLDER", str(tmp_path))
+    dispatched_job_ids: list[int] = []
+
+    async def _capture_dispatch(*args, **kwargs):
+        dispatched_job_ids.append(kwargs["job_id"])
+        return "flow-run-test"
+
+    monkeypatch.setattr(materials_upload_api, "_start_flow_deployment", _capture_dispatch)
+    response = await client.post(
+        "/api/v1/materials/upload",
+        files={"file": ("exact.txt", io.BytesIO(b"Chapter 1"), "text/plain")},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    assert dispatched_job_ids == [response.json()["job_id"]]
+
+
+@pytest.mark.integration
+async def test_upload_material_consume_false_never_dispatches_or_refunds(
+    client: AsyncClient,
+    db_session,
+    monkeypatch,
+    tmp_path,
+):
+    from config.material_settings import material_settings
+
+    _, token = await create_test_user(client, db_session, "upload_consume_false")
+    monkeypatch.setattr(material_settings, "UPLOAD_FOLDER", str(tmp_path))
+    monkeypatch.setattr(materials_upload_api, "check_quota", lambda *args, **kwargs: None)
+    monkeypatch.setattr(materials_upload_api, "consume_quota", lambda *args, **kwargs: False)
+    monkeypatch.setattr(
+        materials_upload_api.quota_service,
+        "check_feature_quota",
+        lambda *args, **kwargs: (True, 4, 5),
+    )
+    dispatch_calls: list[int] = []
+    refund_calls: list[int] = []
+
+    async def _capture_dispatch(*args, **kwargs):
+        dispatch_calls.append(1)
+        return "flow-run-test"
+
+    monkeypatch.setattr(materials_upload_api, "_start_flow_deployment", _capture_dispatch)
+    monkeypatch.setattr(
+        materials_upload_api.quota_service,
+        "release_feature_quota",
+        lambda *args, **kwargs: refund_calls.append(1),
+    )
+
+    response = await client.post(
+        "/api/v1/materials/upload",
+        files={"file": ("denied.txt", io.BytesIO(b"Chapter 1"), "text/plain")},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 402
+    assert dispatch_calls == []
+    assert refund_calls == []
+    assert db_session.exec(select(Novel)).all() == []
+
+
+def test_material_decompose_atomic_quota_consumption_caps_concurrent_requests(
+    db_session,
+):
+    """Two real DB consumers racing for the last unit cannot both succeed."""
+    from services.core.auth_service import hash_password
+
+    user = User(
+        username="quota_atomic_cap",
+        email="quota_atomic_cap@example.com",
+        hashed_password=hash_password("password123"),
+        email_verified=True,
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    paid_plan = db_session.exec(
+        select(SubscriptionPlan).where(SubscriptionPlan.name == "pro")
+    ).first()
+    if paid_plan is None:
+        paid_plan = SubscriptionPlan(
+            name="pro",
+            display_name="Pro",
+            display_name_en="Pro",
+            price_monthly_cents=4900,
+            price_yearly_cents=39900,
+            features={"materials_library_access": True, "material_decompositions": 5},
+            is_active=True,
+        )
+        db_session.add(paid_plan)
+        db_session.commit()
+        db_session.refresh(paid_plan)
+    now = datetime.utcnow()
+    db_session.add(
+        UserSubscription(
+            user_id=user.id,
+            plan_id=paid_plan.id,
+            status="active",
+            current_period_start=now,
+            current_period_end=now + timedelta(days=30),
+        )
+    )
+    quota = UsageQuota(
+        user_id=user.id,
+        period_start=now,
+        period_end=now + timedelta(days=30),
+        material_decompositions_used=4,
+        monthly_period_start=now - timedelta(days=1),
+        monthly_period_end=now + timedelta(days=30),
+        last_reset_at=now,
+    )
+    db_session.add(quota)
+    db_session.commit()
+
+    def _consume() -> bool:
+        with Session(db_session.get_bind()) as isolated_session:
+            return materials_upload_api.consume_quota(
+                "material_decompose",
+                isolated_session,
+                user.id,
+            )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(lambda _: _consume(), range(2)))
+
+    assert sorted(results) == [False, True]
+    db_session.expire_all()
+    stored_quota = db_session.exec(
+        select(UsageQuota).where(UsageQuota.user_id == user.id)
+    ).one()
+    assert stored_quota.material_decompositions_used == 5
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("dispatch_raises", [False, True])
+async def test_upload_refunds_after_failure_status_poisoned_session(
+    client: AsyncClient, db_session, monkeypatch, tmp_path, dispatch_raises,
+):
+    from config.material_settings import material_settings
+
+    user, _ = await create_test_user(
+        client, db_session, f"uploadstatusfail{int(dispatch_raises)}",
+    )
+    username, email, password = user.username, user.email, user.hashed_password
+    monkeypatch.setattr(material_settings, "UPLOAD_FOLDER", str(tmp_path))
+
+    async def _dispatch(*args, **kwargs):
+        if dispatch_raises:
+            raise RuntimeError("SDK dispatch failed")
+        return None
+
+    def _mark_failed(*args, **kwargs):
+        # A real constraint violation leaves this Session unusable until rollback.
+        db_session.add(User(username=username, email=email, hashed_password=password))
+        db_session.flush()
+
+    refund_calls = []
+    original_release = materials_upload_api.quota_service.release_feature_quota
+
+    def _release(*args, **kwargs):
+        refund_calls.append(1)
+        return original_release(*args, **kwargs)
+
+    monkeypatch.setattr(materials_upload_api, "_start_flow_deployment", _dispatch)
+    monkeypatch.setattr(materials_upload_api, "_mark_job_dispatch_failed", _mark_failed)
+    monkeypatch.setattr(materials_upload_api.quota_service, "release_feature_quota", _release)
+
+    expected_error = RuntimeError if dispatch_raises else APIException
+    with pytest.raises(expected_error) as raised:
+        await materials_upload_api.upload_material(
+            file=UploadFile(io.BytesIO(b"Chapter 1"), filename="test.txt"),
+            title=None, author=None, current_user=user, session=db_session,
+        )
+    if dispatch_raises:
+        assert str(raised.value) == "SDK dispatch failed"
+    else:
+        assert raised.value.status_code == 503
+    assert refund_calls == [1]
+    quota = db_session.exec(select(UsageQuota).where(UsageQuota.user_id == user.id)).one()
+    assert quota.material_decompositions_used == 0
 
 
 @pytest.mark.integration

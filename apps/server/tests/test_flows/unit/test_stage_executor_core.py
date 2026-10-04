@@ -3,6 +3,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+import pytest
+
 from flows.pipelines.stages import stage_executor as se_mod
 from tests.test_flows.conftest import FakeTask
 
@@ -47,13 +49,16 @@ class TestStageExecutorCore:
         monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
 
         checkpoints = {
-            "stage2a": SimpleNamespace(stage_status="completed", checkpoint_data={"synopsis_generated": True, "stories_count": 2, "storylines_count": 1}),
-            "stage2b": SimpleNamespace(stage_status="completed", checkpoint_data={"relationships_count": 2, "neo4j_persisted": True}),
-            "stage2c": SimpleNamespace(stage_status="completed", checkpoint_data={"characters_built": True}),
+            "stage2a": SimpleNamespace(stage_status="completed", checkpoint_data={"executed_capabilities": ["synopsis", "stories", "storylines"], "synopsis_generated": True, "stories_count": 2, "storylines_count": 1}),
+            "stage2b": SimpleNamespace(stage_status="completed", checkpoint_data={"executed_capabilities": ["relationships"], "relationships_count": 2, "neo4j_persisted": True}),
+            "stage2c": SimpleNamespace(stage_status="completed", checkpoint_data={"executed_capabilities": ["characters"], "characters_built": True}),
         }
         cp = _FakeCheckpointManager(checkpoints)
 
         monkeypatch.setattr(se_mod.settings, "ENABLE_NOVEL_SYNOPSIS", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHAPTER_SUMMARIES", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_PLOT_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHARACTER_EXTRACTION", True)
         monkeypatch.setattr(se_mod.settings, "ENABLE_STORY_AGGREGATION", True)
         monkeypatch.setattr(se_mod.settings, "ENABLE_STORYLINE_GENERATION", True)
         monkeypatch.setattr(se_mod.settings, "ENABLE_RELATIONSHIP_EXTRACTION", True)
@@ -67,9 +72,9 @@ class TestStageExecutorCore:
         monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
 
         checkpoints = {
-            "stage2a": SimpleNamespace(stage_status="completed", checkpoint_data={"stories_count": 0, "storylines_count": 0}),
-            "stage2b": SimpleNamespace(stage_status="completed", checkpoint_data={"relationships_count": 0, "neo4j_persisted": False}),
-            "stage2c": SimpleNamespace(stage_status="completed", checkpoint_data={"characters_built": True}),
+            "stage2a": SimpleNamespace(stage_status="completed", checkpoint_data={"executed_capabilities": ["stories", "storylines"], "stories_count": 0, "storylines_count": 0}),
+            "stage2b": SimpleNamespace(stage_status="completed", checkpoint_data={"executed_capabilities": ["relationships"], "relationships_count": 0, "neo4j_persisted": False}),
+            "stage2c": SimpleNamespace(stage_status="completed", checkpoint_data={"executed_capabilities": ["characters"], "characters_built": True}),
         }
         cp = _FakeCheckpointManager(checkpoints)
 
@@ -81,6 +86,158 @@ class TestStageExecutorCore:
 
         executor = se_mod.StageExecutor(1, [1, 2], cp, None)
         assert executor._check_stage2_completion() == (True, True, True)
+
+    def test_markerless_legacy_zero_count_checkpoint_is_not_done(self, monkeypatch):
+        monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
+        monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
+        checkpoints = {
+            "stage2a": SimpleNamespace(
+                stage_status="completed",
+                checkpoint_data={
+                    "synopsis_generated": False,
+                    "stories_count": 0,
+                    "storylines_count": 0,
+                },
+            ),
+            "stage2b": SimpleNamespace(
+                stage_status="completed",
+                checkpoint_data={
+                    "relationships_count": 0,
+                    "neo4j_persisted": False,
+                },
+            ),
+            "stage2c": SimpleNamespace(
+                stage_status="completed",
+                checkpoint_data={"characters_built": True},
+            ),
+        }
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHAPTER_SUMMARIES", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_PLOT_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_NOVEL_SYNOPSIS", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_STORY_AGGREGATION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_STORYLINE_GENERATION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHARACTER_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_RELATIONSHIP_EXTRACTION", True)
+
+        executor = se_mod.StageExecutor(1, [1], _FakeCheckpointManager(checkpoints), None)
+        assert executor._check_stage2_completion() == (False, False, False)
+
+    def test_check_stage2_completion_requires_current_executed_capabilities(self, monkeypatch):
+        monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
+        monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
+        cp = _FakeCheckpointManager({
+            "stage2a": SimpleNamespace(stage_status="completed", checkpoint_data={"executed_capabilities": ["synopsis"]}),
+            "stage2b": SimpleNamespace(stage_status="completed", checkpoint_data={"disabled": True}),
+            "stage2c": SimpleNamespace(stage_status="completed", checkpoint_data={"executed_capabilities": []}),
+        })
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHAPTER_SUMMARIES", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_PLOT_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_NOVEL_SYNOPSIS", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_STORY_AGGREGATION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_STORYLINE_GENERATION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHARACTER_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_RELATIONSHIP_EXTRACTION", True)
+
+        executor = se_mod.StageExecutor(1, [1], cp, None, job_id=44)
+        assert executor._check_stage2_completion() == (False, False, False)
+
+    @pytest.mark.parametrize(
+        ("stage", "payload"),
+        [
+            (
+                "stage2a",
+                {
+                    "status": "completed_with_errors",
+                    "executed_capabilities": ["synopsis", "stories"],
+                    "failed_stories": ["story-1"],
+                },
+            ),
+            (
+                "stage2b",
+                {
+                    "status": "completed_with_errors",
+                    "executed_capabilities": ["relationships"],
+                    "neo4j_failed_chapters": [2],
+                },
+            ),
+            (
+                "stage2c",
+                {
+                    "status": "completed_with_errors",
+                    "executed_capabilities": ["characters"],
+                    "failed_count": 1,
+                },
+            ),
+        ],
+    )
+    def test_partial_stage2_checkpoint_is_not_done(self, monkeypatch, stage, payload):
+        monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
+        monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHAPTER_SUMMARIES", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_PLOT_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_NOVEL_SYNOPSIS", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_STORY_AGGREGATION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_STORYLINE_GENERATION", False)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHARACTER_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_RELATIONSHIP_EXTRACTION", True)
+        complete = {
+            "stage2a": {"executed_capabilities": ["synopsis", "stories"]},
+            "stage2b": {"executed_capabilities": ["relationships"]},
+            "stage2c": {"executed_capabilities": ["characters"]},
+        }
+        complete[stage] = payload
+        cp = _FakeCheckpointManager(
+            {
+                name: SimpleNamespace(stage_status="completed", checkpoint_data=data)
+                for name, data in complete.items()
+            }
+        )
+
+        done = se_mod.StageExecutor(1, [1], cp, None)._check_stage2_completion()
+        index = {"stage2a": 0, "stage2b": 1, "stage2c": 2}[stage]
+        assert done[index] is False
+
+    def test_partial_stage2_results_are_not_marked_completed(self, monkeypatch):
+        monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
+        monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHAPTER_SUMMARIES", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_PLOT_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_NOVEL_SYNOPSIS", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_STORY_AGGREGATION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHARACTER_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_RELATIONSHIP_EXTRACTION", True)
+        cp = _FakeCheckpointManager()
+        executor = se_mod.StageExecutor(1, [1], cp, None)
+
+        executor._update_stage2_checkpoints(
+            {
+                "status": "completed_with_errors",
+                "failed_stories": ["story-1"],
+                "executed_capabilities": ["stories"],
+                "_executed": True,
+            },
+            {
+                "status": "completed_with_errors",
+                "neo4j_failed_chapters": [1],
+                "executed_capabilities": ["relationships"],
+                "_executed": True,
+            },
+            {
+                "status": "completed_with_errors",
+                "failed_count": 1,
+                "failed_characters": ["A"],
+                "executed_capabilities": ["characters"],
+                "_executed": True,
+            },
+        )
+
+        assert cp.completed_calls == []
+        assert [(stage, status) for stage, status, *_ in cp.update_calls] == [
+            ("stage2a", "failed"),
+            ("stage2b", "failed"),
+            ("stage2c", "failed"),
+            ("stage2", "failed"),
+        ]
 
     def test_execute_parallel_stages_runs_subflows_when_not_done(self, monkeypatch):
         monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
@@ -118,6 +275,9 @@ class TestStageExecutorCore:
     def test_execute_relationship_stage_uses_subflow_or_checkpoint(self, monkeypatch):
         monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
         monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_PLOT_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHARACTER_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_RELATIONSHIP_EXTRACTION", True)
 
         relation_task = FakeTask({"relationships_count": 6, "neo4j_persisted": False, "neo4j_failed_chapters": [], "status": "completed"})
         monkeypatch.setattr(se_mod, "_task_run_relationship", relation_task)
@@ -133,9 +293,49 @@ class TestStageExecutorCore:
         assert fresh["relationships_count"] == 6
         assert resumed["relationships_count"] == 9
 
+    def test_disabled_stage2_ignores_historic_partial_failures(self, monkeypatch):
+        monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
+        monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_NOVEL_SYNOPSIS", False)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_STORY_AGGREGATION", False)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_STORYLINE_GENERATION", False)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHARACTER_EXTRACTION", False)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_RELATIONSHIP_EXTRACTION", False)
+        cp = _FakeCheckpointManager(
+            {
+                "stage2a": SimpleNamespace(
+                    stage_status="failed",
+                    checkpoint_data={"failed_stories": ["old"], "status": "completed_with_errors"},
+                ),
+                "stage2b": SimpleNamespace(
+                    stage_status="failed",
+                    checkpoint_data={"neo4j_failed_chapters": [1], "status": "completed_with_errors"},
+                ),
+                "stage2c": SimpleNamespace(
+                    stage_status="failed",
+                    checkpoint_data={"failed_count": 1, "failed_characters": ["old"], "status": "completed_with_errors"},
+                ),
+            }
+        )
+        executor = se_mod.StageExecutor(1, [1], cp, None)
+
+        story, characters = executor._execute_parallel_stages(True, True)
+        relationships = executor._execute_relationship_stage(True)
+
+        assert story == {"status": "skipped", "_executed": False, "executed_capabilities": []}
+        assert characters == {"status": "skipped", "_executed": False, "executed_capabilities": []}
+        assert relationships == {"status": "skipped", "_executed": False, "executed_capabilities": []}
+        assert executor._derive_final_status({}, story, relationships, characters) == "completed"
+
     def test_update_stage2_checkpoints_writes_all_stages(self, monkeypatch):
         monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
         monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHAPTER_SUMMARIES", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_PLOT_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_NOVEL_SYNOPSIS", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_STORY_AGGREGATION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_CHARACTER_EXTRACTION", True)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_RELATIONSHIP_EXTRACTION", True)
 
         cp = _FakeCheckpointManager()
         executor = se_mod.StageExecutor(1, [1, 2], cp, None)
@@ -146,7 +346,11 @@ class TestStageExecutorCore:
         )
 
         stages = [s for s, _ in cp.completed_calls]
-        assert stages == ["stage2a", "stage2b", "stage2c", "stage2"]
+        assert stages == ["stage2a", "stage2c"]
+        assert [(stage, status) for stage, status, *_ in cp.update_calls] == [
+            ("stage2b", "failed"),
+            ("stage2", "failed"),
+        ]
 
     def test_save_final_checkpoint_collects_final_metrics(self, monkeypatch):
         monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
@@ -208,10 +412,15 @@ class TestStageExecutorCore:
         monkeypatch.setattr(se_mod, "get_prefect_db_session", lambda: _SessionCtx())
         monkeypatch.setitem(__import__("sys").modules, "services.material.ingestion_jobs_service", SimpleNamespace(IngestionJobsService=_Svc))
 
-        executor = se_mod.StageExecutor(3, [10, 20], _FakeCheckpointManager(), None)
+        executor = se_mod.StageExecutor(3, [10, 20, 30], _FakeCheckpointManager(), None)
         executor._update_job_status(
             "completed_with_errors",
-            {"failed_count": 2, "failed_chapters": [1], "failed_mention_chapters": [2]},
+            {
+                "processed_chapters": 2,
+                "failed_count": 2,
+                "failed_chapters": [1],
+                "failed_mention_chapters": [2],
+            },
             {"failed_stories": ["story-1"]},
             {"neo4j_failed_chapters": [3]},
             {"failed_count": 1, "failed_characters": ["赵四"]},
@@ -219,3 +428,4 @@ class TestStageExecutorCore:
 
         assert captured["job_id"] == 42
         assert captured["kwargs"]["status"] == "completed_with_errors"
+        assert captured["kwargs"]["processed_chapters"] == 2

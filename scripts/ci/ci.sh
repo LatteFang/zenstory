@@ -488,6 +488,10 @@ run_backend_tests() {
 run_e2e_tests_docker() {
     log_step "Running E2E tests (Docker mode)..."
 
+    # Explicitly exercise the optional library in full browser regression.
+    export INSPIRATIONS_ENABLED="${INSPIRATIONS_ENABLED:-true}"
+    export VITE_INSPIRATIONS_ENABLED="${VITE_INSPIRATIONS_ENABLED:-$INSPIRATIONS_ENABLED}"
+
     cd "$SERVER_DIR"
     activate_venv
 
@@ -564,6 +568,9 @@ EOF
 }
 
 run_e2e_tests_lite() {
+    # These servers start before Playwright reads its managed-server settings.
+    export INSPIRATIONS_ENABLED="${INSPIRATIONS_ENABLED:-true}"
+    export VITE_INSPIRATIONS_ENABLED="${VITE_INSPIRATIONS_ENABLED:-$INSPIRATIONS_ENABLED}"
     log_step "Running E2E tests (Lite mode)..."
 
     cd "$SERVER_DIR"

@@ -199,6 +199,17 @@ describe("MaterialsPage", () => {
     expect(teaserSecondaryButton.className).not.toContain("btn-secondary");
   });
 
+  it("allows retrying a material with partial decomposition errors", async () => {
+    mockList.mockResolvedValueOnce([{
+      id: "partial-novel", title: "Partial Novel", status: "completed_with_errors",
+      chapters_count: 3, error_message: "One chapter failed",
+    }]);
+    render(<MaterialsPage />, { wrapper: createWrapper() });
+    await screen.findByText("Partial Novel");
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    await waitFor(() => expect(mockRetry).toHaveBeenCalledWith("partial-novel"));
+  });
+
   it("shows exhausted state for paid users without upgrade modal", async () => {
     mockList.mockResolvedValueOnce([
       {

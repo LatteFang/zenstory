@@ -65,6 +65,8 @@ ZenStory 的素材库把参考小说拆成可浏览的章节、人物、剧情�
 
 ## 实现依据
 
+2026-10-04 维护说明：未使用的 `MaterialViewer` 已移除，当前结果展示在 [`MaterialDetailPage`](https://github.com/zenstory-ai/zenstory/blob/main/apps/web/src/pages/MaterialDetailPage.tsx) 中；下方固定版本链接保留为历史依据。
+
 源码核对于 2026-09-13。下列固定版本支持格式、任务、展示与上下文说明，不是已运行账户或分析质量测试。
 
 - [上传格式、大小与字符限制](https://github.com/zenstory-ai/zenstory/blob/306059d9418dbdd6612d67574816ad960f58e51c/apps/server/api/materials/upload.py#L287-L331)

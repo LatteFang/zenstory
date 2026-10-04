@@ -1,4 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const inspirationFeature = vi.hoisted(() => ({ enabled: true }));
+
+vi.mock("../../config/inspirations", () => ({
+  inspirationsConfig: inspirationFeature,
+}));
 
 import { buildTodayActionPlan } from "../dashboardActionPlan";
 
@@ -13,6 +19,10 @@ const t = (key: string, options?: { defaultValue?: string }) => {
 };
 
 describe("buildTodayActionPlan", () => {
+  beforeEach(() => {
+    inspirationFeature.enabled = true;
+  });
+
   it("builds a 3-step plan and prioritizes activation + persona recommendations", () => {
     const plan = buildTodayActionPlan({
       activationGuide: {
@@ -80,5 +90,34 @@ describe("buildTodayActionPlan", () => {
       type: "navigate",
       path: "/dashboard/billing?source=dashboard_today_action",
     });
+  });
+
+  it("removes inspiration recommendations and fallback actions when disabled", () => {
+    inspirationFeature.enabled = false;
+    const plan = buildTodayActionPlan({
+      activationGuide: null,
+      personaRecommendations: [
+        {
+          id: "persona_explorer_template",
+          title: "探索型模板推荐",
+          description: "优先给你开放灵感模板和快速起稿入口。",
+          action: "/dashboard/inspirations",
+        },
+        {
+          id: "level_beginner_path",
+          title: "新手下一步",
+          description: "继续完成新手任务。",
+          action: "/dashboard",
+        },
+      ],
+      projectsCount: 0,
+      latestProjectId: null,
+      activeProjectType: "novel",
+      t,
+    });
+
+    expect(plan.some((item) => item.action.type === "navigate" && item.action.path.startsWith("/dashboard/inspirations"))).toBe(false);
+    expect(plan.some((item) => `${item.title} ${item.description}`.includes("灵感模板"))).toBe(false);
+    expect(plan.some((item) => item.title === "新手下一步")).toBe(false);
   });
 });

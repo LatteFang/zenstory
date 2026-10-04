@@ -73,7 +73,6 @@ describe('useMaterialLibrary', () => {
       expect(result.current.libraries).toEqual([])
       expect(result.current.isLoading).toBe(false)
       expect(result.current.error).toBe(null)
-      expect(result.current.isExpanded).toBe(false)
       expect(result.current.expandedNovels).toBeInstanceOf(Set)
       expect(result.current.expandedTypes).toBeInstanceOf(Map)
       expect(result.current.preview).toBe(null)
@@ -94,56 +93,16 @@ describe('useMaterialLibrary', () => {
     })
   })
 
-  describe('toggleExpanded', () => {
-    it('toggles isExpanded state', () => {
-      const { result } = renderHook(() => useMaterialLibrary())
-
-      expect(result.current.isExpanded).toBe(false)
-
-      act(() => {
-        result.current.toggleExpanded()
-      })
-
-      expect(result.current.isExpanded).toBe(true)
-
-      act(() => {
-        result.current.toggleExpanded()
-      })
-
-      expect(result.current.isExpanded).toBe(false)
-    })
-
-    it('keeps summary query configured after expand', () => {
-      const { result } = renderHook(() => useMaterialLibrary())
-
-      act(() => {
-        result.current.toggleExpanded()
-      })
-
-      expect(mockUseQuery).toHaveBeenCalledWith(
-        expect.objectContaining({
-          queryKey: ['material-library-summary'],
-          queryFn: expect.any(Function),
-        })
-      )
-    })
-  })
-
   describe('library fetching', () => {
-    it('fetches library summary when expanded', async () => {
+    it('fetches library summary on mount', async () => {
       mockUseQuery.mockReturnValue({
         data: mockLibraries,
         isLoading: false,
         error: null,
       })
 
-      const { result } = renderHook(() => useMaterialLibrary())
+      renderHook(() => useMaterialLibrary())
 
-      act(() => {
-        result.current.toggleExpanded()
-      })
-
-      // The hook should have enabled the query
       expect(mockUseQuery).toHaveBeenCalledWith(
         expect.objectContaining({
           queryKey: ['material-library-summary'],
@@ -161,10 +120,6 @@ describe('useMaterialLibrary', () => {
 
       const { result } = renderHook(() => useMaterialLibrary())
 
-      act(() => {
-        result.current.toggleExpanded()
-      })
-
       expect(result.current.isLoading).toBe(true)
     })
 
@@ -177,10 +132,6 @@ describe('useMaterialLibrary', () => {
       })
 
       const { result } = renderHook(() => useMaterialLibrary())
-
-      act(() => {
-        result.current.toggleExpanded()
-      })
 
       expect(result.current.error).toBe(error)
     })
@@ -438,6 +389,63 @@ describe('useMaterialLibrary', () => {
       expect(result.current.preview).toBe(null)
       expect(result.current.previewEntityInfo).toBe(null)
     })
+
+    it('invalidates a pending preview response and clears loading', async () => {
+      let resolvePreview: (value: MaterialPreviewResponse) => void
+      vi.mocked(materialsApi.materialsApi.getPreview).mockImplementationOnce(
+        () => new Promise((resolve) => {
+          resolvePreview = resolve
+        })
+      )
+      const { result } = renderHook(() => useMaterialLibrary())
+
+      let pending: Promise<void>
+      act(() => {
+        pending = result.current.loadPreview(1, 'characters', 123)
+      })
+      expect(result.current.isPreviewLoading).toBe(true)
+
+      act(() => {
+        result.current.clearPreview()
+      })
+      expect(result.current.isPreviewLoading).toBe(false)
+
+      await act(async () => {
+        resolvePreview!(mockPreview)
+        await pending!
+      })
+      expect(result.current.preview).toBe(null)
+      expect(result.current.previewEntityInfo).toBe(null)
+      expect(result.current.isPreviewLoading).toBe(false)
+    })
+
+    it('ignores a pending preview rejection after clear', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      let rejectPreview: (error: Error) => void
+      vi.mocked(materialsApi.materialsApi.getPreview).mockImplementationOnce(
+        () => new Promise((_resolve, reject) => {
+          rejectPreview = reject
+        })
+      )
+      const { result } = renderHook(() => useMaterialLibrary())
+
+      let pending: Promise<void>
+      act(() => {
+        pending = result.current.loadPreview(1, 'characters', 123)
+      })
+      act(() => {
+        result.current.clearPreview()
+      })
+
+      await act(async () => {
+        rejectPreview!(new Error('stale failure'))
+        await pending!
+      })
+      expect(result.current.preview).toBe(null)
+      expect(result.current.previewEntityInfo).toBe(null)
+      expect(result.current.isPreviewLoading).toBe(false)
+      consoleErrorSpy.mockRestore()
+    })
   })
 
   describe('query configuration', () => {
@@ -499,8 +507,6 @@ describe('useMaterialLibrary', () => {
       expect(result.current).toHaveProperty('expandedTypes')
       expect(result.current).toHaveProperty('toggleNovel')
       expect(result.current).toHaveProperty('toggleEntityType')
-      expect(result.current).toHaveProperty('isExpanded')
-      expect(result.current).toHaveProperty('toggleExpanded')
       expect(result.current).toHaveProperty('preview')
       expect(result.current).toHaveProperty('previewEntityInfo')
       expect(result.current).toHaveProperty('isPreviewLoading')

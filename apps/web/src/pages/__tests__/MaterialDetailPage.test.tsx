@@ -22,13 +22,16 @@ const materialsConfigState = vi.hoisted(() => ({
 const mediaState = vi.hoisted(() => ({
   isMobile: false,
 }));
+const routeState = vi.hoisted(() => ({
+  novelId: "novel-1",
+}));
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
   return {
     ...actual,
     useNavigate: () => mockNavigate,
-    useParams: () => ({ novelId: "novel-1" }),
+    useParams: () => ({ novelId: routeState.novelId }),
   };
 });
 
@@ -77,16 +80,16 @@ vi.mock("../../config/materials", () => ({
 
 vi.mock("../../lib/materialsApi", () => ({
   materialsApi: {
-    get: () => mockGet(),
-    getTree: () => mockGetTree(),
+    get: (...args: unknown[]) => mockGet(...args),
+    getTree: (...args: unknown[]) => mockGetTree(...args),
     getChapter: (...args: unknown[]) => mockGetChapter(...args),
-    getCharacters: () => mockGetCharacters(),
-    getStories: () => mockGetStories(),
-    getPlots: () => mockGetPlots(),
-    getStoryLines: () => mockGetStoryLines(),
-    getRelationships: () => mockGetRelationships(),
-    getGoldenFingers: () => mockGetGoldenFingers(),
-    getWorldView: () => mockGetWorldView(),
+    getCharacters: (...args: unknown[]) => mockGetCharacters(...args),
+    getStories: (...args: unknown[]) => mockGetStories(...args),
+    getPlots: (...args: unknown[]) => mockGetPlots(...args),
+    getStoryLines: (...args: unknown[]) => mockGetStoryLines(...args),
+    getRelationships: (...args: unknown[]) => mockGetRelationships(...args),
+    getGoldenFingers: (...args: unknown[]) => mockGetGoldenFingers(...args),
+    getWorldView: (...args: unknown[]) => mockGetWorldView(...args),
   },
 }));
 
@@ -113,8 +116,9 @@ describe("MaterialDetailPage", () => {
     vi.clearAllMocks();
     materialsConfigState.relationshipsEnabled = false;
     mediaState.isMobile = false;
+    routeState.novelId = "novel-1";
     mockGetTree.mockResolvedValue({
-      tree: [{ id: "chapter-node-1", type: "chapter" }],
+      tree: [{ id: "chapter-node-1", type: "chapter", title: "Opening Chapter", metadata: { chapter_number: 1 } }],
     });
     mockGetChapter.mockResolvedValue({
       id: "chapter-1",
@@ -285,6 +289,148 @@ describe("MaterialDetailPage", () => {
     expect(screen.getByText("Save the city")).toBeInTheDocument();
   });
 
+  it("loads chapter tree metadata on expand and chapter detail only on selection", async () => {
+    render(<MaterialDetailPage />, { wrapper: createWrapper() });
+    expect(await screen.findByText("Novel One")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /materials:detail.chapters/ }));
+    expect(await screen.findByText("Opening Chapter")).toBeInTheDocument();
+    expect(mockGetTree).toHaveBeenCalledTimes(1);
+    expect(mockGetChapter).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /Opening Chapter/ }));
+    expect(await screen.findByText("Chapter summary")).toBeInTheDocument();
+    expect(mockGetChapter).toHaveBeenCalledTimes(1);
+    expect(mockGetChapter).toHaveBeenCalledWith("novel-1", "chapter-node-1");
+  });
+
+  it("loads visible unexpanded folder metadata for search", async () => {
+    render(<MaterialDetailPage />, { wrapper: createWrapper() });
+    expect(await screen.findByText("Novel One")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("materials:detail.searchPlaceholder"), {
+      target: { value: "Li Wei" },
+    });
+
+    expect(await screen.findByText("Li Wei")).toBeInTheDocument();
+    expect(mockGetCharacters).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps failed search folders retryable instead of presenting a complete empty result", async () => {
+    mockGetCharacters
+      .mockRejectedValueOnce(new Error("temporary search failure"))
+      .mockResolvedValueOnce([{ id: "retry-search", name: "Retry Search Hero" }]);
+    render(<MaterialDetailPage />, { wrapper: createWrapper() });
+    expect(await screen.findByText("Novel One")).toBeInTheDocument();
+
+    const search = screen.getByPlaceholderText("materials:detail.searchPlaceholder");
+    fireEvent.change(search, { target: { value: "Retry Search" } });
+    await waitFor(() => expect(mockGetCharacters).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("button", { name: /materials:detail.characters/ })).toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: "Retry Search Hero" } });
+    expect(await screen.findByText("Retry Search Hero")).toBeInTheDocument();
+    expect(mockGetCharacters).toHaveBeenCalledTimes(2);
+  });
+
+  it("resets lazy folder state when navigating to another novel", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter><MaterialDetailPage /></MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("Novel One")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /materials:detail.characters/ }));
+    expect(await screen.findByText("Li Wei")).toBeInTheDocument();
+
+    routeState.novelId = "novel-2";
+    mockGet.mockResolvedValueOnce({
+      id: "novel-2",
+      title: "Novel Two",
+      status: "completed",
+      chapters_count: 0,
+      created_at: "2026-01-02T00:00:00Z",
+      updated_at: "2026-01-02T00:00:00Z",
+    });
+    mockGetCharacters.mockResolvedValueOnce([{ id: "character-2", name: "New Hero" }]);
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter><MaterialDetailPage /></MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Novel Two")).toBeInTheDocument();
+    expect(screen.queryByText("Li Wei")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /materials:detail.characters/ }));
+    expect(await screen.findByText("New Hero")).toBeInTheDocument();
+    expect(mockGetCharacters).toHaveBeenLastCalledWith("novel-2");
+  });
+
+  it("hides explicitly disabled confirmed-empty folders without requesting them", async () => {
+    materialsConfigState.relationshipsEnabled = true;
+    mockGet.mockResolvedValue({
+      id: "novel-1",
+      title: "Lean Novel",
+      status: "completed",
+      chapters_count: 1,
+      plots_count: 0,
+      stories_count: 0,
+      story_lines_count: 0,
+      relationships_count: 0,
+      enabled_stages: {
+        chapter_summaries: true,
+        plots: false,
+        characters: true,
+        meta: true,
+        synopsis: true,
+        stories: false,
+        storylines: false,
+        relationships: false,
+      },
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+    render(<MaterialDetailPage />, { wrapper: createWrapper() });
+    expect(await screen.findByText("Lean Novel")).toBeInTheDocument();
+
+    expect(screen.queryByText("materials:detail.plots")).not.toBeInTheDocument();
+    expect(screen.queryByText("materials:detail.stories")).not.toBeInTheDocument();
+    expect(screen.queryByText("materials:detail.storylines")).not.toBeInTheDocument();
+    expect(screen.queryByText("materials:detail.relationships")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("materials:detail.searchPlaceholder"), {
+      target: { value: "hidden" },
+    });
+    expect(mockGetPlots).not.toHaveBeenCalled();
+    expect(mockGetStories).not.toHaveBeenCalled();
+    expect(mockGetStoryLines).not.toHaveBeenCalled();
+    expect(mockGetRelationships).not.toHaveBeenCalled();
+  });
+
+  it("keeps an explicitly disabled folder visible when its count is unknown", async () => {
+    mockGet.mockResolvedValue({
+      id: "novel-1",
+      title: "Unknown History Novel",
+      status: "completed",
+      chapters_count: 1,
+      enabled_stages: {
+        chapter_summaries: true,
+        plots: false,
+        characters: true,
+        meta: true,
+        synopsis: true,
+        stories: true,
+        relationships: false,
+      },
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+    render(<MaterialDetailPage />, { wrapper: createWrapper() });
+    expect(await screen.findByText("Unknown History Novel")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /materials:detail.plots/ })).toBeEnabled();
+  });
+
   it("loads plot, storyline, worldview, and goldenfinger folders and hides timeline", async () => {
     materialsConfigState.relationshipsEnabled = true;
     render(<MaterialDetailPage />, { wrapper: createWrapper() });
@@ -387,6 +533,48 @@ describe("MaterialDetailPage", () => {
     }
   });
 
+  it("refetches an expanded empty folder when processing becomes terminal", async () => {
+    mockGet.mockResolvedValueOnce({
+      id: "novel-1",
+      title: "Growing Novel",
+      status: "processing",
+      chapters_count: 1,
+      characters_count: 0,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+    mockGetCharacters
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: "late-character", name: "Late Hero" }]);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter><MaterialDetailPage /></MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("Growing Novel")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /materials:detail.characters/ }));
+    await waitFor(() => expect(mockGetCharacters).toHaveBeenCalledTimes(1));
+
+    act(() => {
+      queryClient.setQueryData(["material", "novel-1"], {
+        id: "novel-1",
+        title: "Growing Novel",
+        status: "completed",
+        chapters_count: 1,
+        characters_count: 1,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:03Z",
+      });
+    });
+
+    expect(await screen.findByText("Late Hero")).toBeInTheDocument();
+    expect(mockGetCharacters).toHaveBeenCalledTimes(2);
+  });
+
   it("renders loading and not-found states", async () => {
     mockGet.mockImplementationOnce(() => new Promise(() => {}));
     const { unmount } = render(<MaterialDetailPage />, { wrapper: createWrapper() });
@@ -407,10 +595,12 @@ describe("MaterialDetailPage", () => {
     });
 
     fireEvent.change(screen.getByPlaceholderText("materials:detail.searchPlaceholder"), {
-      target: { value: "char" },
+      target: { value: "Li Wei" },
     });
-    expect(screen.getByRole("button", { name: /materials:detail.characters/ })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /materials:detail.chapters/ })).not.toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /Li Wei/ })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: /materials:detail.chapters/ })).not.toBeInTheDocument();
+    });
 
     fireEvent.change(screen.getByPlaceholderText("materials:detail.searchPlaceholder"), {
       target: { value: "" },
@@ -482,13 +672,17 @@ describe("MaterialDetailPage", () => {
     expect(screen.getByText("No magic after dusk")).toBeInTheDocument();
   });
 
-  it("marks folders of disabled stages as not enabled and keeps them collapsed", async () => {
+  it("hides disabled stages once their empty counts are confirmed", async () => {
     materialsConfigState.relationshipsEnabled = true;
     mockGet.mockResolvedValue({
       id: "novel-1",
       title: "Lean Novel",
       status: "completed",
       chapters_count: 1,
+      plots_count: 0,
+      stories_count: 0,
+      story_lines_count: 0,
+      relationships_count: 0,
       enabled_stages: {
         chapter_summaries: true,
         plots: false,
@@ -506,18 +700,14 @@ describe("MaterialDetailPage", () => {
     expect(await screen.findByText("Lean Novel")).toBeInTheDocument();
 
     // plots -> 情节点, stories -> 剧情 + 故事线 (snapshot without `storylines`), relationships -> 关系
-    const disabledFolders = [
+    const hiddenFolders = [
       /materials:detail.plots/,
       /materials:detail.stories/,
       /materials:detail.storylines/,
       /materials:detail.relationships/,
     ];
-    expect(screen.getAllByText("materials:detail.notEnabled")).toHaveLength(disabledFolders.length);
-    for (const name of disabledFolders) {
-      const folder = screen.getByRole("button", { name });
-      expect(folder).toBeDisabled();
-      expect(folder).toHaveTextContent("materials:detail.notEnabled");
-      fireEvent.click(folder);
+    for (const name of hiddenFolders) {
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     }
     expect(mockGetPlots).not.toHaveBeenCalled();
     expect(mockGetStories).not.toHaveBeenCalled();
@@ -533,12 +723,15 @@ describe("MaterialDetailPage", () => {
     expect(screen.queryByText("materials:detail.timeline")).not.toBeInTheDocument();
   });
 
-  it("marks character and meta folders when those stages were off", async () => {
+  it("hides confirmed-empty character and meta folders when those stages were off", async () => {
     mockGet.mockResolvedValue({
       id: "novel-1",
       title: "Plot Only Novel",
       status: "completed",
       chapters_count: 1,
+      characters_count: 0,
+      golden_fingers_count: 0,
+      has_world_view: false,
       enabled_stages: {
         chapter_summaries: true,
         plots: true,
@@ -560,11 +753,10 @@ describe("MaterialDetailPage", () => {
       /materials:detail.goldenfingers/,
       /materials:detail.worldview/,
     ]) {
-      expect(screen.getByRole("button", { name })).toBeDisabled();
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     }
     // relationships folder stays hidden while the VITE flag is off
     expect(screen.queryByText("materials:detail.relationships")).not.toBeInTheDocument();
-    expect(screen.getAllByText("materials:detail.notEnabled")).toHaveLength(3);
     expect(screen.getByRole("button", { name: /materials:detail.plots/ })).toBeEnabled();
     expect(screen.getByRole("button", { name: /materials:detail.stories/ })).toBeEnabled();
   });
@@ -575,6 +767,7 @@ describe("MaterialDetailPage", () => {
       title: "Stories Only Novel",
       status: "completed",
       chapters_count: 1,
+      story_lines_count: 0,
       enabled_stages: {
         chapter_summaries: true,
         plots: true,
@@ -593,10 +786,7 @@ describe("MaterialDetailPage", () => {
     expect(await screen.findByText("Stories Only Novel")).toBeInTheDocument();
 
     expect(screen.getByRole("button", { name: /materials:detail.stories/ })).toBeEnabled();
-    const storylinesFolder = screen.getByRole("button", { name: /materials:detail.storylines/ });
-    expect(storylinesFolder).toBeDisabled();
-    expect(storylinesFolder).toHaveTextContent("materials:detail.notEnabled");
-    expect(screen.getAllByText("materials:detail.notEnabled")).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: /materials:detail.storylines/ })).not.toBeInTheDocument();
   });
 
   it("keeps folders with data usable when their stage is now off (retried job)", async () => {
@@ -640,16 +830,15 @@ describe("MaterialDetailPage", () => {
       expect(folder).toBeEnabled();
       expect(folder).not.toHaveTextContent("materials:detail.notEnabled");
     }
-    // Stage off and no data: greyed out.
+    // Stage off and confirmed no data: hidden.
     for (const name of [
       /materials:detail.characters/,
       /materials:detail.storylines/,
       /materials:detail.relationships/,
       /materials:detail.goldenfingers/,
     ]) {
-      expect(screen.getByRole("button", { name })).toBeDisabled();
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     }
-    expect(screen.getAllByText("materials:detail.notEnabled")).toHaveLength(4);
 
     fireEvent.click(screen.getByRole("button", { name: /materials:detail.plots/ }));
     expect(await screen.findByText(/Hidden betrayal/)).toBeInTheDocument();

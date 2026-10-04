@@ -52,6 +52,9 @@ let mockDashboardInspirations: Array<{
 
 const {
   mockDashboardOnboardingFlags,
+  mockInspirationsConfig,
+  mockUseFeaturedInspirations,
+  mockUseDashboardInspirations,
   mockGetActivationGuide,
   mockGetRecommendations,
 } = vi.hoisted(() => ({
@@ -59,6 +62,11 @@ const {
     todayActionPlanEnabled: true,
     firstDayActivationGuideEnabled: true,
   },
+  mockInspirationsConfig: {
+    enabled: false,
+  },
+  mockUseFeaturedInspirations: vi.fn(),
+  mockUseDashboardInspirations: vi.fn(),
   mockGetActivationGuide: vi.fn(),
   mockGetRecommendations: vi.fn(),
 }))
@@ -88,6 +96,8 @@ const mockT = (
     'projectType.novel.name': '长篇小说',
     'inspiration.novelDesc': 'AI 将根据你的灵感，帮你构思故事框架、设定世界观和人物角色',
     'inspiration.novelPlaceholder': '请输入灵感',
+    'dashboard:inspiration.dashboardPlaceholder': '输入一句核心冲突，或点下方真实小说灵感开始',
+    'dashboard:inspiration.dashboardPlaceholderWithoutInspirations': '输入一句核心冲突，开始创作你的故事',
     'activationGuide.steps.signup_success': '完成注册',
     'activationGuide.steps.project_created': '创建项目',
     'activationGuide.steps.first_file_saved': '保存首个文件',
@@ -142,7 +152,7 @@ vi.mock('../../contexts/ProjectContext', () => ({
 }))
 
 vi.mock('../../hooks/useInspirations', () => ({
-  useFeaturedInspirations: () => mockFeaturedState,
+  useFeaturedInspirations: mockUseFeaturedInspirations,
 }))
 
 vi.mock('../../hooks/useMediaQuery', () => ({
@@ -151,7 +161,7 @@ vi.mock('../../hooks/useMediaQuery', () => ({
 }))
 
 vi.mock('../../hooks/useDashboardInspirations', () => ({
-  useDashboardInspirations: () => mockDashboardInspirations,
+  useDashboardInspirations: mockUseDashboardInspirations,
 }))
 
 vi.mock('../../components/subscription/UpgradePromptModal', () => ({
@@ -179,6 +189,10 @@ vi.mock('../../lib/onboardingPersonaApi', () => ({
 
 vi.mock('../../config/dashboardOnboarding', () => ({
   dashboardOnboardingFlags: mockDashboardOnboardingFlags,
+}))
+
+vi.mock('../../config/inspirations', () => ({
+  inspirationsConfig: mockInspirationsConfig,
 }))
 
 import DashboardHome from '../DashboardHome'
@@ -210,6 +224,9 @@ describe('DashboardHome featured inspirations section', () => {
       isLoading: false,
       isFetching: false,
     }
+    mockInspirationsConfig.enabled = false
+    mockUseFeaturedInspirations.mockImplementation(() => mockFeaturedState)
+    mockUseDashboardInspirations.mockImplementation(() => mockDashboardInspirations)
     mockActivationGuide = null
     mockPersonaRecommendations = []
     mockDashboardOnboardingFlags.todayActionPlanEnabled = true
@@ -219,10 +236,44 @@ describe('DashboardHome featured inspirations section', () => {
     mockGetRecommendations.mockImplementation(() => Promise.resolve(mockPersonaRecommendations))
   })
 
-  it('always shows featured section and renders empty CTA when featured list is empty', () => {
+  it('does not mount or fetch featured inspirations when the feature is disabled', () => {
+    renderDashboardHome()
+
+    expect(screen.queryByTestId('featured-inspirations-section')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('dashboard-real-inspirations')).not.toBeInTheDocument()
+    expect(screen.queryByText('精选灵感')).not.toBeInTheDocument()
+    expect(screen.queryByText('如果你还没想好，可以从这里开始：')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '换一批' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '查看灵感库' })).not.toBeInTheDocument()
+    expect(mockUseFeaturedInspirations).not.toHaveBeenCalled()
+    expect(mockUseDashboardInspirations).not.toHaveBeenCalled()
+    expect(screen.getByTestId('dashboard-inspiration-input')).toHaveAttribute(
+      'placeholder',
+      '输入一句核心冲突，开始创作你的故事',
+    )
+  })
+
+  it('keeps manual idea creation available when inspirations are disabled', async () => {
+    renderDashboardHome()
+
+    fireEvent.change(screen.getByTestId('dashboard-inspiration-input'), {
+      target: { value: '失忆侦探发现自己就是凶手' },
+    })
+    fireEvent.click(screen.getByTestId('create-project-button'))
+
+    await waitFor(() => {
+      expect(mockCreateProject).toHaveBeenCalledWith(expect.any(String), undefined, 'novel')
+      expect(mockNavigate).toHaveBeenCalledWith('/project/project-created')
+    })
+  })
+
+  it('shows featured section and renders empty CTA when explicitly enabled', () => {
+    mockInspirationsConfig.enabled = true
+
     renderDashboardHome()
 
     expect(screen.getByTestId('featured-inspirations-section')).toBeInTheDocument()
+    expect(mockUseFeaturedInspirations).toHaveBeenCalledWith(3)
     expect(screen.getByText('暂无精选灵感')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '查看灵感库' }))
@@ -230,6 +281,7 @@ describe('DashboardHome featured inspirations section', () => {
   })
 
   it('renders real inspiration cards and fills the input when clicked', () => {
+    mockInspirationsConfig.enabled = true
     mockDashboardInspirations = [
       {
         id: 'qimao:1983473',
@@ -243,14 +295,23 @@ describe('DashboardHome featured inspirations section', () => {
     renderDashboardHome()
 
     expect(screen.getByTestId('dashboard-real-inspirations')).toBeInTheDocument()
+    expect(mockUseDashboardInspirations).toHaveBeenCalledWith('novel', 2, 0)
+    expect(screen.getByTestId('dashboard-inspiration-input')).toHaveAttribute(
+      'placeholder',
+      '输入一句核心冲突，或点下方真实小说灵感开始',
+    )
     fireEvent.click(screen.getByRole('button', { name: /狂兽战神/i }))
 
     expect(screen.getByTestId('dashboard-inspiration-input')).toHaveValue(
       '《狂兽战神》：被皇朝与挚爱联手陷害的神将，流放后反掌万兽',
     )
+
+    fireEvent.click(screen.getByRole('button', { name: '换一批' }))
+    expect(mockUseDashboardInspirations).toHaveBeenLastCalledWith('novel', 2, 1)
   })
 
   it('keeps existing featured cards when featured inspirations are available', () => {
+    mockInspirationsConfig.enabled = true
     mockFeaturedState = {
       featured: [
         {
@@ -274,6 +335,7 @@ describe('DashboardHome featured inspirations section', () => {
   })
 
   it('shows loading skeleton while featured inspirations are loading', () => {
+    mockInspirationsConfig.enabled = true
     mockFeaturedState = {
       featured: [],
       isLoading: true,
@@ -334,7 +396,6 @@ describe('DashboardHome featured inspirations section', () => {
 
     renderDashboardHome()
 
-    expect(await screen.findByTestId('featured-inspirations-section')).toBeInTheDocument()
     const guideCard = await screen.findByTestId('activation-guide-card')
     const guide = within(guideCard)
     expect(guideCard).toBeInTheDocument()

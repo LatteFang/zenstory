@@ -18,6 +18,12 @@ from models import Inspiration, Project, User
 from models.file_model import File
 
 
+@pytest.fixture(autouse=True)
+def _enable_inspirations_for_existing_feature_tests(monkeypatch):
+    """These tests exercise the module's behavior when explicitly enabled."""
+    monkeypatch.setenv("INSPIRATIONS_ENABLED", "true")
+
+
 @pytest.fixture
 async def auth_client(client: AsyncClient, db_session) -> tuple[AsyncClient, User, str]:
     """
@@ -409,7 +415,7 @@ async def test_get_my_submissions_returns_current_user_only(auth_client, db_sess
     assert payload["page_size"] == 10
     assert len(payload["items"]) == 3
     assert all(item["name"] != "Other Pending" for item in payload["items"])
-    assert set(item["status"] for item in payload["items"]) == {"pending", "approved", "rejected"}
+    assert {item["status"] for item in payload["items"]} == {"pending", "approved", "rejected"}
     rejected = next(item for item in payload["items"] if item["status"] == "rejected")
     assert rejected["rejection_reason"] == "not enough quality"
 

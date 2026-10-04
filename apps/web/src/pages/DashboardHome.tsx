@@ -4,13 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { logger } from "../lib/logger";
 import {
   Book, FileText, Clapperboard, Clock, Trash2,
-  Sparkles, Compass, Zap, CheckSquare, Square, ChevronRight
+  Sparkles, Zap, CheckSquare, Square, ChevronRight
 } from "../components/icons";
 import { Modal } from "../components/ui/Modal";
 import { DashboardPageHeader } from "../components/dashboard/DashboardPageHeader";
 import { DashboardSearchBar } from "../components/dashboard/DashboardSearchBar";
 import { DashboardEmptyState } from "../components/dashboard/DashboardEmptyState";
-import { useFeaturedInspirations } from "../hooks/useInspirations";
+import {
+  DashboardInspirationSuggestions,
+  FeaturedInspirationsSection,
+} from "../components/inspirations";
 import { projectApi } from "../lib/api";
 import type { ProjectTemplate } from "../lib/api";
 import { ApiError } from "../lib/apiClient";
@@ -20,7 +23,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { useProject } from "../contexts/ProjectContext";
 import type { ProjectType } from "../types";
 import { useIsMobile, useIsTablet } from "../hooks/useMediaQuery";
-import { useDashboardInspirations } from "../hooks/useDashboardInspirations";
 import { formatRelativeTime, parseUTCDate } from "../lib/dateUtils";
 import { UpgradePromptModal } from "../components/subscription/UpgradePromptModal";
 import { buildUpgradeUrl, getUpgradePromptDefinition } from "../config/upgradeExperience";
@@ -29,6 +31,7 @@ import { onboardingPersonaApi, type PersonaRecommendation } from "../lib/onboard
 import { buildTodayActionPlan, type TodayActionPlanItem } from "../lib/dashboardActionPlan";
 import type { ActivationGuideResponse } from "../types/writingStats";
 import { dashboardOnboardingFlags } from "../config/dashboardOnboarding";
+import { inspirationsConfig } from "../config/inspirations";
 
 const SUPPORTED_PROJECT_TYPES: ProjectType[] = ["novel", "short", "screenplay"];
 
@@ -56,15 +59,6 @@ export default function DashboardHome() {
   const showTodayActionPlanEntry = dashboardOnboardingFlags.todayActionPlanEnabled;
   const showFirstDayActivationGuide = dashboardOnboardingFlags.firstDayActivationGuideEnabled;
 
-  // Featured inspirations
-  const {
-    featured: featuredInspirations,
-    isLoading: isInspirationsLoading,
-    isFetching: isInspirationsFetching,
-  } = useFeaturedInspirations(3);
-  const shouldShowFeaturedLoading =
-    isInspirationsLoading || (isInspirationsFetching && featuredInspirations.length === 0);
-
   const [templates, setTemplates] = useState<Record<string, ProjectTemplate> | null>(null);
   const [creating, setCreating] = useState<ProjectType | null>(null);
   const [isQuickCreating, setIsQuickCreating] = useState(false);
@@ -78,7 +72,6 @@ export default function DashboardHome() {
   const [personaRecommendations, setPersonaRecommendations] = useState<PersonaRecommendation[]>([]);
   const [executingTodayActionId, setExecutingTodayActionId] = useState<string | null>(null);
   const [todayActionPlanExpanded, setTodayActionPlanExpanded] = useState(false);
-  const [inspirationRefreshSeed, setInspirationRefreshSeed] = useState(0);
 
   // Dynamic project type config based on language
   const PROJECT_TYPE_CONFIG: Record<
@@ -559,14 +552,12 @@ export default function DashboardHome() {
     }
   };
 
-  const dashboardInspirations = useDashboardInspirations(activeTab, 2, inspirationRefreshSeed);
   const hasDraftIdea = inspiration.trim().length > 0;
-  const resolvedInspirationPlaceholder = t('dashboard:inspiration.dashboardPlaceholder');
-  const featuredSkeletonCount = isMobile ? 1 : isTablet ? 2 : 3;
-  const featuredEmptyTitle = t('inspirations.emptyTitle');
-  const featuredEmptyHint = t('inspirations.emptyHint');
-  const featuredEmptyCta = t('inspirations.emptyCta');
-
+  const resolvedInspirationPlaceholder = t(
+    inspirationsConfig.enabled
+      ? 'dashboard:inspiration.dashboardPlaceholder'
+      : 'dashboard:inspiration.dashboardPlaceholderWithoutInspirations',
+  );
   return (
     <>
       {/* Header Section */}
@@ -718,38 +709,11 @@ export default function DashboardHome() {
           </button>
         </div>
 
-        {dashboardInspirations.length > 0 && (
-          <div className="mt-5 flex flex-col gap-3" data-testid="dashboard-real-inspirations">
-            <div className="text-[12px] tracking-[0.02em] text-[hsl(var(--text-secondary)/0.62)]">
-              {t("dashboard.realInspirationsTitle", { defaultValue: "如果你还没想好，可以从这里开始：" })}
-            </div>
-            <div className="flex flex-col gap-3">
-              {dashboardInspirations.map((item, index) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  title={`${item.title}｜${item.hook}`}
-                  aria-label={item.title}
-                  onClick={() => setInspiration(`《${item.title}》：${item.hook}`)}
-                  className="grid grid-cols-[18px_minmax(0,1fr)] items-start gap-3 text-left transition-colors duration-150 hover:text-[hsl(var(--text-primary))]"
-                >
-                  <span className="pt-0.5 text-[13px] leading-7 text-[hsl(var(--text-secondary)/0.36)]">
-                    {index + 1}
-                  </span>
-                  <span className="max-w-[760px] text-[14px] leading-7 text-[hsl(var(--text-secondary)/0.84)]">
-                    {item.hook}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => setInspirationRefreshSeed((prev) => prev + 1)}
-              className="w-fit text-[12px] text-[hsl(var(--text-secondary)/0.58)] transition-colors hover:text-[hsl(var(--text-primary))]"
-            >
-              {t("dashboard.realInspirationsRefresh", { defaultValue: "换一批" })}
-            </button>
-          </div>
+        {inspirationsConfig.enabled && (
+          <DashboardInspirationSuggestions
+            projectType={activeTab}
+            onSelect={setInspiration}
+          />
         )}
       </div>
 
@@ -957,96 +921,9 @@ export default function DashboardHome() {
         </div>
       )}
 
-      {/* Featured Inspirations Section (always visible) */}
-      <div
-        className="mb-7"
-        data-testid="featured-inspirations-section"
-        data-tour-id="dashboard-inspirations-section"
-      >
-        <div
-          className="flex items-center justify-between mb-4"
-          data-tour-id="dashboard-inspirations-entry"
-        >
-          <div className="flex items-center gap-2" data-tour-id="dashboard-inspirations-heading">
-            <Compass className="w-4 h-4 text-[hsl(var(--accent-primary))]" />
-            <h2 className="text-base font-semibold text-[hsl(var(--text-primary))]">
-              {t('inspirations.featured', { ns: 'dashboard' })}
-            </h2>
-          </div>
-          <button
-            onClick={() => navigate('/dashboard/inspirations')}
-            className="text-xs text-[hsl(var(--accent-primary))] hover:underline"
-            data-tour-id="dashboard-inspirations-link"
-          >
-            {t('inspirations.viewAll', { ns: 'dashboard' })}
-          </button>
-        </div>
-
-        {shouldShowFeaturedLoading ? (
-          <div
-            className={`grid ${isMobile ? "grid-cols-1" : isTablet ? "grid-cols-2" : "lg:grid-cols-3"} gap-3.5`}
-            data-testid="featured-inspirations-loading"
-          >
-            {Array.from({ length: featuredSkeletonCount }).map((_, index) => (
-              <div
-                key={`featured-skeleton-${index}`}
-                className="rounded-lg border border-[hsl(var(--border-color))] bg-[hsl(var(--bg-secondary))] p-4"
-              >
-                <div className="h-4 w-2/3 rounded bg-[hsl(var(--bg-tertiary))] animate-pulse mb-3" />
-                <div className="h-3 w-full rounded bg-[hsl(var(--bg-tertiary))] animate-pulse mb-2" />
-                <div className="h-3 w-4/5 rounded bg-[hsl(var(--bg-tertiary))] animate-pulse" />
-              </div>
-            ))}
-          </div>
-        ) : featuredInspirations.length > 0 ? (
-          <div className={`grid ${isMobile ? "grid-cols-1" : isTablet ? "grid-cols-2" : "lg:grid-cols-3"} gap-3.5`}>
-            {featuredInspirations.map((insp) => (
-              <button
-                type="button"
-                key={insp.id}
-                onClick={() => navigate(`/dashboard/inspirations/${insp.id}`)}
-                className="group w-full text-left bg-[hsl(var(--bg-secondary))] rounded-lg border border-[hsl(var(--border-color))] cursor-pointer hover:border-[hsl(var(--accent-primary)/0.3)] hover:shadow-lg transition-all p-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-primary)/0.6)] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--bg-primary))]"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Compass className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-[hsl(var(--text-primary))] truncate text-sm">
-                      {insp.name}
-                    </h3>
-                    {insp.description && (
-                      <p className="text-xs text-[hsl(var(--text-secondary))] line-clamp-2 mt-1">
-                        {insp.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 mt-2 text-xs text-[hsl(var(--text-secondary))]">
-                      <span className="px-2 py-0.5 rounded bg-[hsl(var(--bg-tertiary))]">
-                        {t(`projectType.${insp.project_type}.name`)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <DashboardEmptyState
-            icon={Compass}
-            title={featuredEmptyTitle}
-            description={featuredEmptyHint}
-            className="py-9 px-4"
-            action={(
-              <button
-                onClick={() => navigate('/dashboard/inspirations')}
-                className="text-sm font-medium text-[hsl(var(--accent-primary))] hover:underline"
-              >
-                {featuredEmptyCta}
-              </button>
-            )}
-          />
-        )}
-      </div>
+      {inspirationsConfig.enabled && (
+        <FeaturedInspirationsSection isMobile={isMobile} isTablet={isTablet} />
+      )}
 
       {/* Create Modal */}
       <Modal

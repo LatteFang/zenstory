@@ -27,6 +27,7 @@ import { normalizeLocale } from "../lib/i18n-helpers";
 import { CoachmarkLayer } from "../components/onboarding/CoachmarkLayer";
 import { DASHBOARD_FIRST_RUN_TOUR } from "../config/productTours/dashboardFirstRun";
 import { dashboardOnboardingFlags } from "../config/dashboardOnboarding";
+import { inspirationsConfig } from "../config/inspirations";
 
 function hasExplicitTimezone(value: string): boolean {
   return /([zZ]|[+-]\d{2}:?\d{2})$/.test(value.trim());
@@ -94,6 +95,9 @@ function DashboardContent() {
   const adminPanelLabel = t('dashboard:userPanel.adminPanel');
   const replayTourLabel = t('dashboard:userPanel.replayTour');
   const { restartTour, isEnabled: isTourEnabled } = useProductTour();
+  const navItems = inspirationsConfig.enabled
+    ? NAV_ITEMS
+    : NAV_ITEMS.filter((item) => item.id !== "inspirations");
 
   // Determine active nav based on current route
   const getActiveNav = () => {
@@ -337,7 +341,7 @@ function DashboardContent() {
 
           {/* Navigation */}
           <nav className="flex-1 p-2 space-y-1">
-            {NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleNavItemClick(item)}
@@ -392,7 +396,7 @@ function DashboardContent() {
 
           {/* Navigation */}
           <nav className="flex-1 p-3 space-y-1">
-            {NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleNavItemClick(item)}
@@ -466,7 +470,7 @@ function DashboardContent() {
         {isMobile && showMobileMenu && (
           <div className="absolute top-12 left-0 right-0 bg-[hsl(var(--bg-secondary))] border-b border-[hsl(var(--separator-color))] shadow-lg z-40">
             <div className="flex flex-col p-2 gap-1">
-              {NAV_ITEMS.map((item) => {
+              {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button

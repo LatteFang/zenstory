@@ -54,6 +54,7 @@ runs:
         E2E_TEST_ADMIN_PASSWORD=TestAdmin123!
         E2E_TEST_ADMIN_USERNAME=test_admin
         AUTH_RATE_LIMIT_ENABLED=false
+        INSPIRATIONS_ENABLED=${INSPIRATIONS_ENABLED-true}
         EOF
 
     - name: Run database migrations

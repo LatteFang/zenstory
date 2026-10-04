@@ -147,7 +147,8 @@ export function ProductTourProvider({
     if (currentStep.id === 'inspiration_input') {
       const input = document.querySelector<HTMLTextAreaElement>('[data-tour-id="dashboard-inspiration-input"]');
       const hasIdea = Boolean(input?.value.trim());
-      const nextStepId = hasIdea ? 'create_project' : 'inspirations_link';
+      const hasLibraryStep = tour.steps.some((step) => step.id === 'inspirations_link');
+      const nextStepId = hasIdea || !hasLibraryStep ? 'create_project' : 'inspirations_link';
       return tour.steps.find((step) => step.id === nextStepId) ?? null;
     }
 

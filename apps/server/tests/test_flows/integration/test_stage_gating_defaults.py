@@ -59,8 +59,14 @@ class _FakeCheckpointManager:
     def get_checkpoint(self, _stage):
         return None
 
-    def get_pending_chapters(self, _stage, all_chapter_ids):
+    def get_pending_chapters(self, _stage, all_chapter_ids, capability="summaries"):
         return all_chapter_ids
+
+    def get_completed_chapters(self, _stage, capability="summaries"):
+        return []
+
+    def get_failed_chapters(self, _stage, capability="summaries"):
+        return []
 
     def mark_stage_completed(self, _stage, _data):
         return None
@@ -159,7 +165,7 @@ def test_default_stages_skip_plot_and_story_work_and_complete(monkeypatch, defau
     mention_task = FakeTask({"chapter_id": 0, "mentions": ["A"]})
     monkeypatch.setattr(chapter_mod, "get_run_logger", lambda: MagicMock())
     monkeypatch.setattr(chapter_mod, "create_performance_monitor", lambda _name: FakeMonitor())
-    monkeypatch.setattr(chapter_mod, "create_checkpoint_manager", lambda _novel_id: _FakeCheckpointManager())
+    monkeypatch.setattr(chapter_mod, "create_checkpoint_manager", lambda _novel_id, job_id=None: _FakeCheckpointManager())
     monkeypatch.setattr(chapter_mod, "generate_chapter_summary_task", summary_task)
     monkeypatch.setattr(chapter_mod, "update_chapter_summary_task", FakeTask(None))
     monkeypatch.setattr(chapter_mod, "extract_character_mentions_task", mention_task)

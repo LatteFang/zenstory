@@ -53,6 +53,7 @@ class TestNovelIngestionResume:
             flow_start=0.0,
             logger=fake_logger,
             publisher=MagicMock(),
+            job_id=900,
         )
 
         assert result == {"completed": False}
@@ -78,7 +79,7 @@ class TestNovelIngestionResume:
         cp_mgr.get_latest_checkpoint.return_value = fake_checkpoint_record_factory(
             {}, stage="completed", stage_status="completed"
         )
-        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id: cp_mgr)
+        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id, job_id=None: cp_mgr)
 
         result = flow_mod._check_and_resume_from_checkpoint(
             content_hash="abc",
@@ -88,6 +89,7 @@ class TestNovelIngestionResume:
             flow_start=0.0,
             logger=fake_logger,
             publisher=MagicMock(),
+            job_id=900,
         )
 
         assert result["completed"] is True
@@ -113,7 +115,7 @@ class TestNovelIngestionResume:
         cp_mgr.get_latest_checkpoint.return_value = None
         cp_mgr.can_resume.return_value = True
         cp_mgr.get_resume_point.return_value = {"stage": "stage1", "status": "processing"}
-        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id: cp_mgr)
+        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id, job_id=None: cp_mgr)
 
         calls = {"stage1": 0, "stage2": 0}
 
@@ -144,6 +146,7 @@ class TestNovelIngestionResume:
             flow_start=0.0,
             logger=fake_logger,
             publisher=MagicMock(),
+            job_id=900,
         )
 
         assert result["completed"] is True
@@ -168,7 +171,7 @@ class TestNovelIngestionResume:
         cp_mgr = MagicMock()
         cp_mgr.get_latest_checkpoint.return_value = None
         cp_mgr.can_resume.return_value = False
-        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id: cp_mgr)
+        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id, job_id=None: cp_mgr)
 
         result = flow_mod._check_and_resume_from_checkpoint(
             content_hash="abc",
@@ -178,6 +181,7 @@ class TestNovelIngestionResume:
             flow_start=0.0,
             logger=fake_logger,
             publisher=MagicMock(),
+            job_id=900,
         )
 
         assert result == {"completed": False, "novel_id": 77}
@@ -202,7 +206,7 @@ class TestNovelIngestionResume:
         cp_mgr.get_latest_checkpoint.return_value = None
         cp_mgr.can_resume.return_value = True
         cp_mgr.get_resume_point.return_value = {"stage": "stage2", "status": "processing"}
-        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id: cp_mgr)
+        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id, job_id=None: cp_mgr)
 
         calls = {"stage1": 0, "stage2": 0}
 
@@ -233,6 +237,7 @@ class TestNovelIngestionResume:
             flow_start=0.0,
             logger=fake_logger,
             publisher=MagicMock(),
+            job_id=900,
         )
 
         assert result["completed"] is True
@@ -258,7 +263,7 @@ class TestNovelIngestionResume:
         cp_mgr.get_latest_checkpoint.return_value = None
         cp_mgr.can_resume.return_value = True
         cp_mgr.get_resume_point.return_value = {"stage": "weird_stage", "status": "processing"}
-        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id: cp_mgr)
+        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id, job_id=None: cp_mgr)
         monkeypatch.setattr(flow_mod, "StageExecutor", lambda **kwargs: (_ for _ in ()).throw(AssertionError("不应创建执行器")))
 
         result = flow_mod._check_and_resume_from_checkpoint(
@@ -269,6 +274,7 @@ class TestNovelIngestionResume:
             flow_start=0.0,
             logger=fake_logger,
             publisher=MagicMock(),
+            job_id=900,
         )
 
         assert result == {"completed": False, "novel_id": 44}
@@ -310,7 +316,7 @@ class TestNovelIngestionResume:
         cp_mgr.get_latest_checkpoint.return_value = None
         cp_mgr.can_resume.return_value = True
         cp_mgr.get_resume_point.return_value = {"stage": "failed", "status": "failed"}
-        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id: cp_mgr)
+        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id, job_id=None: cp_mgr)
 
         result = flow_mod._check_and_resume_from_checkpoint(
             content_hash="abc",
@@ -320,13 +326,14 @@ class TestNovelIngestionResume:
             flow_start=0.0,
             logger=fake_logger,
             publisher=MagicMock(),
+            job_id=900,
         )
 
         assert result == {"completed": False, "novel_id": 66}
-        assert old_job.status == "abandoned"
-        assert session.flush_calls == 1
-        assert session.commit_calls == 1
-        assert fake_cp_service.deleted == [66]
+        assert old_job.status == "failed"
+        assert session.flush_calls == 0
+        assert session.commit_calls == 0
+        assert fake_cp_service.deleted == []
 
 
 @pytest.mark.integration
@@ -343,6 +350,45 @@ class TestMarkJobAsFailed:
         )
 
         publisher.publish.assert_called_once()
+
+
+class TestJobIdentity:
+    def test_validate_job_ownership_and_repair_correlation(self, monkeypatch):
+        job = SimpleNamespace(
+            id=12, novel_id=5, correlation_id="stale", total_chapters=0
+        )
+        neighboring_job = SimpleNamespace(
+            id=13, novel_id=5, correlation_id="neighbor", total_chapters=0
+        )
+
+        class _Session:
+            def __init__(self):
+                self.commits = 0
+
+            def get(self, _model, job_id):
+                return {12: job, 13: neighboring_job}.get(job_id)
+
+            def add(self, _obj):
+                return None
+
+            def commit(self):
+                self.commits += 1
+
+        session = _Session()
+        monkeypatch.setattr(
+            flow_mod, "get_prefect_db_session", lambda: _FakeSessionCtx(session)
+        )
+
+        flow_mod._validate_and_repair_job_identity(
+            5, 12, "prefect-run", total_chapters=3
+        )
+        assert job.correlation_id == "prefect-run"
+        assert job.total_chapters == 3
+        assert neighboring_job.total_chapters == 0
+        assert session.commits == 1
+
+        with pytest.raises(ValueError, match="不属于"):
+            flow_mod._validate_and_repair_job_identity(6, 12, "wrong-novel")
 
     def test_mark_job_as_failed_updates_job_and_checkpoint(self, monkeypatch, fake_logger):
         session = _FakeSession()
@@ -378,7 +424,7 @@ class TestMarkJobAsFailed:
         monkeypatch.setattr(jobs_mod, "IngestionJobsService", FakeIngestionJobsService)
 
         cp_mgr = MagicMock()
-        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id: cp_mgr)
+        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id, job_id=None: cp_mgr)
 
         publisher = MagicMock()
         flow_mod._mark_job_as_failed(

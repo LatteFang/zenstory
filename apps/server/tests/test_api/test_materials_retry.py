@@ -7,6 +7,7 @@ from httpx import AsyncClient
 from sqlmodel import select
 
 import api.materials.upload as materials_upload_api
+from core.error_handler import APIException
 from models import User
 from models.material_models import IngestionJob, Novel
 from models.subscription import SubscriptionPlan, UsageQuota, UserSubscription
@@ -206,6 +207,44 @@ async def test_retry_material_job_consumes_quota_for_regular_failed_jobs(client:
 
 
 @pytest.mark.integration
+async def test_retry_material_job_allows_completed_with_errors_and_dispatches_exact_job(
+    client: AsyncClient,
+    db_session,
+    monkeypatch,
+):
+    user, token = await _create_test_user_and_token(client, db_session, "retrypartial1")
+    novel = Novel(user_id=user.id, title="Retry Partial Novel", author="Tester")
+    db_session.add(novel)
+    db_session.commit()
+    db_session.refresh(novel)
+    db_session.add(
+        IngestionJob(
+            novel_id=novel.id,
+            source_path="/tmp/test.txt",
+            status="completed_with_errors",
+            total_chapters=10,
+            processed_chapters=8,
+            error_message="two chapters failed",
+        )
+    )
+    db_session.commit()
+    dispatched_job_ids: list[int] = []
+
+    async def _capture_dispatch(*args, **kwargs):
+        dispatched_job_ids.append(kwargs["job_id"])
+        return "flow-run-test"
+
+    monkeypatch.setattr(materials_upload_api, "_start_flow_deployment", _capture_dispatch)
+    response = await client.post(
+        f"/api/v1/materials/{novel.id}/retry",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    assert dispatched_job_ids == [response.json()["job_id"]]
+
+
+@pytest.mark.integration
 async def test_retry_material_job_does_not_consume_quota_when_dispatch_fails(
     client: AsyncClient, db_session, monkeypatch
 ):
@@ -396,3 +435,53 @@ async def test_retry_material_job_rejects_when_quota_cannot_be_consumed(
     assert release_calls == []  # never refunded quota it did not consume
     db_session.refresh(quota)
     assert quota.material_decompositions_used == 5  # unchanged
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("dispatch_raises", [False, True])
+async def test_retry_refunds_even_when_failure_status_cannot_be_persisted(
+    client: AsyncClient, db_session, monkeypatch, dispatch_raises,
+):
+    user, _ = await _create_test_user_and_token(
+        client, db_session, f"retrystatusfail{int(dispatch_raises)}",
+    )
+    novel = Novel(user_id=user.id, title="Retry status persistence failure")
+    db_session.add(novel)
+    db_session.commit()
+    db_session.refresh(novel)
+    db_session.add(IngestionJob(
+        novel_id=novel.id, source_path="/tmp/test.txt", status="failed",
+    ))
+    db_session.commit()
+
+    async def _dispatch(*args, **kwargs):
+        if dispatch_raises:
+            raise RuntimeError("SDK dispatch failed")
+        return None
+
+    def _mark_failed(*args, **kwargs):
+        raise RuntimeError("Failure status persistence failed")
+
+    refund_calls = []
+    original_release = materials_upload_api.quota_service.release_feature_quota
+
+    def _release(*args, **kwargs):
+        refund_calls.append(1)
+        return original_release(*args, **kwargs)
+
+    monkeypatch.setattr(materials_upload_api, "_start_flow_deployment", _dispatch)
+    monkeypatch.setattr(materials_upload_api, "_mark_job_dispatch_failed", _mark_failed)
+    monkeypatch.setattr(materials_upload_api.quota_service, "release_feature_quota", _release)
+
+    expected_error = RuntimeError if dispatch_raises else APIException
+    with pytest.raises(expected_error) as raised:
+        await materials_upload_api.retry_material_job(
+            novel_id=novel.id, current_user=user, session=db_session,
+        )
+    assert refund_calls == [1]
+    if dispatch_raises:
+        assert str(raised.value) == "SDK dispatch failed"
+    else:
+        assert raised.value.status_code == 503
+    quota = db_session.exec(select(UsageQuota).where(UsageQuota.user_id == user.id)).one()
+    assert quota.material_decompositions_used == 0

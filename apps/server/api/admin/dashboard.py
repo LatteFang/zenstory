@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, func, select
 
 from config.datetime_utils import utcnow
+from config.feature_flags import is_inspirations_enabled
 from database import get_session
 from models import Inspiration, Project, User
 from models.points import CheckInRecord, PointsTransaction
@@ -68,13 +69,14 @@ def get_dashboard_stats(
     # Total projects
     total_projects = session.exec(select(func.count()).select_from(Project)).one()
 
-    # Total inspirations
-    total_inspirations = session.exec(select(func.count()).select_from(Inspiration)).one()
-
-    # Pending inspirations
-    pending_inspirations = session.exec(
-        select(func.count()).select_from(Inspiration).where(Inspiration.status == "pending")
-    ).one()
+    total_inspirations = 0
+    pending_inspirations = 0
+    if is_inspirations_enabled():
+        # Inspiration data stays intact while the disabled module is hidden.
+        total_inspirations = session.exec(select(func.count()).select_from(Inspiration)).one()
+        pending_inspirations = session.exec(
+            select(func.count()).select_from(Inspiration).where(Inspiration.status == "pending")
+        ).one()
 
     # Active subscriptions
     active_subscriptions = session.exec(

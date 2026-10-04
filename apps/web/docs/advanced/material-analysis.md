@@ -117,6 +117,8 @@
 
 ## 实现依据
 
+2026-10-04 维护说明：未使用的 `MaterialViewer` 已移除，当前结果展示在 [`MaterialDetailPage`](https://github.com/zenstory-ai/zenstory/blob/main/apps/web/src/pages/MaterialDetailPage.tsx) 中；下方固定版本链接保留为历史依据。
+
 源码核对于 2026-09-13，固定版本对应当前所述的结果展示与上下文边界。创作片段和阅读推断为本教程原创，不是这些源码证明的模型效果。
 
 - [分类展开后加载对应结果](https://github.com/zenstory-ai/zenstory/blob/306059d9418dbdd6612d67574816ad960f58e51c/apps/web/src/pages/MaterialDetailPage.tsx#L82-L209)

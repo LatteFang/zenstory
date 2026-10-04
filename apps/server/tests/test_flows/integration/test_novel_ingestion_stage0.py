@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -61,7 +62,7 @@ class TestExecuteStage0:
 
         monkeypatch.setattr(novels_mod, "NovelsService", FakeNovelsService)
         monkeypatch.setattr(chapters_mod, "ChaptersService", FakeChaptersService)
-        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id: "cp-42")
+        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id, job_id=None: "cp-42")
 
         result = flow_mod._execute_stage0(
             file_path="/tmp/demo.txt",
@@ -81,6 +82,7 @@ class TestExecuteStage0:
             "novel_id": 42,
             "chapter_ids": [101, 102],
             "checkpoint_manager": "cp-42",
+            "job_id": None,
         }
 
     def test_existing_novel_id_missing_record_raises(self, monkeypatch):
@@ -108,7 +110,18 @@ class TestExecuteStage0:
             )
 
     def test_existing_novel_id_reuses_job_and_creates_chapters(self, monkeypatch):
-        novel = SimpleNamespace(id=9, source_meta=None)
+        novel = SimpleNamespace(
+            id=9,
+            source_meta=json.dumps(
+                {
+                    "original_filename": "original.txt",
+                    "char_count": 1234,
+                    "file_path": "/uploads/original.txt",
+                    "file_size": 4321,
+                    "future_key": "preserve-me",
+                }
+            ),
+        )
         session = _FakeSession(novel=novel)
         monkeypatch.setattr(flow_mod, "get_prefect_db_session", lambda: _FakeSessionCtx(session))
         monkeypatch.setattr(
@@ -148,7 +161,7 @@ class TestExecuteStage0:
         monkeypatch.setattr(chapters_mod, "ChaptersService", FakeChaptersService)
         monkeypatch.setattr(jobs_mod, "IngestionJobsService", FakeIngestionJobsService)
         monkeypatch.setattr(cp_mod, "CheckpointService", FakeCheckpointService)
-        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id: "cp-9")
+        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", lambda _novel_id, job_id=None: "cp-9")
 
         publisher = MagicMock()
         result = flow_mod._execute_stage0(
@@ -168,6 +181,14 @@ class TestExecuteStage0:
         assert existing_job.status == "processing"
         assert existing_job.total_chapters == 1
         assert existing_job.correlation_id == "cid-1"
+        source_meta = json.loads(novel.source_meta)
+        assert source_meta["original_filename"] == "original.txt"
+        assert source_meta["char_count"] == 1234
+        assert source_meta["future_key"] == "preserve-me"
+        assert source_meta["file_path"] == "/uploads/original.txt"
+        assert source_meta["file_size"] == 4321
+        assert source_meta["md5_checksum"] == "hash"
+        assert source_meta["encoding"] == "utf-8"
         assert upserts == [(9, "stage0", {}, "completed", 77)]
         assert session.commit_calls == 1
         assert result["novel_id"] == 9

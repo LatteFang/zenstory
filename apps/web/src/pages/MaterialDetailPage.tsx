@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import i18n from "../lib/i18n";
@@ -78,16 +78,17 @@ function isStageEnabled(
   return enabledStages?.[stage] !== false;
 }
 
-/**
- * A folder is greyed out only when its stage is off AND it holds no data: a job
- * retried after a stage was switched off may still own data from earlier runs.
- */
-function isFolderDisabled(stageEnabled: boolean, dataCount: number | undefined) {
-  return !stageEnabled && !(dataCount && dataCount > 0);
+/** Keep historical/unknown folders visible; hide only confirmed-empty disabled stages. */
+function shouldShowFolder(stageEnabled: boolean, dataCount: number | boolean | undefined) {
+  return stageEnabled || dataCount === undefined || Number(dataCount) > 0;
 }
 
 export default function MaterialDetailPage() {
   const { novelId } = useParams<{ novelId: string }>();
+  return <MaterialDetailContent key={novelId} novelId={novelId} />;
+}
+
+function MaterialDetailContent({ novelId }: { novelId?: string }) {
   const navigate = useNavigate();
   const { t } = useTranslation(["materials", "common"]);
   const isMobile = useIsMobile();
@@ -98,6 +99,7 @@ export default function MaterialDetailPage() {
   const [loadedFolders, setLoadedFolders] = useState<Set<string>>(new Set());
   // 移动端：是否显示内容详情（false = 显示文件树）
   const [showMobileContent, setShowMobileContent] = useState(false);
+  const activeNovelIdRef = useRef(novelId);
 
   // Fetch material details
   const { data: material, isLoading: materialLoading } = useQuery({
@@ -116,11 +118,7 @@ export default function MaterialDetailPage() {
     queryKey: ["material-chapters", novelId],
     queryFn: async () => {
       const tree = await materialsApi.getTree(novelId!);
-      const chapterNodes = tree.tree.filter((node) => node.type === "chapter");
-      const chapterDetails = await Promise.all(
-        chapterNodes.map((node) => materialsApi.getChapter(novelId!, node.id))
-      );
-      return chapterDetails;
+      return tree.tree.filter((node) => node.type === "chapter");
     },
     enabled: false,
     staleTime: 30 * 1000,
@@ -182,6 +180,14 @@ export default function MaterialDetailPage() {
     staleTime: 30 * 1000,
   });
 
+  const selectedChapterId = selectedItem?.type === "chapter" ? selectedItem.id : null;
+  const { data: selectedChapter, isFetching: isFetchingSelectedChapter } = useQuery({
+    queryKey: ["material-chapter", novelId, selectedChapterId],
+    queryFn: () => materialsApi.getChapter(novelId!, selectedChapterId!),
+    enabled: Boolean(novelId && selectedChapterId),
+    staleTime: 30 * 1000,
+  });
+
   // Loading states mapping
   const loadingStates: Record<string, boolean> = {
     chapters: isFetchingChapters,
@@ -195,9 +201,19 @@ export default function MaterialDetailPage() {
   };
 
   // Trigger load function
-  const triggerLoad = (folderId: string) => {
-    if (loadedFolders.has(folderId) || loadingStates[folderId]) return;
-
+  const triggerLoad = useCallback((folderId: string, force = false) => {
+    const isFolderLoading = {
+      chapters: isFetchingChapters,
+      characters: isFetchingCharacters,
+      stories: isFetchingStories,
+      plots: isFetchingPlots,
+      storylines: isFetchingStorylines,
+      relationships: isFetchingRelationships,
+      goldenfingers: isFetchingGoldenFingers,
+      worldview: isFetchingWorldview,
+    }[folderId];
+    if ((!force && loadedFolders.has(folderId)) || isFolderLoading) return;
+    const requestNovelId = novelId;
     const refetchByFolder: Record<string, () => Promise<{ status: string }>> = {
       chapters: refetchChapters,
       characters: refetchCharacters,
@@ -213,10 +229,37 @@ export default function MaterialDetailPage() {
     if (!refetchFolder) return;
 
     void refetchFolder().then((result) => {
-      if (result.status !== "success") return;
+      if (activeNovelIdRef.current !== requestNovelId) return;
+      if (result.status !== "success") {
+        setLoadedFolders((prev) => {
+          const next = new Set(prev);
+          next.delete(folderId);
+          return next;
+        });
+        return;
+      }
       setLoadedFolders((prev) => new Set(prev).add(folderId));
     });
-  };
+  }, [
+    isFetchingChapters,
+    isFetchingCharacters,
+    isFetchingGoldenFingers,
+    isFetchingPlots,
+    isFetchingRelationships,
+    isFetchingStories,
+    isFetchingStorylines,
+    isFetchingWorldview,
+    loadedFolders,
+    novelId,
+    refetchChapters,
+    refetchCharacters,
+    refetchGoldenFingers,
+    refetchPlots,
+    refetchRelationships,
+    refetchStories,
+    refetchStorylines,
+    refetchWorldview,
+  ]);
 
   // Build tree structure - folders always visible, children lazy loaded
   const buildTree = (): TreeItem[] => {
@@ -241,17 +284,17 @@ export default function MaterialDetailPage() {
       children: chapters.map((chapter) => ({
         id: chapter.id,
         type: "chapter",
-        title: chapter.title || t("materials:detail.chapter", { number: chapter.chapter_number }),
+        title: chapter.title || t("materials:detail.chapter", {
+          number: Number(chapter.metadata?.chapter_number ?? 0),
+        }),
         data: chapter,
       })),
     });
 
-    // Characters folder - always show
-    tree.push({
+    if (shouldShowFolder(charactersEnabled, material?.characters_count)) tree.push({
       id: "characters",
       type: "folder",
       title: t("materials:detail.characters"),
-      disabled: isFolderDisabled(charactersEnabled, material?.characters_count),
       children: characters.map((character) => ({
         id: character.id,
         type: "character",
@@ -260,12 +303,10 @@ export default function MaterialDetailPage() {
       })),
     });
 
-    // Stories folder - always show
-    tree.push({
+    if (shouldShowFolder(storiesEnabled, material?.stories_count)) tree.push({
       id: "stories",
       type: "folder",
       title: t("materials:detail.stories"),
-      disabled: isFolderDisabled(storiesEnabled, material?.stories_count),
       children: stories.map((story) => ({
         id: story.id,
         type: "story",
@@ -278,12 +319,10 @@ export default function MaterialDetailPage() {
       })),
     });
 
-    // Plots folder - always show
-    tree.push({
+    if (shouldShowFolder(plotsEnabled, material?.plots_count)) tree.push({
       id: "plots",
       type: "folder",
       title: t("materials:detail.plots"),
-      disabled: isFolderDisabled(plotsEnabled, material?.plots_count),
       children: plots.map((plot) => ({
         id: String(plot.id),
         type: "plot",
@@ -292,12 +331,10 @@ export default function MaterialDetailPage() {
       })),
     });
 
-    // StoryLines folder - always show
-    tree.push({
+    if (shouldShowFolder(storylinesEnabled, material?.story_lines_count)) tree.push({
       id: "storylines",
       type: "folder",
       title: t("materials:detail.storylines"),
-      disabled: isFolderDisabled(storylinesEnabled, material?.story_lines_count),
       children: storylines.map((storyline) => ({
         id: String(storyline.id),
         type: "storyline",
@@ -306,12 +343,14 @@ export default function MaterialDetailPage() {
       })),
     });
 
-    if (materialsConfig.relationshipsEnabled) {
+    if (
+      materialsConfig.relationshipsEnabled
+      && shouldShowFolder(relationshipsEnabled, material?.relationships_count)
+    ) {
       tree.push({
         id: "relationships",
         type: "folder",
         title: t("materials:detail.relationships"),
-        disabled: isFolderDisabled(relationshipsEnabled, material?.relationships_count),
         children: relationships.map((rel) => ({
           id: String(rel.id),
           type: "relationship",
@@ -321,12 +360,10 @@ export default function MaterialDetailPage() {
       });
     }
 
-    // Golden Fingers folder - always show
-    tree.push({
+    if (shouldShowFolder(metaEnabled, material?.golden_fingers_count)) tree.push({
       id: "goldenfingers",
       type: "folder",
       title: t("materials:detail.goldenfingers"),
-      disabled: isFolderDisabled(metaEnabled, material?.golden_fingers_count),
       children: goldenFingers.map((gf) => ({
         id: String(gf.id),
         type: "goldenfinger",
@@ -335,12 +372,10 @@ export default function MaterialDetailPage() {
       })),
     });
 
-    // Worldview folder - always show
-    tree.push({
+    if (shouldShowFolder(metaEnabled, material?.has_world_view)) tree.push({
       id: "worldview",
       type: "folder",
       title: t("materials:detail.worldview"),
-      disabled: isFolderDisabled(metaEnabled, material?.has_world_view ? 1 : 0),
       children: worldview ? [{
         id: String(worldview.id),
         type: "worldview",
@@ -353,6 +388,44 @@ export default function MaterialDetailPage() {
   };
 
   const treeData = buildTree();
+  const visibleFolderIds = treeData
+    .filter((item) => item.type === "folder")
+    .map((item) => item.id);
+  const visibleFolderKey = visibleFolderIds.join(":");
+  const materialVersion = material
+    ? [
+        material.status,
+        material.updated_at,
+        material.chapters_count,
+        material.characters_count,
+        material.plots_count,
+        material.stories_count,
+        material.story_lines_count,
+        material.relationships_count,
+        material.golden_fingers_count,
+        material.has_world_view,
+      ].join(":")
+    : "";
+  const previousMaterialRef = useRef<{ novelId?: string; version: string } | undefined>(undefined);
+
+  useEffect(() => {
+    const previous = previousMaterialRef.current;
+    previousMaterialRef.current = { novelId, version: materialVersion };
+    if (!previous || previous.novelId !== novelId || previous.version === materialVersion) return;
+
+    const currentVisibleFolderIds = visibleFolderKey ? visibleFolderKey.split(":") : [];
+    const foldersToReload = searchQuery.trim()
+      ? currentVisibleFolderIds
+      : currentVisibleFolderIds.filter((folderId) => expandedFolders.has(folderId));
+    foldersToReload.forEach((folderId) => triggerLoad(folderId, true));
+  }, [
+    expandedFolders,
+    materialVersion,
+    novelId,
+    searchQuery,
+    triggerLoad,
+    visibleFolderKey,
+  ]);
 
   // Filter tree based on search
   const filterTree = (items: TreeItem[], query: string): TreeItem[] => {
@@ -364,6 +437,9 @@ export default function MaterialDetailPage() {
           const filteredChildren = filterTree(item.children, query);
           if (filteredChildren.length > 0) {
             return { ...item, children: filteredChildren };
+          }
+          if (loadingStates[item.id] || !loadedFolders.has(item.id)) {
+            return { ...item, children: [] };
           }
         }
 
@@ -403,6 +479,10 @@ export default function MaterialDetailPage() {
       }
     }
   };
+
+  const selectedContentItem = selectedItem?.type === "chapter" && selectedChapter
+    ? { ...selectedItem, data: selectedChapter }
+    : selectedItem;
 
   const handleMobileBack = () => {
     setShowMobileContent(false);
@@ -461,7 +541,13 @@ export default function MaterialDetailPage() {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  const query = e.target.value;
+                  setSearchQuery(query);
+                  if (query.trim()) {
+                    visibleFolderIds.forEach((folderId) => triggerLoad(folderId));
+                  }
+                }}
                 placeholder={t("materials:detail.searchPlaceholder")}
                 className={`w-full pl-9 pr-3 py-2 rounded-lg border border-[hsl(var(--border-color))] bg-[hsl(var(--bg-primary))] text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--accent-primary)/0.3)]`}
               />
@@ -478,8 +564,10 @@ export default function MaterialDetailPage() {
             // 内容详情视图
             <div className="flex-1 overflow-y-auto">
               <div className="p-4">
-                {selectedItem ? (
-                  <ContentDetail item={selectedItem} />
+                {selectedContentItem ? (
+                  isFetchingSelectedChapter && selectedContentItem.type === "chapter" ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--accent-primary))]" />
+                  ) : <ContentDetail item={selectedContentItem} />
                 ) : (
                   <EmptyState material={material} />
                 )}
@@ -495,6 +583,7 @@ export default function MaterialDetailPage() {
                   expandedFolders={expandedFolders}
                   onItemClick={handleItemClick}
                   loadingStates={loadingStates}
+                  searchActive={Boolean(searchQuery.trim())}
                 />
               </div>
             </div>
@@ -511,6 +600,7 @@ export default function MaterialDetailPage() {
                   expandedFolders={expandedFolders}
                   onItemClick={handleItemClick}
                   loadingStates={loadingStates}
+                  searchActive={Boolean(searchQuery.trim())}
                 />
               </div>
             </div>
@@ -518,8 +608,10 @@ export default function MaterialDetailPage() {
             {/* Right: Content Details */}
             <div className="flex-1 overflow-y-auto">
               <div className="p-6">
-                {selectedItem ? (
-                  <ContentDetail item={selectedItem} />
+                {selectedContentItem ? (
+                  isFetchingSelectedChapter && selectedContentItem.type === "chapter" ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--accent-primary))]" />
+                  ) : <ContentDetail item={selectedContentItem} />
                 ) : (
                   <EmptyState material={material} />
                 )}
@@ -539,10 +631,11 @@ interface FileTreeProps {
   expandedFolders: Set<string>;
   onItemClick: (item: TreeItem) => void;
   loadingStates: Record<string, boolean>;
+  searchActive?: boolean;
   level?: number;
 }
 
-function FileTree({ items, selectedId, expandedFolders, onItemClick, loadingStates, level = 0 }: FileTreeProps) {
+function FileTree({ items, selectedId, expandedFolders, onItemClick, loadingStates, searchActive = false, level = 0 }: FileTreeProps) {
   const { t } = useTranslation(["materials"]);
   const getIcon = (type: TreeItemType, isExpanded: boolean) => {
     switch (type) {
@@ -579,7 +672,7 @@ function FileTree({ items, selectedId, expandedFolders, onItemClick, loadingStat
     <div className="space-y-1">
       {items.map((item) => {
         const isDisabled = Boolean(item.disabled);
-        const isExpanded = !isDisabled && expandedFolders.has(item.id);
+        const isExpanded = !isDisabled && (searchActive || expandedFolders.has(item.id));
         const isSelected = selectedId === item.id;
         const hasChildren = item.children && item.children.length > 0;
 
@@ -632,6 +725,7 @@ function FileTree({ items, selectedId, expandedFolders, onItemClick, loadingStat
                 expandedFolders={expandedFolders}
                 onItemClick={onItemClick}
                 loadingStates={loadingStates}
+                searchActive={searchActive}
                 level={level + 1}
               />
             )}

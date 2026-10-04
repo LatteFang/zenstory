@@ -1,3 +1,5 @@
+import { inspirationsConfig } from '../inspirations';
+
 export type ProductTourPlacement = 'top' | 'right' | 'bottom' | 'left' | 'center';
 export type ProductTourNextMode = 'manual' | 'target_click';
 export type ProductTourMissingBehavior = 'wait' | 'skip' | 'abort';
@@ -32,10 +34,7 @@ export interface ProductTourDefinition {
   steps: ProductTourStep[];
 }
 
-export const DASHBOARD_FIRST_RUN_TOUR: ProductTourDefinition = {
-  id: 'dashboard_first_run',
-  version: 1,
-  steps: [
+const dashboardSteps: ProductTourStep[] = [
     {
       id: 'project_type_tabs',
       route: '/dashboard',
@@ -59,10 +58,14 @@ export const DASHBOARD_FIRST_RUN_TOUR: ProductTourDefinition = {
       route: '/dashboard',
       targetId: 'dashboard-inspiration-input',
       titleKey: 'dashboardTour.steps.inspirationInput.title',
-      descriptionKey: 'dashboardTour.steps.inspirationInput.description',
+      descriptionKey: inspirationsConfig.enabled
+        ? 'dashboardTour.steps.inspirationInput.description'
+        : 'dashboardTour.steps.inspirationInput.descriptionWithoutLibrary',
       ctaLabelKey: 'dashboardTour.common.next',
       defaultTitle: '从一句核心冲突开始',
-      defaultDescription: '可以直接输入灵感，也可以点下方推荐，快速生成第一个项目。',
+      defaultDescription: inspirationsConfig.enabled
+        ? '可以直接输入灵感，也可以点下方推荐，快速生成第一个项目。'
+        : '输入你的故事想法，点击开始创作即可创建项目。',
       defaultCtaLabel: '下一步',
       placement: 'bottom',
       nextMode: 'manual',
@@ -107,5 +110,10 @@ export const DASHBOARD_FIRST_RUN_TOUR: ProductTourDefinition = {
       mobileSpotlightPadding: 8,
       spotlightOffsetX: -6,
     },
-  ],
+];
+
+export const DASHBOARD_FIRST_RUN_TOUR: ProductTourDefinition = {
+  id: 'dashboard_first_run',
+  version: 1,
+  steps: dashboardSteps.filter((step) => inspirationsConfig.enabled || step.id !== 'inspirations_link'),
 };

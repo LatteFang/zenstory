@@ -36,7 +36,7 @@
 断点续传:
 - 每个阶段完成后自动保存checkpoint
 - 支持从任意阶段恢复:stage0/stage1/stage2
-- 失败状态自动清理,支持重新开始
+- 保留历史检查点,按能力补跑失败或未完成的任务
 """
 
 from __future__ import annotations
@@ -127,6 +127,7 @@ def novel_ingestion_v3(
     author: str | None = None,
     resume_from_checkpoint: bool = True,
     novel_id: int | None = None,
+    job_id: int | None = None,
     correlation_id: str | None = None,
 ) -> dict[str, Any]:
     """
@@ -139,12 +140,20 @@ def novel_ingestion_v3(
         author: 作者名称(可选)
         resume_from_checkpoint: 是否启用断点续传(默认True)
         novel_id: 指定小说ID(可选,用于重新处理已存在的小说)
+        job_id: 当前导入任务ID(新API显式传入,旧调用兼容)
         correlation_id: 关联ID(可选,用于Redis Pub/Sub进度推送)
 
     Returns:
         Dict[str, Any]: 导入结果统计
     """
     logger = get_run_logger()
+    if correlation_id is None:
+        try:
+            from prefect.runtime import flow_run
+
+            correlation_id = str(flow_run.id) if flow_run.id else None
+        except Exception:
+            correlation_id = None
     publisher = ProgressPublisher(correlation_id, logger)
     flow_start = time.perf_counter()
 
@@ -154,6 +163,11 @@ def novel_ingestion_v3(
         novel_title,
         author,
     )
+
+    if job_id is not None:
+        if novel_id is None:
+            raise ValueError("传入 job_id 时必须同时传入 novel_id")
+        _validate_and_repair_job_identity(novel_id, job_id, correlation_id)
 
     try:
         # =================================================================
@@ -202,6 +216,7 @@ def novel_ingestion_v3(
                 content_hash=content_hash,
                 user_id=user_id,
                 novel_id=novel_id,
+                job_id=job_id,
                 correlation_id=correlation_id,
                 flow_start=flow_start,
                 logger=logger,
@@ -227,7 +242,16 @@ def novel_ingestion_v3(
 
             if chapter_ids:
                 # 已有章节，直接复用
-                checkpoint_manager = create_checkpoint_manager(novel_id)
+                if job_id is None:
+                    job_id = _resolve_legacy_job_id(novel_id, logger)
+                checkpoint_manager = create_checkpoint_manager(novel_id, job_id)
+                if job_id is not None:
+                    _validate_and_repair_job_identity(
+                        novel_id,
+                        job_id,
+                        correlation_id,
+                        total_chapters=len(chapter_ids),
+                    )
             else:
                 # novel 已存在但无章节（由 upload 端点预创建），执行 stage0 填充章节
                 stage0_result = _execute_stage0(
@@ -242,9 +266,11 @@ def novel_ingestion_v3(
                     logger=logger,
                     publisher=publisher,
                     existing_novel_id=novel_id,
+                    job_id=job_id,
                 )
                 chapter_ids = stage0_result["chapter_ids"]
                 checkpoint_manager = stage0_result["checkpoint_manager"]
+                job_id = stage0_result["job_id"]
         else:
             stage0_result = _execute_stage0(
                 file_path=normalized_path,
@@ -257,10 +283,12 @@ def novel_ingestion_v3(
                 correlation_id=correlation_id,
                 logger=logger,
                 publisher=publisher,
+                job_id=job_id,
             )
             novel_id = stage0_result["novel_id"]
             chapter_ids = stage0_result["chapter_ids"]
             checkpoint_manager = stage0_result["checkpoint_manager"]
+            job_id = stage0_result["job_id"]
 
         # 确保novel_id不为None
         if novel_id is None:
@@ -278,6 +306,7 @@ def novel_ingestion_v3(
             chapter_ids=chapter_ids,
             checkpoint_manager=checkpoint_manager,
             correlation_id=correlation_id,
+            job_id=job_id,
         )
         executor.record_enabled_stages()
 
@@ -325,6 +354,7 @@ def novel_ingestion_v3(
         # 标记失败
         _mark_job_as_failed(
             novel_id=novel_id,
+            job_id=job_id,
             correlation_id=correlation_id,
             error=str(e),
             flow_start=flow_start,
@@ -358,6 +388,7 @@ def _check_and_resume_from_checkpoint(
     flow_start: float,
     logger: Any,
     publisher: ProgressPublisher,  # noqa: ARG001
+    job_id: int | None = None,
 ) -> dict[str, Any]:
     """
     检查断点续传,如果可以恢复则直接执行
@@ -372,8 +403,6 @@ def _check_and_resume_from_checkpoint(
     logger.info("[断点检查] 检查是否可以从断点恢复")
 
     with get_prefect_db_session() as session:
-        from services.material.checkpoint_service import CheckpointService
-        from services.material.ingestion_jobs_service import IngestionJobsService
         from services.material.novels_service import NovelsService
 
         # 检查是否存在相同content_hash的小说
@@ -386,7 +415,9 @@ def _check_and_resume_from_checkpoint(
         logger.info("[断点检查] 发现已存在的小说: novel_id=%s", existing_novel.id)
 
         # 创建checkpoint_manager
-        checkpoint_manager = create_checkpoint_manager(existing_novel.id)
+        if job_id is None:
+            job_id = _resolve_legacy_job_id(existing_novel.id, logger)
+        checkpoint_manager = create_checkpoint_manager(existing_novel.id, job_id)
 
         # 获取章节ID（提前获取，用于已完成判断）
         chapter_ids = NovelsService().list_chapter_ids(session, existing_novel.id)
@@ -419,16 +450,8 @@ def _check_and_resume_from_checkpoint(
 
         # 处理不同的恢复点
         if stage == 'failed':
-            # 清理失败状态,重新开始
-            logger.info("[断点检查] 清理失败状态,准备重新开始")
-            CheckpointService().delete_all(session, existing_novel.id)
-
-            old_job = IngestionJobsService().get_latest_by_novel(session, existing_novel.id)
-            if old_job and old_job.status == 'failed':
-                old_job.status = 'abandoned'
-                session.flush()
-
-            session.commit()
+            # Preserve successful capability history for partial retries.
+            logger.info("[断点检查] 保留失败检查点,准备按能力恢复")
             return {"completed": False, "novel_id": existing_novel.id}
 
         elif stage == 'completed':
@@ -454,6 +477,7 @@ def _check_and_resume_from_checkpoint(
                 chapter_ids=chapter_ids,
                 checkpoint_manager=checkpoint_manager,
                 correlation_id=correlation_id,
+                job_id=job_id,
             )
             executor.record_enabled_stages()
 
@@ -486,6 +510,7 @@ def _execute_stage0(
     logger: Any,
     publisher: ProgressPublisher,
     existing_novel_id: int | None = None,
+    job_id: int | None = None,
 ) -> dict[str, Any]:
     """
     执行阶段0: 文件摄取与章节建立
@@ -530,15 +555,39 @@ def _execute_stage0(
 
             # 更新 novel 的 source_meta（补充 content_hash 等信息）
             import json as _json
-            novel.source_meta = _json.dumps({
-                "file_path": file_path,
-                "file_size": file_size,
-                "encoding": encoding,
-                "md5_checksum": content_hash,
-            })
+            try:
+                source_meta = (
+                    _json.loads(novel.source_meta)
+                    if isinstance(novel.source_meta, str)
+                    else dict(novel.source_meta or {})
+                )
+            except (TypeError, ValueError):
+                source_meta = {}
+            source_meta.setdefault("file_path", file_path)
+            source_meta.setdefault("file_size", file_size)
+            source_meta.update(
+                {
+                    "encoding": encoding,
+                    "md5_checksum": content_hash,
+                }
+            )
+            novel.source_meta = _json.dumps(source_meta)
 
             # 更新已有的 IngestionJob 状态
-            existing_job = IngestionJobsService().get_latest_by_novel(session, novel_id)
+            if job_id is not None:
+                from models.material_models import IngestionJob
+
+                existing_job = session.get(IngestionJob, job_id)
+                if existing_job is None or existing_job.novel_id != novel_id:
+                    raise ValueError(
+                        f"job_id={job_id} 不属于 novel_id={novel_id}"
+                    )
+            else:
+                logger.warning(
+                    "[阶段0] legacy V3 caller omitted job_id; resolving latest once for novel_id=%s",
+                    novel_id,
+                )
+                existing_job = IngestionJobsService().get_latest_by_novel(session, novel_id)
             if existing_job:
                 existing_job.status = "processing"
                 existing_job.total_chapters = len(chapters_data)
@@ -567,12 +616,13 @@ def _execute_stage0(
             if existing_novel:
                 logger.info("[阶段0] 小说已存在: novel_id=%s", existing_novel.id)
                 chapter_ids = NovelsService().list_chapter_ids(session, existing_novel.id)
-                checkpoint_manager = create_checkpoint_manager(existing_novel.id)
+                checkpoint_manager = create_checkpoint_manager(existing_novel.id, job_id)
 
                 return {
                     "novel_id": existing_novel.id,
                     "chapter_ids": chapter_ids,
                     "checkpoint_manager": checkpoint_manager,
+                    "job_id": job_id,
                 }
 
             # 创建新小说
@@ -652,12 +702,13 @@ def _execute_stage0(
     )
 
     # 创建checkpoint_manager
-    checkpoint_manager = create_checkpoint_manager(novel_id)
+    checkpoint_manager = create_checkpoint_manager(novel_id, job_id)
 
     return {
         "novel_id": novel_id,
         "chapter_ids": chapter_ids,
         "checkpoint_manager": checkpoint_manager,
+        "job_id": job_id,
     }
 
 
@@ -669,6 +720,7 @@ def _mark_job_as_failed(
     publisher: ProgressPublisher,
     correlation_id: str | None = None,
     _correlation_id: str | None = None,
+    job_id: int | None = None,
 ) -> None:
     """
     标记任务为失败状态
@@ -692,8 +744,19 @@ def _mark_job_as_failed(
             from services.material.ingestion_jobs_service import IngestionJobsService
 
             with get_prefect_db_session() as session:
-                job = IngestionJobsService().get_latest_by_novel(session, novel_id)
+                if job_id is not None:
+                    from models.material_models import IngestionJob
+
+                    job = session.get(IngestionJob, job_id)
+                    if job is not None and job.novel_id != novel_id:
+                        job = None
+                else:
+                    logger.warning(
+                        "[失败处理] legacy V3 caller omitted job_id; resolving latest once"
+                    )
+                    job = IngestionJobsService().get_latest_by_novel(session, novel_id)
                 if job:
+                    job_id = job.id
                     IngestionJobsService().update_processed(
                         session,
                         job.id,
@@ -714,7 +777,45 @@ def _mark_job_as_failed(
 
         # 标记checkpoint失败
         try:
-            checkpoint_manager = create_checkpoint_manager(novel_id)
+            checkpoint_manager = create_checkpoint_manager(novel_id, job_id)
             checkpoint_manager.mark_stage_failed("failed", error)
         except Exception as e:
             logger.warning(f"标记checkpoint失败: {e}")
+
+
+def _resolve_legacy_job_id(novel_id: int, logger: Any) -> int | None:
+    """Resolve a missing legacy job exactly once and keep that ID for the run."""
+    from services.material.ingestion_jobs_service import IngestionJobsService
+
+    logger.warning(
+        "legacy V3 caller omitted job_id; resolving latest once for novel_id=%s",
+        novel_id,
+    )
+    with get_prefect_db_session() as session:
+        job = IngestionJobsService().get_latest_by_novel(session, novel_id)
+        return job.id if job else None
+
+
+def _validate_and_repair_job_identity(
+    novel_id: int,
+    job_id: int,
+    correlation_id: str | None,
+    total_chapters: int | None = None,
+) -> None:
+    """Validate ownership and let the accepted flow run repair correlation state."""
+    from models.material_models import IngestionJob
+
+    with get_prefect_db_session() as session:
+        job = session.get(IngestionJob, job_id)
+        if job is None or job.novel_id != novel_id:
+            raise ValueError(f"job_id={job_id} 不属于 novel_id={novel_id}")
+        changed = False
+        if correlation_id and job.correlation_id != correlation_id:
+            job.correlation_id = correlation_id
+            changed = True
+        if total_chapters is not None and job.total_chapters != total_chapters:
+            job.total_chapters = total_chapters
+            changed = True
+        if changed:
+            session.add(job)
+            session.commit()

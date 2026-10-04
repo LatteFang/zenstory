@@ -85,7 +85,9 @@ def get_or_create_plan(db_session: Session, name: str) -> SubscriptionPlan:
 async def test_admin_dashboard_stats_returns_commercialization_metrics(
     client: AsyncClient,
     db_session: Session,
+    monkeypatch,
 ):
+    monkeypatch.setenv("INSPIRATIONS_ENABLED", "true")
     admin = await create_user(
         db_session,
         "admin_dashboard_stats",

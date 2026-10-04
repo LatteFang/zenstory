@@ -79,6 +79,7 @@ class StageExecutor:
         chapter_ids: list[int],
         checkpoint_manager: Any,
         correlation_id: str | None = None,
+        job_id: int | None = None,
     ):
         """
         初始化阶段执行器
@@ -93,6 +94,7 @@ class StageExecutor:
         self.chapter_ids = chapter_ids
         self.checkpoint_manager = checkpoint_manager
         self.correlation_id = correlation_id
+        self.job_id = job_id
         self.logger = get_run_logger()
         self.publisher = ProgressPublisher(correlation_id, self.logger)
         # 所有阶段门控统一读取生效后的阶段集合（已应用依赖约束）
@@ -117,7 +119,7 @@ class StageExecutor:
 
             with get_prefect_db_session() as session:
                 svc = IngestionJobsService()
-                job = svc.get_latest_by_novel(session, self.novel_id)
+                job = self._resolve_job(session, svc)
                 if job:
                     svc.set_enabled_stages(session, job.id, snapshot)
                     session.commit()
@@ -160,6 +162,7 @@ class StageExecutor:
             novel_id=self.novel_id,
             chapter_ids=self.chapter_ids,
             correlation_id=self.correlation_id,  # 【修复】统一传递关联ID
+            job_id=self.job_id,
         )
 
         # 处理元信息提取结果
@@ -181,6 +184,12 @@ class StageExecutor:
             "failed_count": failed_count,
             "failed_chapters": stage1_result.get("failed_chapters", []),
             "failed_mention_chapters": stage1_result.get("failed_mention_chapters", []),
+            "completed_chapter_ids": stage1_result.get("completed_chapter_ids", []),
+            "failed_chapter_ids": stage1_result.get("failed_chapter_ids", []),
+            "completed_plot_chapter_ids": stage1_result.get("completed_plot_chapter_ids", []),
+            "failed_plot_chapter_ids": stage1_result.get("failed_plot_chapter_ids", []),
+            "completed_mention_chapter_ids": stage1_result.get("completed_mention_chapter_ids", []),
+            "failed_mention_chapter_ids": stage1_result.get("failed_mention_chapter_ids", []),
             "status": stage1_status,
         })
 
@@ -217,7 +226,9 @@ class StageExecutor:
                 "failed_mention_chapters": stage1_result.get("failed_mention_chapters", []),
                 "elapsed_ms": stage1_elapsed,
             },
-            processed_chapters=max(0, len(self.chapter_ids) - failed_count),
+            processed_chapters=stage1_result.get(
+                "processed_chapters", max(0, len(self.chapter_ids) - failed_count)
+            ),
             status="processing",
         )
 
@@ -510,19 +521,41 @@ class StageExecutor:
         stage2b_cp = self.checkpoint_manager.get_checkpoint("stage2b")
         stage2c_cp = self.checkpoint_manager.get_checkpoint("stage2c")
 
-        stage2a_needed = self.stages.story_flow_needed
-        stage2b_needed = self.stages.relationships
-        stage2c_needed = self.stages.characters
+        required_a = {
+            name
+            for name, enabled in (
+                ("synopsis", self.stages.synopsis),
+                ("stories", self.stages.stories),
+                ("storylines", self.stages.storylines),
+            )
+            if enabled
+        }
+        required_b = {"relationships"} if self.stages.relationships else set()
+        required_c = {"characters"} if self.stages.characters else set()
 
-        stage2a_done = (not stage2a_needed) or bool(
-            stage2a_cp and getattr(stage2a_cp, "stage_status", None) == "completed"
-        )
-        stage2b_done = (not stage2b_needed) or bool(
-            stage2b_cp and getattr(stage2b_cp, "stage_status", None) == "completed"
-        )
-        stage2c_done = (not stage2c_needed) or bool(
-            stage2c_cp and getattr(stage2c_cp, "stage_status", None) == "completed"
-        )
+        def _done(checkpoint: Any, required: set[str]) -> bool:
+            if not required:
+                return True
+            if not checkpoint or getattr(checkpoint, "stage_status", None) != "completed":
+                return False
+            data = _parse_cp_data(checkpoint)
+            if data.get("disabled") or data.get("skipped"):
+                return False
+            if data.get("status") not in (None, "completed"):
+                return False
+            if (
+                data.get("failed_stories")
+                or data.get("neo4j_failed_chapters")
+                or data.get("failed_characters")
+                or data.get("failed_count", 0) > 0
+            ):
+                return False
+            executed = set(data.get("executed_capabilities") or [])
+            return required.issubset(executed)
+
+        stage2a_done = _done(stage2a_cp, required_a)
+        stage2b_done = _done(stage2b_cp, required_b)
+        stage2c_done = _done(stage2c_cp, required_c)
 
         return stage2a_done, stage2b_done, stage2c_done
 
@@ -561,31 +594,57 @@ class StageExecutor:
         # 获取结果
         if story_future is not None:
             story_result = story_future.result()
+            story_result["_executed"] = True
+            story_result["executed_capabilities"] = [
+                name
+                for name in ("synopsis", "stories", "storylines")
+                if getattr(self.stages, name)
+            ]
             self.logger.info("[阶段2-剧情] 完成")
         else:
-            # 从 checkpoint 获取结果
-            stage2a_data = _parse_cp_data(self.checkpoint_manager.get_checkpoint("stage2a"))
-            story_result = {
-                "synopsis_generated": stage2a_data.get("synopsis_generated", False),
-                "stories_count": stage2a_data.get("stories_count", 0),
-                "storylines_count": stage2a_data.get("storylines_count", 0),
-                "failed_stories": stage2a_data.get("failed_stories", []),
-                "status": stage2a_data.get("status", "completed"),
-            }
+            if not self.stages.story_flow_needed:
+                story_result = {
+                    "status": "skipped",
+                    "_executed": False,
+                    "executed_capabilities": [],
+                }
+            else:
+                # 从 checkpoint 获取结果
+                stage2a_data = _parse_cp_data(self.checkpoint_manager.get_checkpoint("stage2a"))
+                story_result = {
+                    "synopsis_generated": stage2a_data.get("synopsis_generated", False),
+                    "stories_count": stage2a_data.get("stories_count", 0),
+                    "storylines_count": stage2a_data.get("storylines_count", 0),
+                    "failed_stories": stage2a_data.get("failed_stories", []),
+                    "status": stage2a_data.get("status", "completed"),
+                    "executed_capabilities": stage2a_data.get("executed_capabilities", []),
+                    "_executed": False,
+                }
 
         if character_entity_future is not None:
             character_entity_result = character_entity_future.result()
+            character_entity_result["_executed"] = True
+            character_entity_result["executed_capabilities"] = ["characters"]
             self.logger.info("[阶段2-角色] 完成")
         else:
-            # 从 checkpoint 获取结果
-            stage2c_data = _parse_cp_data(self.checkpoint_manager.get_checkpoint("stage2c"))
-            character_entity_result = {
-                "created_count": stage2c_data.get("created_count", 0),
-                "updated_count": stage2c_data.get("updated_count", 0),
-                "failed_count": stage2c_data.get("failed_count", 0),
-                "failed_characters": stage2c_data.get("failed_characters", []),
-                "status": stage2c_data.get("status", "completed"),
-            }
+            if not self.stages.characters:
+                character_entity_result = {
+                    "status": "skipped",
+                    "_executed": False,
+                    "executed_capabilities": [],
+                }
+            else:
+                # 从 checkpoint 获取结果
+                stage2c_data = _parse_cp_data(self.checkpoint_manager.get_checkpoint("stage2c"))
+                character_entity_result = {
+                    "created_count": stage2c_data.get("created_count", 0),
+                    "updated_count": stage2c_data.get("updated_count", 0),
+                    "failed_count": stage2c_data.get("failed_count", 0),
+                    "failed_characters": stage2c_data.get("failed_characters", []),
+                    "status": stage2c_data.get("status", "completed"),
+                    "executed_capabilities": stage2c_data.get("executed_capabilities", []),
+                    "_executed": False,
+                }
 
         self.logger.info("[阶段2] 剧情聚合和角色实体构建完成，开始人物关系提取...")
 
@@ -603,10 +662,20 @@ class StageExecutor:
         """
         # 使用本地定义的任务包装器
 
+        if not self.stages.relationships:
+            self.logger.info("[阶段2-关系] 人物关系功能未启用，跳过执行")
+            return {
+                "status": "skipped",
+                "_executed": False,
+                "executed_capabilities": [],
+            }
+
         if not stage2b_done:
             self.logger.info("[阶段2-关系] 子流未完成，执行 relationship_flow")
             relationship_future = _task_run_relationship.submit(self.novel_id, self.chapter_ids, self.correlation_id)  # 【修复】传递关联ID
             relationship_result = relationship_future.result()
+            relationship_result["_executed"] = True
+            relationship_result["executed_capabilities"] = ["relationships"]
             self.logger.info("[阶段2-关系] 完成")
         else:
             self.logger.info("[阶段2-关系] 子流已完成，跳过执行")
@@ -617,6 +686,8 @@ class StageExecutor:
                 "neo4j_persisted": stage2b_data.get("neo4j_persisted", False),
                 "neo4j_failed_chapters": stage2b_data.get("neo4j_failed_chapters", []),
                 "status": stage2b_data.get("status", "completed"),
+                "executed_capabilities": stage2b_data.get("executed_capabilities", []),
+                "_executed": False,
             }
 
         return relationship_result
@@ -635,41 +706,96 @@ class StageExecutor:
             relationship_result: 关系结果
             character_entity_result: 角色实体结果
         """
-        # 更新 stage2a
-        self.checkpoint_manager.mark_stage_completed("stage2a", {
+        story_payload = {
             "synopsis_generated": story_result.get("synopsis_generated", False),
             "stories_count": story_result.get("stories_count", 0),
             "storylines_count": story_result.get("storylines_count", 0),
             "failed_stories": story_result.get("failed_stories", []),
             "status": story_result.get("status", "completed"),
-        })
-
-        # 更新 stage2b
-        self.checkpoint_manager.mark_stage_completed("stage2b", {
+            "executed_capabilities": story_result.get("executed_capabilities", []),
+        }
+        relationship_payload = {
             "relationships_count": relationship_result.get("relationships_count", 0),
             "neo4j_persisted": relationship_result.get("neo4j_persisted", False),
             "neo4j_failed_chapters": relationship_result.get("neo4j_failed_chapters", []),
             "status": relationship_result.get("status", "completed"),
-        })
-
-        # 更新 stage2c
-        self.checkpoint_manager.mark_stage_completed("stage2c", {
+            "executed_capabilities": relationship_result.get("executed_capabilities", []),
+        }
+        character_payload = {
             "characters_built": True,
             "created_count": character_entity_result.get("created_count", 0),
             "updated_count": character_entity_result.get("updated_count", 0),
             "failed_count": character_entity_result.get("failed_count", 0),
             "failed_characters": character_entity_result.get("failed_characters", []),
             "status": character_entity_result.get("status", "completed"),
-        })
+            "executed_capabilities": character_entity_result.get("executed_capabilities", []),
+        }
+        story_complete = (
+            not self.stages.story_flow_needed
+            or (
+                story_payload["status"] == "completed"
+                and not story_payload["failed_stories"]
+            )
+        )
+        relationship_complete = (
+            not self.stages.relationships
+            or (
+                relationship_payload["status"] == "completed"
+                and not relationship_payload["neo4j_failed_chapters"]
+            )
+        )
+        character_complete = (
+            not self.stages.characters
+            or (
+                character_payload["status"] == "completed"
+                and character_payload["failed_count"] == 0
+                and not character_payload["failed_characters"]
+            )
+        )
+
+        # Disabled or already-completed stages are read-only here. This avoids
+        # manufacturing a completed capability that did not execute in this run.
+        if story_result.get("_executed", True):
+            if story_complete:
+                self.checkpoint_manager.mark_stage_completed("stage2a", story_payload)
+            else:
+                self.checkpoint_manager.update_checkpoint(
+                    "stage2a", status="failed", data=story_payload
+                )
+
+        if relationship_result.get("_executed", True):
+            if relationship_complete:
+                self.checkpoint_manager.mark_stage_completed(
+                    "stage2b", relationship_payload
+                )
+            else:
+                self.checkpoint_manager.update_checkpoint(
+                    "stage2b", status="failed", data=relationship_payload
+                )
+
+        if character_entity_result.get("_executed", True):
+            if character_complete:
+                self.checkpoint_manager.mark_stage_completed(
+                    "stage2c", character_payload
+                )
+            else:
+                self.checkpoint_manager.update_checkpoint(
+                    "stage2c", status="failed", data=character_payload
+                )
 
         # 汇总到 stage2（用于整体状态追踪）
-        self.checkpoint_manager.mark_stage_completed("stage2", {
+        executed_capabilities = sorted(
+            set(story_result.get("executed_capabilities", []))
+            | set(relationship_result.get("executed_capabilities", []))
+            | set(character_entity_result.get("executed_capabilities", []))
+        )
+        stage2_payload = {
             "synopsis_generated": story_result.get("synopsis_generated", False),
             "stories_count": story_result.get("stories_count", 0),
             "storylines_count": story_result.get("storylines_count", 0),
             "relationships_count": relationship_result.get("relationships_count", 0),
             "neo4j_persisted": relationship_result.get("neo4j_persisted", False),
-            "characters_built": True,
+            "characters_built": "characters" in executed_capabilities,
             "characters_created": character_entity_result.get("created_count", 0),
             "characters_updated": character_entity_result.get("updated_count", 0),
             "failed_count": len(story_result.get("failed_stories", []))
@@ -680,11 +806,18 @@ class StageExecutor:
             "failed_chapters": [],
             "failed_mention_chapters": [],
             "failed_characters": character_entity_result.get("failed_characters", []),
-        })
+            "executed_capabilities": executed_capabilities,
+        }
+        if story_complete and relationship_complete and character_complete:
+            self.checkpoint_manager.mark_stage_completed("stage2", stage2_payload)
+        else:
+            self.checkpoint_manager.update_checkpoint(
+                "stage2", status="failed", data=stage2_payload
+            )
 
     def _get_job_id(self) -> int | None:
         """
-        获取最新的 IngestionJob ID
+        获取当前任务ID；只有旧调用缺少ID时才兼容查询最新任务
 
         Returns:
             job_id 或 None
@@ -692,7 +825,8 @@ class StageExecutor:
         try:
             from services.material.ingestion_jobs_service import IngestionJobsService
             with get_prefect_db_session() as session:
-                job = IngestionJobsService().get_latest_by_novel(session, self.novel_id)
+                svc = IngestionJobsService()
+                job = self._resolve_job(session, svc)
                 return job.id if job else None
         except Exception as e:
             self.logger.warning(f"[Job] 获取 Job ID 失败: {e}")
@@ -713,7 +847,7 @@ class StageExecutor:
 
             with get_prefect_db_session() as session:
                 svc = IngestionJobsService()
-                job = svc.get_latest_by_novel(session, self.novel_id)
+                job = self._resolve_job(session, svc)
                 if not job:
                     return
                 svc.update_processed(
@@ -762,12 +896,14 @@ class StageExecutor:
             from services.material.ingestion_jobs_service import IngestionJobsService
             with get_prefect_db_session() as session:
                 svc = IngestionJobsService()
-                job = svc.get_latest_by_novel(session, self.novel_id)
+                job = self._resolve_job(session, svc)
                 if job:
                     svc.update_processed(
                         session,
                         job.id,
-                        processed_chapters=len(self.chapter_ids),
+                        processed_chapters=(stage1_result or {}).get(
+                            "processed_chapters", len(self.chapter_ids)
+                        ),
                         status=final_status,
                         stage="completed",
                         stage_status=final_status,
@@ -785,6 +921,26 @@ class StageExecutor:
                     session.commit()
         except Exception as e:
             self.logger.warning(f"[Job] 更新 Job 状态失败: {e}")
+
+    def _resolve_job(self, session: Any, svc: Any) -> Any | None:
+        """Resolve the exact job when supplied; legacy callers get one bounded fallback."""
+        if self.job_id is not None:
+            from models.material_models import IngestionJob
+
+            job = session.get(IngestionJob, self.job_id)
+            if job is None or job.novel_id != self.novel_id:
+                raise ValueError(
+                    f"job_id={self.job_id} 不属于 novel_id={self.novel_id}"
+                )
+            return job
+        self.logger.warning(
+            "[Job] legacy V3 caller omitted job_id; resolving latest once for novel_id=%s",
+            self.novel_id,
+        )
+        job = svc.get_latest_by_novel(session, self.novel_id)
+        if job is not None:
+            self.job_id = job.id
+        return job
 
     def _save_final_checkpoint(
         self,
