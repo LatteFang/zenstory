@@ -2,7 +2,7 @@
 # 部署 Prefect 调度服务器
 
 [build]
-builder = "dockerfile"
+builder = "DOCKERFILE"
 # Repo-root-relative: the Dockerfile COPYs apps/server/... so the build context is the
 # repo root (set Root Directory empty in Railway), and this path is resolved from there.
 dockerfilePath = "apps/server/docker/Dockerfile.prefect-server"
@@ -10,5 +10,5 @@ dockerfilePath = "apps/server/docker/Dockerfile.prefect-server"
 [deploy]
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
-restartPolicyType = "on_failure"
+restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

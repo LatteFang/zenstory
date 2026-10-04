@@ -1,4 +1,7 @@
+import tomllib
 from pathlib import Path
+
+import pytest
 
 SERVER_ROOT = Path(__file__).resolve().parents[1]
 PREFECT_VERSION = "3.6.28"
@@ -40,3 +43,17 @@ def test_prefect_worker_fails_when_server_or_deployment_registration_fails():
     assert 'echo "ERROR: Prefect Server did not become ready within 150 seconds."' in start_script
     assert 'prefect deploy --all\n' in start_script
     assert 'prefect deploy --all ||' not in start_script
+
+
+@pytest.mark.parametrize("service", ["server", "worker"])
+def test_prefect_railway_configuration_uses_canonical_schema_values(service):
+    # Railway's config-as-code schema uses case-sensitive enum strings.
+    # https://railway.com/railway.schema.json
+    config = tomllib.loads(
+        (SERVER_ROOT / "railway" / f"prefect-{service}.toml").read_text()
+    )
+    assert config["build"]["builder"] == "DOCKERFILE"
+    assert config["deploy"]["restartPolicyType"] == "ON_FAILURE"
+    dockerfile = config["build"]["dockerfilePath"]
+    assert dockerfile == f"apps/server/docker/Dockerfile.prefect-{service}"
+    assert (SERVER_ROOT.parents[1] / dockerfile).is_file()
