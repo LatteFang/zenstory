@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -33,6 +34,253 @@ class _FakeSessionCtx:
 
 @pytest.mark.integration
 class TestNovelIngestionResume:
+    def test_full_flow_resumes_persisted_owned_chapters_without_original_file(
+        self, monkeypatch, db_session, tmp_path
+    ):
+        from models.material_models import Chapter, IngestionJob, Novel
+
+        novel = Novel(user_id="owner-1", title="durable novel")
+        db_session.add(novel)
+        db_session.flush()
+        chapter_1 = Chapter(
+            novel_id=novel.id,
+            chapter_number=1,
+            title="chapter 1",
+            original_content="durable content 1",
+        )
+        chapter_2 = Chapter(
+            novel_id=novel.id,
+            chapter_number=2,
+            title="chapter 2",
+            original_content="durable content 2",
+        )
+        db_session.add(chapter_1)
+        db_session.add(chapter_2)
+        db_session.flush()
+        job = IngestionJob(
+            novel_id=novel.id,
+            source_path=str(tmp_path / "gone-after-redeploy.txt"),
+            status="failed",
+            total_chapters=2,
+        )
+        db_session.add(job)
+        db_session.commit()
+
+        monkeypatch.setattr(
+            flow_mod, "get_prefect_db_session", lambda: _FakeSessionCtx(db_session)
+        )
+        monkeypatch.setattr(flow_mod, "get_run_logger", MagicMock(return_value=MagicMock()))
+        monkeypatch.setattr(flow_mod, "ProgressPublisher", MagicMock())
+        monkeypatch.setattr(
+            flow_mod,
+            "_ensure_file_local",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                AssertionError("durable chapter resume must not access the original file")
+            ),
+        )
+        checkpoint_manager = MagicMock()
+        monkeypatch.setattr(
+            flow_mod,
+            "create_checkpoint_manager",
+            lambda _novel_id, _job_id=None: checkpoint_manager,
+        )
+
+        class FakeExecutor:
+            def __init__(self, **kwargs):
+                assert kwargs["novel_id"] == novel.id
+                assert kwargs["chapter_ids"] == [chapter_1.id, chapter_2.id]
+                assert kwargs["job_id"] == job.id
+
+            def record_enabled_stages(self):
+                return {}
+
+            def execute_stage1(self):
+                return {"summaries_count": 2}
+
+            def execute_stage2(self, stage1_result, _flow_start):
+                assert stage1_result == {"summaries_count": 2}
+                return {"novel_id": novel.id, "status": "completed", "elapsed_ms": 1}
+
+        monkeypatch.setattr(flow_mod, "StageExecutor", FakeExecutor)
+
+        result = flow_mod.novel_ingestion_v3.fn(
+            file_path=job.source_path,
+            user_id="owner-1",
+            novel_id=novel.id,
+            job_id=job.id,
+            correlation_id="retry-run",
+        )
+
+        assert result == {
+            "novel_id": novel.id,
+            "status": "completed",
+            "elapsed_ms": 1,
+        }
+
+    def test_persisted_resume_preserves_stage_failure_without_file_cleanup_warning(
+        self, monkeypatch, db_session, tmp_path
+    ):
+        from models.material_models import Chapter, IngestionJob, Novel
+
+        novel = Novel(user_id="owner-1", title="durable novel")
+        db_session.add(novel)
+        db_session.flush()
+        chapter = Chapter(
+            novel_id=novel.id,
+            chapter_number=1,
+            title="chapter 1",
+            original_content="durable content",
+        )
+        db_session.add(chapter)
+        db_session.flush()
+        job = IngestionJob(
+            novel_id=novel.id,
+            source_path=str(tmp_path / "gone-after-redeploy.txt"),
+            status="failed",
+        )
+        db_session.add(job)
+        db_session.commit()
+
+        logger = MagicMock()
+        monkeypatch.setattr(
+            flow_mod, "get_prefect_db_session", lambda: _FakeSessionCtx(db_session)
+        )
+        monkeypatch.setattr(flow_mod, "get_run_logger", MagicMock(return_value=logger))
+        monkeypatch.setattr(flow_mod, "ProgressPublisher", MagicMock())
+        monkeypatch.setattr(
+            flow_mod,
+            "_ensure_file_local",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                AssertionError("durable chapter resume must not access the original file")
+            ),
+        )
+        monkeypatch.setattr(flow_mod, "create_checkpoint_manager", MagicMock())
+        monkeypatch.setattr(flow_mod, "_mark_job_as_failed", MagicMock())
+
+        class FailingExecutor:
+            def __init__(self, **_kwargs):
+                pass
+
+            def record_enabled_stages(self):
+                return {}
+
+            def execute_stage1(self):
+                raise RuntimeError("original stage failure")
+
+        monkeypatch.setattr(flow_mod, "StageExecutor", FailingExecutor)
+
+        with pytest.raises(RuntimeError, match="original stage failure"):
+            flow_mod.novel_ingestion_v3.fn(
+                file_path=job.source_path,
+                user_id="owner-1",
+                novel_id=novel.id,
+                job_id=job.id,
+            )
+
+        assert not any(
+            "清理临时文件时出错" in str(call)
+            for call in logger.warning.call_args_list
+        )
+
+    @pytest.mark.parametrize(
+        ("caller_user_id", "deleted_at", "error"),
+        [
+            ("other-user", None, "不属于"),
+            ("owner-1", datetime(2026, 10, 4), "已删除"),
+        ],
+    )
+    def test_persisted_resume_rejects_wrong_actor_or_deleted_novel(
+        self, monkeypatch, db_session, tmp_path, caller_user_id, deleted_at, error
+    ):
+        from models.material_models import Chapter, IngestionJob, Novel
+
+        novel = Novel(
+            user_id="owner-1",
+            title="protected novel",
+            deleted_at=deleted_at,
+        )
+        db_session.add(novel)
+        db_session.flush()
+        db_session.add(
+            Chapter(
+                novel_id=novel.id,
+                chapter_number=1,
+                title="chapter 1",
+                original_content="durable content",
+            )
+        )
+        job = IngestionJob(
+            novel_id=novel.id,
+            source_path=str(tmp_path / "gone.txt"),
+            status="failed",
+        )
+        db_session.add(job)
+        db_session.commit()
+
+        monkeypatch.setattr(
+            flow_mod, "get_prefect_db_session", lambda: _FakeSessionCtx(db_session)
+        )
+        monkeypatch.setattr(flow_mod, "get_run_logger", MagicMock(return_value=MagicMock()))
+        monkeypatch.setattr(flow_mod, "ProgressPublisher", MagicMock())
+        monkeypatch.setattr(
+            flow_mod,
+            "_ensure_file_local",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                AssertionError("identity rejection must happen before file access")
+            ),
+        )
+
+        with pytest.raises(ValueError, match=error):
+            flow_mod.novel_ingestion_v3.fn(
+                file_path=job.source_path,
+                user_id=caller_user_id,
+                novel_id=novel.id,
+                job_id=job.id,
+            )
+
+    @pytest.mark.parametrize("persisted_contents", [[], [None]])
+    def test_empty_or_content_missing_chapters_still_require_original_file(
+        self, monkeypatch, db_session, tmp_path, persisted_contents
+    ):
+        from models.material_models import Chapter, IngestionJob, Novel
+
+        missing_path = tmp_path / "gone-after-redeploy.txt"
+        novel = Novel(user_id="owner-1", title="incomplete novel")
+        db_session.add(novel)
+        db_session.flush()
+        for index, content in enumerate(persisted_contents, start=1):
+            db_session.add(
+                Chapter(
+                    novel_id=novel.id,
+                    chapter_number=index,
+                    title=f"chapter {index}",
+                    original_content=content,
+                )
+            )
+        job = IngestionJob(
+            novel_id=novel.id,
+            source_path=str(missing_path),
+            status="failed",
+        )
+        db_session.add(job)
+        db_session.commit()
+
+        monkeypatch.setattr(
+            flow_mod, "get_prefect_db_session", lambda: _FakeSessionCtx(db_session)
+        )
+        monkeypatch.setattr(flow_mod, "get_run_logger", MagicMock(return_value=MagicMock()))
+        monkeypatch.setattr(flow_mod, "ProgressPublisher", MagicMock())
+        monkeypatch.delenv("API_SERVER_INTERNAL_URL", raising=False)
+        monkeypatch.delenv("MATERIAL_INTERNAL_TOKEN", raising=False)
+
+        with pytest.raises(FileNotFoundError, match="API_SERVER_INTERNAL_URL"):
+            flow_mod.novel_ingestion_v3.fn(
+                file_path=job.source_path,
+                user_id="owner-1",
+                novel_id=novel.id,
+                job_id=job.id,
+            )
+
     def test_check_and_resume_returns_incomplete_when_no_existing_novel(self, monkeypatch, fake_logger):
         session = _FakeSession()
         monkeypatch.setattr(flow_mod, "get_prefect_db_session", lambda: _FakeSessionCtx(session))

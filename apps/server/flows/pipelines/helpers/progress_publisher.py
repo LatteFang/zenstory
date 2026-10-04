@@ -167,15 +167,15 @@ class ProgressPublisher:
         # 构建 novel_summary
         novel_summary = self._build_novel_summary(novel_id, len(chapter_ids))
 
-        # 发布完成消息
-        self.publish(
-            "completed",
-            status="completed",
-            progress=100,
-            message="小说解析完成！",
-            novel_summary=novel_summary,
-            **result
-        )
+        # "completed" 表示流程已终止；具体完成状态以最终结果为准。
+        completion_payload = {
+            **result,
+            "status": result.get("status") or "completed",
+            "progress": 100,
+            "message": "小说解析完成！",
+            "novel_summary": novel_summary,
+        }
+        self.publish("completed", **completion_payload)
 
     def _build_novel_summary(
         self,
