@@ -248,7 +248,7 @@ test.describe('Project Management', () => {
 
     await loginPage.navigateToLogin();
     await loginPage.loginAndWaitForDashboard(
-      process.env.E2E_TEST_EMAIL || 'e2e-test@zenstory.local',
+      process.env.E2E_TEST_EMAIL || 'e2e-test@example.com',
       process.env.E2E_TEST_PASSWORD || 'E2eTestPassword123!'
     );
   });
@@ -450,7 +450,7 @@ test.describe('Feature Name', () => {
     // Login
     await loginPage.navigateToLogin();
     await loginPage.loginAndWaitForDashboard(
-      process.env.E2E_TEST_EMAIL || 'e2e-test@zenstory.local',
+      process.env.E2E_TEST_EMAIL || 'e2e-test@example.com',
       process.env.E2E_TEST_PASSWORD || 'E2eTestPassword123!'
     );
   });
@@ -490,11 +490,11 @@ import { TEST_USERS, getPoolUser, getWorkerUser } from './config/test-users';
 
 // Standard test user
 const standardUser = TEST_USERS.standard;
-// => { email: 'e2e-test@zenstory.local', password: 'E2eTestPassword123!', username: 'e2e-test-user' }
+// => { email: 'e2e-test@example.com', password: 'E2eTestPassword123!', username: 'e2e-test-user' }
 
 // Admin test user
 const adminUser = TEST_USERS.admin;
-// => { email: 'test-admin@zenstory.test', password: 'TestAdmin123!', username: 'test-admin' }
+// => { email: 'test-admin@example.com', password: 'TestAdmin123!', username: 'test-admin' }
 
 // Pool users for parallel test isolation
 const poolUser = getPoolUser(0); // Index 0-4 available
@@ -509,7 +509,7 @@ Configure tests via environment variables:
 
 ```bash
 # Test credentials
-export E2E_TEST_EMAIL=e2e-test@zenstory.local
+export E2E_TEST_EMAIL=e2e-test@example.com
 export E2E_TEST_PASSWORD=E2eTestPassword123!
 export E2E_TEST_USERNAME=e2e_test_user
 
@@ -1055,7 +1055,7 @@ CI tests use specific environment variables:
 ```yaml
 env:
   CI: true
-  E2E_TEST_EMAIL: e2e-test@zenstory.local
+  E2E_TEST_EMAIL: e2e-test@example.com
   E2E_TEST_PASSWORD: E2eTestPassword123!
   E2E_TEST_USERNAME: e2e_test_user
 ```

@@ -235,26 +235,24 @@ export default function OnboardingPersonaPage() {
     try {
       const result = await onboardingPersonaApi.save(payload);
       const profile = result.profile;
-      if (profile) {
-        savePersonaOnboardingData(user.id, {
-          selected_personas: profile.selected_personas,
-          selected_goals: profile.selected_goals,
-          experience_level: profile.experience_level,
-          skipped: profile.skipped,
-        });
-      } else {
-        savePersonaOnboardingData(user.id, payload);
+      if (!profile) {
+        throw new Error("Persona onboarding save returned no profile");
       }
-    } catch {
-      // Graceful fallback: keep local cache so onboarding flow is not blocked by network issues.
-      savePersonaOnboardingData(user.id, payload);
-      toast.error(t("common:errors.network", "网络异常，已为你保存本地画像"));
-    } finally {
-      setSaving(false);
+
+      savePersonaOnboardingData(user.id, {
+        selected_personas: profile.selected_personas,
+        selected_goals: profile.selected_goals,
+        experience_level: profile.experience_level,
+        skipped: profile.skipped,
+      });
       navigate(nextPath, {
         replace: true,
         state: nextPath === "/dashboard" ? { startDashboardCoachmark: true } : undefined,
       });
+    } catch {
+      toast.error(t("common:errors.network", "网络异常，请重试"));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -382,6 +380,7 @@ export default function OnboardingPersonaPage() {
                       key={goal.id}
                       type="button"
                       onClick={() => toggleGoal(goal.id)}
+                      aria-pressed={active}
                       className={cn(
                         "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs sm:text-sm transition-colors",
                         active
@@ -409,7 +408,11 @@ export default function OnboardingPersonaPage() {
                   )}
                 </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div
+                className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+                role="radiogroup"
+                aria-label={t("onboarding:experience.title", "你的写作经验")}
+              >
                 {EXPERIENCE_LEVELS.map((level) => {
                   const active = experienceLevel === level;
                   return (
@@ -417,6 +420,8 @@ export default function OnboardingPersonaPage() {
                       key={level}
                       type="button"
                       onClick={() => setExperienceLevel(level)}
+                      role="radio"
+                      aria-checked={active}
                       className={cn(
                         "rounded-xl border px-3 py-3 text-left transition-colors",
                         active

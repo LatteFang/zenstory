@@ -6,8 +6,11 @@ import { ApiError } from '../../lib/apiClient'
 const mockNavigate = vi.fn()
 const mockDeleteProject = vi.fn()
 const mockToastError = vi.fn()
+const mockRefreshProjects = vi.fn()
 let isMobile = false
 let isTablet = false
+let mockLoading = false
+let mockError: string | null = null
 
 let mockProjects = [
   {
@@ -57,6 +60,8 @@ vi.mock('react-i18next', () => ({
           'common:delete': 'Delete',
           'common:cancel': 'Cancel',
           'projects.filterAll': 'All',
+          'common.loading': 'Loading...',
+          'common.retry': 'Retry',
         } as Record<string, string>
       )[key] ?? key,
   }),
@@ -65,6 +70,9 @@ vi.mock('react-i18next', () => ({
 vi.mock('../../contexts/ProjectContext', () => ({
   useProject: () => ({
     projects: mockProjects,
+    loading: mockLoading,
+    error: mockError,
+    refreshProjects: mockRefreshProjects,
     deleteProject: mockDeleteProject,
   }),
 }))
@@ -160,6 +168,8 @@ describe('DashboardProjects', () => {
     vi.clearAllMocks()
     isMobile = false
     isTablet = false
+    mockLoading = false
+    mockError = null
     mockProjects = [
       {
         id: 'project-1',
@@ -177,6 +187,30 @@ describe('DashboardProjects', () => {
       },
     ]
     mockDeleteProject.mockResolvedValue(undefined)
+    mockRefreshProjects.mockResolvedValue(undefined)
+  })
+
+  it('renders loading, retryable error, and successful empty as distinct states', async () => {
+    mockProjects = []
+    mockLoading = true
+    const { rerender } = render(<DashboardProjects />)
+
+    expect(screen.getByTestId('projects-loading')).toBeInTheDocument()
+    expect(screen.queryByText('No projects yet')).not.toBeInTheDocument()
+
+    mockLoading = false
+    mockError = 'Could not load projects'
+    rerender(<DashboardProjects />)
+    expect(screen.getByRole('alert')).toHaveTextContent('Could not load projects')
+    expect(screen.queryByText('No projects yet')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await waitFor(() => expect(mockRefreshProjects).toHaveBeenCalledTimes(1))
+
+    mockError = null
+    rerender(<DashboardProjects />)
+    expect(screen.getByText('No projects yet')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('filters projects by search and type and navigates to the selected project', () => {

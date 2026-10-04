@@ -41,6 +41,20 @@ TestSessionLocal = sessionmaker(
 )
 
 
+@pytest.fixture(scope="session", autouse=True)
+def initialized_test_schema():
+    # Prompt-only tests read the same isolated primary database as API fixtures.
+    SQLModel.metadata.create_all(test_engine)
+
+
+@pytest.fixture(autouse=True)
+def isolated_runtime_prompt_source(monkeypatch):
+    from agent import prompts
+
+    monkeypatch.setattr(prompts, "sync_engine", test_engine)
+    monkeypatch.setattr(prompts, "_db_config_cache", None)
+
+
 @pytest.fixture(scope="function")
 def db_session():
     """

@@ -7,7 +7,7 @@
  * the chips, and at most 3 skills can be selected.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup, within } from '@testing-library/react'
+import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MessageInput } from '../MessageInput'
 import { SkillsPane } from '../sidebar/SkillsPane'
@@ -106,6 +106,21 @@ describe('Skill selection flow', () => {
     // Already selected → the pane button reflects the state and cannot add a duplicate
     expect(selectButtonFor('节奏控制')).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getAllByTestId('chat-selected-skill-chip')).toHaveLength(1)
+  })
+
+  it('opens an accessible modal that closes with Escape and restores focus', async () => {
+    const user = userEvent.setup({ delay: null })
+    renderFlow()
+    const skillName = await screen.findByText('节奏控制')
+    const row = skillName.closest('[class*="cursor-pointer"]') as HTMLElement
+    row.tabIndex = 0
+    row.focus()
+    await user.click(skillName)
+
+    expect(screen.getByRole('dialog', { name: /节奏控制/ })).toBeInTheDocument()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(row).toHaveFocus()
   })
 
   it('sends selected_skill_ids with the message and clears the chips', async () => {

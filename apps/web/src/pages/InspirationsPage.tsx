@@ -8,7 +8,7 @@ import { CheckCircle, Clock, Copy, X } from "../components/icons";
 
 export default function InspirationsPage() {
   const { t } = useTranslation("inspirations");
-  const { items, total, isLoading, isFetching } = useMyInspirationSubmissions({ pageSize: 5 });
+  const { items, total, isLoading, isFetching, error, refetch } = useMyInspirationSubmissions({ pageSize: 5 });
   const isSubmissionsLoading = isLoading || (isFetching && items.length === 0);
 
   const statusClassMap: Record<string, string> = {
@@ -46,6 +46,13 @@ export default function InspirationsPage() {
 
         {isSubmissionsLoading ? (
           <p className="text-sm text-[hsl(var(--text-secondary))]">{t("mySubmissions.loading")}</p>
+        ) : error ? (
+          <div className="rounded-xl border border-[hsl(var(--error)/0.3)] bg-[hsl(var(--error)/0.08)] px-4 py-4 text-sm text-[hsl(var(--text-secondary))]">
+            <p>{error.message || t("mySubmissions.loadError")}</p>
+            <button className="btn-secondary mt-3 h-9 px-3" onClick={() => void refetch()}>
+              {t("retry", { defaultValue: "Retry" })}
+            </button>
+          </div>
         ) : items.length === 0 ? (
           <p className="rounded-xl border border-[hsl(var(--separator-color))] bg-[hsl(var(--bg-tertiary)/0.35)] px-4 py-6 text-sm text-[hsl(var(--text-secondary))]">
             {t("mySubmissions.empty")}

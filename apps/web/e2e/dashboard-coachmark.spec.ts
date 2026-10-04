@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const AUTHENTICATED_ROUTE_PATTERN = /\/(project|dashboard|onboarding\/persona)/;
-const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'e2e-test@zenstory.local';
+const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'e2e-test@example.com';
 const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD || 'E2eTestPassword123!';
 const PERSONA_KEY_PREFIX = 'zenstory_onboarding_persona_v1';
 const TOUR_KEY_PREFIX = 'zenstory:tours:v1';

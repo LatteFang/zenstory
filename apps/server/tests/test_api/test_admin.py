@@ -519,7 +519,8 @@ async def test_update_existing_prompt(client: AsyncClient, db_session: Session):
         headers=auth_headers(token),
         json={
             "role_definition": "Updated role",
-            "capabilities": "Updated capabilities"
+            "capabilities": "Updated capabilities",
+            "expected_version": 1,
         }
     )
 

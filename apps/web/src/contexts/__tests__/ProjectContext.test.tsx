@@ -96,6 +96,46 @@ describe('ProjectContext', () => {
     },
   ]
 
+  it('keeps account B projects when account A resolves after the identity switch', async () => {
+    let resolveA!: (projects: Project[]) => void
+    let resolveB!: (projects: Project[]) => void
+    vi.mocked(projectApi.getAll)
+      .mockReturnValueOnce(new Promise(resolve => { resolveA = resolve }))
+      .mockReturnValueOnce(new Promise(resolve => { resolveB = resolve }))
+
+    vi.mocked(useAuth).mockReturnValue({
+      user: mockUser, loading: false,
+      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshToken: vi.fn(),
+      handleOAuthCallback: vi.fn(), verifyEmail: vi.fn(), resendVerification: vi.fn(),
+      googleLogin: vi.fn(), appleLogin: vi.fn(),
+    })
+    const wrapper = ({ children }: { children: ReactNode }) => <ProjectProvider>{children}</ProjectProvider>
+    const { result, rerender } = renderHook(() => useProject(), { wrapper })
+
+    const userB = { ...mockUser, id: 'user-b', username: 'user-b' }
+    vi.mocked(useAuth).mockReturnValue({
+      user: userB, loading: false,
+      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshToken: vi.fn(),
+      handleOAuthCallback: vi.fn(), verifyEmail: vi.fn(), resendVerification: vi.fn(),
+      googleLogin: vi.fn(), appleLogin: vi.fn(),
+    })
+    rerender()
+
+    expect(result.current.projects).toEqual([])
+    expect(result.current.loading).toBe(true)
+
+    resolveB([{ ...mockProjects[1]!, id: 'project-b', name: 'Project B' }])
+    await waitFor(() => expect(result.current.projects.map(project => project.id)).toEqual(['project-b']))
+
+    resolveA([{ ...mockProjects[0]!, id: 'project-a', name: 'Project A' }])
+    await act(async () => Promise.resolve())
+
+    expect(result.current.projects.map(project => project.id)).toEqual(['project-b'])
+    expect(result.current.currentProject?.id).toBe('project-b')
+    expect(result.current.error).toBeNull()
+    expect(result.current.loading).toBe(false)
+  })
+
   let localStorageSpy: {
     getItem: ReturnType<typeof vi.spyOn>
     setItem: ReturnType<typeof vi.spyOn>

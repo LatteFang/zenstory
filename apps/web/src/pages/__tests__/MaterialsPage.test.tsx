@@ -266,6 +266,30 @@ describe("MaterialsPage", () => {
     );
   });
 
+  it("shows a retryable error when the materials list fails", async () => {
+    mockList.mockRejectedValueOnce(new Error("materials offline")).mockResolvedValueOnce([]);
+    render(<MaterialsPage />, { wrapper: createWrapper() });
+
+    expect(await screen.findByText("素材列表加载失败，请重试。")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
+  });
+
+  it("blocks every upload modal close path while upload is pending", async () => {
+    let resolveUpload!: () => void;
+    mockUpload.mockReturnValueOnce(new Promise<void>((resolve) => { resolveUpload = resolve; }));
+    render(<MaterialsPage />, { wrapper: createWrapper() });
+    fireEvent.click(await screen.findByRole("button", { name: "materials:upload" }));
+    fireEvent.change(document.querySelector('input[type="file"]') as HTMLInputElement, {
+      target: { files: [new File(["valid"], "pending.txt", { type: "text/plain" })] },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "materials:uploadModal.upload" }));
+    expect(screen.getByRole("button", { name: "common:cancel" })).toBeDisabled();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.getByText("pending.txt")).toBeInTheDocument();
+    resolveUpload();
+  });
+
   it("supports keyboard navigation for opening material detail cards", async () => {
     mockList.mockResolvedValueOnce([
       {

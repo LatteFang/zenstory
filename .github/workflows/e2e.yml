@@ -184,7 +184,7 @@ jobs:
       env:
         CI: true
         PLAYWRIGHT_EXTERNAL_BACKEND: "1"
-        E2E_TEST_EMAIL: e2e-test@zenstory.local
+        E2E_TEST_EMAIL: e2e-test@example.com
         E2E_TEST_PASSWORD: E2eTestPassword123!
         E2E_TEST_USERNAME: e2e_test_user
 

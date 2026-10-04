@@ -112,7 +112,9 @@
     "chapterLabel": "章节",
     "idLabel": "ID",
     "timeLabel": "时间",
-    "notEnabled": "未启用"
+    "notEnabled": "未启用",
+    "folderLoadError": "加载失败。",
+    "loadError": "素材详情加载失败，请重试。"
   },
   "quota": {
     "uploadTitle": "开通会员即可使用素材库",
@@ -132,5 +134,8 @@
     "batchImportSuccess_other": "成功导入 {{count}} 个素材",
     "batchImportPartialFailed": "已导入 {{successCount}} 个素材，{{failedCount}} 个失败，请检查后重试。",
     "batchImportFailed": "批量导入失败，请重试"
-  }
+  },
+  "libraryLoadFailed": "素材库加载失败，请重试。",
+  "listLoadError": "素材列表加载失败，请重试。",
+  "searchLoadFailed": "素材搜索失败，请重试。"
 }

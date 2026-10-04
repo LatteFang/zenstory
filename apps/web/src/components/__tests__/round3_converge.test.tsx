@@ -80,13 +80,13 @@ describe('SimpleEditor: AI 编辑期间挂起自动保存', () => {
     fireEvent.change(textarea, { target: { value: text } });
   }
 
-  it('未标记 AI 编辑时，防抖到期后正常自动保存', () => {
+  it('未标记 AI 编辑时，防抖到期后正常自动保存', async () => {
     const onSave = vi.fn().mockResolvedValue('saved');
     renderEditor({ onSave });
 
     typeInto('用户改了一句');
-    act(() => {
-      vi.advanceTimersByTime(AUTO_SAVE_DEBOUNCE_MS + 100);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DEBOUNCE_MS + 100);
     });
 
     expect(onSave).toHaveBeenCalledTimes(1);
@@ -104,7 +104,7 @@ describe('SimpleEditor: AI 编辑期间挂起自动保存', () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
-  it('AI 编辑结束后恢复自动保存，用户的本地改动不会丢', () => {
+  it('AI 编辑结束后恢复自动保存，用户的本地改动不会丢', async () => {
     const onSave = vi.fn().mockResolvedValue('saved');
     const { rerender } = renderEditor({ onSave, isAiEditing: true });
 
@@ -128,8 +128,8 @@ describe('SimpleEditor: AI 编辑期间挂起自动保存', () => {
         isAiEditing={false}
       />,
     );
-    act(() => {
-      vi.advanceTimersByTime(AUTO_SAVE_DEBOUNCE_MS + 100);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTO_SAVE_DEBOUNCE_MS + 100);
     });
 
     expect(onSave).toHaveBeenCalledTimes(1);

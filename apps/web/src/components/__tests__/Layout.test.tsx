@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 
 // Mock dependencies BEFORE importing Layout
 const mockOpenSearch = vi.fn()
+const mockCloseSearch = vi.fn()
 const mockSetActivePanel = vi.fn()
 const mockSwitchToEditor = vi.fn()
 
@@ -36,7 +37,7 @@ vi.mock('../../contexts/FileSearchContext', () => ({
   useFileSearchContext: () => ({
     isSearchOpen: false,
     openSearch: mockOpenSearch,
-    closeSearch: vi.fn(),
+    closeSearch: mockCloseSearch,
     toggleSearch: vi.fn(),
   }),
   FileSearchProvider: ({ children }: { children: React.ReactNode }) =>
@@ -278,6 +279,13 @@ describe('Layout', () => {
       if (rightPanelElement) {
         expect(rightPanelElement.closest('[aria-hidden="true"]')).not.toBeNull()
       }
+
+      const panels = screen.getAllByRole('tabpanel', { hidden: true })
+      expect(panels).toHaveLength(3)
+      expect(document.getElementById('editor-panel')).toHaveAttribute('aria-labelledby', 'editor-tab')
+      expect(document.getElementById('editor-panel')).not.toHaveAttribute('inert')
+      expect(document.getElementById('files-panel')).toHaveAttribute('inert')
+      expect(document.getElementById('chat-panel')).toHaveAttribute('inert')
     })
 
     it('shows files panel when activePanel is files', () => {

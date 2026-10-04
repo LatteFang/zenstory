@@ -10,7 +10,8 @@
  */
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { act, render, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
 // ChatPanel 被 React.memo 包裹且无 props，真实应用里靠 ProjectContext 变化触发
 // 重渲染；这里用可通知的外部 store 模拟 context 更新，绕过 memo 的 props 比较。
@@ -35,6 +36,9 @@ const projectStore = vi.hoisted(() => {
 const mockAgentStreamState = vi.hoisted(() => ({
   isStreaming: false,
   isThinking: false,
+  error: null as string | null,
+  errorCode: null as string | null,
+  retryable: false,
 }))
 
 const capturedUseAgentStream = vi.hoisted(() => ({
@@ -42,6 +46,7 @@ const capturedUseAgentStream = vi.hoisted(() => ({
 }))
 
 const agentStreamReset = vi.hoisted(() => vi.fn())
+const agentStartStream = vi.hoisted(() => vi.fn())
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -94,16 +99,17 @@ vi.mock('../../hooks/useAgentStream', () => ({
   useAgentStream: (_projectId: string, options?: Record<string, unknown>) => {
     capturedUseAgentStream.options = options ?? null
     return {
-      state: { conflicts: [] },
-      startStream: vi.fn(),
+      state: { conflicts: [], retryable: mockAgentStreamState.retryable },
+      startStream: agentStartStream,
       cancel: vi.fn(),
       reset: agentStreamReset,
       isStreaming: mockAgentStreamState.isStreaming,
       isThinking: mockAgentStreamState.isThinking,
       thinkingContent: '',
       conflicts: [],
-      error: null,
-      errorCode: null,
+      error: mockAgentStreamState.error,
+      errorCode: mockAgentStreamState.errorCode,
+      retryable: mockAgentStreamState.retryable,
       sessionId: null,
       sendSteeringMessage: vi.fn(),
     }
@@ -182,7 +188,7 @@ const lastMessageListProps = () => {
 
 const lastMessageInputProps = () => {
   const calls = mockMessageInput.mock.calls as unknown as Array<
-    [{ matchedSkills?: Array<{ name: string }> }]
+    [{ matchedSkills?: Array<{ name: string }>; disabled?: boolean; sendDisabled?: boolean; onSend?: (message: string, skillIds?: string[]) => void }]
   >
   return calls[calls.length - 1]?.[0]
 }
@@ -194,6 +200,9 @@ describe('ChatPanel project switch stream cleanup', () => {
     projectStore.currentProjectId = 'project-1'
     mockAgentStreamState.isStreaming = false
     mockAgentStreamState.isThinking = false
+    mockAgentStreamState.error = null
+    mockAgentStreamState.errorCode = null
+    mockAgentStreamState.retryable = false
   })
 
   it('clears leftover streamRenderItems and matchedSkills when switching projects', async () => {
@@ -248,5 +257,46 @@ describe('ChatPanel project switch stream cleanup', () => {
     expect(lastMessageInputProps()?.matchedSkills).toHaveLength(0)
     // conflicts 等 useAgentStream 内部状态通过 reset() 一并复位
     expect(agentStreamReset).toHaveBeenCalled()
+  })
+
+  it('keeps history loading disabled until the newest project request finishes', async () => {
+    let resolveA!: (value: never[]) => void
+    let resolveB!: (value: never[]) => void
+    vi.mocked(getRecentMessages)
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveA = resolve }))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveB = resolve }))
+    render(<ChatPanel />)
+    await waitFor(() => expect(lastMessageInputProps()?.disabled).toBe(true))
+
+    act(() => projectStore.setProjectId('project-2'))
+    await waitFor(() => expect(vi.mocked(getRecentMessages)).toHaveBeenCalledTimes(2))
+    await act(async () => resolveA([]))
+    expect(lastMessageInputProps()?.disabled).toBe(true)
+
+    await act(async () => resolveB([]))
+    await waitFor(() => expect(lastMessageInputProps()?.disabled).toBe(false))
+  })
+
+  it('shows Retry only for retryable errors and replays the captured request once per click', async () => {
+    mockAgentStreamState.error = 'temporary failure'
+    mockAgentStreamState.retryable = true
+    const user = userEvent.setup()
+    render(<ChatPanel />)
+    await waitFor(() => expect(lastMessageInputProps()?.onSend).toBeTypeOf('function'))
+
+    await act(async () => {
+      await lastMessageInputProps()?.onSend?.('same request', ['skill-1'])
+    })
+    expect(agentStartStream).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole('button', { name: 'common:retry' }))
+    expect(agentStartStream).toHaveBeenCalledTimes(2)
+    expect(agentStartStream.mock.calls[1]?.[0]).toEqual(agentStartStream.mock.calls[0]?.[0])
+  })
+
+  it('does not show Retry for non-retryable errors', async () => {
+    mockAgentStreamState.error = 'permanent failure'
+    mockAgentStreamState.retryable = false
+    render(<ChatPanel />)
+    expect(screen.queryByRole('button', { name: 'common:retry' })).not.toBeInTheDocument()
   })
 })

@@ -12,7 +12,7 @@ import logging
 from datetime import datetime
 from typing import Literal
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlmodel import Session
 
@@ -177,8 +177,8 @@ async def get_check_in_status(
 
 @router.get("/transactions", response_model=TransactionHistoryResponse)
 async def get_transactions(
-    page: int = 1,
-    page_size: int = 20,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_active_user)
 ):
@@ -189,8 +189,6 @@ async def get_transactions(
         page: Page number (1-indexed)
         page_size: Items per page (default 20, max 100)
     """
-    page_size = min(page_size, 100)  # Cap at 100
-
     transactions, total = points_service.get_transaction_history(
         session, current_user.id, page, page_size
     )

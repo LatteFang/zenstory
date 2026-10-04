@@ -6,6 +6,8 @@ const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
 const invalidateQueriesMock = vi.fn();
 
+vi.mock("../../../contexts/AuthContext", () => ({ useAuth: () => ({ user: { id: "admin-1", is_superuser: true } }) }));
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -147,6 +149,14 @@ describe("UserManagement", () => {
         is_superuser: false,
       },
     });
+  });
+
+  it("does not offer self-deactivation or self-demotion in the edit form", () => {
+    useQueryMock.mockReturnValue({ data: [{ ...sampleUser, id: "admin-1", is_superuser: true }], isLoading: false, isFetching: false, isError: false, error: null, refetch: vi.fn() });
+    render(<UserManagement />);
+    fireEvent.click(screen.getAllByTitle("users.edit")[0]);
+    expect(screen.getByRole("checkbox", { name: "users.isActive" })).toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: "users.isSuperuser" })).toBeDisabled();
   });
 
   it("opens delete modal and confirms delete", () => {

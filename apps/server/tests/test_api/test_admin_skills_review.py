@@ -188,7 +188,7 @@ async def test_reject_pending_skill_sets_reason_and_resets_user_shared_state(
     ("approve", None),
     ("reject", {"rejection_reason": "duplicate"}),
 ])
-async def test_review_endpoints_return_400_for_non_pending_skill(
+async def test_review_endpoints_return_409_for_non_pending_skill(
     client: AsyncClient,
     db_session: Session,
     endpoint: str,
@@ -213,8 +213,8 @@ async def test_review_endpoints_return_400_for_non_pending_skill(
         json=payload,
     )
 
-    assert response.status_code == 400
-    assert response.json()["detail"] == "ERR_VALIDATION_ERROR"
+    assert response.status_code == 409
+    assert response.json()["detail"] == "ERR_RESOURCE_CONFLICT"
 
 
 @pytest.mark.integration
@@ -276,3 +276,45 @@ async def test_admin_skill_review_endpoints_forbidden_for_non_superuser(
 
     assert response.status_code == 403
     assert response.json()["detail"] == "ERR_NOT_AUTHORIZED"
+
+
+@pytest.mark.integration
+async def test_skill_review_history_filter_returns_reviewer_time_and_reason(
+    client: AsyncClient,
+    db_session: Session,
+):
+    admin = await create_user(
+        db_session, "admin_skill_history", "admin_skill_history@example.com", is_superuser=True
+    )
+    author = await create_user(db_session, "skill_history_author", "skill_history_author@example.com")
+    reviewed_at = utcnow() - timedelta(hours=1)
+    rejected = PublicSkill(
+        name="Rejected history",
+        instructions="history",
+        category="writing",
+        source="community",
+        status="rejected",
+        author_id=author.id,
+        reviewed_by=admin.id,
+        reviewed_at=reviewed_at,
+        rejection_reason="Needs revision",
+    )
+    db_session.add(rejected)
+    db_session.commit()
+
+    token = await login_user(client, admin.username)
+    response = await client.get(
+        "/api/admin/skills/pending",
+        params={"status": "rejected"},
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) == 1
+    assert payload[0]["id"] == rejected.id
+    assert payload[0]["status"] == "rejected"
+    assert payload[0]["reviewed_by"] == admin.id
+    assert payload[0]["reviewer_name"] == admin.username
+    assert payload[0]["reviewed_at"] is not None
+    assert payload[0]["rejection_reason"] == "Needs revision"

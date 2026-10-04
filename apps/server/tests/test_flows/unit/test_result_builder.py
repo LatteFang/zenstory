@@ -2,6 +2,28 @@ from flows.pipelines.helpers.result_builder import ResultBuilder
 
 
 class TestResultBuilder:
+    def test_build_final_result_carries_retryable_meta_failure(self):
+        outcome = {
+            "executed": True,
+            "succeeded": False,
+            "error": "provider unavailable",
+            "retry_available": True,
+        }
+        result = ResultBuilder.build_final_result(
+            novel_id=1,
+            job_id=2,
+            chapter_ids=[3],
+            stage1_result={"failed_count": 0, "meta_extraction": outcome},
+            story_result={},
+            relationship_result={},
+            character_entity_result={},
+            status="completed_with_errors",
+            elapsed_ms=1,
+        )
+
+        assert result["meta_extraction"] == outcome
+        assert result["failed_count"] == 1
+
     def test_build_final_result_with_full_inputs(self):
         result = ResultBuilder.build_final_result(
             novel_id=101,

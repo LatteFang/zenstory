@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import InspirationsPage from '../InspirationsPage'
 
@@ -7,6 +7,8 @@ let mockSubmissions = {
   total: 0,
   isLoading: false,
   isFetching: false,
+  error: null as Error | null,
+  refetch: vi.fn(),
 }
 
 vi.mock('react-i18next', () => ({
@@ -55,6 +57,8 @@ describe('InspirationsPage', () => {
       total: 0,
       isLoading: false,
       isFetching: false,
+      error: null,
+      refetch: vi.fn(),
     }
   })
 
@@ -64,6 +68,8 @@ describe('InspirationsPage', () => {
       total: 0,
       isLoading: true,
       isFetching: false,
+      error: null,
+      refetch: vi.fn(),
     }
 
     const { rerender } = render(<InspirationsPage />)
@@ -74,6 +80,8 @@ describe('InspirationsPage', () => {
       total: 0,
       isLoading: false,
       isFetching: false,
+      error: null,
+      refetch: vi.fn(),
     }
     rerender(<InspirationsPage />)
 
@@ -95,6 +103,8 @@ describe('InspirationsPage', () => {
       total: 1,
       isLoading: false,
       isFetching: false,
+      error: null,
+      refetch: vi.fn(),
     }
 
     render(<InspirationsPage />)
@@ -103,5 +113,17 @@ describe('InspirationsPage', () => {
     expect(screen.getByText('Reason: Needs more context')).toBeInTheDocument()
     expect(screen.getByText('4 copies')).toBeInTheDocument()
     expect(screen.getByText('Grid size 12')).toBeInTheDocument()
+  })
+
+  it('shows submission errors and retries instead of claiming the list is empty', () => {
+    const refetch = vi.fn()
+    mockSubmissions = {
+      items: [], total: 0, isLoading: false, isFetching: false,
+      error: new Error('submissions unavailable'), refetch,
+    }
+    render(<InspirationsPage />)
+    expect(screen.getByText('submissions unavailable')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'retry' }))
+    expect(refetch).toHaveBeenCalledTimes(1)
   })
 })

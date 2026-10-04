@@ -13,7 +13,8 @@ vi.mock('../logger', () => ({
   },
 }));
 
-import { isValidRedirectUrl } from '../ssoRedirect';
+import { tryRefreshToken, validateToken } from '../apiClient';
+import { handleSsoRedirect, isValidRedirectUrl } from '../ssoRedirect';
 
 describe('isValidRedirectUrl', () => {
   it('accepts zenstory subdomain redirect', () => {
@@ -34,5 +35,37 @@ describe('isValidRedirectUrl', () => {
 
   it('rejects non-whitelisted domains', () => {
     expect(isValidRedirectUrl('https://evil.example.com/callback')).toBe(false);
+  });
+});
+
+describe('handleSsoRedirect', () => {
+  it('preserves credentials when refresh fails transiently', async () => {
+    localStorage.setItem('access_token', 'expired-access');
+    localStorage.setItem('refresh_token', 'refresh-token');
+    vi.mocked(validateToken).mockResolvedValue({ valid: false, isNetworkError: false });
+    vi.mocked(tryRefreshToken).mockResolvedValue(false);
+
+    await expect(handleSsoRedirect('https://app.zenstory.ai/workspace')).resolves.toMatchObject({
+      success: false,
+      clearAuth: false,
+      reason: 'network_error',
+    });
+    expect(localStorage.getItem('refresh_token')).toBe('refresh-token');
+  });
+
+  it('requests auth clearing when refresh credentials are definitively rejected', async () => {
+    localStorage.setItem('access_token', 'expired-access');
+    localStorage.setItem('refresh_token', 'refresh-token');
+    vi.mocked(validateToken).mockResolvedValue({ valid: false, isNetworkError: false });
+    vi.mocked(tryRefreshToken).mockImplementation(async () => {
+      localStorage.removeItem('refresh_token');
+      return false;
+    });
+
+    await expect(handleSsoRedirect('https://app.zenstory.ai/workspace')).resolves.toMatchObject({
+      success: false,
+      clearAuth: true,
+      reason: 'session_expired',
+    });
   });
 });

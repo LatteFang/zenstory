@@ -18,15 +18,15 @@ export interface TestUsersConfig {
   pool: TestUser[];
 }
 
-const standardEmail = process.env.E2E_TEST_EMAIL || 'e2e-test@zenstory.local';
+const standardEmail = process.env.E2E_TEST_EMAIL || 'e2e-test@example.com';
 const standardPassword = process.env.E2E_TEST_PASSWORD || 'E2eTestPassword123!';
 const standardUsername = process.env.E2E_TEST_USERNAME || 'e2e_test_user';
 
-const skillsEmail = process.env.E2E_TEST_SKILLS_EMAIL || 'e2e-skills@zenstory.local';
+const skillsEmail = process.env.E2E_TEST_SKILLS_EMAIL || 'e2e-skills@example.com';
 const skillsPassword = process.env.E2E_TEST_SKILLS_PASSWORD || 'E2eSkillsPassword123!';
 const skillsUsername = process.env.E2E_TEST_SKILLS_USERNAME || 'e2e_skills_user';
 
-const adminEmail = process.env.E2E_TEST_ADMIN_EMAIL || 'test-admin@zenstory.test';
+const adminEmail = process.env.E2E_TEST_ADMIN_EMAIL || 'test-admin@example.com';
 const adminPassword = process.env.E2E_TEST_ADMIN_PASSWORD || 'TestAdmin123!';
 const adminUsername = process.env.E2E_TEST_ADMIN_USERNAME || 'test_admin';
 
@@ -67,7 +67,7 @@ export const TEST_USERS: TestUsersConfig = {
    * Each test can use a unique user to avoid data conflicts
    */
   pool: Array.from({ length: 5 }, (_, i): TestUser => ({
-    email: `e2e-pool-${i}@zenstory.local`,
+    email: `e2e-pool-${i}@example.com`,
     password: `PoolTest${i}!Aa`,
     username: `e2e-pool-user-${i}`,
   })),

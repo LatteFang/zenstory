@@ -75,7 +75,8 @@
       "recommended": "Recommended",
       "cancel": "Cancel",
       "confirm": "Confirm",
-      "importFailed": "Import failed, please try again"
+      "importFailed": "Import failed, please try again",
+      "folderLoadFailed": "Unable to load folders."
     },
     "skillTriggers": "Triggers",
     "skillInstructions": "Instructions",
@@ -201,6 +202,7 @@
     "compare": "Compare",
     "loadFailed": "Failed to load version history",
     "empty": "No version history",
+    "latestSaved": "Latest saved snapshot",
     "currentVersion": "Current Version",
     "auto": "Auto",
     "manual": "Manual",

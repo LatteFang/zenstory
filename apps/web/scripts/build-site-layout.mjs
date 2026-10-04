@@ -70,6 +70,7 @@ export const vercelConfig = {
 }
 
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')
+const legalContent = JSON.parse(readFileSync(join(web, 'public/locales/en/privacy.json'), 'utf8'))
 function pageHead(shell,route,origin,title) {
   return shell
     .replace(/<title>[^<]*<\/title>/,`<title>${esc(title)}</title>`)
@@ -77,6 +78,24 @@ function pageHead(shell,route,origin,title) {
     .replace(/<meta\b[^>]*property=["']og:title["'][^>]*>/gi,`<meta data-rh="true" property="og:title" content="${esc(title)}" />`)
     .replace(/<meta\b[^>]*property=["']og:description["'][^>]*>/gi,`<meta data-rh="true" property="og:description" content="${esc(title)}" />`)
     .replace('</head>',`<link data-rh="true" rel="canonical" href="${origin}${route}" /><meta data-rh="true" property="og:url" content="${origin}${route}" /></head>`)
+}
+function renderLegalValue(value, depth = 2) {
+  if (Array.isArray(value)) return `<ul>${value.map(item => `<li>${esc(String(item))}</li>`).join('')}</ul>`
+  if (!value || typeof value !== 'object') return ''
+  const level = Math.min(depth, 6)
+  const heading = value.title ? `<h${level}>${esc(String(value.title))}</h${level}>` : ''
+  const content = value.content ? `<p>${esc(String(value.content))}</p>` : ''
+  const children = Object.entries(value)
+    .filter(([key]) => !['title', 'content', 'lastUpdated'].includes(key))
+    .map(([, child]) => renderLegalValue(child, depth + 1))
+    .join('')
+  return `${heading}${content}${children}`
+}
+function legalPage(shell, route, title, document) {
+  const body = `<main><article><h1>${esc(String(document.title))}</h1>` +
+    (document.lastUpdated ? `<p>${esc(String(document.lastUpdated))}</p>` : '') +
+    `${renderLegalValue(document.sections)}</article></main>`
+  return pageHead(shell, route, SITE, title).replace('<div id="root"></div>', `<div id="root">${body}</div>`)
 }
 /** English route of a site route (`/zh/x` → `/x`, `/zh` → `/`), or null when it is not a Chinese page. */
 const englishRoute=route=>route==='/zh' ? '/' : route.startsWith('/zh/') ? route.slice(3) : null
@@ -134,9 +153,12 @@ export function finalizeSite(outDir) {
   }
   walk(outDir)
   for(const name of ['_app','_site']) mkdirSync(join(outDir,name),{recursive:true})
-  for(const [route,title] of [['/privacy-policy','Privacy Policy — ZenStory'],['/terms-of-service','Terms of Service — ZenStory']]) {
+  for(const [route,title,document] of [
+    ['/privacy-policy','Privacy Policy — ZenStory',legalContent],
+    ['/terms-of-service','Terms of Service — ZenStory',legalContent.terms],
+  ]) {
     mkdirSync(join(outDir,route),{recursive:true})
-    writeFileSync(join(outDir,route,'index.html'),pageHead(shell,route,SITE,title))
+    writeFileSync(join(outDir,route,'index.html'),legalPage(shell,route,title,document))
     siteRoutes.push(route)
   }
   writeFileSync(join(outDir,'_app/home.html'),pageHead(shell,'/',APP,'ZenStory — AI novel-writing workbench'))

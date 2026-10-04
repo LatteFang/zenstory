@@ -5,8 +5,11 @@ import hmac
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import pytest
 from sqlmodel import Session
 
+from core.error_codes import ErrorCode
+from core.error_handler import APIException
 from models import User
 from models.subscription import RedemptionCode, SubscriptionPlan
 from services.core.auth_service import hash_password
@@ -128,12 +131,28 @@ def test_redeem_code_rolls_back_usage_when_subscription_creation_fails(db_sessio
             side_effect=RuntimeError("subscription boom"),
         ),
     ):
-        success, message, info = redemption_service.redeem_code(db_session, code, user.id)
+        with pytest.raises(APIException) as exc_info:
+            redemption_service.redeem_code(db_session, code, user.id)
 
     db_session.refresh(redemption_code)
 
-    assert success is False
-    assert info is None
-    assert "subscription boom" in message
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.error_code == ErrorCode.INTERNAL_SERVER_ERROR
+    assert "subscription boom" not in str(exc_info.value.detail)
     assert redemption_code.current_uses == 0
     assert redemption_code.redeemed_by == []
+
+
+def test_redeem_code_masks_missing_hmac_configuration(db_session: Session, monkeypatch):
+    monkeypatch.delenv("REDEMPTION_CODE_HMAC_SECRET", raising=False)
+
+    with pytest.raises(APIException) as exc_info:
+        redemption_service.redeem_code(
+            db_session,
+            "ERG-PRO7-ABCD-12345678",
+            "missing-hmac-user",
+        )
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.error_code == ErrorCode.INTERNAL_SERVER_ERROR
+    assert "REDEMPTION_CODE_HMAC_SECRET" not in str(exc_info.value.detail)

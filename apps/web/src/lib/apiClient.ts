@@ -50,12 +50,17 @@ export function getApiBase(): string {
  * refresh request is sent while others wait for the result.
  */
 let refreshPromise: Promise<boolean> | null = null;
+let refreshPromiseToken: string | null = null;
 
 /**
  * Timestamp of the last failed refresh attempt.
  * Used to implement cooldown and prevent infinite refresh loops.
  */
 let lastRefreshFailTime = 0;
+let lastFailedRefreshToken: string | null = null;
+const refreshLineage = new Map<string, { accessToken: string; refreshToken: string }>();
+
+const isCredentialFailure = (status: number): boolean => status === 401 || status === 403;
 
 /**
  * Cooldown period in milliseconds after a refresh failure.
@@ -84,6 +89,7 @@ const REFRESH_COOLDOWN_MS = 5000; // 5 seconds cooldown after refresh failure
  * ```
  */
 export function clearAuthStorage(reason?: string): void {
+  refreshLineage.clear();
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('user');
@@ -125,7 +131,10 @@ export async function tryRefreshToken(): Promise<boolean> {
   const refreshToken = localStorage.getItem('refresh_token');
 
   // Check if we're in cooldown period after a recent refresh failure
-  if (Date.now() - lastRefreshFailTime < REFRESH_COOLDOWN_MS) {
+  if (
+    refreshToken === lastFailedRefreshToken &&
+    Date.now() - lastRefreshFailTime < REFRESH_COOLDOWN_MS
+  ) {
     logger.warn('[Auth] Refresh in cooldown, skipping refresh attempt');
     return false;
   }
@@ -138,11 +147,15 @@ export async function tryRefreshToken(): Promise<boolean> {
   // Wait for any ongoing refresh to complete
   if (refreshPromise) {
     logger.log('[Auth] Waiting for ongoing token refresh...');
-    return refreshPromise;
+    if (refreshPromiseToken === refreshToken) return refreshPromise;
+    await refreshPromise;
+    if (localStorage.getItem('refresh_token') !== refreshToken) return false;
+    return tryRefreshToken();
   }
 
   // This request is responsible for performing the refresh
   logger.log('[Auth] Starting token refresh...');
+  refreshPromiseToken = refreshToken;
   refreshPromise = (async () => {
     try {
       const response = await fetch(`${getApiBase()}/api/auth/refresh`, {
@@ -153,26 +166,51 @@ export async function tryRefreshToken(): Promise<boolean> {
 
       if (response.ok) {
         const data = await response.json();
+        if (localStorage.getItem('refresh_token') !== refreshToken) {
+          logger.warn('[Auth] Ignoring stale token refresh result');
+          return false;
+        }
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('auth_validated_at', Date.now().toString()); // Update cache timestamp
+        lastFailedRefreshToken = null;
+        for (const [ancestor, latest] of refreshLineage) {
+          if (latest.refreshToken === refreshToken) {
+            refreshLineage.set(ancestor, {
+              accessToken: data.access_token,
+              refreshToken: data.refresh_token,
+            });
+          }
+        }
+        refreshLineage.set(refreshToken, {
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+        });
         logger.log('[Auth] Token refresh successful');
         return true;
       } else {
         logger.warn('[Auth] Token refresh failed', response.status);
         lastRefreshFailTime = Date.now();
-        clearAuthStorage('refresh_failed');
+        lastFailedRefreshToken = refreshToken;
+        if (
+          isCredentialFailure(response.status) &&
+          localStorage.getItem('refresh_token') === refreshToken
+        ) {
+          clearAuthStorage('refresh_failed');
+        }
         return false;
       }
     } catch (error) {
       logger.error('[Auth] Token refresh network error:', error);
       lastRefreshFailTime = Date.now();
+      lastFailedRefreshToken = refreshToken;
       // Do NOT clear tokens on network error - network is transient
       // User can retry later when network recovers
       return false;
     } finally {
       refreshPromise = null;
+      refreshPromiseToken = null;
     }
   })();
 
@@ -241,8 +279,10 @@ export async function validateToken(): Promise<TokenValidationResult> {
       return { valid: true, user, isNetworkError: false };
     }
 
-    // Token is definitely invalid (401, 403, etc.) - NOT a network error
-    return { valid: false, isNetworkError: false };
+    return {
+      valid: false,
+      isNetworkError: !isCredentialFailure(response.status),
+    };
   } catch (error) {
     logger.warn('[Auth] Network error during token validation:', error);
     // Network error - distinguish from invalid token
@@ -424,6 +464,7 @@ export async function apiCall<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const accessToken = localStorage.getItem('access_token');
+  const refreshTokenAtRequest = localStorage.getItem('refresh_token');
 
   // Get current language from i18n
   const language = localStorage.getItem('zenstory-language') || 'zh';
@@ -446,33 +487,52 @@ export async function apiCall<T>(
 
   // Handle 401 Unauthorized - try to refresh token
   if (response.status === 401) {
-    const refreshToken = localStorage.getItem('refresh_token');
+    const currentAccessToken = localStorage.getItem('access_token');
+    const currentRefreshToken = localStorage.getItem('refresh_token');
+    const stillOwnsRequestSession = (
+      currentAccessToken === accessToken &&
+      currentRefreshToken === refreshTokenAtRequest
+    );
+    const rotatedSession = refreshTokenAtRequest
+      ? refreshLineage.get(refreshTokenAtRequest)
+      : undefined;
+    const belongsToRotatedSession = Boolean(
+      rotatedSession &&
+      currentAccessToken === rotatedSession.accessToken &&
+      currentRefreshToken === rotatedSession.refreshToken
+    );
+    if (!stillOwnsRequestSession && !belongsToRotatedSession) {
+      throw new ApiError(401, 'Not authenticated');
+    }
 
-    if (accessToken && refreshToken) {
-      const refreshed = await tryRefreshToken();
-      if (refreshed) {
-        // Retry the original request with new token
-        const newAccessToken = getAccessToken();
-        if (newAccessToken) {
-          headers['Authorization'] = `Bearer ${newAccessToken}`;
-          response = await fetch(`${getApiBase()}${endpoint}`, {
-            ...options,
-            headers,
-          });
-          // Check if retry still returns 401
-          if (response.status === 401) {
-            clearAuthStorage('retry_still_unauthorized');
-            throw new ApiError(401, 'Not authenticated');
-          }
-        } else {
-          throw new ApiError(401, 'Not authenticated');
-        }
-      } else {
+    if (!accessToken || !refreshTokenAtRequest) {
+      if (stillOwnsRequestSession) clearAuthStorage('missing_token');
+      throw new ApiError(401, 'Not authenticated');
+    }
+
+    if (stillOwnsRequestSession) {
+      if (!await tryRefreshToken()) {
         throw new ApiError(401, 'Not authenticated');
       }
-    } else {
-      // No token or refresh token
-      clearAuthStorage('missing_token');
+    }
+
+    const newAccessToken = getAccessToken();
+    const newRefreshToken = localStorage.getItem('refresh_token');
+    if (!newAccessToken || !newRefreshToken) {
+      throw new ApiError(401, 'Not authenticated');
+    }
+    headers['Authorization'] = `Bearer ${newAccessToken}`;
+    response = await fetch(`${getApiBase()}${endpoint}`, {
+      ...options,
+      headers,
+    });
+    if (response.status === 401) {
+      if (
+        localStorage.getItem('access_token') === newAccessToken &&
+        localStorage.getItem('refresh_token') === newRefreshToken
+      ) {
+        clearAuthStorage('retry_still_unauthorized');
+      }
       throw new ApiError(401, 'Not authenticated');
     }
   }

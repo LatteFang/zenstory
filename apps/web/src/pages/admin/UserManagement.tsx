@@ -7,10 +7,12 @@ import type { User, UserUpdateRequest } from "../../types/admin";
 import { AdminPageState, UserCard, TouchCheckbox } from "../../components/admin";
 import { getLocaleCode } from "../../lib/i18n-helpers";
 import { toast } from "../../lib/toast";
+import { useAuth } from "../../contexts/AuthContext";
 
 export const UserManagement: React.FC = () => {
   const { t } = useTranslation(["admin", "common"]);
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -358,11 +360,13 @@ export const UserManagement: React.FC = () => {
               <div className="space-y-3">
                 <TouchCheckbox
                   checked={formData.is_active ?? false}
+                  disabled={editingUser.id === currentUser?.id || updateMutation.isPending}
                   onChange={(checked) => setFormData({ ...formData, is_active: checked })}
                   label={t("users.isActive")}
                 />
                 <TouchCheckbox
                   checked={formData.is_superuser ?? false}
+                  disabled={editingUser.id === currentUser?.id || updateMutation.isPending}
                   onChange={(checked) => setFormData({ ...formData, is_superuser: checked })}
                   label={t("users.isSuperuser")}
                 />

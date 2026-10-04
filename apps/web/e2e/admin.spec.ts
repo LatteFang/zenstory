@@ -12,7 +12,7 @@ import { TEST_USERS } from './config';
  */
 
 // Admin test credentials
-const ADMIN_EMAIL = 'test-admin@zenstory.test';
+const ADMIN_EMAIL = 'test-admin@example.com';
 const ADMIN_PASSWORD = 'TestAdmin123!';
 
 // Regular user credentials (for access control tests)

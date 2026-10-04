@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { StrictMode, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleEditor } from '../SimpleEditor';
@@ -54,6 +55,20 @@ vi.mock('../SelectionToolbar', () => ({
 }));
 
 describe('SimpleEditor', () => {
+  it('shows successful save status after StrictMode effect replay', async () => {
+    const onSave = vi.fn().mockResolvedValue('saved');
+    const Harness = () => {
+      const [content, setContent] = useState('Original');
+      return <SimpleEditor fileId="strict-file" title="Draft" content={content} onTitleChange={vi.fn()} onContentChange={setContent} onSave={onSave} />;
+    };
+    render(<StrictMode><Harness /></StrictMode>);
+    fireEvent.change(screen.getByPlaceholderText('editor:placeholder.contentPlaceholder'), { target: { value: 'Edited content' } });
+    fireEvent.click(screen.getByRole('button', { name: 'editor:save' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByText('editor:unsaved')).not.toBeInTheDocument());
+    expect(screen.getByText('editor:savedJustNow')).toBeInTheDocument();
+  });
+
   const mockRaf = () =>
     vi
       .spyOn(window, 'requestAnimationFrame')
@@ -327,7 +342,14 @@ describe('SimpleEditor', () => {
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledTimes(1);
     });
-    expect(onSave).toHaveBeenCalledWith(undefined);
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fileId: 'file-2',
+        title: 'File 2 - Renamed',
+        content: 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+        versionIntent: undefined,
+      }),
+    );
   });
 
   it('uses outer container scrolling and hides textarea inner scrollbar', () => {
@@ -497,5 +519,149 @@ describe('SimpleEditor', () => {
     });
 
     rafSpy.mockRestore();
+  });
+
+  it('keeps edits made during a deferred save dirty and saves them afterward', async () => {
+    vi.useFakeTimers();
+    let resolveFirstSave: (outcome: 'saved') => void = () => {};
+    const firstSave = new Promise<'saved'>((resolve) => {
+      resolveFirstSave = resolve;
+    });
+    const onSave = vi
+      .fn()
+      .mockReturnValueOnce(firstSave)
+      .mockResolvedValueOnce('saved');
+
+    const Harness = () => {
+      const [content, setContent] = useState('Original');
+      return (
+        <SimpleEditor
+          fileId="file-1"
+          title="File 1"
+          content={content}
+          onTitleChange={vi.fn()}
+          onContentChange={setContent}
+          onSave={onSave}
+        />
+      );
+    };
+
+    render(<Harness />);
+    const textarea = screen.getByPlaceholderText('editor:placeholder.contentPlaceholder');
+    fireEvent.change(textarea, { target: { value: 'Submitted A' } });
+    fireEvent.click(screen.getByRole('button', { name: 'editor:save' }));
+    await act(async () => Promise.resolve());
+    expect(onSave).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(textarea, { target: { value: 'Typed B while saving' } });
+    await act(async () => resolveFirstSave('saved'));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+
+    expect(onSave).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('editor:unsaved')).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it('resolves queued save version and stats deltas against the preceding successful save', async () => {
+    let resolveFirstSave: (outcome: 'saved') => void = () => {};
+    const firstSave = new Promise<'saved'>((resolve) => { resolveFirstSave = resolve; });
+    const onSave = vi.fn().mockReturnValueOnce(firstSave).mockResolvedValue('saved');
+    vi.mocked(writingStatsApi.recordStats).mockResolvedValue(undefined as never);
+    const Harness = () => {
+      const [content, setContent] = useState('Old text');
+      return <SimpleEditor projectId="project-1" fileId="file-1" fileType="draft"
+        title="Draft" content={content} onTitleChange={vi.fn()}
+        onContentChange={setContent} onSave={onSave} />;
+    };
+    render(<Harness />);
+    const textarea = screen.getByPlaceholderText('editor:placeholder.contentPlaceholder');
+    fireEvent.change(textarea, { target: { value: 'First saved text' } });
+    fireEvent.keyDown(textarea, { key: 's', ctrlKey: true });
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    fireEvent.change(textarea, { target: { value: 'First saved text plus' } });
+    fireEvent.keyDown(textarea, { key: 's', ctrlKey: true });
+    expect(onSave).toHaveBeenCalledTimes(1);
+    await act(async () => resolveFirstSave('saved'));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(2));
+    expect(onSave.mock.calls[1][0]).toMatchObject({
+      content: 'First saved text plus', versionIntent: { skip_version: true, word_count: 4 },
+    });
+    expect(writingStatsApi.recordStats).toHaveBeenNthCalledWith(1, 'project-1', {
+      word_count: 3, words_added: 1, words_deleted: 0,
+    });
+    expect(writingStatsApi.recordStats).toHaveBeenNthCalledWith(2, 'project-1', {
+      word_count: 4, words_added: 1, words_deleted: 0,
+    });
+  });
+
+  it('flushes the previous file snapshot when fileId changes before debounce', async () => {
+    vi.useFakeTimers();
+    const onSave = vi.fn().mockResolvedValue('saved');
+    const onContentChange = vi.fn();
+    const { rerender } = render(
+      <SimpleEditor
+        fileId="file-a"
+        title="File A"
+        content="Original A"
+        onTitleChange={vi.fn()}
+        onContentChange={onContentChange}
+        onSave={onSave}
+      />
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('editor:placeholder.contentPlaceholder'), {
+      target: { value: 'Edited A' },
+    });
+    rerender(
+      <SimpleEditor
+        fileId="file-b"
+        title="File B"
+        content="Original B"
+        onTitleChange={vi.fn()}
+        onContentChange={onContentChange}
+        onSave={onSave}
+      />
+    );
+    await act(async () => Promise.resolve());
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fileId: 'file-a',
+        title: 'File A',
+        content: 'Edited A',
+      }),
+    );
+    vi.useRealTimers();
+  });
+
+  it('flushes a dirty snapshot when the editor unmounts', async () => {
+    const onSave = vi.fn().mockResolvedValue('saved');
+    const { unmount } = render(
+      <SimpleEditor
+        fileId="file-a"
+        title="File A"
+        content="Original A"
+        onTitleChange={vi.fn()}
+        onContentChange={vi.fn()}
+        onSave={onSave}
+        onFlushReady={vi.fn()}
+      />
+    );
+    fireEvent.change(screen.getByPlaceholderText('editor:placeholder.contentPlaceholder'), {
+      target: { value: 'Edited before navigation' },
+    });
+
+    unmount();
+    await act(async () => Promise.resolve());
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fileId: 'file-a',
+        content: 'Edited before navigation',
+      }),
+    );
   });
 });

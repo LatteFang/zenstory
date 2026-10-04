@@ -128,7 +128,7 @@ test.describe("Onboarding persona flow", () => {
   test("submits persona selection and persists onboarding payload", async ({ page }) => {
     await page.getByRole("button", { name: /新手探索者|beginner explorer/i }).click();
     await page.getByRole("button", { name: /尽快实现内容变现|monetize content sooner/i }).click();
-    await page.getByRole("button", { name: /2 年以上|2\+ years/i }).click();
+    await page.getByRole("radio", { name: /2 年以上|2\+ years/i }).click();
     await page.getByRole("button", { name: /保存并进入工作台|save and enter workspace/i }).click();
 
     await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });

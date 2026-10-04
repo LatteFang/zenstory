@@ -9,6 +9,7 @@ import { isValidRedirectUrl } from "../lib/ssoRedirect";
 import { logger } from "../lib/logger";
 import { captureException } from "../lib/analytics";
 import { toUserErrorMessage } from "../lib/errorHandler";
+import { consumeOAuthPlanIntent } from "../lib/authFlow";
 
 export default function OAuthCallback() {
   const [error, setError] = useState("");
@@ -76,6 +77,7 @@ export default function OAuthCallback() {
 
         // Handle OAuth callback
         await handleOAuthCallback(accessToken, refreshToken);
+        const planIntent = consumeOAuthPlanIntent();
 
         // Check for redirect parameter from external apps
         if (redirectUrl) {
@@ -86,6 +88,11 @@ export default function OAuthCallback() {
           const redirectUrlWithToken = new URL(redirectUrl);
           redirectUrlWithToken.searchParams.set('token', accessToken);
           window.location.href = redirectUrlWithToken.toString();
+          return;
+        }
+
+        if (planIntent && planIntent !== 'free') {
+          navigate(`/dashboard/billing?plan=${encodeURIComponent(planIntent)}`, { replace: true });
           return;
         }
 

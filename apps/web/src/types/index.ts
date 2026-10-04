@@ -619,6 +619,7 @@ export interface AgentStreamState {
   contextTokenCount?: number | null;
   error: string | null;
   errorCode?: string | null;
+  retryable: boolean;
   applyAction: ApplyAction | null;
   refs: number[];
   toolCalls: ToolCall[];

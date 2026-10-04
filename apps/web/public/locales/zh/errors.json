@@ -9,6 +9,7 @@
   "ERR_AUTH_INVALID_CREDENTIALS": "用户名或密码错误",
   "ERR_AUTH_TOKEN_EXPIRED": "登录已过期，请重新登录",
   "ERR_AUTH_TOKEN_INVALID": "登录凭证无效，请重新登录",
+  "ERR_AUTH_SCOPE_DENIED": "API 密钥缺少所需权限",
   "ERR_AUTH_INACTIVE_USER": "账户已被禁用",
   "ERR_AUTH_USERNAME_EXISTS": "用户名已被注册",
   "ERR_AUTH_EMAIL_EXISTS": "邮箱已被注册",

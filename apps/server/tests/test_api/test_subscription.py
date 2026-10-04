@@ -515,6 +515,17 @@ class TestGetHistory:
         response = await client.get("/api/v1/subscription/history")
         assert response.status_code == 401
 
+    @pytest.mark.parametrize("limit", [0, -1, 101, 1000])
+    async def test_get_history_rejects_invalid_limit(
+        self, client: AsyncClient, auth_headers, limit: int
+    ):
+        response = await client.get(
+            f"/api/v1/subscription/history?limit={limit}",
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 422
+
     async def test_get_history_empty(
         self, client: AsyncClient, auth_headers, free_plan
     ):

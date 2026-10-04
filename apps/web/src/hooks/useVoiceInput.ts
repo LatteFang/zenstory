@@ -125,6 +125,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const volumeTimerRef = useRef<number | null>(null);
+  const requestGenerationRef = useRef(0);
 
   const isSupported = checkMediaRecorderSupport();
 
@@ -166,6 +167,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
   // 组件卸载时清理
   useEffect(() => {
     return () => {
+      requestGenerationRef.current += 1;
       cleanup();
     };
   }, [cleanup]);
@@ -253,6 +255,8 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
     }
 
     cleanup();
+    const requestGeneration = requestGenerationRef.current + 1;
+    requestGenerationRef.current = requestGeneration;
     setStatus('requesting');
     setError(null);
 
@@ -266,6 +270,11 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
           noiseSuppression: true,
         },
       });
+
+      if (requestGeneration !== requestGenerationRef.current) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
       
       streamRef.current = stream;
       
@@ -346,6 +355,9 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
       }, 100);
       
     } catch (err) {
+      if (requestGeneration !== requestGenerationRef.current) {
+        return;
+      }
       cleanup();
       
       let errorMessage = t('chat:voice.micAccessDenied');
@@ -374,6 +386,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
 
   // 取消录音
   const cancelRecording = useCallback(() => {
+    requestGenerationRef.current += 1;
     cleanup();
     setStatus('idle');
     setError(null);

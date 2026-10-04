@@ -222,15 +222,15 @@ def upsert_quota(
 
 def main():
     # Get regular E2E user credentials
-    email = os.getenv("E2E_TEST_EMAIL", "e2e-test@zenstory.local")
+    email = os.getenv("E2E_TEST_EMAIL", "e2e-test@example.com")
     password = os.getenv("E2E_TEST_PASSWORD", "E2eTestPassword123!")
     username = os.getenv("E2E_TEST_USERNAME", "e2e_test_user")
 
     # Get admin E2E user credentials
-    admin_email = os.getenv("E2E_TEST_ADMIN_EMAIL") or os.getenv("E2E_ADMIN_EMAIL", "test-admin@zenstory.test")
+    admin_email = os.getenv("E2E_TEST_ADMIN_EMAIL") or os.getenv("E2E_ADMIN_EMAIL", "test-admin@example.com")
     admin_password = os.getenv("E2E_TEST_ADMIN_PASSWORD") or os.getenv("E2E_ADMIN_PASSWORD", "TestAdmin123!")
     admin_username = os.getenv("E2E_TEST_ADMIN_USERNAME") or os.getenv("E2E_ADMIN_USERNAME", "test_admin")
-    skills_email = os.getenv("E2E_TEST_SKILLS_EMAIL", "e2e-skills@zenstory.local")
+    skills_email = os.getenv("E2E_TEST_SKILLS_EMAIL", "e2e-skills@example.com")
     skills_password = os.getenv("E2E_TEST_SKILLS_PASSWORD", "E2eSkillsPassword123!")
     skills_username = os.getenv("E2E_TEST_SKILLS_USERNAME", "e2e_skills_user")
     invite_code = os.getenv("E2E_TEST_INVITE_CODE", "E2E1-TST1")

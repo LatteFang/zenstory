@@ -55,31 +55,62 @@ describe("PromptEditor", () => {
 
   it("shows loading state while existing prompt is loading", () => {
     projectTypeParam = "novel";
-    useQueryMock.mockReturnValue({ data: undefined, isLoading: true });
+    useQueryMock.mockReturnValue({ data: undefined, isLoading: true, isError: false });
 
     const { container } = render(<PromptEditor />);
     expect(container.querySelector(".animate-spin")).not.toBeNull();
   });
 
-  it("submits save payload for new prompt", () => {
+  it("does not submit a blank new prompt", () => {
     projectTypeParam = "new";
-    useQueryMock.mockReturnValue({ data: undefined, isLoading: false });
+    useQueryMock.mockReturnValue({ data: undefined, isLoading: false, isError: false });
 
     render(<PromptEditor />);
 
     fireEvent.click(screen.getByRole("button", { name: "promptEditor.save" }));
 
-    expect(saveMutateMock).toHaveBeenCalledWith({
-      role_definition: "",
-      capabilities: "",
-      directory_structure: "",
-      content_structure: "",
-      file_types: "",
-      writing_guidelines: "",
-      include_dialogue_guidelines: false,
-      primary_content_type: "novel",
-      is_active: true,
+    expect(saveMutateMock).not.toHaveBeenCalled();
+  });
+
+  it("submits a valid new prompt without conflating project type and content type", () => {
+    projectTypeParam = "new";
+    useQueryMock.mockReturnValue({ data: undefined, isLoading: false, isError: false });
+
+    render(<PromptEditor />);
+    fireEvent.change(screen.getByLabelText("promptEditor.roleDefinition"), {
+      target: { value: "  Writer role  " },
     });
+    fireEvent.change(screen.getByLabelText("promptEditor.capabilities"), {
+      target: { value: "  Writing capabilities  " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "promptEditor.save" }));
+
+    expect(saveMutateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role_definition: "Writer role",
+        capabilities: "Writing capabilities",
+      }),
+    );
+    expect(saveMutateMock.mock.calls[0][0]).not.toHaveProperty("primary_content_type");
+  });
+
+  it("shows a retry gate and cannot save when an existing prompt fails to load", () => {
+    projectTypeParam = "novel";
+    const refetch = vi.fn();
+    useQueryMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error("prompt load failed"),
+      refetch,
+    });
+
+    render(<PromptEditor />);
+
+    expect(screen.getByText("prompt load failed")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "promptEditor.save" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "common:retry" }));
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 
   it("loads existing config and submits save", () => {
@@ -96,8 +127,10 @@ describe("PromptEditor", () => {
         include_dialogue_guidelines: true,
         primary_content_type: "novel",
         is_active: true,
+        version: 7,
       },
       isLoading: false,
+      isError: false,
     });
 
     render(<PromptEditor />);
@@ -108,6 +141,7 @@ describe("PromptEditor", () => {
       expect.objectContaining({
         role_definition: "existing role",
         include_dialogue_guidelines: true,
+        expected_version: 7,
       })
     );
   });
@@ -128,6 +162,7 @@ describe("PromptEditor", () => {
         is_active: true,
       },
       isLoading: false,
+      isError: false,
     });
 
     render(<PromptEditor />);

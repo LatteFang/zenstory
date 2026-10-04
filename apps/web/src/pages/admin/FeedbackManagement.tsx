@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { AlertCircle, Image as ImageIcon, Search } from "lucide-react";
@@ -31,6 +31,9 @@ export default function FeedbackManagement() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const previewRequestRef = useRef(0);
+  const ownedPreviewUrlRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
 
   const hasScreenshotFilter = useMemo(() => {
     if (screenshotFilter === "with") return true;
@@ -72,13 +75,21 @@ export default function FeedbackManagement() {
     },
   });
 
+  const revokeOwnedPreviewUrl = useCallback(() => {
+    if (ownedPreviewUrlRef.current) {
+      URL.revokeObjectURL(ownedPreviewUrlRef.current);
+      ownedPreviewUrlRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
+      mountedRef.current = false;
+      previewRequestRef.current += 1;
+      revokeOwnedPreviewUrl();
     };
-  }, [previewUrl]);
+  }, [revokeOwnedPreviewUrl]);
 
   const feedbackItems = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -141,28 +152,34 @@ export default function FeedbackManagement() {
 
   const handleOpenScreenshot = async (feedback: AdminFeedbackItem) => {
     if (!feedback.has_screenshot) return;
+    const request = ++previewRequestRef.current;
     setPreviewFeedback(feedback);
     setPreviewLoading(true);
     setPreviewError(null);
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-    }
+    revokeOwnedPreviewUrl();
+    setPreviewUrl(null);
     try {
       const blob = await adminApi.getFeedbackScreenshotBlob(feedback.id);
-      setPreviewUrl(URL.createObjectURL(blob));
+      if (!mountedRef.current || previewRequestRef.current !== request) return;
+      const nextUrl = URL.createObjectURL(blob);
+      if (!mountedRef.current || previewRequestRef.current !== request) {
+        URL.revokeObjectURL(nextUrl);
+        return;
+      }
+      ownedPreviewUrlRef.current = nextUrl;
+      setPreviewUrl(nextUrl);
     } catch (err) {
+      if (!mountedRef.current || previewRequestRef.current !== request) return;
       setPreviewError(err instanceof Error ? err.message : t("feedback.screenshotLoadFailed"));
     } finally {
-      setPreviewLoading(false);
+      if (mountedRef.current && previewRequestRef.current === request) setPreviewLoading(false);
     }
   };
 
   const closePreview = () => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-    }
+    previewRequestRef.current += 1;
+    revokeOwnedPreviewUrl();
+    setPreviewUrl(null);
     setPreviewFeedback(null);
     setPreviewLoading(false);
     setPreviewError(null);

@@ -48,6 +48,9 @@ class _FakeCheckpointService:
 
 
 class TestCheckpointManager:
+    def test_novel_wide_clear_api_is_not_exposed(self):
+        assert not hasattr(cm_mod.CheckpointManager, "clear_checkpoints")
+
     def test_update_checkpoint_passes_none_data_verbatim(self, monkeypatch):
         fake_service = _FakeCheckpointService()
         fake_session = MagicMock()

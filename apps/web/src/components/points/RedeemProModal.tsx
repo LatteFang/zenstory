@@ -6,30 +6,44 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { pointsApi } from '../../lib/pointsApi';
 import { useTranslation } from 'react-i18next';
 import Modal from '../ui/Modal';
+import { handleApiError } from '../../lib/errorHandler';
 
 interface RedeemProModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const REDEEM_OPTIONS = [
-  { days: 7, cost: 100 },
-  { days: 14, cost: 200 },
-  { days: 30, cost: 400 },
-];
-
 export function RedeemProModal({ isOpen, onClose }: RedeemProModalProps) {
   const { t } = useTranslation(['points', 'common']);
   const [selectedDays, setSelectedDays] = useState(7);
   const queryClient = useQueryClient();
 
-  const { data: balanceData } = useQuery({
+  const balanceQuery = useQuery({
     queryKey: ['points-balance'],
-    queryFn: () => pointsApi.getBalance(),
+    queryFn: async () => {
+      const data = await pointsApi.getBalance();
+      if (!data || typeof data.available !== 'number' || !Number.isFinite(data.available) || data.available < 0) throw new Error(t('balanceLoadFailed', '无法加载积分余额'));
+      return data;
+    },
     enabled: isOpen,
   });
 
-  const balance = balanceData?.available ?? 0;
+  const configQuery = useQuery({
+    queryKey: ['points-config'],
+    queryFn: async () => {
+      const data = await pointsApi.getConfig();
+      if (!data || typeof data.pro_7days_cost !== 'number' || !Number.isFinite(data.pro_7days_cost) || data.pro_7days_cost < 0) throw new Error(t('configLoadFailed', '无法加载兑换价格'));
+      return data;
+    },
+    enabled: isOpen,
+  });
+  const balance = balanceQuery.data?.available;
+  const baseCost = configQuery.data?.pro_7days_cost;
+  const pricingReady = !configQuery.isError && typeof baseCost === 'number' && Number.isFinite(baseCost) && baseCost >= 0;
+  const balanceReady = !balanceQuery.isError && typeof balance === 'number';
+  const options = pricingReady ? [{days:7,cost:baseCost}, {days:14,cost:baseCost*2}, {days:30,cost:baseCost*4}] : [];
+  const loadError = configQuery.error ?? balanceQuery.error;
+
 
   const redeemMutation = useMutation({
     mutationFn: (days: number) => pointsApi.redeemForPro(days),
@@ -44,16 +58,18 @@ export function RedeemProModal({ isOpen, onClose }: RedeemProModalProps) {
   });
 
   const handleRedeem = () => {
+    if (!canAfford || redeemMutation.isPending) return;
     redeemMutation.mutate(selectedDays);
   };
 
-  const selectedOption = REDEEM_OPTIONS.find(o => o.days === selectedDays);
-  const canAfford = selectedOption ? balance >= selectedOption.cost : false;
+  const selectedOption = options.find(o => o.days === selectedDays);
+  const canAfford = balanceReady && selectedOption ? balance! >= selectedOption.cost : false;
 
   const footer = (
     <>
       <button
         onClick={onClose}
+        disabled={redeemMutation.isPending}
         className="flex-1 px-4 py-2 text-sm font-medium text-[hsl(var(--text-secondary))] bg-[hsl(var(--bg-tertiary))] rounded-lg hover:bg-[hsl(var(--bg-hover))] transition-colors"
       >
         {t('common:cancel', '取消')}
@@ -65,6 +81,10 @@ export function RedeemProModal({ isOpen, onClose }: RedeemProModalProps) {
       >
         {redeemMutation.isPending
           ? t('common:processing', '处理中...')
+          : (!balanceReady || !pricingReady) && !loadError
+          ? t('common:loading', '加载中...')
+          : !balanceReady || !pricingReady
+          ? t('redeem', '兑换')
           : canAfford
           ? t('redeem', '兑换')
           : t('insufficient', '积分不足')}
@@ -75,11 +95,19 @@ export function RedeemProModal({ isOpen, onClose }: RedeemProModalProps) {
   return (
     <Modal
       open={isOpen}
-      onClose={onClose}
+      onClose={() => { if (!redeemMutation.isPending) onClose(); }}
+      showCloseButton={!redeemMutation.isPending}
+      closeOnBackdropClick={!redeemMutation.isPending}
+      closeOnEscape={!redeemMutation.isPending}
       title={t('redeemPro', '兑换 Pro 会员')}
       footer={footer}
       size="md"
     >
+      {loadError && <div className="mb-4">
+        <p role="alert" className="text-sm text-[hsl(var(--error))]">{handleApiError(loadError)}</p>
+        <button onClick={() => { if (configQuery.isError) void configQuery.refetch(); if (balanceQuery.isError) void balanceQuery.refetch(); }}>{t('common:retry', '重试')}</button>
+      </div>}
+      {(balanceQuery.isLoading || configQuery.isLoading) && <p role="status">{t('common:loading', '加载中...')}</p>}
       {/* Current Balance */}
       <div className="mb-4 p-3 bg-[hsl(var(--warning)/0.1)] rounded-lg">
         <div className="flex items-center gap-2">
@@ -90,7 +118,7 @@ export function RedeemProModal({ isOpen, onClose }: RedeemProModalProps) {
             {t('currentBalance', '当前积分')}:
           </span>
           <span className="text-lg font-bold text-[hsl(var(--warning))]">
-            {balance.toLocaleString()}
+            {balanceReady ? balance!.toLocaleString() : '—'}
           </span>
         </div>
       </div>
@@ -101,16 +129,17 @@ export function RedeemProModal({ isOpen, onClose }: RedeemProModalProps) {
           {t('selectDuration', '选择兑换时长')}:
         </p>
         <div className="grid grid-cols-3 gap-2">
-          {REDEEM_OPTIONS.map(option => (
+          {options.map(option => (
             <button
               key={option.days}
               onClick={() => setSelectedDays(option.days)}
-              disabled={balance < option.cost}
+              aria-pressed={selectedDays === option.days}
+              disabled={!balanceReady || balance! < option.cost || redeemMutation.isPending}
               className={`p-3 rounded-lg border-2 text-center transition-all ${
                 selectedDays === option.days
                   ? 'border-[hsl(var(--accent-primary))] bg-[hsl(var(--accent-primary)/0.1)]'
                   : 'border-[hsl(var(--border-color))] hover:border-[hsl(var(--border-color)/0.5)]'
-              } ${balance < option.cost ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              } ${!balanceReady || balance! < option.cost ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             >
               <p className="text-lg font-bold text-[hsl(var(--text-primary))]">
                 {option.days} {t('days', '天')}

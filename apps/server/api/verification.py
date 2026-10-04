@@ -265,7 +265,15 @@ async def check_verification(
             "verification_code_ttl_seconds": 0
         }
 
-    # Get cooldown and TTL
+    # Verified and unknown accounts intentionally share the same public state.
+    if user.email_verified:
+        return {
+            "email": normalized_email,
+            "email_verified": False,
+            "resend_cooldown_seconds": 0,
+            "verification_code_ttl_seconds": 0,
+        }
+
     cooldown = get_remaining_cooldown(normalized_email)
     code_ttl = get_code_ttl(normalized_email)
 

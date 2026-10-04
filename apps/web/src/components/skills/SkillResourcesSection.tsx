@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Plus, Trash2, X } from "../icons";
 import { skillsApi } from "../../lib/api";
@@ -76,31 +76,42 @@ export function SkillResourcesSection({
   const [error, setError] = useState<ResourceError | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmDeletePath, setConfirmDeletePath] = useState<string | null>(null);
+  const listRequestRef = useRef(0);
+  const contentRequestRef = useRef(0);
 
   const loadResources = useCallback(async () => {
+    const requestId = ++listRequestRef.current;
+    setLoading(true);
     try {
       const response = await skillsApi.listResources(skillId);
+      if (requestId !== listRequestRef.current) return;
       setResources(response.resources);
     } catch (err) {
+      if (requestId !== listRequestRef.current) return;
       logger.error("Failed to load skill resources:", err);
       setError(toResourceError(err, "resources.errors.loadFailed"));
     } finally {
-      setLoading(false);
+      if (requestId === listRequestRef.current) setLoading(false);
     }
   }, [skillId]);
 
   useEffect(() => {
+    contentRequestRef.current += 1;
+    setEditor(null);
     loadResources();
   }, [loadResources]);
 
   const openResource = async (path: string) => {
+    const requestId = ++contentRequestRef.current;
     setError(null);
     setConfirmDeletePath(null);
     setEditor({ isNew: false, path, content: "", loading: true });
     try {
       const response = await skillsApi.getResourceContent(skillId, path);
+      if (requestId !== contentRequestRef.current) return;
       setEditor({ isNew: false, path: response.path, content: response.content, loading: false });
     } catch (err) {
+      if (requestId !== contentRequestRef.current) return;
       logger.error("Failed to load skill resource content:", err);
       setEditor(null);
       setError(toResourceError(err, "resources.errors.loadFailed"));
@@ -108,6 +119,7 @@ export function SkillResourcesSection({
   };
 
   const startNewResource = () => {
+    contentRequestRef.current += 1;
     setError(null);
     setConfirmDeletePath(null);
     setEditor({ isNew: true, path: "references/", content: "", loading: false });

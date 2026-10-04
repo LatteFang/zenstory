@@ -801,8 +801,8 @@ def _snapshot_agent_file_content(
 
     Same contract as api/files.py update_file: the version is attributed to the user
     (quota_source=user, so an API key cannot bypass the per-file version quota), it is
-    flushed inside a savepoint of the caller's transaction, and a quota overflow or snapshot
-    failure never blocks the content save.
+    flushed inside a savepoint of the caller's transaction. Only an expected version
+    quota overflow permits an unsnapshotted content save; unexpected failure aborts it.
 
     Returns:
         True when no version was recorded because the per-file version quota is full
@@ -835,12 +835,14 @@ def _snapshot_agent_file_content(
         log_with_context(
             logger,
             logging.WARNING,
-            "Agent API: saved file content without a version snapshot",
+            "Agent API: version snapshot failed; rolling back file write",
             error=str(e),
             file_id=file.id,
             api_key_id=api_key_id,
             operation=f"agent_file_{change_type}_create_version",
         )
+        session.rollback()
+        raise
     return False
 
 

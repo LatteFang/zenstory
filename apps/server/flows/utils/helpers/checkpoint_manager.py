@@ -203,18 +203,6 @@ class CheckpointManager:
         normalized_all = self._normalize_ids(all_chapter_ids)
         return [cid for cid in normalized_all if cid not in completed]
 
-    def clear_checkpoints(self) -> None:
-        """清除所有检查点"""
-        from flows.database_session import get_prefect_db_session
-
-        with get_prefect_db_session() as session:
-            svc = CheckpointService()
-            svc.delete_all(session, self.novel_id)
-            session.commit()
-
-            self.logger.info(f"清除所有检查点: novel_id={self.novel_id}")
-
-
 def create_checkpoint_manager(novel_id: int, job_id: int | None = None) -> CheckpointManager:
     """创建检查点管理器的工厂函数"""
     return CheckpointManager(novel_id, job_id)

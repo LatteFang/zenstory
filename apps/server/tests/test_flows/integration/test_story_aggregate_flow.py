@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -23,6 +24,30 @@ class _FakeCheckpointManager:
 
 @pytest.mark.integration
 class TestStoryAggregateFlow:
+    def test_meta_status_reads_stage2_writer_checkpoint(self, monkeypatch):
+        cp = _FakeCheckpointManager()
+        requested_stages = []
+
+        def _get_checkpoint(stage):
+            requested_stages.append(stage)
+            if stage == "stage2":
+                return SimpleNamespace(checkpoint_data={"meta_extracted": True})
+            return None
+
+        cp.get_checkpoint = _get_checkpoint
+        monkeypatch.setattr(story_mod, "get_run_logger", lambda: MagicMock())
+        monkeypatch.setattr(story_mod, "create_performance_monitor", lambda _name: FakeMonitor())
+        monkeypatch.setattr(story_mod, "create_checkpoint_manager", lambda *_args, **_kwargs: cp)
+        monkeypatch.setattr(story_mod.settings, "ENABLE_NOVEL_SYNOPSIS", False)
+        monkeypatch.setattr(story_mod.settings, "ENABLE_STORY_AGGREGATION", False)
+        monkeypatch.setattr(story_mod.settings, "ENABLE_STORYLINE_GENERATION", False)
+        monkeypatch.setattr(story_mod.settings, "ENABLE_META_EXTRACTION", True)
+
+        result = story_mod.story_aggregate_flow.fn(novel_id=1, chapter_ids=[1])
+
+        assert result["meta_extracted"] is True
+        assert requested_stages == ["stage2"]
+
     def test_flow_with_all_feature_flags_disabled(self, monkeypatch):
         cp = _FakeCheckpointManager()
 

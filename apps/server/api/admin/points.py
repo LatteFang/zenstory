@@ -234,6 +234,7 @@ def adjust_user_points(
             amount=request.amount,
             transaction_type="admin_adjust",
             description=request.reason,
+            commit=False,
         )
     else:
         transaction = points_service.spend_points(
@@ -242,17 +243,23 @@ def adjust_user_points(
             amount=abs(request.amount),
             transaction_type="admin_adjust",
             description=request.reason,
+            commit=False,
         )
 
     new_balance = points_service.get_balance(session, resolved_user_id)
 
-    # Audit log
-    admin_audit_service.log_action(
-        session, current_user.id, "adjust_points", "points", resolved_user_id,
-        old_value={"balance": old_balance["available"]},
-        new_value={"balance": new_balance["available"], "amount": request.amount, "reason": request.reason},
-        request=http_request
-    )
+    try:
+        admin_audit_service.log_action(
+            session, current_user.id, "adjust_points", "points", resolved_user_id,
+            old_value={"balance": old_balance["available"]},
+            new_value={"balance": new_balance["available"], "amount": request.amount, "reason": request.reason},
+            request=http_request, commit=False,
+        )
+        session.commit()
+        session.refresh(transaction)
+    except Exception:
+        session.rollback()
+        raise
 
     log_with_context(
         logger,

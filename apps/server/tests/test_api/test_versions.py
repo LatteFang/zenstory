@@ -401,7 +401,7 @@ async def test_compare_versions(client: AsyncClient, db_session):
 
 
 @pytest.mark.integration
-async def test_rollback_to_version(client: AsyncClient, db_session):
+async def test_rollback_to_version(client: AsyncClient, db_session, monkeypatch):
     """测试回滚到指定版本"""
     from services.core.auth_service import hash_password
     user = User(
@@ -448,6 +448,17 @@ async def test_rollback_to_version(client: AsyncClient, db_session):
         headers=headers,
     )
 
+    indexed: list[dict] = []
+    cache_bumps: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        "services.llama_index.schedule_index_upsert",
+        lambda **kwargs: indexed.append(kwargs),
+    )
+    monkeypatch.setattr(
+        "services.infra.dashboard_cache.dashboard_cache.bump_project_version",
+        lambda user_id, project_id: cache_bumps.append((user_id, project_id)),
+    )
+
     # 回滚到版本 1
     resp = await client.post(
         f"/api/v1/files/{file_id}/versions/1/rollback",
@@ -460,6 +471,10 @@ async def test_rollback_to_version(client: AsyncClient, db_session):
     assert data["restored_version"] == 1
     assert data["new_version_number"] == 4  # 创建了新版本
     assert data["file_id"] == file_id
+    assert len(indexed) == 1
+    assert indexed[0]["entity_id"] == file_id
+    assert indexed[0]["content"] == v1_content
+    assert cache_bumps == [(user.id, project_id)]
 
     # 验证新版本的内容是版本 1 的内容
     content_resp = await client.get(

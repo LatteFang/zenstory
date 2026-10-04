@@ -235,6 +235,8 @@ export interface UseAgentStreamReturn {
   error: string | null;
   /** Backend error code if provided by SSE error event */
   errorCode: string | null;
+  /** Whether the backend says the current stream error can be retried */
+  retryable: boolean;
   /** Current session ID for steering */
   sessionId: string | null;
   /** Send a steering message to the active session */
@@ -252,6 +254,7 @@ const initialState: AgentStreamState = {
   contextTokenCount: null,
   error: null,
   errorCode: null,
+  retryable: false,
   applyAction: null,
   refs: [],
   toolCalls: [],
@@ -484,19 +487,20 @@ export function useAgentStream(
     }));
   }, [projectId, clearFlushTimer]);
 
-  /** 设置错误消息，3秒后自动清除 */
-  const showError = useCallback((message: string) => {
+  /** Set an error; actionable retry errors remain until retry/reset. */
+  const showError = useCallback((message: string, autoDismiss = true) => {
     // 清除之前的 timeout
     if (errorTimeoutRef.current) {
       clearTimeout(errorTimeoutRef.current);
     }
     // 设置新错误
     setError(message);
-    // 3秒后自动清除
-    errorTimeoutRef.current = setTimeout(() => {
-      setError(null);
-      errorTimeoutRef.current = null;
-    }, 3000);
+    if (autoDismiss) {
+      errorTimeoutRef.current = setTimeout(() => {
+        setError(null);
+        errorTimeoutRef.current = null;
+      }, 3000);
+    }
   }, []);
 
   /** Generate unique segment ID */
@@ -1215,7 +1219,7 @@ export function useAgentStream(
             // 下面的 finalizeStream 与已发生过的 done 提交重复叠加。
 
             // 使用独立的error状态管理，3秒后自动清除
-            showError(message);
+            showError(message, retryable !== true);
             setErrorCode(code ?? null);
 
             setState((prev) => ({
@@ -1224,6 +1228,7 @@ export function useAgentStream(
               isThinking: false,
               error: message,
               errorCode: code ?? null,
+              retryable: retryable === true,
             }));
 
             if (code !== undefined || retryable !== undefined) {
@@ -1299,6 +1304,7 @@ export function useAgentStream(
     conflicts: state.conflicts,
     error,
     errorCode,
+    retryable: state.retryable,
     sessionId,
     sendSteeringMessage,
   };

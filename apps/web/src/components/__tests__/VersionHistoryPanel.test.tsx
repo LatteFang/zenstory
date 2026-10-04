@@ -65,6 +65,7 @@ const mockT = vi.fn((key: string) => {
     'editor:versionHistory.beforeAI': 'Before AI',
     'editor:versionHistory.beforeRollback': 'Before Rollback',
     'editor:versionHistory.currentVersion': 'Current',
+    'editor:versionHistory.latestSaved': 'Latest saved snapshot',
     'editor:versionHistory.selectCompare': 'Select for comparison',
     'editor:versionHistory.rollbackTo': 'Rollback to this version',
     'editor:versionHistory.compare': 'Compare',
@@ -326,10 +327,9 @@ describe('VersionHistoryPanel', () => {
       expect(screen.getByText('After AI edit')).toBeInTheDocument()
     })
 
-    // Find rollback button for second snapshot (not current version)
-    // The first snapshot (index 0) is "current", so we look for rollback on the second one
+    // Select the second saved snapshot.
     const rollbackButtons = screen.getAllByTitle('Rollback to this version')
-    fireEvent.click(rollbackButtons[0])
+    fireEvent.click(rollbackButtons[1])
 
     await waitFor(() => {
       expect(global.confirm).toHaveBeenCalled()
@@ -364,20 +364,14 @@ describe('VersionHistoryPanel', () => {
     })
   })
 
-  it('hides rollback button for current version', async () => {
-    render(
-      <VersionHistoryPanel
-        projectId="project-1"
-        onClose={mockOnClose}
-      />
-    )
-
-    await waitFor(() => {
-      expect(screen.getByText('Initial version')).toBeInTheDocument()
-    })
-
-    // First snapshot should have "current version" badge
-    expect(screen.getByText(/current/i)).toBeInTheDocument()
+  it('offers rollback to the latest saved snapshot without claiming it is live state', async () => {
+    render(<VersionHistoryPanel projectId="project-1" onClose={mockOnClose} onRollback={mockOnRollback} />)
+    await screen.findByText('Latest saved snapshot')
+    expect(screen.queryByText('Current')).not.toBeInTheDocument()
+    const rollbackButtons=screen.getAllByTitle('Rollback to this version')
+    expect(rollbackButtons).toHaveLength(mockSnapshots.length)
+    fireEvent.click(rollbackButtons[0])
+    await waitFor(()=>expect(api.versionApi.rollback).toHaveBeenCalledWith('snap-1'))
   })
 
   it('starts editing description', async () => {

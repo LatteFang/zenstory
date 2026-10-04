@@ -22,7 +22,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useIsFetching } from '@tanstack/react-query';
-import { User, Settings, Moon, Sun, LogOut, ExternalLink, CreditCard, Coins, Users, Key } from 'lucide-react';
+import { User, Settings, Moon, Sun, LogOut, CreditCard, Coins, Users, Key } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useIsMobile } from '../hooks/useMediaQuery';
@@ -293,6 +293,25 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
     { id: 'referral' as const, icon: Users, label: tSettings('nav.referral', '邀请') },
   ];
 
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let nextIndex: number | null = null;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      nextIndex = (index + 1) % navItems.length;
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      nextIndex = (index - 1 + navItems.length) % navItems.length;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = navItems.length - 1;
+    }
+
+    if (nextIndex === null) return;
+    event.preventDefault();
+    const nextTab = navItems[nextIndex];
+    setActiveTab(nextTab.id);
+    document.getElementById(`settings-tab-${nextTab.id}`)?.focus();
+  };
+
   return (
     <>
       {/* data-testid: modal-overlay - Modal backdrop for modal interaction tests */}
@@ -309,14 +328,25 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
         <div className={`flex h-full min-h-0 ${isMobile ? 'flex-col' : ''}`}>
           {/* Left navigation */}
           <div className={`${isMobile ? 'px-1 pb-2' : 'w-40 px-3 pb-4 shrink-0'}`}>
-            <nav className={`${isMobile ? 'flex gap-1' : 'space-y-0.5'}`}>
-              {navItems.map((item) => {
+            <nav
+              className={`${isMobile ? 'flex gap-1' : 'space-y-0.5'}`}
+              role="tablist"
+              aria-orientation={isMobile ? 'horizontal' : 'vertical'}
+            >
+              {navItems.map((item, index) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
                 return (
                   <button
                     key={item.id}
+                    id={`settings-tab-${item.id}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    aria-controls="settings-panel"
+                    tabIndex={isActive ? 0 : -1}
                     onClick={() => setActiveTab(item.id)}
+                    onKeyDown={(event) => handleTabKeyDown(event, index)}
                     data-testid={`settings-tab-${item.id}`}
                     className={`flex items-center gap-2 text-sm transition-colors ${
                       isMobile ? 'flex-1 justify-center py-2 px-3' : 'w-full py-2 px-3'
@@ -338,7 +368,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
           <div className={`${isMobile ? 'border-t' : 'border-l'} border-[hsl(var(--border-color))]`} />
 
           {/* Right content area */}
-          <div className="flex-1 min-h-0 p-4 overflow-y-auto">
+          <div
+            className="flex-1 min-h-0 p-4 overflow-y-auto"
+            id="settings-panel"
+            role="tabpanel"
+            aria-labelledby={`settings-tab-${activeTab}`}
+            tabIndex={0}
+          >
             {activeTab === 'profile' && (
               <div className="space-y-3">
                 {/* User card */}
@@ -358,9 +394,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                       {user?.email}
                     </div>
                   </div>
-                  <button className="p-1.5 text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-hover))] rounded transition-colors">
-                    <ExternalLink size={14} />
-                  </button>
                 </div>
 
                 {/* Logout button */}
@@ -380,13 +413,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
               <div className="space-y-5">
                 {/* Language */}
                 <div>
-                  <div className="text-xs font-medium text-[hsl(var(--text-secondary))] mb-2">
+                  <div id="settings-language-label" className="text-xs font-medium text-[hsl(var(--text-secondary))] mb-2">
                     {tSettings('language.title')}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-labelledby="settings-language-label">
                     {['zh', 'en'].map((lang) => (
                       <button
                         key={lang}
+                        type="button"
+                        role="radio"
+                        aria-checked={currentLanguage === lang}
                         onClick={() => {
                           void handleLanguageChange(lang as 'zh' | 'en');
                         }}
@@ -398,7 +434,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                         }`}
                       >
                         <div className="font-medium text-[hsl(var(--text-primary))]">
-                          {lang === 'zh' ? '中文' : 'English'}
+                          {tSettings(`language.${lang}`, lang === 'zh' ? '中文' : 'English')}
                         </div>
                       </button>
                     ))}
@@ -407,16 +443,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
 
                 {/* Theme */}
                 <div>
-                  <div className="text-xs font-medium text-[hsl(var(--text-secondary))] mb-2">
+                  <div id="settings-theme-label" className="text-xs font-medium text-[hsl(var(--text-secondary))] mb-2">
                     {tSettings('theme.mode')}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-labelledby="settings-theme-label">
                     {[
                       { id: 'dark', icon: Moon, label: tSettings('theme.dark') },
                       { id: 'light', icon: Sun, label: tSettings('theme.light') },
                     ].map((item) => (
                       <button
                         key={item.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={theme === item.id}
                         onClick={() => setTheme(item.id as 'dark' | 'light')}
                         data-testid={`theme-button-${item.id}`}
                         className={`p-2.5 rounded-lg border text-center text-sm transition-all ${
@@ -434,13 +473,24 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
 
                 {/* Accent color */}
                 <div>
-                  <div className="text-xs font-medium text-[hsl(var(--text-secondary))] mb-2">
+                  <div id="settings-accent-label" className="text-xs font-medium text-[hsl(var(--text-secondary))] mb-2">
                     {tSettings('theme.color')}
                   </div>
-                  <div className="flex gap-2">
-                    {['#4a9eff', '#22c55e', '#fbbf24', '#f87171', '#ec4899', '#8b5cf6'].map((color) => (
+                  <div className="flex gap-2" role="radiogroup" aria-labelledby="settings-accent-label">
+                    {[
+                      { value: '#4a9eff', name: tSettings('theme.colors.blue', 'Blue') },
+                      { value: '#22c55e', name: tSettings('theme.colors.green', 'Green') },
+                      { value: '#fbbf24', name: tSettings('theme.colors.yellow', 'Yellow') },
+                      { value: '#f87171', name: tSettings('theme.colors.red', 'Red') },
+                      { value: '#ec4899', name: tSettings('theme.colors.pink', 'Pink') },
+                      { value: '#8b5cf6', name: tSettings('theme.colors.purple', 'Purple') },
+                    ].map(({ value: color, name }) => (
                       <button
                         key={color}
+                        type="button"
+                        role="radio"
+                        aria-label={name}
+                        aria-checked={accentColor === color}
                         onClick={() => setAccentColor(color)}
                         data-testid="accent-color-button"
                         data-color={color}

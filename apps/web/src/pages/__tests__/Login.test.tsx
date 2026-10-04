@@ -9,12 +9,14 @@ const {
   mockGoogleLogin,
   mockAppleLogin,
   mockGetAllProjects,
+  mockOAuthEnabled,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockLogin: vi.fn(),
   mockGoogleLogin: vi.fn(),
   mockAppleLogin: vi.fn(),
   mockGetAllProjects: vi.fn(),
+  mockOAuthEnabled: { google: false },
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -57,11 +59,11 @@ vi.mock("../../config/auth", () => ({
     registrationEnabled: true,
     forgotPasswordEnabled: true,
     oauthProviders: {
-      google: { enabled: false },
+      google: { get enabled() { return mockOAuthEnabled.google; } },
       apple: { enabled: false },
     },
   },
-  hasOAuthProviders: () => false,
+  hasOAuthProviders: () => mockOAuthEnabled.google,
 }));
 
 vi.mock("../../components/PublicHeader", () => ({
@@ -81,12 +83,20 @@ import Login from "../Login";
 describe("Login", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockOAuthEnabled.google = false;
     mockGetAllProjects.mockResolvedValue([]);
   });
 
   const renderPage = () =>
     render(
       <MemoryRouter initialEntries={["/login"]}>
+        <Login />
+      </MemoryRouter>
+    );
+
+  const renderPageAt = (entry: string, state?: unknown) =>
+    render(
+      <MemoryRouter initialEntries={[state === undefined ? entry : { pathname: entry, state }]}>
         <Login />
       </MemoryRouter>
     );
@@ -111,6 +121,13 @@ describe("Login", () => {
   it("does not render redundant inline helper text for login method", () => {
     renderPage();
     expect(screen.queryByText(/auth:login.helper/)).not.toBeInTheDocument();
+  });
+
+  it("passes normalized plan intent through Google login", () => {
+    mockOAuthEnabled.google = true;
+    renderPageAt("/login?plan=PRO");
+    fireEvent.click(screen.getByRole("button", { name: "auth:login.googleLogin" }));
+    expect(mockGoogleLogin).toHaveBeenCalledWith({ planIntent: "pro" });
   });
 
   it("shows loading spinner and busy state while login request is pending", async () => {
@@ -157,5 +174,22 @@ describe("Login", () => {
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
     });
+  });
+
+  it("restores protected deep-link search, hash, and router state after login", async () => {
+    const user = userEvent.setup();
+    mockLogin.mockResolvedValue(undefined);
+    renderPageAt("/login", {
+      from: { pathname: "/project/p1", search: "?file=f1", hash: "#selection", state: { source: "guard" } },
+    });
+    fireEvent.change(screen.getByTestId("email-input"), { target: { value: "writer@example.com" } });
+    fireEvent.change(screen.getByTestId("password-input"), { target: { value: "SecurePass123!" } });
+
+    await user.click(screen.getByTestId("login-submit"));
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith(
+      "/project/p1?file=f1#selection",
+      { replace: true, state: { source: "guard" } },
+    ));
   });
 });

@@ -1,9 +1,7 @@
-# zenstory - Production with PostgreSQL + Redis
-# ==============================================
-# 1. cp apps/server/.env.docker.example apps/server/.env.docker
-# 2. cp apps/web/.env.docker.example apps/web/.env.docker
-# 3. Edit .env.docker files with your production values
-# 4. docker compose -f docker-compose.full.yml up -d --build
+# zenstory - production deployment with private PostgreSQL and Redis state services.
+# Copy the Docker env examples, fill every required value, export both files, then run:
+# set -a; . apps/server/.env.docker; . apps/web/.env.docker; set +a
+# docker compose -f docker-compose.full.yml up -d --build
 
 services:
   postgres:
@@ -11,30 +9,63 @@ services:
     container_name: zenstory-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-zenstory}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      POSTGRES_DB: ${POSTGRES_DB:-zenstory}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      POSTGRES_USER: ${POSTGRES_OWNER_USER:?Set POSTGRES_OWNER_USER in apps/server/.env.docker}
+      POSTGRES_PASSWORD: ${POSTGRES_OWNER_PASSWORD:?Set POSTGRES_OWNER_PASSWORD in apps/server/.env.docker}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in apps/server/.env.docker}
+      POSTGRES_APP_USER: ${POSTGRES_APP_USER:?Set POSTGRES_APP_USER in apps/server/.env.docker}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in apps/server/.env.docker}
     volumes:
       - zenstory_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zenstory} -d ${POSTGRES_DB:-zenstory}"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  postgres-init:
+    image: postgres:16-alpine
+    restart: "no"
+    environment:
+      PGHOST: postgres
+      PGPASSWORD: ${POSTGRES_OWNER_PASSWORD:?Set POSTGRES_OWNER_PASSWORD in apps/server/.env.docker}
+      POSTGRES_USER: ${POSTGRES_OWNER_USER:?Set POSTGRES_OWNER_USER in apps/server/.env.docker}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in apps/server/.env.docker}
+      POSTGRES_APP_USER: ${POSTGRES_APP_USER:?Set POSTGRES_APP_USER in apps/server/.env.docker}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in apps/server/.env.docker}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./apps/server/docker/init-app-role.sh:/init-app-role.sh:ro
+    entrypoint: ["sh", "/init-app-role.sh"]
+
+  migrate:
+    build:
+      context: ./apps/server
+      dockerfile: Dockerfile
+    restart: "no"
+    env_file:
+      - ./apps/server/.env.docker
+    environment:
+      ENVIRONMENT: production
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in apps/server/.env.docker}
+      DATABASE_URL: postgresql://${POSTGRES_OWNER_USER:?Set POSTGRES_OWNER_USER}:${POSTGRES_OWNER_PASSWORD:?Set POSTGRES_OWNER_PASSWORD}@postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB}
+    depends_on:
+      postgres-init:
+        condition: service_completed_successfully
+    command: ["python", "-c", "import asyncio; from database import init_db; asyncio.run(init_db())"]
 
   redis:
     image: redis:7-alpine
     container_name: zenstory-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in apps/server/.env.docker}
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
     volumes:
       - zenstory_redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -47,13 +78,20 @@ services:
     restart: unless-stopped
     env_file:
       - ./apps/server/.env.docker
+    environment:
+      ENVIRONMENT: production
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in apps/server/.env.docker}
+      DATABASE_URL: postgresql://${POSTGRES_APP_USER:?Set POSTGRES_APP_USER}:${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD}@postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD}@redis:6379/0
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
-      - "${SERVER_PORT:-8000}:8080"
+      - "${SERVER_BIND_ADDRESS:-127.0.0.1}:${SERVER_PORT:-8000}:8080"
     volumes:
       - zenstory_uploads:/app/uploads
       - zenstory_chroma:/app/chroma_data
@@ -62,23 +100,17 @@ services:
     build:
       context: ./apps/web
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:?Set VITE_API_BASE_URL in apps/web/.env.docker}
     container_name: zenstory-web
     restart: unless-stopped
-    env_file:
-      - ./apps/web/.env.docker
     depends_on:
       server:
         condition: service_healthy
     ports:
-      - "${WEB_PORT:-5173}:5173"
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-8080}:8080"
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:5173',res=>process.exit(res.statusCode<500?0:1)).on('error',()=>process.exit(1))"
-        ]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080',res=>process.exit(res.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 10

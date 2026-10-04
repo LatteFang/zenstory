@@ -111,28 +111,15 @@ export default function SkillsPage() {
   const [discoverLoading, setDiscoverLoading] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [addedPublicIds, setAddedPublicIds] = useState<Set<string>>(new Set());
+  const publicSkillsRequestRef = useRef(0);
 
   // Define all async functions with useCallback before useEffect hooks
-  const loadDiscoverData = useCallback(async () => {
-    setDiscoverLoading(true);
+  const loadCategories = useCallback(async () => {
     try {
-      const [skillsRes, categoriesRes] = await Promise.all([
-        publicSkillsApi.list(),
-        publicSkillsApi.getCategories(),
-      ]);
-      setPublicSkills(skillsRes.skills);
+      const categoriesRes = await publicSkillsApi.getCategories();
       setCategories(categoriesRes.categories);
-      setAddedPublicIds((prev) => {
-        const merged = new Set(prev);
-        skillsRes.skills
-          .filter((skill) => skill.is_added)
-          .forEach((skill) => merged.add(skill.id));
-        return merged;
-      });
     } catch (error) {
-      logger.error("Failed to load discover data:", error);
-    } finally {
-      setDiscoverLoading(false);
+      logger.error("Failed to load skill categories:", error);
     }
   }, []);
 
@@ -159,11 +146,14 @@ export default function SkillsPage() {
   }, []);
 
   const loadPublicSkills = useCallback(async () => {
+    const requestId = ++publicSkillsRequestRef.current;
+    setDiscoverLoading(true);
     try {
       const response = await publicSkillsApi.list({
         category: selectedCategory || undefined,
         search: searchQuery || undefined,
       });
+      if (requestId !== publicSkillsRequestRef.current) return;
       setPublicSkills(response.skills);
       setAddedPublicIds((prev) => {
         const merged = new Set(prev);
@@ -173,14 +163,19 @@ export default function SkillsPage() {
         return merged;
       });
     } catch (error) {
+      if (requestId !== publicSkillsRequestRef.current) return;
       logger.error("Failed to load public skills:", error);
+    } finally {
+      if (requestId === publicSkillsRequestRef.current) {
+        setDiscoverLoading(false);
+      }
     }
   }, [selectedCategory, searchQuery]);
 
-  // Load discover data on initial mount (since discover is default tab)
+  // Categories are independent metadata; the list effect below owns list loading.
   useEffect(() => {
-    loadDiscoverData();
-  }, [loadDiscoverData]);
+    loadCategories();
+  }, [loadCategories]);
 
   // Load my skills data when tab changes to my-skills
   useEffect(() => {

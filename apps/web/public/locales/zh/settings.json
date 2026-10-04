@@ -23,7 +23,15 @@
     "mode": "主题模式",
     "dark": "深色主题",
     "light": "浅色主题",
-    "color": "主题颜色"
+    "color": "主题颜色",
+    "colors": {
+      "blue": "蓝色",
+      "green": "绿色",
+      "yellow": "黄色",
+      "red": "红色",
+      "pink": "粉色",
+      "purple": "紫色"
+    }
   },
   "language": {
     "title": "语言偏好",

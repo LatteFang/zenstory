@@ -230,7 +230,7 @@ export const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
             </span>
             {index === 0 && (
               <span className="badge-success">
-                {t('latest')}
+                {t('latestSaved')}
               </span>
             )}
           </div>
@@ -245,8 +245,7 @@ export const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
             >
               <FileText size={14} className="text-[hsl(var(--text-secondary))]" />
             </button>
-            {index > 0 && (
-              <button
+            <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onRollback(version.version_number);
@@ -256,7 +255,6 @@ export const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
               >
                 <RotateCcw size={14} className="text-[hsl(var(--text-secondary))]" />
               </button>
-            )}
           </div>
         </div>
 

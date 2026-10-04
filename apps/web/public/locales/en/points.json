@@ -64,5 +64,7 @@
     "daysAgo_one": "{{count}} day ago",
     "daysAgo_other": "{{count}} days ago",
     "daysAgo_plural": "{{count}} days ago"
-  }
+  },
+  "balanceLoadFailed": "Unable to load your points balance.",
+  "configLoadFailed": "Unable to load redemption prices."
 }

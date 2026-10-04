@@ -1,13 +1,16 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ReactNode } from "react";
 
 import { ImportMaterialDialog } from "../ImportMaterialDialog";
 import { fileApi } from "../../lib/api";
+import { materialsApi } from "../../lib/materialsApi";
+
+let currentProjectId = "project-1";
 
 vi.mock("../../contexts/ProjectContext", () => ({
   useProject: () => ({
-    currentProjectId: "project-1",
+    currentProjectId,
   }),
 }));
 
@@ -45,6 +48,7 @@ vi.mock("../ui/Modal", () => {
 describe("ImportMaterialDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    currentProjectId = "project-1";
     vi.mocked(fileApi.getTree).mockResolvedValue({
       tree: [
         { id: "folder-1", title: "Other Folder", file_type: "folder" },
@@ -110,5 +114,64 @@ describe("ImportMaterialDialog", () => {
       expect(fileApi.getTree).toHaveBeenCalledTimes(2);
       expect(screen.getByRole("combobox")).toHaveValue("");
     });
+  });
+
+  it("shows folder load failure and retries", async () => {
+    vi.mocked(fileApi.getTree)
+      .mockRejectedValueOnce(new Error("folders offline"))
+      .mockResolvedValueOnce({ tree: [] } as never);
+    render(
+      <ImportMaterialDialog isOpen onClose={vi.fn()} preview={{
+        title: "Preview", markdown: "content", novel_title: "Novel",
+        suggested_file_type: "character", suggested_folder_name: "Characters", suggested_file_name: "Hero",
+      }} novelId={1} entityType="characters" entityId={1} onSuccess={vi.fn()} />
+    );
+    expect(await screen.findByText("editor:fileTree.importDialog.folderLoadFailed")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "common:retry" }));
+    await waitFor(() => expect(fileApi.getTree).toHaveBeenCalledTimes(2));
+  });
+
+  it("blocks cancel while a paid import is pending", async () => {
+    vi.mocked(materialsApi.importToProject).mockReturnValueOnce(new Promise(() => {}));
+    const onClose = vi.fn();
+    render(
+      <ImportMaterialDialog isOpen onClose={onClose} preview={{
+        title: "Preview", markdown: "content", novel_title: "Novel",
+        suggested_file_type: "character", suggested_folder_name: "Characters", suggested_file_name: "Hero",
+      }} novelId={1} entityType="characters" entityId={1} onSuccess={vi.fn()} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "editor:fileTree.importDialog.confirm" }));
+    const cancel = screen.getByRole("button", { name: "editor:fileTree.importDialog.cancel" });
+    expect(cancel).toBeDisabled();
+    fireEvent.click(cancel);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("does not let project A folders overwrite project B folders", async () => {
+    let resolveProjectA!: (value: unknown) => void;
+    vi.mocked(fileApi.getTree)
+      .mockReturnValueOnce(new Promise((resolve) => { resolveProjectA = resolve; }) as never)
+      .mockResolvedValueOnce({
+        tree: [{ id: "folder-b", title: "Project B Folder", file_type: "folder" }],
+      } as never);
+    const preview = {
+      title: "Preview", markdown: "content", novel_title: "Novel",
+      suggested_file_type: "character", suggested_folder_name: "Characters", suggested_file_name: "Hero",
+    };
+    const view = render(
+      <ImportMaterialDialog isOpen onClose={vi.fn()} preview={preview}
+        novelId={1} entityType="characters" entityId={1} onSuccess={vi.fn()} />
+    );
+    await waitFor(() => expect(fileApi.getTree).toHaveBeenCalledWith("project-1"));
+
+    currentProjectId = "project-2";
+    view.rerender(
+      <ImportMaterialDialog isOpen onClose={vi.fn()} preview={preview}
+        novelId={1} entityType="characters" entityId={1} onSuccess={vi.fn()} />
+    );
+    expect(await screen.findByRole("option", { name: "Project B Folder" })).toBeInTheDocument();
+    resolveProjectA({ tree: [{ id: "folder-a", title: "Project A Folder", file_type: "folder" }] });
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.queryByRole("option", { name: "Project A Folder" })).not.toBeInTheDocument();
   });
 });

@@ -23,6 +23,8 @@ export interface MaterialLibraryState {
   isFetching: boolean;
   /** Error state */
   error: Error | null;
+  /** Retry loading the library summary. */
+  refetch: () => Promise<void>;
   /** Currently expanded novel IDs */
   expandedNovels: Set<number>;
   /** Currently expanded entity types per novel */
@@ -54,7 +56,7 @@ export function useMaterialLibrary(): MaterialLibraryState {
   const previewSeqRef = useRef(0);
 
   // Fetch library summary - auto-load when component mounts
-  const { data, isLoading, isFetching, error } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['material-library-summary'],
     queryFn: () => materialsApi.getLibrarySummary(),
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -117,11 +119,16 @@ export function useMaterialLibrary(): MaterialLibraryState {
     setIsPreviewLoading(false);
   }, []);
 
+  const handleRefetch = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
   return {
     libraries: data ?? [],
     isLoading,
     isFetching: Boolean(isFetching),
     error: error as Error | null,
+    refetch: handleRefetch,
     expandedNovels,
     expandedTypes,
     toggleNovel,

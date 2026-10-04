@@ -11,7 +11,7 @@ export default function InspirationDetailPage() {
   const navigate = useNavigate();
   const { t } = useTranslation("inspirations");
 
-  const { getDetail, currentDetail, isDetailLoading, copyInspiration, isCopying } = useInspirations();
+  const { getDetail, currentDetail, isDetailLoading, copyInspiration, isCopying, resetDetail } = useInspirations();
   const [isOpen, setIsOpen] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -31,8 +31,9 @@ export default function InspirationDetailPage() {
 
     return () => {
       cancelled = true;
+      resetDetail();
     };
-  }, [inspirationId, getDetail]);
+  }, [inspirationId, getDetail, resetDetail]);
 
   const handleClose = () => {
     setIsOpen(false);

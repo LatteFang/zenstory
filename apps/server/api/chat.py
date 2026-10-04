@@ -11,7 +11,7 @@ import asyncio
 from datetime import datetime
 from typing import Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from services.auth import get_current_active_user
 from sqlalchemy import delete, desc
@@ -245,7 +245,7 @@ async def get_or_create_session(
 @router.get("/session/{project_id}/messages", response_model=list[MessageResponse])
 async def get_session_messages(
     project_id: str,
-    limit: int = 50,
+    limit: int = Query(50, ge=1, le=100),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -325,7 +325,7 @@ async def get_session_messages(
 @router.get("/session/{project_id}/recent", response_model=list[MessageResponse])
 async def get_recent_messages(
     project_id: str,
-    limit: int = 20,
+    limit: int = Query(20, ge=1, le=100),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_active_user),
 ):

@@ -196,6 +196,7 @@ vi.mock('../../config/inspirations', () => ({
 }))
 
 import DashboardHome from '../DashboardHome'
+import { projectApi } from '../../lib/api'
 
 const renderDashboardHome = () => {
   const queryClient = new QueryClient({
@@ -234,6 +235,28 @@ describe('DashboardHome featured inspirations section', () => {
     mockDashboardInspirations = []
     mockGetActivationGuide.mockImplementation(() => Promise.resolve(mockActivationGuide))
     mockGetRecommendations.mockImplementation(() => Promise.resolve(mockPersonaRecommendations))
+    vi.mocked(projectApi.getTemplates).mockResolvedValue(null)
+  })
+
+  it('retains the baseline templates and reports a template API failure', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(projectApi.getTemplates).mockRejectedValueOnce(new Error('templates unavailable'))
+
+    renderDashboardHome()
+
+    await waitFor(() => {
+      expect(projectApi.getTemplates).toHaveBeenCalledTimes(1)
+      expect(consoleError).toHaveBeenCalledWith(
+        '[ERROR]',
+        'Failed to load templates:',
+        expect.objectContaining({ message: 'templates unavailable' }),
+      )
+    })
+    expect(screen.getByRole('button', { name: '长篇小说' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'projectType.short.name' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'projectType.screenplay.name' })).toBeInTheDocument()
+
+    consoleError.mockRestore()
   })
 
   it('does not mount or fetch featured inspirations when the feature is disabled', () => {

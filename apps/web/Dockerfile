@@ -1,14 +1,24 @@
-FROM node:20-alpine
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# apps/web keeps its own npm lockfile (the Vercel build uses it too); the pnpm
-# lockfile lives at the monorepo root, outside this build context.
 COPY package.json package-lock.json ./
 RUN npm ci --legacy-peer-deps
 
 COPY . .
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+RUN test -n "$VITE_API_BASE_URL" && npm run build
 
-EXPOSE 5173
+FROM node:20-alpine AS runtime
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+ENV NODE_ENV=production \
+    PORT=8080
+WORKDIR /app
+
+COPY --from=build --chown=node:node /app/dist ./dist
+COPY --chown=node:node scripts/static-server.mjs ./static-server.mjs
+
+USER node
+EXPOSE 8080
+CMD ["node", "static-server.mjs"]

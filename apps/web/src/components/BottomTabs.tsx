@@ -138,14 +138,26 @@ export const BottomTabs: React.FC<BottomTabsProps> = ({
       role="tablist"
       aria-label="Mobile navigation"
     >
-      {tabs.map((tab) => {
+      {tabs.map((tab, index) => {
         const isActive = activeTab === tab.id;
         const Icon = tab.icon;
 
         return (
           <button
             key={tab.id}
+            id={`${tab.id}-tab`}
             onClick={() => onTabChange(tab.id)}
+            onKeyDown={(event) => {
+              const nextIndex = event.key === 'ArrowRight' ? (index + 1) % tabs.length
+                : event.key === 'ArrowLeft' ? (index - 1 + tabs.length) % tabs.length
+                : event.key === 'Home' ? 0
+                : event.key === 'End' ? tabs.length - 1 : null;
+              if (nextIndex === null) return;
+              event.preventDefault();
+              onTabChange(tabs[nextIndex].id);
+              event.currentTarget.parentElement
+                ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex]?.focus();
+            }}
             className={`mobile-bottom-tab flex-1 flex flex-col items-center justify-center gap-1.5 transition-colors transition-transform min-h-[44px] no-select active:scale-95 active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-primary)/0.6)] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--bg-secondary))] ${
               isActive
                 ? "text-[hsl(var(--accent-primary))] bg-[hsl(var(--accent-primary)/0.1)]"
@@ -154,6 +166,7 @@ export const BottomTabs: React.FC<BottomTabsProps> = ({
             role="tab"
             aria-selected={isActive}
             aria-controls={`${tab.id}-panel`}
+            tabIndex={isActive ? 0 : -1}
           >
             <Icon
               size={20}

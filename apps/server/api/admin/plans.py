@@ -92,15 +92,17 @@ def update_plan(
     if request.price_yearly_cents is not None:
         plan.price_yearly_cents = request.price_yearly_cents
     if request.features is not None:
-        plan.features = request.features
+        features = request.features.model_dump(exclude_unset=True)
+        if any(value is None for value in features.values()):
+            session.rollback()
+            raise APIException(error_code=ErrorCode.VALIDATION_ERROR, status_code=422)
+        plan.features = features
     if request.is_active is not None:
         plan.is_active = request.is_active
 
     plan.updated_at = utcnow()
 
     session.add(plan)
-    session.commit()
-    session.refresh(plan)
 
     # Audit log
     new_value = {
@@ -111,12 +113,16 @@ def update_plan(
         "features": plan.features,
         "is_active": plan.is_active,
     }
-    admin_audit_service.log_action(
-        session, current_user.id, "update_plan", "plan", plan_id,
-        old_value=old_value,
-        new_value=new_value,
-        request=http_request
-    )
+    try:
+        admin_audit_service.log_action(
+            session, current_user.id, "update_plan", "plan", plan_id,
+            old_value=old_value, new_value=new_value, request=http_request, commit=False,
+        )
+        session.commit()
+        session.refresh(plan)
+    except Exception:
+        session.rollback()
+        raise
 
     log_with_context(
         logger,

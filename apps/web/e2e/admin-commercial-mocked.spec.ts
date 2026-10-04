@@ -125,6 +125,10 @@ test.describe('Admin commercial flows (mocked)', () => {
 
     const row = page.locator('table tbody tr', { hasText: 'E2E-CODE' }).first();
     await row.locator('button').last().click();
+    const confirmation = page.getByRole('dialog');
+    await expect(confirmation).toBeVisible();
+    expect(updatePayload).toBeNull();
+    await confirmation.getByRole('button', { name: /停用兑换码|Deactivate code|codes\.confirmDeactivate/i }).click();
 
     await expect.poll(() => updatePayload).not.toBeNull();
     expect(updatePayload).toEqual({ is_active: false });

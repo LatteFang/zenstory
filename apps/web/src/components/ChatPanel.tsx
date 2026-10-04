@@ -390,6 +390,10 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
   const pendingMaterialClearRef = useRef(false);
   const pendingQuoteClearRef = useRef(false);
   const currentAgentSessionIdRef = useRef<string | null>(null);
+  const lastRetryRequestRef = useRef<{
+    projectId: string;
+    request: Omit<AgentRequest, "project_id">;
+  } | null>(null);
 
 
   // Use the useChatStreaming hook for streaming UI state management
@@ -419,6 +423,11 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const autoScrollFrameRef = useRef<number | null>(null);
   const lastLoadedProjectRef = useRef<string | null>(null);
+  const historyRequestSeqRef = useRef(0);
+
+  useEffect(() => {
+    lastRetryRequestRef.current = null;
+  }, [currentProjectId]);
 
   // Persist generation mode per project in localStorage.
   useEffect(() => {
@@ -834,6 +843,7 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
     conflicts,
     error,
     errorCode,
+    retryable,
     sessionId,
     sendSteeringMessage,
   } = useAgentStream(currentProjectId!, {
@@ -937,6 +947,7 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
    */
   // Load chat history when project changes
   const loadChatHistory = useCallback(async (projectId: string): Promise<Message[]> => {
+    const requestId = ++historyRequestSeqRef.current;
     setIsLoadingHistory(true);
     try {
       const historyMessages = await getRecentMessages(projectId, 50);
@@ -982,7 +993,9 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
       setFeedbackPendingMessageId(null);
       return [];
     } finally {
-      setIsLoadingHistory(false);
+      if (requestId === historyRequestSeqRef.current && currentProjectIdRef.current === projectId) {
+        setIsLoadingHistory(false);
+      }
     }
   }, []);
 
@@ -1192,8 +1205,19 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
     });
 
     // Start streaming
+    if (currentProjectId) {
+      lastRetryRequestRef.current = { projectId: currentProjectId, request };
+    }
     startStream(request);
   }, [isStreaming, selectedItem?.id, selectedItem?.type, selectedItem?.title, attachedFileIds, attachedLibraryMaterials, quotes, generationMode, startStream, clearDraft, setAiSuggestions, currentProjectId]);
+
+  const handleRetry = useCallback(() => {
+    const lastRequest = lastRetryRequestRef.current;
+    if (!retryable || isStreaming || !currentProjectId || lastRequest?.projectId !== currentProjectId) {
+      return;
+    }
+    startStream(lastRequest.request);
+  }, [currentProjectId, isStreaming, retryable, startStream]);
 
   /**
    * Send a steering (follow-up) instruction while the agent is generating.
@@ -1621,7 +1645,7 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
               <Loader2 size={32} className="mb-4 animate-spin opacity-50" />
               <p className="text-sm">{t('chat:panel.loadingMessages')}</p>
             </div>
-          ) : messages.length === 0 && !isStreaming && !isThinking ? (
+          ) : messages.length === 0 && !isStreaming && !isThinking && !(error && retryable) ? (
             <div className="h-[200px] flex flex-col items-center justify-center text-[hsl(var(--text-secondary))]">
               <Sparkles size={48} className="mb-4 opacity-30" />
               <p className={`text-center ${isMobile ? 'text-xs mb-1.5 px-2' : 'text-sm mb-2'}`}>{t('chat:panel.welcome')}</p>
@@ -1716,6 +1740,15 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
                           : t('chat:panel.streamErrorTitle')}
                       </p>
                       <p className="text-[hsl(var(--warning))] text-sm break-words">{error}</p>
+                      {retryable && lastRetryRequestRef.current?.projectId === currentProjectId && (
+                        <button
+                          type="button"
+                          onClick={handleRetry}
+                          className="mt-2 inline-flex h-8 items-center rounded-md border border-[hsl(var(--warning)/0.35)] px-3 text-xs font-medium text-[hsl(var(--warning))] hover:bg-[hsl(var(--warning)/0.12)] transition-colors"
+                        >
+                          {t('common:retry')}
+                        </button>
+                      )}
                       {errorCode === 'ERR_QUOTA_AI_CONVERSATIONS_EXCEEDED' && (
                         <div className="mt-2 space-y-2">
                           <p className="text-xs text-[hsl(var(--text-secondary))]">

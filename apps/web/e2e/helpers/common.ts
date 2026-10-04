@@ -9,7 +9,7 @@ import fs from 'node:fs'
 import { Page, APIRequestContext, expect } from '@playwright/test'
 
 // Test credentials
-const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'e2e-test@zenstory.local'
+const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'e2e-test@example.com'
 const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD || 'E2eTestPassword123!'
 const AUTH_FILE = 'playwright/.auth/user.json'
 

@@ -25,6 +25,15 @@ const SIMPLE_EDITOR_MIN_HEIGHT_PX = 200;
 
 export type SaveOutcome = "saved" | "conflict" | "failed";
 
+export interface SaveSubmission {
+  fileId?: string;
+  title: string;
+  content: string;
+  baseUpdatedAt?: string;
+  previousTitle: string;
+  versionIntent?: FileUpdateVersionIntent;
+}
+
 const restoreContainerScrollTop = (container: HTMLElement | null, prevScrollTop: number | null) => {
   if (!container || prevScrollTop === null) return;
 
@@ -42,11 +51,13 @@ interface SimpleEditorProps {
   projectId?: string;
   fileType?: string;
   fileTitle?: string;
+  baseUpdatedAt?: string;
   title: string;
   content: string;
   onTitleChange: (title: string) => void;
   onContentChange: (content: string) => void;
-  onSave: (versionIntent?: FileUpdateVersionIntent) => Promise<SaveOutcome>;
+  onSave: (submission: SaveSubmission) => Promise<SaveOutcome>;
+  onFlushReady?: (flush: (() => Promise<SaveOutcome>) | null) => void;
   readOnly?: boolean;
   isStreaming?: boolean;
   /**
@@ -72,11 +83,13 @@ export const SimpleEditor = ({
   projectId,
   fileType,
   fileTitle,
+  baseUpdatedAt,
   title,
   content,
   onTitleChange,
   onContentChange,
   onSave,
+  onFlushReady,
   readOnly = false,
   isStreaming = false,
   isAiEditing = false,
@@ -106,13 +119,24 @@ export const SimpleEditor = ({
   const selectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectionRangeRef = useRef<{ start: number; end: number } | null>(null);
   const lastSavedContentRef = useRef<string>(content);
+  const lastSavedTitleRef = useRef<string>(title);
   const latestContentRef = useRef(content);
+  const latestTitleRef = useRef(title);
   const previousFileIdRef = useRef(fileId);
   const pendingBaselineSyncRef = useRef(false);
   const shouldAutoScrollRef = useRef(true);
   const isComposingRef = useRef(false);
-  const handleSaveRef = useRef<() => Promise<void>>(async () => undefined);
+  const handleSaveRef = useRef<(submission?: SaveSubmission) => Promise<SaveOutcome>>(
+    async () => "failed",
+  );
   const latestFileIdRef = useRef<string | undefined>(fileId);
+  const latestBaseUpdatedAtRef = useRef(baseUpdatedAt);
+  const dirtyRef = useRef(false);
+  const pendingSaveCountRef = useRef(0);
+  const saveChainRef = useRef<Promise<unknown>>(Promise.resolve());
+  const activeSaveRef = useRef<{ key: string; promise: Promise<SaveOutcome> } | null>(null);
+  const draftRef = useRef({ fileId, title, content, baseUpdatedAt });
+  const isMountedRef = useRef(true);
 
   // Natural polish (de-AI tone) state
   const [isNaturalPolishRunning, setIsNaturalPolishRunning] = useState(false);
@@ -127,7 +151,20 @@ export const SimpleEditor = ({
   } | null>(null);
 
   latestContentRef.current = content;
+  latestTitleRef.current = title;
   latestFileIdRef.current = fileId;
+  latestBaseUpdatedAtRef.current = baseUpdatedAt;
+
+  useEffect(() => {
+    if (!dirtyRef.current && draftRef.current.fileId === fileId) {
+      draftRef.current = { fileId, title, content, baseUpdatedAt };
+    }
+  }, [fileId, title, content, baseUpdatedAt]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   // Pinch-to-zoom gesture support
   const { zoom, bind: bindPinchZoom, resetZoom } = usePinchZoom(1, 0.5, 2.5);
@@ -187,13 +224,30 @@ export const SimpleEditor = ({
     const didFileChange = previousFileIdRef.current !== fileId;
     previousFileIdRef.current = fileId;
 
+    if (didFileChange && dirtyRef.current) {
+      const previousDraft = draftRef.current;
+      void handleSaveRef.current({
+        ...previousDraft,
+        previousTitle: lastSavedTitleRef.current,
+      });
+    }
+
+    draftRef.current = {
+      fileId,
+      title: latestTitleRef.current,
+      content: latestContentRef.current,
+      baseUpdatedAt: latestBaseUpdatedAtRef.current,
+    };
+
     adjustTextareaHeight(true);
     // When opening a new file, default to "follow bottom" during streaming
     shouldAutoScrollRef.current = true;
     // Reset save/dirty state for the new file and sync baseline on first content load.
     setIsDirty(false);
+    dirtyRef.current = false;
     setLastSaved(null);
     lastSavedContentRef.current = latestContentRef.current;
+    lastSavedTitleRef.current = latestTitleRef.current;
     pendingBaselineSyncRef.current = true;
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -531,31 +585,53 @@ export const SimpleEditor = ({
   }, [isDirty, title, content, isNaturalPolishRunning, isAiEditing]);
 
   // Handle save
-  const handleSave = async () => {
-    if (isSaving || !isDirty || isNaturalPolishRunning || isAiEditing) return;
+  const handleSave = async (providedSubmission?: SaveSubmission): Promise<SaveOutcome> => {
+    if ((!dirtyRef.current && !providedSubmission) || isNaturalPolishRunning || isAiEditing) {
+      return "failed";
+    }
 
-    setIsSaving(true);
-    const previousContent = lastSavedContentRef.current;
-    const contentChanged = content !== previousContent;
-    try {
-      let versionIntent: FileUpdateVersionIntent | undefined;
-      if (contentChanged) {
-        const currentWords = countWords(content);
-        const shouldCreateVersion = Math.abs(content.length - previousContent.length) > 10;
-        versionIntent = shouldCreateVersion
-          ? { change_type: "edit", change_source: "user", word_count: currentWords }
-          : { skip_version: true, word_count: currentWords };
+    const draft: SaveSubmission = providedSubmission ?? {
+      ...draftRef.current,
+      previousTitle: lastSavedTitleRef.current,
+    };
+    // Retain the old-file baseline when a switch flushes its immutable draft.
+    const queuedBaselineContent = lastSavedContentRef.current;
+    const queuedBaselineTitle = lastSavedTitleRef.current;
+    const submissionKey = JSON.stringify([
+      draft.fileId, draft.title, draft.content, draft.baseUpdatedAt,
+    ]);
+    if (activeSaveRef.current?.key === submissionKey) {
+      return activeSaveRef.current.promise;
+    }
+
+    pendingSaveCountRef.current += 1;
+    if (isMountedRef.current) setIsSaving(true);
+    const execute = async (): Promise<SaveOutcome> => {
+      // A preceding successful save advances this baseline. Resolve it only
+      // when this immutable draft reaches the front of the serialized queue.
+      const isCurrentFile = latestFileIdRef.current === draft.fileId;
+      const previousContent = isCurrentFile ? lastSavedContentRef.current : queuedBaselineContent;
+      const previousTitle = isCurrentFile ? lastSavedTitleRef.current : queuedBaselineTitle;
+      const contentChanged = draft.content !== previousContent;
+      let versionIntent = draft.versionIntent;
+      if (!versionIntent && contentChanged) {
+        const wordCount = countWords(draft.content);
+        versionIntent = Math.abs(draft.content.length - previousContent.length) > 10
+          ? { change_type: "edit", change_source: "user", word_count: wordCount }
+          : { skip_version: true, word_count: wordCount };
       }
-      const outcome = await onSave(versionIntent);
+      const submission: SaveSubmission = { ...draft, previousTitle, versionIntent };
+      const outcome = await onSave(submission);
       if (outcome !== "saved") {
         // Conflict/failure paths deliberately keep the old baseline, dirty
         // indicator and pending writing stats. The parent may have opened a
         // diff review, but no save has completed yet.
-        return;
+        return outcome;
       }
 
-      if (contentChanged) {
-        lastSavedContentRef.current = content;
+      if (latestFileIdRef.current === submission.fileId) {
+        lastSavedContentRef.current = submission.content;
+        lastSavedTitleRef.current = submission.title;
       }
 
       // Record daily writing stats for primary writing content.
@@ -565,7 +641,7 @@ export const SimpleEditor = ({
         contentChanged
       ) {
         const previousWords = countWords(previousContent);
-        const currentWords = countWords(content);
+        const currentWords = countWords(submission.content);
         const wordsAdded = Math.max(currentWords - previousWords, 0);
         const wordsDeleted = Math.max(previousWords - currentWords, 0);
 
@@ -579,17 +655,55 @@ export const SimpleEditor = ({
           logger.error("Failed to record writing stats:", statsError);
         }
       }
-      
-      setLastSaved(new Date());
-      setIsDirty(false);
-    } catch (error) {
-      logger.error("Failed to save:", error);
-    } finally {
-      setIsSaving(false);
-    }
+
+      if (
+        latestFileIdRef.current === submission.fileId &&
+        latestTitleRef.current === submission.title &&
+        latestContentRef.current === submission.content
+      ) {
+        dirtyRef.current = false;
+        if (isMountedRef.current) {
+          setIsDirty(false);
+          setLastSaved(new Date());
+        }
+      } else if (latestFileIdRef.current === submission.fileId) {
+        dirtyRef.current = true;
+        if (isMountedRef.current) setIsDirty(true);
+      }
+      return "saved";
+    };
+
+    const queued = saveChainRef.current.then(execute, execute);
+    saveChainRef.current = queued.catch(() => undefined);
+    const result = (async (): Promise<SaveOutcome> => {
+      try {
+        return await queued;
+      } catch (error) {
+        logger.error("Failed to save:", error);
+        return "failed";
+      } finally {
+        if (activeSaveRef.current?.key === submissionKey) activeSaveRef.current = null;
+        pendingSaveCountRef.current -= 1;
+        if (pendingSaveCountRef.current === 0 && isMountedRef.current) setIsSaving(false);
+      }
+    })();
+    activeSaveRef.current = { key: submissionKey, promise: result };
+    return result;
   };
 
   handleSaveRef.current = handleSave;
+
+  useEffect(() => {
+    if (!onFlushReady) return;
+    onFlushReady(async () => {
+      if (!dirtyRef.current) return "saved";
+      return handleSaveRef.current();
+    });
+    return () => {
+      if (dirtyRef.current) void handleSaveRef.current();
+      onFlushReady(null);
+    };
+  }, [onFlushReady]);
 
   // Handle keyboard shortcuts
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -658,13 +772,17 @@ export const SimpleEditor = ({
 
   // Handle title change
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    draftRef.current = { ...draftRef.current, title: e.target.value };
     onTitleChange(e.target.value);
+    dirtyRef.current = true;
     setIsDirty(true);
   };
 
   // Handle content change
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    draftRef.current = { ...draftRef.current, content: e.target.value };
     onContentChange(e.target.value);
+    dirtyRef.current = true;
     setIsDirty(true);
 
     // During IME composition (e.g. Chinese Pinyin), avoid resizing on each intermediate update.
@@ -891,7 +1009,7 @@ export const SimpleEditor = ({
 
             {/* Save button */}
             <button
-              onClick={handleSave}
+              onClick={() => void handleSave()}
               disabled={isSaving || !isDirty || readOnly || isStreaming || isNaturalPolishRunning}
               className="px-3 py-1.5 text-xs bg-[hsl(var(--accent-primary))] text-white rounded hover:bg-[hsl(var(--accent-dark))] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
             >

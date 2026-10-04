@@ -47,10 +47,10 @@ runs:
         REDEMPTION_CODE_HMAC_SECRET=test-hmac-secret-min-32-characters-for-ci
         ZHIPU_EMBEDDINGS_API_KEY=skip-vector-tests-in-ci
         ANTHROPIC_API_KEY=test-key-for-ci-testing
-        E2E_TEST_EMAIL=e2e-test@zenstory.local
+        E2E_TEST_EMAIL=e2e-test@example.com
         E2E_TEST_PASSWORD=E2eTestPassword123!
         E2E_TEST_USERNAME=e2e_test_user
-        E2E_TEST_ADMIN_EMAIL=test-admin@zenstory.test
+        E2E_TEST_ADMIN_EMAIL=test-admin@example.com
         E2E_TEST_ADMIN_PASSWORD=TestAdmin123!
         E2E_TEST_ADMIN_USERNAME=test_admin
         AUTH_RATE_LIMIT_ENABLED=false
@@ -76,10 +76,10 @@ runs:
       env:
         DATABASE_URL: postgresql://test:test@localhost:${{ inputs.postgres-port }}/zenstory_test
         REDIS_URL: redis://localhost:${{ inputs.redis-port }}/1
-        E2E_TEST_EMAIL: e2e-test@zenstory.local
+        E2E_TEST_EMAIL: e2e-test@example.com
         E2E_TEST_PASSWORD: E2eTestPassword123!
         E2E_TEST_USERNAME: e2e_test_user
-        E2E_TEST_ADMIN_EMAIL: test-admin@zenstory.test
+        E2E_TEST_ADMIN_EMAIL: test-admin@example.com
         E2E_TEST_ADMIN_PASSWORD: TestAdmin123!
         E2E_TEST_ADMIN_USERNAME: test_admin
       run: |
@@ -98,10 +98,10 @@ runs:
         OPENAI_API_KEY: test-key-for-ci-testing
         JWT_SECRET_KEY: test-secret-key-min-32-characters-for-ci-testing
         ANTHROPIC_API_KEY: test-key-for-ci-testing
-        E2E_TEST_EMAIL: e2e-test@zenstory.local
+        E2E_TEST_EMAIL: e2e-test@example.com
         E2E_TEST_PASSWORD: E2eTestPassword123!
         E2E_TEST_USERNAME: e2e_test_user
-        E2E_TEST_ADMIN_EMAIL: test-admin@zenstory.test
+        E2E_TEST_ADMIN_EMAIL: test-admin@example.com
         E2E_TEST_ADMIN_PASSWORD: TestAdmin123!
         E2E_TEST_ADMIN_USERNAME: test_admin
         AUTH_RATE_LIMIT_ENABLED: false

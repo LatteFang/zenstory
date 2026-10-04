@@ -161,15 +161,18 @@ def create_code(
         notes=request.notes
     )
     session.add(redemption)
-    session.commit()
-    session.refresh(redemption)
-
-    # Audit log
-    admin_audit_service.log_action(
-        session, current_user.id, "create_code", "code", redemption.id,
-        new_value={"code": code, "tier": request.tier, "duration_days": request.duration_days},
-        request=http_request
-    )
+    try:
+        session.flush()
+        admin_audit_service.log_action(
+            session, current_user.id, "create_code", "code", redemption.id,
+            new_value={"tier": request.tier, "duration_days": request.duration_days},
+            request=http_request, commit=False,
+        )
+        session.commit()
+        session.refresh(redemption)
+    except Exception:
+        session.rollback()
+        raise
 
     log_with_context(
         logger,
@@ -232,14 +235,17 @@ def create_codes_batch(
         session.add(redemption)
         redemptions.append(redemption)
 
-    session.commit()
-
-    # Audit log
-    admin_audit_service.log_action(
-        session, current_user.id, "create_codes_batch", "code", None,
-        new_value={"tier": request.tier, "count": request.count, "code_type": normalized_code_type},
-        request=http_request
-    )
+    try:
+        session.flush()
+        admin_audit_service.log_action(
+            session, current_user.id, "create_codes_batch", "code", None,
+            new_value={"tier": request.tier, "count": request.count, "code_type": normalized_code_type},
+            request=http_request, commit=False,
+        )
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
 
     log_with_context(
         logger,
@@ -299,7 +305,7 @@ def update_code(
     Requires superuser privileges.
     """
     code = session.exec(
-        select(RedemptionCode).where(RedemptionCode.id == code_id)
+        select(RedemptionCode).where(RedemptionCode.id == code_id).with_for_update()
     ).first()
     if not code:
         raise APIException(
@@ -316,16 +322,18 @@ def update_code(
         code.notes = request.notes
 
     session.add(code)
-    session.commit()
-    session.refresh(code)
-
-    # Audit log
-    admin_audit_service.log_action(
-        session, current_user.id, "update_code", "code", code_id,
-        old_value=old_value,
-        new_value={"is_active": code.is_active, "notes": code.notes},
-        request=http_request
-    )
+    try:
+        admin_audit_service.log_action(
+            session, current_user.id, "update_code", "code", code_id,
+            old_value=old_value,
+            new_value={"is_active": code.is_active, "notes": code.notes},
+            request=http_request, commit=False,
+        )
+        session.commit()
+        session.refresh(code)
+    except Exception:
+        session.rollback()
+        raise
 
     log_with_context(
         logger,

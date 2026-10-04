@@ -677,6 +677,7 @@ async def test_login_with_correct_credentials(client: AsyncClient, db_session):
     assert data["token_type"] == "bearer"
     assert "user" in data
     assert data["user"]["username"] == "testuser"
+    assert data["user"]["email_verified"] is True
 
 
 @pytest.mark.integration
@@ -1414,6 +1415,35 @@ async def test_check_verification_nonexistent_email_is_masked(client: AsyncClien
     assert data["email_verified"] is False
     assert data["resend_cooldown_seconds"] == 0
     assert data["verification_code_ttl_seconds"] == 0
+
+
+@pytest.mark.integration
+async def test_check_verification_verified_and_unknown_are_indistinguishable(
+    client: AsyncClient, db_session
+):
+    from models import User
+    from services.core.auth_service import hash_password
+    user = User(
+        username="verified_mask_user",
+        email="verified_mask_user@example.com",
+        hashed_password=hash_password("testpassword123"),
+        email_verified=True,
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+
+    verified = await client.get("/api/auth/check-verification", params={"email": user.email})
+    unknown = await client.get("/api/auth/check-verification", params={"email": "unknown_mask@example.com"})
+    verified_data = verified.json()
+    unknown_data = unknown.json()
+    verified_data.pop("email")
+    unknown_data.pop("email")
+    assert verified_data == unknown_data == {
+        "email_verified": False,
+        "resend_cooldown_seconds": 0,
+        "verification_code_ttl_seconds": 0,
+    }
 
 
 @pytest.mark.integration

@@ -5,17 +5,32 @@ This module contains all request and response schemas used across
 the admin API modules.
 """
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictInt, StringConstraints
 
 # ==================== User Management Schemas ====================
 
 
+class AdminUserResponse(BaseModel):
+    """Administrative account metadata; never serialize credential hashes."""
+
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    username: str
+    email: str
+    email_verified: bool
+    avatar_url: str | None = None
+    is_active: bool
+    is_superuser: bool
+    created_at: datetime
+    updated_at: datetime
+
+
 class UserUpdateRequest(BaseModel):
     """Request body for updating a user"""
-    username: str | None = None
-    email: str | None = None
+    username: Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=100)] | None = None
+    email: EmailStr | None = None
     is_active: bool | None = None
     is_superuser: bool | None = None
 
@@ -25,15 +40,15 @@ class UserUpdateRequest(BaseModel):
 
 class SystemPromptConfigRequest(BaseModel):
     """Request body for creating or updating system prompt configuration"""
-    role_definition: str
-    capabilities: str
+    role_definition: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    capabilities: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     directory_structure: str | None = None
     content_structure: str | None = None
     file_types: str | None = None
     writing_guidelines: str | None = None
     include_dialogue_guidelines: bool | None = False
-    primary_content_type: str | None = None
     is_active: bool | None = True
+    expected_version: int | None = Field(default=None, ge=1)
 
 
 # ==================== Skill Review Schemas ====================
@@ -45,7 +60,7 @@ class SkillReviewRequest(BaseModel):
 
 
 class PendingSkillResponse(BaseModel):
-    """Response model for pending skill"""
+    """Response model for a skill review item."""
     id: str
     name: str
     description: str | None
@@ -53,6 +68,11 @@ class PendingSkillResponse(BaseModel):
     category: str
     author_id: str | None
     author_name: str | None = None
+    status: Literal["pending", "approved", "rejected"]
+    reviewed_by: str | None = None
+    reviewer_name: str | None = None
+    reviewed_at: datetime | None = None
+    rejection_reason: str | None = None
     created_at: datetime
 
 
@@ -100,13 +120,43 @@ class FeedbackStatusUpdateRequest(BaseModel):
 # ==================== Subscription Plan Schemas ====================
 
 
+QuotaLimit = Annotated[StrictInt, Field(ge=-1)]
+
+
+class SubscriptionFeatures(BaseModel):
+    """Supported legacy and catalog feature names, validated before persistence."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+    ai_conversations_per_day: QuotaLimit | None = None
+    context_window_tokens: QuotaLimit | None = None
+    file_versions_per_file: QuotaLimit | None = None
+    max_projects: QuotaLimit | None = None
+    material_uploads: QuotaLimit | None = None
+    material_decompositions: QuotaLimit | None = None
+    writing_credits_monthly: QuotaLimit | None = None
+    agent_runs_monthly: QuotaLimit | None = None
+    active_projects_limit: QuotaLimit | None = None
+    context_tokens_limit: QuotaLimit | None = None
+    material_uploads_monthly: QuotaLimit | None = None
+    material_decompositions_monthly: QuotaLimit | None = None
+    custom_skills: QuotaLimit | None = None
+    custom_skills_limit: QuotaLimit | None = None
+    skill_creates_monthly: QuotaLimit | None = None
+    inspiration_copies_monthly: QuotaLimit | None = None
+    export_formats: list[Literal["txt"]] | None = None
+    custom_prompts: bool | None = None
+    materials_library_access: bool | None = None
+    priority_support: bool | None = None
+    priority_queue_level: Literal["standard", "priority"] | None = None
+
+
 class PlanUpdateRequest(BaseModel):
     """Request body for updating a subscription plan"""
     display_name: str | None = None
     display_name_en: str | None = None
-    price_monthly_cents: int | None = None
-    price_yearly_cents: int | None = None
-    features: dict | None = None
+    price_monthly_cents: Annotated[StrictInt, Field(ge=0)] | None = None
+    price_yearly_cents: Annotated[StrictInt, Field(ge=0)] | None = None
+    features: SubscriptionFeatures | None = None
     is_active: bool | None = None
 
 
@@ -255,11 +305,26 @@ class UpgradeFunnelStatsResponse(BaseModel):
 # ==================== Audit Log Schemas ====================
 
 
+class AuditLogResponse(BaseModel):
+    id: str
+    admin_id: str
+    admin_name: str | None
+    action: str
+    resource_type: str
+    resource_id: str | None
+    old_value: dict | None
+    new_value: dict | None
+    ip_address: str | None
+    user_agent: str | None
+    created_at: datetime
+
+
 class AuditLogListResponse(BaseModel):
     """Response model for audit log list"""
-    items: list
+    items: list[AuditLogResponse]
     page: int
     page_size: int
+    total: int
 
 
 # ==================== Points Management Schemas ====================

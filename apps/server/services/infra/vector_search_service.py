@@ -60,6 +60,10 @@ from utils.logger import get_logger, log_with_context
 logger = get_logger(__name__)
 
 
+class VectorSearchUnavailableError(RuntimeError):
+    """Raised when all attempted hybrid retrieval backends fail."""
+
+
 def serialize_datetime(obj: Any) -> Any:
     """
     递归转换对象中的datetime为ISO字符串。
@@ -1205,6 +1209,8 @@ class LlamaIndexService:
         query: str,
         top_k: int = 10,
         entity_types: list[str] | None = None,
+        *,
+        raise_on_error: bool = False,
     ) -> list[SearchResult]:
         """
         Perform semantic search across project files with project_id validation.
@@ -1376,6 +1382,8 @@ class LlamaIndexService:
                 error=str(e),
                 error_type=type(e).__name__,
             )
+            if raise_on_error:
+                raise
             return []
 
     def hybrid_search(
@@ -1401,14 +1409,19 @@ class LlamaIndexService:
         lexical_candidate_k = min(max(top_k * 3, top_k), 120)
 
         semantic_results: list[SearchResult] = []
+        semantic_error: Exception | None = None
+        semantic_completed = False
         try:
             semantic_results = self.semantic_search(
                 project_id=project_id,
                 query=normalized_query,
                 top_k=semantic_candidate_k,
                 entity_types=entity_types,
+                raise_on_error=True,
             )
+            semantic_completed = True
         except Exception as sem_err:
+            semantic_error = sem_err
             log_with_context(
                 logger,
                 30,  # WARNING
@@ -1420,6 +1433,8 @@ class LlamaIndexService:
             )
 
         lexical_results: list[SearchResult] = []
+        lexical_error: Exception | None = None
+        lexical_completed = False
         if not HYBRID_ENABLE_LEXICAL:
             pass
         elif _LEXICAL_SEARCH_SEMAPHORE is None:
@@ -1454,18 +1469,25 @@ class LlamaIndexService:
                                 entity_types=entity_types,
                                 include_content=include_content,
                             )
-                    except Exception as lexical_error:
+                            lexical_completed = True
+                    except Exception as lexical_exc:
                         log_with_context(
                             logger,
                             30,  # WARNING
                             "Hybrid lexical search failed, semantic fallback only",
                             project_id=project_id,
                             query=normalized_query[:100],
-                            error=str(lexical_error),
-                            error_type=type(lexical_error).__name__,
+                            error=str(lexical_exc),
+                            error_type=type(lexical_exc).__name__,
                         )
+                        lexical_error = lexical_exc
                 finally:
                     _LEXICAL_SEARCH_SEMAPHORE.release()
+
+        if not semantic_completed and not lexical_completed:
+            raise VectorSearchUnavailableError(
+                "Vector search backends are unavailable"
+            ) from (lexical_error or semantic_error)
 
         if not semantic_results and not lexical_results:
             return []

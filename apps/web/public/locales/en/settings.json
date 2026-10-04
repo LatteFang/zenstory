@@ -23,7 +23,15 @@
     "mode": "Theme Mode",
     "dark": "Dark Theme",
     "light": "Light Theme",
-    "color": "Theme Color"
+    "color": "Theme Color",
+    "colors": {
+      "blue": "Blue",
+      "green": "Green",
+      "yellow": "Yellow",
+      "red": "Red",
+      "pink": "Pink",
+      "purple": "Purple"
+    }
   },
   "language": {
     "title": "Language Preferences",

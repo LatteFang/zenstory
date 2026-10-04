@@ -25,7 +25,7 @@ def require_scope(required_scope: str):
 
         if not verify_scope(api_key, required_scope):
             raise APIException(
-                error_code=ErrorCode.NOT_AUTHORIZED,
+                error_code=ErrorCode.AUTH_SCOPE_DENIED,
                 status_code=403,
                 detail=f"API Key lacks required scope: {required_scope}",
             )
@@ -46,7 +46,7 @@ def require_project_access(required_scope: str = "read"):
 
         if not verify_scope(api_key, required_scope):
             raise APIException(
-                error_code=ErrorCode.NOT_AUTHORIZED,
+                error_code=ErrorCode.AUTH_SCOPE_DENIED,
                 status_code=403,
                 detail=f"API Key lacks required scope: {required_scope}",
             )

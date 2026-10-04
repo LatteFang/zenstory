@@ -22,6 +22,7 @@ import {
   Loader2,
 } from "../components/icons";
 import { materialsApi } from "../lib/materialsApi";
+import { ApiError } from "../lib/apiClient";
 import type {
   MaterialNovel,
   MaterialEnabledStages,
@@ -97,12 +98,18 @@ function MaterialDetailContent({ novelId }: { novelId?: string }) {
   const [selectedItem, setSelectedItem] = useState<TreeItem | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [loadedFolders, setLoadedFolders] = useState<Set<string>>(new Set());
+  const [folderErrors, setFolderErrors] = useState<Set<string>>(new Set());
   // 移动端：是否显示内容详情（false = 显示文件树）
   const [showMobileContent, setShowMobileContent] = useState(false);
   const activeNovelIdRef = useRef(novelId);
 
   // Fetch material details
-  const { data: material, isLoading: materialLoading } = useQuery({
+  const {
+    data: material,
+    isLoading: materialLoading,
+    error: materialError,
+    refetch: refetchMaterial,
+  } = useQuery({
     queryKey: ["material", novelId],
     queryFn: () => materialsApi.get(novelId!),
     enabled: !!novelId,
@@ -227,10 +234,16 @@ function MaterialDetailContent({ novelId }: { novelId?: string }) {
 
     const refetchFolder = refetchByFolder[folderId];
     if (!refetchFolder) return;
+    setFolderErrors((prev) => {
+      const next = new Set(prev);
+      next.delete(folderId);
+      return next;
+    });
 
     void refetchFolder().then((result) => {
       if (activeNovelIdRef.current !== requestNovelId) return;
       if (result.status !== "success") {
+        setFolderErrors((prev) => new Set(prev).add(folderId));
         setLoadedFolders((prev) => {
           const next = new Set(prev);
           next.delete(folderId);
@@ -238,6 +251,11 @@ function MaterialDetailContent({ novelId }: { novelId?: string }) {
         });
         return;
       }
+      setFolderErrors((prev) => {
+        const next = new Set(prev);
+        next.delete(folderId);
+        return next;
+      });
       setLoadedFolders((prev) => new Set(prev).add(folderId));
     });
   }, [
@@ -344,7 +362,7 @@ function MaterialDetailContent({ novelId }: { novelId?: string }) {
     });
 
     if (
-      materialsConfig.relationshipsEnabled
+      (materialsConfig.relationshipsEnabled || Number(material?.relationships_count) > 0)
       && shouldShowFolder(relationshipsEnabled, material?.relationships_count)
     ) {
       tree.push({
@@ -496,6 +514,24 @@ function MaterialDetailContent({ novelId }: { novelId?: string }) {
     );
   }
 
+  if (materialError) {
+    const isNotFound = materialError instanceof ApiError && materialError.status === 404;
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 h-screen">
+        <p className="text-[hsl(var(--text-secondary))]">
+          {isNotFound
+            ? t("materials:detail.notFound")
+            : t("materials:detail.loadError", { defaultValue: "素材详情加载失败，请重试。" })}
+        </p>
+        {!isNotFound && (
+          <button className="btn-secondary h-10 px-4" onClick={() => void refetchMaterial()}>
+            {t("common:retry", { defaultValue: "重试" })}
+          </button>
+        )}
+      </div>
+    );
+  }
+
   if (!material) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -583,6 +619,8 @@ function MaterialDetailContent({ novelId }: { novelId?: string }) {
                   expandedFolders={expandedFolders}
                   onItemClick={handleItemClick}
                   loadingStates={loadingStates}
+                  folderErrors={folderErrors}
+                  onRetryFolder={(folderId) => triggerLoad(folderId, true)}
                   searchActive={Boolean(searchQuery.trim())}
                 />
               </div>
@@ -600,6 +638,8 @@ function MaterialDetailContent({ novelId }: { novelId?: string }) {
                   expandedFolders={expandedFolders}
                   onItemClick={handleItemClick}
                   loadingStates={loadingStates}
+                  folderErrors={folderErrors}
+                  onRetryFolder={(folderId) => triggerLoad(folderId, true)}
                   searchActive={Boolean(searchQuery.trim())}
                 />
               </div>
@@ -631,12 +671,14 @@ interface FileTreeProps {
   expandedFolders: Set<string>;
   onItemClick: (item: TreeItem) => void;
   loadingStates: Record<string, boolean>;
+  folderErrors: Set<string>;
+  onRetryFolder: (folderId: string) => void;
   searchActive?: boolean;
   level?: number;
 }
 
-function FileTree({ items, selectedId, expandedFolders, onItemClick, loadingStates, searchActive = false, level = 0 }: FileTreeProps) {
-  const { t } = useTranslation(["materials"]);
+function FileTree({ items, selectedId, expandedFolders, onItemClick, loadingStates, folderErrors, onRetryFolder, searchActive = false, level = 0 }: FileTreeProps) {
+  const { t } = useTranslation(["materials", "common"]);
   const getIcon = (type: TreeItemType, isExpanded: boolean) => {
     switch (type) {
       case "folder":
@@ -718,13 +760,23 @@ function FileTree({ items, selectedId, expandedFolders, onItemClick, loadingStat
               )}
             </button>
 
-            {item.type === "folder" && isExpanded && hasChildren && (
+            {item.type === "folder" && isExpanded && folderErrors.has(item.id) && (
+              <div className="ml-8 py-1 text-xs text-[hsl(var(--error))]">
+                <span>{t("materials:detail.folderLoadError", { defaultValue: "加载失败。" })}</span>{" "}
+                <button className="underline" onClick={() => onRetryFolder(item.id)}>
+                  {t("common:retry", { defaultValue: "重试" })}
+                </button>
+              </div>
+            )}
+            {item.type === "folder" && isExpanded && hasChildren && !folderErrors.has(item.id) && (
               <FileTree
                 items={item.children!}
                 selectedId={selectedId}
                 expandedFolders={expandedFolders}
                 onItemClick={onItemClick}
                 loadingStates={loadingStates}
+                folderErrors={folderErrors}
+                onRetryFolder={onRetryFolder}
                 searchActive={searchActive}
                 level={level + 1}
               />

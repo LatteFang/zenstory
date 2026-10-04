@@ -8,11 +8,13 @@ import secrets
 from datetime import UTC, timedelta
 
 from sqlalchemy import func, or_, update
+from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, select
 
 from config.datetime_utils import utcnow
 from core.error_codes import ErrorCode
 from core.error_handler import APIException
+from models.entities import User
 from models.referral import (
     REFERRAL_STATUS_COMPLETED,
     REFERRAL_STATUS_PENDING,
@@ -89,6 +91,19 @@ async def create_invite_code(
     """
     try:
         if not ignore_max_limit:
+            owner = session.exec(
+                select(User)
+                .where(User.id == user_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            ).first()
+            if not owner:
+                raise APIException(
+                    error_code=ErrorCode.NOT_FOUND,
+                    status_code=404,
+                    detail="User not found",
+                )
+
             # Check how many active invite codes the user already has
             existing_codes = session.exec(
                 select(InviteCode)
@@ -351,8 +366,13 @@ async def complete_referral_and_reward(
     """
     try:
         now = utcnow()
-        # Get the referral
-        referral = session.get(Referral, referral_id)
+        # Lock before the idempotency/status check and refresh stale ORM state.
+        referral = session.exec(
+            select(Referral)
+            .where(Referral.id == referral_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        ).first()
         if not referral:
             raise APIException(
                 error_code=ErrorCode.REFERRAL_NOT_FOUND,
@@ -649,7 +669,7 @@ async def get_user_referral_stats(user_id: str, session: Session) -> dict:
             "available_points": wallet_available,
         }
 
-    except Exception as e:
+    except SQLAlchemyError as e:
         log_with_context(
             logger,
             40,  # ERROR
@@ -658,12 +678,11 @@ async def get_user_referral_stats(user_id: str, session: Session) -> dict:
             error=str(e),
             error_type=type(e).__name__,
         )
-        return {
-            "total_invites": 0,
-            "successful_invites": 0,
-            "total_points": 0,
-            "available_points": 0,
-        }
+        raise APIException(
+            error_code=ErrorCode.INTERNAL_SERVER_ERROR,
+            status_code=500,
+            detail="Failed to get referral statistics",
+        ) from e
 
 
 async def get_user_invite_codes(user_id: str, session: Session) -> list[InviteCode]:
@@ -686,7 +705,7 @@ async def get_user_invite_codes(user_id: str, session: Session) -> list[InviteCo
 
         return list(codes)
 
-    except Exception as e:
+    except SQLAlchemyError as e:
         log_with_context(
             logger,
             40,  # ERROR
@@ -695,4 +714,8 @@ async def get_user_invite_codes(user_id: str, session: Session) -> list[InviteCo
             error=str(e),
             error_type=type(e).__name__,
         )
-        return []
+        raise APIException(
+            error_code=ErrorCode.INTERNAL_SERVER_ERROR,
+            status_code=500,
+            detail="Failed to get invite codes",
+        ) from e

@@ -382,7 +382,7 @@ export default function DashboardHome() {
     const loadTemplates = async () => {
       try {
         // Projects are now managed by ProjectContext, just load templates
-        const templatesData = await projectApi.getTemplates().catch(() => null);
+        const templatesData = await projectApi.getTemplates();
         if (!cancelled && templatesData) {
           setTemplates(templatesData);
         }

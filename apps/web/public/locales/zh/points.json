@@ -64,5 +64,7 @@
     "daysAgo_one": "{{count}} 天前",
     "daysAgo_other": "{{count}} 天前",
     "daysAgo_plural": "{{count}} 天前"
-  }
+  },
+  "balanceLoadFailed": "无法加载积分余额",
+  "configLoadFailed": "无法加载兑换价格"
 }

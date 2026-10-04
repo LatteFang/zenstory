@@ -256,7 +256,7 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
                     <div className="flex-1">
                       {index === 0 && (
                         <span className="inline-block px-2 py-0.5 text-xs bg-[hsl(var(--success))] text-white rounded mr-2">
-                          {t('editor:versionHistory.currentVersion')}
+                          {t('editor:versionHistory.latestSaved')}
                         </span>
                       )}
                       <span className="text-xs text-[hsl(var(--text-secondary))]">
@@ -283,8 +283,7 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
                         <GitCompare className="w-4 h-4" />
                       </button>
 
-                      {index !== 0 && (
-                        <button
+                      <button
                           onClick={() => {
                             if (snapshotId) handleRollback(snapshotId);
                           }}
@@ -294,7 +293,6 @@ export const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
                         >
                           <RotateCcw className="w-4 h-4" />
                         </button>
-                      )}
                     </div>
                   </div>
 

@@ -146,6 +146,23 @@ describe('VoiceInputButton', () => {
     expect(toastInfo).toHaveBeenCalledWith('Recording cancelled')
   })
 
+  it('cancels pending mobile permission when touch ends after the hold threshold', async () => {
+    isMobile = true
+    startRecording.mockReturnValueOnce(new Promise<void>(() => {}))
+
+    render(<VoiceInputButton onResult={vi.fn()} />)
+    const button = screen.getByTestId('voice-input-button')
+    fireEvent.touchStart(button)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200)
+    })
+    fireEvent.touchEnd(button)
+
+    expect(startRecording).toHaveBeenCalledOnce()
+    expect(cancelRecording).toHaveBeenCalledOnce()
+    expect(stopRecording).not.toHaveBeenCalled()
+  })
+
   it('surfaces hook errors through logger and toast', () => {
     render(<VoiceInputButton onResult={vi.fn()} />)
 

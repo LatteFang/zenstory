@@ -66,6 +66,7 @@ test.describe('Admin moderation flows (mocked)', () => {
   test('can approve and reject pending skills', async ({ page }) => {
     await bootstrapAdminSession(page);
 
+    let approveCalled = 0;
     let rejectPayload: Record<string, unknown> | null = null;
     let skills = [
       {
@@ -75,6 +76,7 @@ test.describe('Admin moderation flows (mocked)', () => {
         instructions: 'Use timeline checks',
         category: 'writing',
         author_name: 'alice',
+        status: 'pending',
         created_at: '2026-03-08T00:00:00Z',
       },
       {
@@ -84,6 +86,7 @@ test.describe('Admin moderation flows (mocked)', () => {
         instructions: 'Improve rhythm',
         category: 'editing',
         author_name: 'bob',
+        status: 'pending',
         created_at: '2026-03-08T00:00:00Z',
       },
     ];
@@ -102,6 +105,7 @@ test.describe('Admin moderation flows (mocked)', () => {
       }
 
       if (request.method() === 'POST' && pathname.endsWith('/api/admin/skills/skill-1/approve')) {
+        approveCalled += 1;
         skills = skills.filter((item) => item.id !== 'skill-1');
         await route.fulfill({
           status: 200,
@@ -126,17 +130,20 @@ test.describe('Admin moderation flows (mocked)', () => {
     });
 
     await page.goto('/admin/skills');
-    const skillRow = page.locator('text=Plot Doctor').first();
-    await expect(skillRow).toBeVisible();
+    const skillCards = page.locator('.space-y-4 > div');
+    const plotDoctor = skillCards.filter({ has: page.getByRole('heading', { name: 'Plot Doctor', exact: true }) });
+    await expect(plotDoctor).toBeVisible();
+    await plotDoctor.getByRole('button', { name: /^批准$|^Approve$/i }).click();
+    const confirmation = page.getByRole('dialog');
+    await expect(confirmation).toBeVisible();
+    expect(approveCalled).toBe(0);
+    await confirmation.getByRole('button', { name: /确认批准|Confirm approve|skills\.confirmApprove/i }).click();
+    await expect.poll(() => approveCalled).toBe(1);
 
-    const approveButton = page.locator('div:has-text("Plot Doctor") button[title*="批准"], div:has-text("Plot Doctor") button[title*="approve"], div:has-text("Plot Doctor") button[title*="skills.approve"]').first();
-    await approveButton.click();
-
-    await expect(page.locator('text=Plot Doctor')).toHaveCount(0);
-    await expect(page.locator('text=Dialogue Refiner')).toBeVisible();
-
-    const rejectButton = page.locator('div:has-text("Dialogue Refiner") button[title*="拒绝"], div:has-text("Dialogue Refiner") button[title*="reject"], div:has-text("Dialogue Refiner") button[title*="skills.reject"]').first();
-    await rejectButton.click();
+    await expect(page.getByRole('heading', { name: 'Plot Doctor', exact: true })).toHaveCount(0);
+    const dialogueRefiner = skillCards.filter({ has: page.getByRole('heading', { name: 'Dialogue Refiner', exact: true }) });
+    await expect(dialogueRefiner).toBeVisible();
+    await dialogueRefiner.getByRole('button', { name: /^拒绝$|^Reject$/i }).click();
     await page.locator('textarea').fill('not enough detail');
     await page.getByRole('button', { name: /确认拒绝|confirm reject|skills\.confirmReject/i }).click();
 

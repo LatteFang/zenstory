@@ -1,11 +1,12 @@
 """Snapshot management API endpoints"""
+import json
 import logging
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from pydantic import BaseModel
 from services.auth import get_current_active_user
 from services.version import get_version_service
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from core.error_codes import ErrorCode
 from core.error_handler import APIException
@@ -17,6 +18,71 @@ from utils.logger import get_logger, log_with_context
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["snapshots"])
+
+
+def _schedule_snapshot_rollback_reconciliation(
+    *,
+    background_tasks: BackgroundTasks,
+    session: Session,
+    project_id: str,
+    file_ids: set[str],
+    user_id: str,
+) -> None:
+    """Refresh derived state after the rollback transaction has committed."""
+    try:
+        from services.infra.dashboard_cache import dashboard_cache
+
+        dashboard_cache.bump_project_version(user_id=user_id, project_id=project_id)
+    except Exception as exc:
+        log_with_context(
+            logger,
+            logging.DEBUG,
+            "Failed to bump dashboard cache after snapshot rollback",
+            error=str(exc),
+            project_id=project_id,
+            user_id=user_id,
+        )
+
+    if not file_ids:
+        return
+
+    try:
+        from services.llama_index import schedule_index_delete, schedule_index_upsert
+
+        files = session.exec(select(File).where(File.id.in_(file_ids))).all()
+        for file in files:
+            if file.is_deleted:
+                background_tasks.add_task(
+                    schedule_index_delete,
+                    project_id=file.project_id,
+                    entity_type=file.file_type,
+                    entity_id=file.id,
+                    user_id=user_id,
+                )
+                continue
+
+            extra_metadata = file.get_metadata()
+            if file.parent_id:
+                extra_metadata = {**extra_metadata, "parent_id": file.parent_id}
+            background_tasks.add_task(
+                schedule_index_upsert,
+                project_id=file.project_id,
+                entity_type=file.file_type,
+                entity_id=file.id,
+                title=file.title,
+                content=file.content or "",
+                extra_metadata=extra_metadata,
+                user_id=user_id,
+            )
+    except Exception as exc:
+        log_with_context(
+            logger,
+            logging.DEBUG,
+            "Failed to schedule vector reconciliation after snapshot rollback",
+            error=str(exc),
+            project_id=project_id,
+            user_id=user_id,
+        )
 
 
 # Request schemas
@@ -158,6 +224,7 @@ def update_snapshot(
 @router.post("/snapshots/{snapshot_id}/rollback")
 def rollback_to_snapshot(
     snapshot_id: str,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),
     session: Session = Depends(get_session)
 ):
@@ -186,10 +253,40 @@ def rollback_to_snapshot(
     # Check project ownership
     verify_project_ownership(snapshot.project_id, current_user, session)
 
+    snapshot_data = json.loads(snapshot.data)
+    affected_file_ids = {
+        item.get("id")
+        for item in snapshot_data.get("files_metadata", [])
+        if isinstance(item, dict) and item.get("id")
+    }
+    affected_file_ids.update(
+        item.get("file_id")
+        for item in snapshot_data.get("file_versions", [])
+        if isinstance(item, dict) and item.get("file_id")
+    )
+    if snapshot.file_id:
+        affected_file_ids = {snapshot.file_id}
+    else:
+        affected_file_ids.update(
+            session.exec(
+                select(File.id).where(
+                    File.project_id == snapshot.project_id,
+                    File.is_deleted.is_(False),
+                )
+            ).all()
+        )
+
     try:
         result = version_service.rollback_to_snapshot(
             session=session,
             snapshot_id=snapshot_id
+        )
+        _schedule_snapshot_rollback_reconciliation(
+            background_tasks=background_tasks,
+            session=session,
+            project_id=snapshot.project_id,
+            file_ids=affected_file_ids,
+            user_id=current_user.id,
         )
         log_with_context(
             logger,

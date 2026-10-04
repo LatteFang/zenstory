@@ -189,6 +189,7 @@ const TREE_FIELDS = 'id,title,file_type,parent_id,order';
 const PAGE_MAX = 200;
 const VERSIONS_PAGE_MAX = 100;
 const SCOPE_PROBE_PROJECT_ID = 'zenstory-cli-scope-probe';
+const AUTH_SCOPE_DENIED = 'ERR_AUTH_SCOPE_DENIED';
 
 /** Default folder-title language for `projects create`: ZENSTORY_LANG, then LC_ALL, then LANG; zh* → zh, else en. */
 export function defaultProjectLang(env: Env): string {
@@ -424,7 +425,7 @@ async function probeScopes(client: ZenstoryClient): Promise<{ read: boolean; wri
     read = true;
     projectCount = projects.length;
   } catch (err) {
-    if (!(err instanceof CliError && err.status === 403)) throw err;
+    if (!(err instanceof CliError && err.status === 403 && err.code === AUTH_SCOPE_DENIED)) throw err;
   }
 
   // Side-effect-free write check: PUT on a project id that cannot exist. The scope check runs
@@ -436,7 +437,7 @@ async function probeScopes(client: ZenstoryClient): Promise<{ read: boolean; wri
   } catch (err) {
     if (!(err instanceof CliError)) throw err;
     if (err.status === 404) write = true;
-    else if (err.status === 403) write = !/lacks required scope/i.test(err.message);
+    else if (err.status === 403 && err.code === AUTH_SCOPE_DENIED) write = false;
     else if (err.status === 401) throw err;
     else write = null;
   }
@@ -505,8 +506,9 @@ export const COMMANDS: CommandDef<Ctx>[] = [
         projectCount = (await client.get<Project[]>('/agent/projects')).length;
       } catch (err) {
         if (err instanceof CliError && err.status === 404) throw apiBaseHint(err);
-        // A valid key without "read" scope still authenticates (403 instead of 401).
-        if (!(err instanceof CliError && err.status === 403)) throw err;
+        // Only the stable scope-denial code proves that authentication succeeded.
+        // Other 403s can mean an inactive user or an unrelated permission boundary.
+        if (!(err instanceof CliError && err.status === 403 && err.code === AUTH_SCOPE_DENIED)) throw err;
         ctx.note('Warning: key is valid but lacks the "read" scope; most commands will fail.');
       }
 
