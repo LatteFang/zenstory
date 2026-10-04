@@ -286,6 +286,16 @@ export async function handleSsoRedirect(
     }
   }
 
+  if (localStorage.getItem('refresh_token') === refreshToken) {
+    return {
+      success: false,
+      shouldShowLogin: true,
+      clearAuth: false,
+      reason: 'network_error',
+      error: 'Authentication service is temporarily unavailable, please try again',
+    };
+  }
+
   // Step 5: All attempts failed - show login
   logger.warn('[SSO] Token validation and refresh failed');
   return {

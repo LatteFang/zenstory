@@ -19,6 +19,9 @@ from config.material_settings import resolve_enabled_stages, warn_explicitly_dro
 from flows.database_session import get_prefect_db_session
 from flows.pipelines.helpers import ProgressPublisher, ResultBuilder
 
+META_EXTRACTION_ERROR = "Metadata extraction failed"
+META_EXTRACTION_ERROR_CODE = "ERR_MATERIAL_META_EXTRACTION_FAILED"
+
 
 # 本地实现 _elapsed_ms 函数
 def _elapsed_ms(start: float) -> int:
@@ -119,6 +122,13 @@ class StageExecutor:
         self.publisher = ProgressPublisher(correlation_id, self.logger)
         # 所有阶段门控统一读取生效后的阶段集合（已应用依赖约束）
         self.stages = resolve_enabled_stages(settings)
+        self._meta_extraction: dict[str, Any] = {
+            "executed": False,
+            "succeeded": None,
+            "error": None,
+            "error_code": None,
+            "retry_available": False,
+        }
 
     def record_enabled_stages(self) -> dict[str, bool]:
         """记录本次运行的阶段：INFO 日志 + 写入 IngestionJob.stage_progress["enabled_stages"]。
@@ -189,9 +199,12 @@ class StageExecutor:
         if meta_future is not None:
             try:
                 meta_result = meta_future.result()
-                self._save_meta_result(meta_result)
+                self._complete_meta_extraction(meta_result)
             except Exception as e:
                 self.logger.warning(f"[阶段1] 元信息并行提取失败: {e}")
+                self._record_meta_failure(e)
+
+        stage1_result["meta_extraction"] = self._meta_extraction.copy()
 
         stage1_elapsed = int((time.perf_counter() - stage1_start) * 1000)
         failed_count = stage1_result.get("failed_count", 0)
@@ -210,6 +223,7 @@ class StageExecutor:
             "failed_plot_chapter_ids": stage1_result.get("failed_plot_chapter_ids", []),
             "completed_mention_chapter_ids": stage1_result.get("completed_mention_chapter_ids", []),
             "failed_mention_chapter_ids": stage1_result.get("failed_mention_chapter_ids", []),
+            "meta_extraction": stage1_result["meta_extraction"],
             "status": stage1_status,
         })
 
@@ -244,6 +258,7 @@ class StageExecutor:
                 "plots_count": stage1_result.get("plots_count", 0),
                 "failed_count": failed_count,
                 "failed_mention_chapters": stage1_result.get("failed_mention_chapters", []),
+                "meta_extraction": stage1_result["meta_extraction"],
                 "elapsed_ms": stage1_elapsed,
             },
             processed_chapters=stage1_result.get(
@@ -362,6 +377,7 @@ class StageExecutor:
                 "failed_stories": story_result.get("failed_stories", []),
                 "neo4j_failed_chapters": relationship_result.get("neo4j_failed_chapters", []),
                 "character_failed_count": character_entity_result.get("failed_count", 0),
+                "meta_extraction": (stage1_result or {}).get("meta_extraction"),
                 "elapsed_ms": stage2_elapsed,
             },
             status="processing",
@@ -424,11 +440,13 @@ class StageExecutor:
 
         if cp_data.get("meta_extracted"):
             self.logger.info("[元信息] 已完成，跳过")
+            self._meta_extraction["succeeded"] = True
             return None
 
         try:
             from flows.atomic_tasks.entities import extract_novel_meta_task
             self.logger.info("[元信息] 开始提取...")
+            self._meta_extraction["executed"] = True
 
             if is_parallel:
                 # 并行模式：返回 Future
@@ -436,13 +454,36 @@ class StageExecutor:
             else:
                 # 同步模式：直接执行
                 meta_result = extract_novel_meta_task(novel_id=self.novel_id)
-                self._save_meta_result(meta_result)
+                self._complete_meta_extraction(meta_result)
                 return None
         except Exception as e:
             self.logger.warning(f"[元信息] 提取失败: {e}")
+            self._record_meta_failure(e)
             return None
 
-    def _save_meta_result(self, meta_result: dict[str, Any]) -> None:
+    def _record_meta_failure(self, _error: Exception | str) -> None:
+        self._meta_extraction.update(
+            executed=True,
+            succeeded=False,
+            error=META_EXTRACTION_ERROR,
+            error_code=META_EXTRACTION_ERROR_CODE,
+            retry_available=True,
+        )
+
+    def _complete_meta_extraction(self, meta_result: dict[str, Any]) -> None:
+        if self._save_meta_result(meta_result) is False:
+            if self._meta_extraction.get("succeeded") is not False:
+                self._record_meta_failure("metadata persistence failed")
+            return
+        self._meta_extraction.update(
+            executed=True,
+            succeeded=True,
+            error=None,
+            error_code=None,
+            retry_available=False,
+        )
+
+    def _save_meta_result(self, meta_result: dict[str, Any]) -> bool:
         """
         保存元信息提取结果
 
@@ -476,19 +517,26 @@ class StageExecutor:
                 data={"meta_extracted": True}
             )
             self.logger.info("[元信息] 提取与入库完成")
+            return True
 
         except Exception as e:
             self.logger.error(f"[元信息] 保存失败: {e}", exc_info=True)
+            self._record_meta_failure(e)
             # 【修复 Bug #3】不要 raise，让上层流程继续（元信息是可选的）
             # 标记为部分失败
             try:
                 self.checkpoint_manager.update_checkpoint(
                     "stage2",
                     status="processing",
-                    data={"meta_extracted": False, "meta_error": str(e)}
+                    data={
+                        "meta_extracted": False,
+                        "meta_error": META_EXTRACTION_ERROR,
+                        "meta_error_code": META_EXTRACTION_ERROR_CODE,
+                    }
                 )
             except Exception as cp_err:
                 self.logger.warning(f"[元信息] 更新 checkpoint 失败: {cp_err}")
+            return False
 
     def _load_stage1_result(self) -> dict[str, Any]:
         """
@@ -904,6 +952,8 @@ class StageExecutor:
         """Derive overall flow status from stage-level failures."""
         if (stage1_result or {}).get("failed_count", 0) > 0:
             return "completed_with_errors"
+        if (stage1_result or {}).get("meta_extraction", {}).get("succeeded") is False:
+            return "completed_with_errors"
         if story_result.get("failed_stories"):
             return "completed_with_errors"
         if relationship_result.get("neo4j_failed_chapters"):
@@ -941,12 +991,19 @@ class StageExecutor:
                         stage_data={
                             "chapters_total": len(self.chapter_ids),
                             "failed_count": (stage1_result or {}).get("failed_count", 0)
-                            + character_entity_result.get("failed_count", 0),
+                            + character_entity_result.get("failed_count", 0)
+                            + int(
+                                (stage1_result or {})
+                                .get("meta_extraction", {})
+                                .get("succeeded")
+                                is False
+                            ),
                             "failed_stories": story_result.get("failed_stories", []),
                             "neo4j_failed_chapters": relationship_result.get("neo4j_failed_chapters", []),
                             "failed_chapters": (stage1_result or {}).get("failed_chapters", []),
                             "failed_mention_chapters": (stage1_result or {}).get("failed_mention_chapters", []),
                             "failed_characters": character_entity_result.get("failed_characters", []),
+                            "meta_extraction": (stage1_result or {}).get("meta_extraction"),
                         },
                     )
                     session.commit()
@@ -1009,4 +1066,11 @@ class StageExecutor:
             "characters_updated": character_entity_result.get("updated_count", 0) if character_entity_result else 0,
             "character_failed_count": character_entity_result.get("failed_count", 0) if character_entity_result else 0,
             "failed_characters": character_entity_result.get("failed_characters", []) if character_entity_result else [],
+            "meta_extraction": (stage1_result or {}).get("meta_extraction"),
+            "status": self._derive_final_status(
+                stage1_result,
+                story_result,
+                relationship_result,
+                character_entity_result,
+            ),
         })

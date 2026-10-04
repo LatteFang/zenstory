@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Key, Plus, Copy, Trash2, RefreshCw, Shield, ShieldOff, Check, Zap, X } from 'lucide-react';
+import { Key, Plus, Copy, Trash2, RefreshCw, Shield, ShieldOff, Check } from 'lucide-react';
 import { agentApiKeysApi } from '../../lib/api';
 import { getApiBase } from '../../lib/apiClient';
 import { getLocaleCode } from '../../lib/i18n-helpers';
+import { handleApiError } from '../../lib/errorHandler';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
+import Modal from '../ui/Modal';
 import type {
   AgentApiKey,
   CreateAgentApiKeyRequest,
@@ -66,44 +69,6 @@ function StatusBadge({ isActive, label }: { isActive: boolean; label: string }) 
       <ShieldOff size={12} />
       {label}
     </span>
-  );
-}
-
-function ConfirmDialog({
-  title,
-  message,
-  onConfirm,
-  onCancel,
-  confirmLabel,
-}: {
-  title: string;
-  message: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  confirmLabel: string;
-}) {
-  const { t } = useTranslation('settings');
-  return (
-    <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-color))] rounded-xl p-5 max-w-sm w-full mx-4 shadow-lg">
-        <h3 className="text-sm font-medium text-[hsl(var(--text-primary))] mb-2">{title}</h3>
-        <p className="text-xs text-[hsl(var(--text-secondary))] mb-4">{message}</p>
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="px-3 py-1.5 rounded-lg text-xs text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-hover))] transition-colors"
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-3 py-1.5 rounded-lg text-xs text-white bg-red-500 hover:bg-red-600 transition-colors"
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -222,11 +187,11 @@ function KeyCreatedModal({
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={t('apiKeys.createdTitle')} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-color))] rounded-xl p-5 max-w-lg w-full mx-4 shadow-lg">
-        <h3 className="text-sm font-medium text-[hsl(var(--text-primary))] mb-2">
-          {t('apiKeys.createdTitle')}
-        </h3>
+    <Modal
+      open onClose={onClose} title={t('apiKeys.createdTitle')} showCloseButton={false}
+      closeOnEscape={false} closeOnBackdropClick={false}
+    >
+      <div>
         <div className="mb-3 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-xs text-yellow-600 dark:text-yellow-400">
           {t('apiKeys.copyWarning')}
         </div>
@@ -264,7 +229,7 @@ function KeyCreatedModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -298,11 +263,11 @@ function CreateKeyForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || scopes.length === 0 || isSubmitting) return;
     onSubmit({
       name: name.trim(),
       description: description.trim() || undefined,
-      scopes: scopes.length > 0 ? scopes : undefined,
+      scopes,
       expires_in_days: expiresInDays || undefined,
     });
   };
@@ -385,69 +350,13 @@ function CreateKeyForm({
         </button>
         <button
           type="submit"
-          disabled={!name.trim() || isSubmitting}
+          disabled={!name.trim() || scopes.length === 0 || isSubmitting}
           className="px-3 py-1.5 rounded-lg text-xs text-white bg-[hsl(var(--accent-primary))] hover:opacity-90 transition-colors disabled:opacity-50"
         >
           {isSubmitting ? t('common.loading') : t('apiKeys.create')}
         </button>
       </div>
     </form>
-  );
-}
-
-function TestConnectionButton({ apiKey }: { apiKey: AgentApiKey }) {
-  const { t } = useTranslation('settings');
-  const [status, setStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
-  const [errorMsg, setErrorMsg] = useState('');
-
-  const handleTest = async () => {
-    setStatus('testing');
-    setErrorMsg('');
-    try {
-      const result = await agentApiKeysApi.get(apiKey.id);
-      if (result.is_active) {
-        setStatus('success');
-      } else {
-        setStatus('error');
-        setErrorMsg(t('apiKeys.status.disabled'));
-      }
-    } catch (err) {
-      setStatus('error');
-      setErrorMsg(err instanceof Error ? err.message : String(err));
-    }
-  };
-
-  if (status === 'success') {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs text-green-500">
-        <Check size={12} />
-        {t('apiKeys.testSuccess')}
-      </span>
-    );
-  }
-
-  if (status === 'error') {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs text-red-500">
-        <X size={12} />
-        {t('apiKeys.testFailed', { error: errorMsg })}
-      </span>
-    );
-  }
-
-  return (
-    <button
-      onClick={handleTest}
-      disabled={status === 'testing'}
-      className="p-1.5 rounded-lg text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-hover))] transition-colors"
-      title={t('apiKeys.testConnection')}
-    >
-      {status === 'testing' ? (
-        <RefreshCw size={14} className="animate-spin" />
-      ) : (
-        <Zap size={14} />
-      )}
-    </button>
   );
 }
 
@@ -515,7 +424,6 @@ function KeyRow({
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
-        <TestConnectionButton apiKey={apiKey} />
         <button
           onClick={() => onToggleActive(apiKey)}
           title={apiKey.is_active ? t('apiKeys.disable') : t('apiKeys.enable')}
@@ -546,6 +454,7 @@ export const AgentApiKeysPanel: React.FC = () => {
   const { t } = useTranslation('settings');
   const queryClient = useQueryClient();
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{
     title: string;
@@ -554,13 +463,15 @@ export const AgentApiKeysPanel: React.FC = () => {
     onConfirm: () => void;
   } | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['agent-api-keys'],
     queryFn: () => agentApiKeysApi.list(),
   });
 
   const createMutation = useMutation({
     mutationFn: (req: CreateAgentApiKeyRequest) => agentApiKeysApi.create(req),
+    onMutate: () => setMutationError(null),
+    onError: (error) => setMutationError(handleApiError(error)),
     onSuccess: (response) => {
       setShowCreateForm(false);
       setCreatedKey(response.key);
@@ -570,6 +481,8 @@ export const AgentApiKeysPanel: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => agentApiKeysApi.delete(id),
+    onMutate: () => setMutationError(null),
+    onError: (error) => setMutationError(handleApiError(error)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['agent-api-keys'] });
     },
@@ -577,6 +490,8 @@ export const AgentApiKeysPanel: React.FC = () => {
 
   const regenerateMutation = useMutation({
     mutationFn: (id: string) => agentApiKeysApi.regenerate(id),
+    onMutate: () => setMutationError(null),
+    onError: (error) => setMutationError(handleApiError(error)),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['agent-api-keys'] });
       setCreatedKey(response.key);
@@ -586,6 +501,8 @@ export const AgentApiKeysPanel: React.FC = () => {
   const toggleActiveMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       agentApiKeysApi.update(id, { is_active: !isActive }),
+    onMutate: () => setMutationError(null),
+    onError: (error) => setMutationError(handleApiError(error)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['agent-api-keys'] });
     },
@@ -620,9 +537,13 @@ export const AgentApiKeysPanel: React.FC = () => {
   };
 
   const keys = data?.keys ?? [];
+  const withCreatedKey = (content: React.ReactNode) => <>
+    {content}
+    {createdKey && <KeyCreatedModal apiKey={createdKey} onClose={() => setCreatedKey(null)} />}
+  </>;
 
   if (isLoading) {
-    return (
+    return withCreatedKey(
       <div className="space-y-3 animate-pulse">
         {[1, 2, 3].map((i) => (
           <div
@@ -634,8 +555,18 @@ export const AgentApiKeysPanel: React.FC = () => {
     );
   }
 
+  if (isError) {
+    return withCreatedKey(
+      <div className="space-y-3">
+        <ConnectGuide />
+        <p role="alert" className="text-sm text-red-500">{handleApiError(error)}</p>
+        <button onClick={() => void refetch()}>{t('common:retry', 'Retry')}</button>
+      </div>
+    );
+  }
+
   if (keys.length === 0 && !showCreateForm) {
-    return (
+    return withCreatedKey(
       <div className="space-y-3">
         <ConnectGuide />
         <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -660,9 +591,10 @@ export const AgentApiKeysPanel: React.FC = () => {
     );
   }
 
-  return (
+  return withCreatedKey(
     <div className="space-y-3">
       <ConnectGuide />
+      {mutationError && <p role="alert" className="text-sm text-red-500">{mutationError}</p>}
 
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-[hsl(var(--text-primary))]">{t('apiKeys.title')}</h3>
@@ -711,13 +643,13 @@ export const AgentApiKeysPanel: React.FC = () => {
           message={confirmAction.message}
           confirmLabel={confirmAction.confirmLabel}
           onConfirm={confirmAction.onConfirm}
-          onCancel={() => setConfirmAction(null)}
+          open
+          variant="danger"
+          cancelLabel={t('common.cancel')}
+          onClose={() => setConfirmAction(null)}
         />
       )}
 
-      {createdKey && (
-        <KeyCreatedModal apiKey={createdKey} onClose={() => setCreatedKey(null)} />
-      )}
     </div>
   );
 };

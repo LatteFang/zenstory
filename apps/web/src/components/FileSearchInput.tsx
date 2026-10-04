@@ -137,6 +137,7 @@ export const FileSearchInput: React.FC<FileSearchInputProps> = ({
   className = "",
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const composingRef = useRef(false);
 
   /**
    * Handles input change events and propagates to parent onChange callback.
@@ -165,7 +166,16 @@ export const FileSearchInput: React.FC<FileSearchInputProps> = ({
         onChange={handleChange}
         onFocus={onFocus}
         onBlur={onBlur}
-        onKeyDown={onKeyDown}
+        onCompositionStart={() => { composingRef.current = true; }}
+        onCompositionEnd={() => { composingRef.current = false; }}
+        onKeyDown={(event) => {
+          if (composingRef.current || event.nativeEvent.isComposing || event.keyCode === 229) {
+            // Let the IME confirm its candidate without triggering global navigation.
+            event.stopPropagation();
+            return;
+          }
+          onKeyDown?.(event);
+        }}
         placeholder={placeholder}
         autoFocus={autoFocus}
         disabled={disabled}

@@ -13,10 +13,11 @@
  *
  * @module components/ui/ConfirmDialog
  */
-import React, { useEffect, useCallback, useRef, useId } from 'react';
+import React, { useEffect, useRef, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, AlertCircle, Info } from 'lucide-react';
 import { Button } from './Button';
+import { useDialogInteractions } from './dialogFocus';
 
 /**
  * Props for the ConfirmDialog component.
@@ -181,50 +182,20 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   const titleId = useId();
   const descriptionId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
-  const previousActiveElement = useRef<HTMLElement | null>(null);
-
-  /**
-   * Handle ESC key press to close dialog.
-   * Disabled during loading state.
-   */
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !loading) {
-        onClose();
-      }
-    },
-    [loading, onClose]
-  );
-
-  // Add/remove ESC key listener, scroll lock, and focus management
+  const loadingRef = useRef(loading);
+  const onCloseRef = useRef(onClose);
   useEffect(() => {
-    if (open) {
-      // Store the currently focused element
-      previousActiveElement.current = document.activeElement as HTMLElement;
+    loadingRef.current = loading;
+    onCloseRef.current = onClose;
+  }, [loading, onClose]);
 
-      document.addEventListener('keydown', handleKeyDown);
-      // Prevent body scroll when dialog is open
-      document.body.style.overflow = 'hidden';
-
-      // Focus the first focusable element in the dialog
-      const focusableElements = dialogRef.current?.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      if (focusableElements && focusableElements.length > 0) {
-        (focusableElements[0] as HTMLElement).focus();
-      }
-
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-        document.body.style.overflow = '';
-
-        // Restore focus to the previously focused element
-        if (previousActiveElement.current) {
-          previousActiveElement.current.focus();
-        }
-      };
-    }
-  }, [open, handleKeyDown]);
+  useDialogInteractions({
+    open,
+    dialogRef,
+    onEscape: () => {
+      if (!loadingRef.current) onCloseRef.current();
+    },
+  });
 
   /**
    * Handle confirm button click.
@@ -258,6 +229,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         className="modal w-full max-w-[400px] animate-scale-in"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        tabIndex={-1}
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}

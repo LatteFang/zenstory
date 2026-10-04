@@ -97,7 +97,13 @@ export default function MaterialsPage() {
   );
 
   // Fetch materials list
-  const { data: materials = [], isLoading, isFetching } = useQuery({
+  const {
+    data: materials = [],
+    isLoading,
+    isFetching,
+    isError: isMaterialsError,
+    refetch: refetchMaterials,
+  } = useQuery({
     queryKey: ["materials"],
     queryFn: () => materialsApi.list(),
     enabled: hasWorkspaceAccess,
@@ -375,6 +381,15 @@ export default function MaterialsPage() {
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[hsl(var(--accent-primary))]" />
         </div>
+      ) : isMaterialsError ? (
+        <div className="rounded-2xl border border-[hsl(var(--error)/0.3)] bg-[hsl(var(--error)/0.08)] p-6">
+          <p className="text-sm text-[hsl(var(--text-secondary))]">
+            {t("materials:listLoadError", { defaultValue: "素材列表加载失败，请重试。" })}
+          </p>
+          <button className="btn-secondary mt-3 h-10 px-4" onClick={() => void refetchMaterials()}>
+            {t("common:retry", { defaultValue: "重试" })}
+          </button>
+        </div>
       ) : showTeaser ? (
         <div className="space-y-4">
           <div className="rounded-2xl border border-[hsl(var(--border-color))] bg-[hsl(var(--bg-secondary))] p-6">
@@ -528,6 +543,7 @@ export default function MaterialsPage() {
       <Modal
         open={showUploadModal}
         onClose={() => {
+          if (uploading) return;
           setShowUploadModal(false);
           setFile(null);
           setTitle("");
@@ -535,15 +551,20 @@ export default function MaterialsPage() {
         }}
         title={t("materials:uploadModal.title")}
         size="md"
+        showCloseButton={!uploading}
+        closeOnBackdropClick={!uploading}
+        closeOnEscape={!uploading}
         footer={
           <>
             <button
               onClick={() => {
+                if (uploading) return;
                 setShowUploadModal(false);
                 setFile(null);
                 setTitle("");
                 setError(null);
               }}
+              disabled={uploading}
               className="btn-ghost flex-1 h-11"
             >
               {t("common:cancel")}

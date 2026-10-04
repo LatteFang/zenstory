@@ -265,6 +265,34 @@ describe('useVoiceInput', () => {
   })
 
   describe('cancelRecording', () => {
+    it('discards a stream that resolves after cancellation while permission is pending', async () => {
+      let resolveStream: ((stream: { getTracks: typeof mockGetTracks }) => void) | undefined
+      const pendingStream = new Promise<{ getTracks: typeof mockGetTracks }>((resolve) => {
+        resolveStream = resolve
+      })
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockReturnValueOnce(
+        pendingStream as Promise<MediaStream>
+      )
+      const track = { stop: vi.fn() }
+      mockGetTracks.mockReturnValue([track])
+
+      const { result } = renderHook(() => useVoiceInput())
+      let startPromise: Promise<void>
+      act(() => {
+        startPromise = result.current.startRecording()
+      })
+      act(() => result.current.cancelRecording())
+
+      await act(async () => {
+        resolveStream?.({ getTracks: mockGetTracks })
+        await startPromise!
+      })
+
+      expect(track.stop).toHaveBeenCalled()
+      expect(mockStart).not.toHaveBeenCalled()
+      expect(result.current.status).toBe('idle')
+    })
+
     it('cancels recording without processing', async () => {
       const { result } = renderHook(() => useVoiceInput())
 

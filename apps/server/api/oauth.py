@@ -456,6 +456,18 @@ async def google_oauth_callback(
     normalized_invite_code = _sanitize_invite_code(raw_state_invite)
 
     if existing_user:
+        if not existing_user.is_active:
+            log_with_context(
+                logger,
+                logging.WARNING,
+                "Google OAuth rejected inactive user",
+                user_id=existing_user.id,
+                email=google_email,
+            )
+            return _redirect_to_frontend_auth_callback(
+                error_code=ErrorCode.AUTH_INACTIVE_USER,
+                redirect=redirect_from_state,
+            )
         log_with_context(
             logger,
             logging.INFO,

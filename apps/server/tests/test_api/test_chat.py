@@ -316,6 +316,40 @@ class TestChatAPI:
         data = response.json()
         assert [msg["content"] for msg in data] == ["message-3", "message-4"]
 
+    @pytest.mark.parametrize("endpoint", ["messages", "recent"])
+    @pytest.mark.parametrize("limit", [0, -1, 101])
+    async def test_history_endpoints_reject_out_of_range_limits(
+        self, client: AsyncClient, db_session: Session, endpoint: str, limit: int
+    ):
+        user = User(
+            username=f"history-limit-{endpoint}-{limit}",
+            email=f"history-limit-{endpoint}-{limit}@example.com",
+            hashed_password=hash_password("password123"),
+            email_verified=True,
+            is_active=True,
+        )
+        db_session.add(user)
+        db_session.commit()
+        project = Project(
+            id=f"proj-history-limit-{endpoint}-{limit}",
+            owner_id=user.id,
+            name="History limits",
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        login = await client.post(
+            "/api/auth/login",
+            data={"username": user.username, "password": "password123"},
+        )
+        response = await client.get(
+            f"/api/v1/chat/session/{project.id}/{endpoint}",
+            params={"limit": limit},
+            headers={"Authorization": f"Bearer {login.json()['access_token']}"},
+        )
+
+        assert response.status_code == 422
+
     async def test_clear_session_success(
         self, client: AsyncClient, db_session: Session
     ):

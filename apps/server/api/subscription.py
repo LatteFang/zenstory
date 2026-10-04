@@ -4,7 +4,7 @@ Subscription API - User-facing subscription endpoints.
 from datetime import UTC, datetime
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlmodel import Session, func, select
 
@@ -575,7 +575,7 @@ async def redeem_code(
 
 @router.get("/history", response_model=list[SubscriptionHistoryItem])
 async def get_history(
-    limit: int = 50,
+    limit: int = Query(50, ge=1, le=100),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_active_user)
 ):

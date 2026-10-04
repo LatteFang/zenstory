@@ -10,23 +10,23 @@ Integration tests for the points and check-in system API, covering:
 - GET /api/v1/points/earn-opportunities - Earn opportunities
 - GET /api/v1/points/config - Points configuration
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 from httpx import AsyncClient
 from sqlmodel import Session, select
 
 from models import SubscriptionPlan, User
-from models.points import PointsTransaction, CheckInRecord
+from models.points import CheckInRecord
 from services.core.auth_service import hash_password
 from services.features.points_service import (
-    points_service,
     POINTS_CHECK_IN,
     POINTS_CHECK_IN_STREAK,
-    POINTS_REFERRAL,
     POINTS_EXPIRATION_MONTHS,
     POINTS_PRO_7DAYS_COST,
+    POINTS_REFERRAL,
     STREAK_BONUS_THRESHOLD,
+    points_service,
 )
 
 
@@ -211,6 +211,7 @@ class TestCheckIn:
     async def test_check_in_streak_continuation(self, client: AsyncClient, auth_headers, db_session: Session):
         """Test streak continuation when checking in consecutive days."""
         from sqlalchemy import text as sql_text
+
         from config.datetime_utils import utcnow
 
         # Get user ID
@@ -244,6 +245,7 @@ class TestCheckIn:
     async def test_check_in_streak_bonus(self, client: AsyncClient, auth_headers, db_session: Session):
         """Test streak bonus is awarded at threshold."""
         from sqlalchemy import text as sql_text
+
         from config.datetime_utils import utcnow
 
         # Get user ID
@@ -324,6 +326,7 @@ class TestGetCheckInStatus:
     async def test_check_in_status_with_streak(self, client: AsyncClient, auth_headers, db_session: Session):
         """Test status shows previous streak when not checked in today."""
         from sqlalchemy import text as sql_text
+
         from config.datetime_utils import utcnow
 
         # Get user ID
@@ -456,34 +459,19 @@ class TestGetTransactions:
         data3 = response3.json()
         assert len(data3["transactions"]) == 5
 
-    async def test_transactions_page_size_limit(self, client: AsyncClient, auth_headers, db_session: Session):
-        """Test that page size is capped at 100."""
-        from sqlalchemy import text as sql_text
-
-        # Get user ID
-        user_result = db_session.exec(
-            sql_text("SELECT id FROM user WHERE email = 'test@example.com'")
-        ).first()
-        user_id = user_result[0] if user_result else None
-
-        # Create 150 transactions
-        for i in range(150):
-            points_service.earn_points(
-                session=db_session,
-                user_id=user_id,
-                amount=1,
-                transaction_type=f"test_{i}",
-            )
-
-        # Request with page_size=200, should be capped to 100
+    @pytest.mark.parametrize(
+        "query",
+        ["page=0", "page=-1", "page_size=0", "page_size=-1", "page_size=101"],
+    )
+    async def test_transactions_reject_invalid_pagination(
+        self, client: AsyncClient, auth_headers, query: str
+    ):
         response = await client.get(
-            "/api/v1/points/transactions?page=1&page_size=200",
+            f"/api/v1/points/transactions?{query}",
             headers=auth_headers,
         )
 
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["transactions"]) == 100  # Capped at 100
+        assert response.status_code == 422
 
 
 @pytest.mark.integration

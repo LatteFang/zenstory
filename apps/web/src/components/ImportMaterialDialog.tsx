@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useProject } from '../contexts/ProjectContext';
 import { fileApi } from '../lib/api';
@@ -34,14 +34,33 @@ export const ImportMaterialDialog: React.FC<ImportMaterialDialogProps> = ({
   const [folders, setFolders] = useState<{ id: string; title: string }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [folderError, setFolderError] = useState(false);
+  const folderRequestRef = useRef(0);
+  const importRequestRef = useRef(0);
+  const mountedRef = useRef(true);
+  const currentProjectIdRef = useRef(currentProjectId);
+  const isOpenRef = useRef(isOpen);
+  currentProjectIdRef.current = currentProjectId;
+  isOpenRef.current = isOpen;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      folderRequestRef.current += 1;
+      importRequestRef.current += 1;
+    };
+  }, []);
 
   // Load project folders
-  useEffect(() => {
-    if (!isOpen || !currentProjectId) return;
-
-    const loadFolders = async () => {
+  const loadFolders = useCallback(async () => {
+      if (!isOpen || !currentProjectId) return;
+      const request = ++folderRequestRef.current;
+      const requestProjectId = currentProjectId;
+      setFolderError(false);
       try {
-        const response = await fileApi.getTree(currentProjectId);
+        const response = await fileApi.getTree(requestProjectId);
+        if (!mountedRef.current || folderRequestRef.current !== request || currentProjectId !== requestProjectId) return;
         const folderList = response.tree
           .filter((n: FileTreeNode) => n.file_type === 'folder')
           .map((n: FileTreeNode) => ({ id: n.id, title: n.title }));
@@ -57,12 +76,18 @@ export const ImportMaterialDialog: React.FC<ImportMaterialDialogProps> = ({
           setTargetFolderId(null);
         }
       } catch (err) {
+        if (!mountedRef.current || folderRequestRef.current !== request) return;
         logger.error('Failed to load folders:', err);
+        setFolders([]);
+        setTargetFolderId(null);
+        setFolderError(true);
       }
-    };
+  }, [currentProjectId, isOpen, preview.suggested_folder_name]);
 
-    loadFolders();
-  }, [isOpen, currentProjectId, preview.suggested_folder_name]);
+  useEffect(() => {
+    void loadFolders();
+    return () => { folderRequestRef.current += 1; };
+  }, [loadFolders]);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -70,6 +95,7 @@ export const ImportMaterialDialog: React.FC<ImportMaterialDialogProps> = ({
       setFileName(preview.suggested_file_name);
       setTargetFolderId(null);
       setError(null);
+      setFolderError(false);
     }
   }, [isOpen, preview.suggested_file_name]);
 
@@ -78,9 +104,11 @@ export const ImportMaterialDialog: React.FC<ImportMaterialDialogProps> = ({
 
     setIsSubmitting(true);
     setError(null);
+    const request = ++importRequestRef.current;
+    const requestProjectId = currentProjectId;
     try {
       const result = await materialsApi.importToProject({
-        project_id: currentProjectId,
+        project_id: requestProjectId,
         novel_id: novelId,
         entity_type: entityType,
         entity_id: entityId,
@@ -88,21 +116,32 @@ export const ImportMaterialDialog: React.FC<ImportMaterialDialogProps> = ({
         target_folder_id: targetFolderId || undefined,
       });
 
-      onSuccess(result.file_id, result.folder_name);
-      onClose();
+      if (
+        mountedRef.current
+        && importRequestRef.current === request
+        && currentProjectIdRef.current === requestProjectId
+        && isOpenRef.current
+      ) {
+        onSuccess(result.file_id, result.folder_name);
+        onClose();
+      }
     } catch (err) {
+      if (!mountedRef.current || importRequestRef.current !== request) return;
       logger.error('Failed to import material:', err);
       setError(t('editor:fileTree.importDialog.importFailed'));
     } finally {
-      setIsSubmitting(false);
+      if (mountedRef.current && importRequestRef.current === request) setIsSubmitting(false);
     }
   };
 
   return (
     <Modal
       open={isOpen}
-      onClose={onClose}
+      onClose={() => { if (!isSubmitting) onClose(); }}
       size="sm"
+      showCloseButton={!isSubmitting}
+      closeOnBackdropClick={!isSubmitting}
+      closeOnEscape={!isSubmitting}
     >
       <Modal.Header>{t('editor:fileTree.importDialog.title')}</Modal.Header>
 
@@ -148,12 +187,21 @@ export const ImportMaterialDialog: React.FC<ImportMaterialDialogProps> = ({
                 </option>
               ))}
           </select>
+          {folderError && (
+            <div className="mt-2 text-xs text-[hsl(var(--error))]">
+              <span>{t('editor:fileTree.importDialog.folderLoadFailed', { defaultValue: '文件夹加载失败。' })}</span>{' '}
+              <button className="underline" onClick={() => void loadFolders()}>
+                {t('common:retry', { defaultValue: '重试' })}
+              </button>
+            </div>
+          )}
         </div>
       </Modal.Body>
 
       <Modal.Footer>
         <button
-          onClick={onClose}
+          onClick={() => { if (!isSubmitting) onClose(); }}
+          disabled={isSubmitting}
           className="px-4 py-2 text-sm rounded border border-[hsl(var(--border-primary))] text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-tertiary))] transition-colors"
         >
           {t('editor:fileTree.importDialog.cancel')}

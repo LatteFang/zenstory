@@ -55,14 +55,41 @@ export interface PromptConfigRequest {
   file_types: string;
   writing_guidelines: string;
   include_dialogue_guidelines: boolean;
-  primary_content_type: string;
   is_active: boolean;
+  expected_version?: number;
+}
+
+export interface PromptReloadResult {
+  message: string;
+  source: "primary_database";
+  count: number;
+  version: number;
 }
 
 /**
  * Prompts list response - 后端直接返回数组
  */
 export type PromptsListResponse = SystemPromptConfig[];
+
+// ==================== Skill Review ====================
+
+export type SkillReviewStatus = "pending" | "approved" | "rejected";
+
+export interface PendingSkill {
+  id: string;
+  name: string;
+  description: string | null;
+  instructions: string;
+  category: string;
+  author_id: string | null;
+  author_name: string | null;
+  status: SkillReviewStatus;
+  reviewed_by: string | null;
+  reviewer_name: string | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+}
 
 // ==================== Dashboard Stats ====================
 

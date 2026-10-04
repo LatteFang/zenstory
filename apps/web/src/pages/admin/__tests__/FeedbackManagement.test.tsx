@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 
 import FeedbackManagement from "../FeedbackManagement";
 
@@ -7,6 +7,15 @@ const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
 const invalidateQueriesMock = vi.fn();
 const mutateMock = vi.fn();
+const getScreenshotBlobMock = vi.fn();
+
+vi.mock("../../../lib/adminApi", () => ({
+  adminApi: {
+    getFeedbackList: vi.fn(),
+    updateFeedbackStatus: vi.fn(),
+    getFeedbackScreenshotBlob: (...args: unknown[]) => getScreenshotBlobMock(...args),
+  },
+}));
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -124,5 +133,30 @@ describe("FeedbackManagement", () => {
     fireEvent.change(statusSelect, { target: { value: "resolved" } });
 
     expect(mutateMock).toHaveBeenCalledWith({ id: "fb-1", status: "resolved" });
+  });
+
+  it("does not create or commit a screenshot URL after the preview closes", async () => {
+    let resolveBlob!: (value: Blob) => void;
+    getScreenshotBlobMock.mockReturnValueOnce(new Promise((resolve) => { resolveBlob = resolve; }));
+    const createObjectURL = vi.fn(() => "blob:late");
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectURL });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: revokeObjectURL });
+    useQueryMock.mockReturnValue({
+      data: { items: [{
+        id: "fb-late", user_id: "user-1", username: "late_user", email: "late@example.com",
+        source_page: "editor", source_route: "/project/test", issue_text: "Late screenshot",
+        has_screenshot: true, screenshot_original_name: "late.png", screenshot_content_type: "image/png",
+        screenshot_size_bytes: 10, status: "open", created_at: "2026-03-08T00:00:00Z",
+        updated_at: "2026-03-08T00:00:00Z",
+      }], total: 1 },
+      isLoading: false, isFetching: false, isError: false, error: null, refetch: vi.fn(),
+    });
+    render(<FeedbackManagement />);
+    fireEvent.click(screen.getByText("feedback.viewScreenshot"));
+    fireEvent.click(screen.getByText("common:close"));
+    await act(async () => { resolveBlob(new Blob(["image"])); await Promise.resolve(); });
+    expect(createObjectURL).not.toHaveBeenCalled();
+    expect(screen.queryByAltText("feedback.screenshotPreviewAlt")).not.toBeInTheDocument();
   });
 });

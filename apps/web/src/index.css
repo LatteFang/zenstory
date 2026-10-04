@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 /* ========================================
-   CSS Variables - Design System
-   Based on demo.html specifications
+   CSS Variables - React Workbench Design System
+   Canonical usage and migration rules are documented in repository DESIGN.md
    ======================================== */
 
 :root {
@@ -1129,6 +1129,30 @@ code, pre, .font-mono {
 .animate-slide-out-bottom {
     animation: slide-out-bottom 0.2s ease-in forwards;
     will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html:focus-within,
+    .scroll-smooth {
+        scroll-behavior: auto;
+    }
+
+    .animate-float,
+    .skeleton-shimmer,
+    .animate-pulse,
+    .animate-ping,
+    .animate-bounce,
+    .animate-slide-in-right,
+    .animate-fade-in,
+    .animate-fade-out,
+    .animate-scale-in,
+    .animate-slide-in-left,
+    .animate-slide-out-left,
+    .animate-slide-in-bottom,
+    .animate-slide-out-bottom {
+        animation: none !important;
+        will-change: auto;
+    }
 }
 
 /* ========================================

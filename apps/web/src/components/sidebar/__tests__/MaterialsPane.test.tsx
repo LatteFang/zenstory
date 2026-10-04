@@ -52,7 +52,7 @@ vi.mock('../../../contexts/MaterialLibraryContext', () => ({
           golden_fingers: 0,
           storylines: 0,
           stories: 0,
-          relationships: 0,
+          relationships: 2,
         },
       },
     ],
@@ -78,7 +78,7 @@ vi.mock('../../../lib/materialsApi', () => ({
     getGoldenFingers: vi.fn(),
     getStoryLines: vi.fn(),
     getStories: vi.fn(),
-    getRelationships: vi.fn(),
+    getRelationships: vi.fn().mockResolvedValue([]),
     searchMaterials: (...args: unknown[]) => mockSearchMaterials(...args),
     importToProject: vi.fn(),
   },
@@ -185,7 +185,8 @@ describe('MaterialsPane', () => {
       })
 
       expect(screen.queryByText('Previous Hero')).not.toBeInTheDocument()
-      expect(screen.getByText('editor:fileTree.noSearchResults')).toBeInTheDocument()
+      expect(screen.getByText('materials:searchLoadFailed')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'common:retry' })).toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }
@@ -227,5 +228,10 @@ describe('MaterialsPane', () => {
     expect(mockToastSuccess).not.toHaveBeenCalled()
     expect(mockToastError).toHaveBeenCalledWith('Imported 1, failed 1')
     expect(screen.getByText('editor:fileTree.batchImport')).toBeInTheDocument()
+  })
+
+  it('shows stored historical relationships while the global producer flag is off', () => {
+    render(<MaterialsPane />)
+    expect(screen.getByText('editor:fileTree.referenceRelationships')).toBeInTheDocument()
   })
 })

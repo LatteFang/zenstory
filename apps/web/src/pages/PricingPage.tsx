@@ -209,7 +209,7 @@ export default function PricingPage() {
         <section className="sticky top-14 z-20 rounded-xl border border-[hsl(var(--border-color))] bg-[hsl(var(--bg-secondary)/0.9)] p-3 md:p-4 backdrop-blur-sm">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-[hsl(var(--text-primary))]">
+              <p id="billing-cycle-label" className="text-sm font-medium text-[hsl(var(--text-primary))]">
                 {t("dashboard:billing.billingCycleLabel", "选择计费周期")}
               </p>
               <p className="text-xs text-[hsl(var(--text-secondary))]">
@@ -222,12 +222,27 @@ export default function PricingPage() {
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <div className="inline-flex rounded-lg bg-[hsl(var(--bg-tertiary))] p-1">
+              <div
+                className="inline-flex rounded-lg bg-[hsl(var(--bg-tertiary))] p-1"
+                role="radiogroup"
+                aria-labelledby="billing-cycle-label"
+              >
                 {(["month", "year"] as BillingCycle[]).map((cycle) => (
                   <button
                     key={cycle}
+                    id={`billing-cycle-${cycle}`}
                     type="button"
+                    role="radio"
+                    aria-checked={billingCycle === cycle}
+                    tabIndex={billingCycle === cycle ? 0 : -1}
                     onClick={() => setBillingCycle(cycle)}
+                    onKeyDown={(event) => {
+                      if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+                      event.preventDefault();
+                      const nextCycle: BillingCycle = cycle === "month" ? "year" : "month";
+                      setBillingCycle(nextCycle);
+                      document.getElementById(`billing-cycle-${nextCycle}`)?.focus();
+                    }}
                     className={cn(
                       "h-8 px-3 text-sm rounded-md transition-colors",
                       billingCycle === cycle

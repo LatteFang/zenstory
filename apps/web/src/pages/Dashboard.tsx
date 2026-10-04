@@ -74,6 +74,8 @@ function DashboardContent() {
   const isDesktop = useIsDesktop();
 
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const mobileMenuRef = useRef<HTMLElement | null>(null);
+  const mobileMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsDefaultTab, setSettingsDefaultTab] = useState<string | undefined>(undefined);
 
@@ -176,6 +178,21 @@ function DashboardContent() {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [showUserPanel]);
+
+  useEffect(() => {
+    if (!showMobileMenu) return;
+
+    const menuTrigger = mobileMenuTriggerRef.current;
+    mobileMenuRef.current?.querySelector<HTMLElement>('button')?.focus();
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowMobileMenu(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      menuTrigger?.focus();
+    };
+  }, [showMobileMenu]);
 
   const renderUserPanel = (alignment: 'desktop' | 'tablet') => (
     <div
@@ -456,8 +473,11 @@ function DashboardContent() {
             {/* Right: Menu Button */}
             <div className="flex items-center gap-1">
               <button
+                ref={mobileMenuTriggerRef}
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
                 aria-label={showMobileMenu ? 'Close mobile menu' : 'Open mobile menu'}
+                aria-expanded={showMobileMenu}
+                aria-controls="dashboard-mobile-navigation"
                 className="p-2 hover:bg-[hsl(var(--bg-tertiary))] rounded text-[hsl(var(--text-primary))] transition-colors"
               >
                 {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -468,7 +488,12 @@ function DashboardContent() {
 
         {/* Mobile Dropdown Menu */}
         {isMobile && showMobileMenu && (
-          <div className="absolute top-12 left-0 right-0 bg-[hsl(var(--bg-secondary))] border-b border-[hsl(var(--separator-color))] shadow-lg z-40">
+          <nav
+            ref={mobileMenuRef}
+            id="dashboard-mobile-navigation"
+            aria-label="Mobile navigation"
+            className="absolute top-12 left-0 right-0 bg-[hsl(var(--bg-secondary))] border-b border-[hsl(var(--separator-color))] shadow-lg z-40"
+          >
             <div className="flex flex-col p-2 gap-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -563,7 +588,7 @@ function DashboardContent() {
                 {t('nav.logout')}
               </button>
             </div>
-          </div>
+          </nav>
         )}
 
         <div className={`max-w-5xl mx-auto ${isMobile ? "px-4 py-6" : "px-6 py-8"}`}>

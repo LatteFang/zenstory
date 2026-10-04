@@ -15,6 +15,7 @@
   "selectedVersions": "{{count}} version selected",
   "selectedVersions_one": "{{count}} version selected",
   "selectedVersions_other": "{{count}} versions selected",
+  "latestSaved": "Latest saved version",
   "latest": "Latest",
   "wordCount": "{{count}} words",
   "versionTo": "Version {{v1}} → Version {{v2}}",

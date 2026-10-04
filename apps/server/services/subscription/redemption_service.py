@@ -12,8 +12,12 @@ from sqlmodel import Session, select
 
 from config.datetime_utils import utcnow
 from core.error_codes import ERROR_MESSAGES, ErrorCode
+from core.error_handler import APIException
 from models.subscription import RedemptionCode
 from services.subscription.subscription_service import subscription_service
+from utils.logger import get_logger, log_with_context
+
+logger = get_logger(__name__)
 
 
 class RedemptionService:
@@ -84,11 +88,11 @@ class RedemptionService:
         if not self.validate_code_format(code):
             return (False, self._get_error_message(ErrorCode.REDEMPTION_CODE_INVALID), None)
 
-        # Step 2: Verify checksum
-        if not self.verify_checksum(code):
-            return (False, self._get_error_message(ErrorCode.REDEMPTION_CODE_CHECKSUM_FAILED), None)
-
         try:
+            # Step 2: Verify checksum
+            if not self.verify_checksum(code):
+                return (False, self._get_error_message(ErrorCode.REDEMPTION_CODE_CHECKSUM_FAILED), None)
+
             # Step 3: Lock code row for safe concurrent redemption checks.
             redemption_code = session.exec(
                 select(RedemptionCode)
@@ -148,7 +152,19 @@ class RedemptionService:
             )
         except Exception as e:
             session.rollback()
-            return (False, f"Redemption failed: {str(e)}", None)
+            log_with_context(
+                logger,
+                40,
+                "redeem_code failed",
+                user_id=user_id,
+                error=str(e),
+                error_type=type(e).__name__,
+            )
+            raise APIException(
+                error_code=ErrorCode.INTERNAL_SERVER_ERROR,
+                status_code=500,
+                detail="Redemption failed",
+            ) from e
 
 
 redemption_service = RedemptionService()

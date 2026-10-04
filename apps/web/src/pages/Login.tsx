@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LogoMark } from "../components/Logo";
@@ -7,10 +7,8 @@ import { projectApi } from "../lib/api";
 import { authConfig, hasOAuthProviders } from "../config/auth";
 import { PublicHeader } from "../components/PublicHeader";
 import { LoadingSpinner } from "../components/LoadingSpinner";
-import { handleSsoRedirect } from '../lib/ssoRedirect';
-import { clearAuthStorage } from "../lib/apiClient";
-import { logger } from "../lib/logger";
 import { normalizePlanIntent } from "../lib/authFlow";
+import { handleSsoRedirect } from '../lib/ssoRedirect';
 
 // SVG icons for OAuth providers
 const GoogleIcon = () => (
@@ -45,13 +43,11 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [ssoLoading, setSsoLoading] = useState(false);
-  const { login, googleLogin, appleLogin, user, loading: authLoading } = useAuth();
+  const { login, googleLogin, appleLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation(['auth', 'common', 'privacy', 'home']);
   const [searchParams] = useSearchParams();
-  const redirectUrl = searchParams.get('redirect');
   const planIntent = normalizePlanIntent(searchParams.get('plan'));
   const hasPaidPlanIntent = planIntent !== null && planIntent !== 'free';
   const registerLink = planIntent
@@ -62,100 +58,6 @@ export const Login: React.FC = () => {
     : '';
   const trimmedIdentifier = identifier.trim();
   const canSubmit = trimmedIdentifier.length > 0 && password.length > 0 && !loading;
-
-  // Check if user is already authenticated on mount - with token validation
-  useEffect(() => {
-    // Skip if still loading auth state
-    if (authLoading) return;
-
-    // If there's a redirect parameter and user exists, validate before redirecting
-    if (redirectUrl && user) {
-      let isMounted = true;
-
-      const performSsoRedirect = async () => {
-        setSsoLoading(true);
-        logger.log('[Login] Starting validated SSO redirect...');
-
-        const result = await handleSsoRedirect(redirectUrl);
-
-        if (!isMounted) return;
-
-        if (result.success && result.redirectUrl) {
-          logger.log('[Login] SSO redirect validated, redirecting to:', redirectUrl);
-          window.location.href = result.redirectUrl;
-        } else if (result.shouldShowLogin) {
-          // Token invalid, refresh failed, or network error - show login form
-          logger.warn('[Login] SSO redirect failed, showing login form:', result.error);
-          setSsoLoading(false);
-
-          // Invalid redirect is not an auth failure. Keep current session and return to app.
-          if (result.reason === 'invalid_redirect') {
-            if (result.error) {
-              setError(result.error);
-            }
-            navigate('/dashboard', { replace: true });
-            return;
-          }
-
-          // Keep behavior explicit: clear auth only for definitive auth failures.
-          if (result.clearAuth) {
-            clearAuthStorage('sso_redirect_failed');
-          } else {
-            // Preserve tokens for transient errors (e.g. network), but clear in-memory user.
-            window.dispatchEvent(
-              new CustomEvent('auth:logout', {
-                detail: { reason: 'sso_redirect_transient_failure' },
-              })
-            );
-          }
-
-          if (result.error) {
-            setError(result.error);
-          }
-
-          // Remove redirect query and render login form without a full reload.
-          navigate(window.location.pathname, { replace: true });
-        }
-      };
-
-      performSsoRedirect();
-
-      return () => {
-        isMounted = false;
-      };
-    }
-
-    // No redirect param but user exists - go to dashboard
-    if (user && !redirectUrl) {
-      if (hasPaidPlanIntent && planIntent) {
-        navigate(`/dashboard/billing?plan=${encodeURIComponent(planIntent)}`);
-      } else {
-        navigate('/dashboard');
-      }
-    }
-  }, [authLoading, hasPaidPlanIntent, navigate, planIntent, redirectUrl, user]);
-
-  // Show loading while checking auth state or processing SSO
-  if (authLoading || ssoLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--bg-primary))]">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  // Don't render login form if user is authenticated (unless processing SSO)
-  if (user) {
-    // If we have a redirect URL, we're processing it in useEffect
-    if (redirectUrl) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--bg-primary))]">
-          <LoadingSpinner size="lg" />
-        </div>
-      );
-    }
-    return null;
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,9 +75,9 @@ export const Login: React.FC = () => {
 
       // Restore deep-link intent (e.g. homepage CTA → dashboard settings)
       const state = location.state as Record<string, unknown> | null;
-      const from = state?.from as { pathname?: string; state?: object } | undefined;
+      const from = state?.from as { pathname?: string; search?: string; hash?: string; state?: object } | undefined;
       if (from && typeof from.pathname === 'string') {
-        navigate(from.pathname, { replace: true, state: from.state ?? {} });
+        navigate(`${from.pathname}${from.search ?? ''}${from.hash ?? ''}`, { replace: true, state: from.state ?? {} });
         return;
       }
 
@@ -256,7 +158,7 @@ export const Login: React.FC = () => {
   const handleOAuthLogin = (provider: 'google' | 'apple') => {
     setError("");
     if (provider === 'google') {
-      googleLogin();
+      googleLogin({ planIntent });
     } else if (provider === 'apple') {
       appleLogin();
     }

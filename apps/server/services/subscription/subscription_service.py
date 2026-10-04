@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from sqlmodel import Session, select
 
 from config.datetime_utils import utcnow
+from models.entities import User
 from models.subscription import SubscriptionHistory, SubscriptionPlan, UserSubscription
 from services.subscription.defaults import (
     DEFAULT_FREE_PLAN_DISPLAY_NAME,
@@ -18,6 +19,31 @@ from services.subscription.defaults import (
 
 class SubscriptionService:
     """Service for subscription operations."""
+
+    def _lock_user_for_subscription_mutation(
+        self, session: Session, user_id: str
+    ) -> User:
+        """Serialize subscription mutations on the durable user row."""
+        user = session.exec(
+            select(User)
+            .where(User.id == user_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        ).first()
+        if not user:
+            raise ValueError("User not found")
+        return user
+
+    def _get_user_subscription_for_update(
+        self, session: Session, user_id: str
+    ) -> UserSubscription | None:
+        """Read the current subscription under lock, bypassing stale ORM state."""
+        return session.exec(
+            select(UserSubscription)
+            .where(UserSubscription.user_id == user_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        ).first()
 
     def get_user_subscription(
         self, session: Session, user_id: str
@@ -39,7 +65,9 @@ class SubscriptionService:
             select(SubscriptionPlan).where(SubscriptionPlan.id == plan_id)
         ).first()
 
-    def _get_or_create_free_plan(self, session: Session) -> SubscriptionPlan:
+    def _get_or_create_free_plan(
+        self, session: Session, *, commit: bool = True
+    ) -> SubscriptionPlan:
         """Ensure free plan exists and return it."""
         free_plan = self.get_plan_by_name(session, "free")
         if free_plan:
@@ -58,8 +86,11 @@ class SubscriptionService:
             updated_at=now,
         )
         session.add(free_plan)
-        session.commit()
-        session.refresh(free_plan)
+        if commit:
+            session.commit()
+            session.refresh(free_plan)
+        else:
+            session.flush()
         return free_plan
 
     def ensure_user_subscription_and_quota(
@@ -67,6 +98,7 @@ class SubscriptionService:
         session: Session,
         user_id: str,
         source: str = "system_backfill",
+        commit: bool = True,
     ) -> dict[str, bool]:
         """
         Ensure a user has both a subscription record and a quota record.
@@ -75,11 +107,13 @@ class SubscriptionService:
         - registration / OAuth bootstrap
         - legacy data backfill on login/admin operations
         """
+        self._lock_user_for_subscription_mutation(session, user_id)
+
         created_subscription = False
         created_quota = False
 
-        if not self.get_user_subscription(session, user_id):
-            self._get_or_create_free_plan(session)
+        if not self._get_user_subscription_for_update(session, user_id):
+            self._get_or_create_free_plan(session, commit=False)
             self.create_user_subscription(
                 session=session,
                 user_id=user_id,
@@ -97,7 +131,10 @@ class SubscriptionService:
             created_quota = True
 
         if created_subscription or created_quota:
-            session.commit()
+            if commit:
+                session.commit()
+            else:
+                session.flush()
 
         return {
             "created_subscription": created_subscription,
@@ -126,12 +163,14 @@ class SubscriptionService:
         Returns:
             Created or updated UserSubscription
         """
+        self._lock_user_for_subscription_mutation(session, user_id)
+
         plan = self.get_plan_by_name(session, plan_name)
         if not plan:
             raise ValueError(f"Plan '{plan_name}' not found")
 
         now = utcnow()
-        existing_sub = self.get_user_subscription(session, user_id)
+        existing_sub = self._get_user_subscription_for_update(session, user_id)
 
         if existing_sub:
             old_plan_id = existing_sub.plan_id
@@ -221,7 +260,8 @@ class SubscriptionService:
 
         Returns existing subscription if present; otherwise creates one.
         """
-        existing_sub = self.get_user_subscription(session, user_id)
+        self._lock_user_for_subscription_mutation(session, user_id)
+        existing_sub = self._get_user_subscription_for_update(session, user_id)
         if existing_sub:
             return existing_sub
         return self.create_user_subscription(
@@ -239,7 +279,8 @@ class SubscriptionService:
         user_id: str,
         new_plan_name: str,
         duration_days: int,
-        metadata: dict | None = None
+        metadata: dict | None = None,
+        commit: bool = True,
     ) -> UserSubscription:
         """
         Upgrade or renew a subscription.
@@ -253,6 +294,7 @@ class SubscriptionService:
             plan_name=new_plan_name,
             duration_days=duration_days,
             metadata=metadata,
+            commit=commit,
         )
 
     def cancel_subscription(
@@ -272,7 +314,8 @@ class SubscriptionService:
         Returns:
             Updated UserSubscription or None if not found
         """
-        subscription = self.get_user_subscription(session, user_id)
+        self._lock_user_for_subscription_mutation(session, user_id)
+        subscription = self._get_user_subscription_for_update(session, user_id)
         if not subscription:
             return None
 
@@ -312,7 +355,8 @@ class SubscriptionService:
 
         Returns: (is_active, plan_name, expires_at)
         """
-        subscription = self.get_user_subscription(session, user_id)
+        self._lock_user_for_subscription_mutation(session, user_id)
+        subscription = self._get_user_subscription_for_update(session, user_id)
 
         if not subscription:
             return (False, "free", None)

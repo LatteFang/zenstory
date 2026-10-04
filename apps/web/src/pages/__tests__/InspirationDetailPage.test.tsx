@@ -7,6 +7,7 @@ const mockToastSuccess = vi.fn()
 const mockToastError = vi.fn()
 const mockGetDetail = vi.fn()
 const mockCopyInspiration = vi.fn()
+const mockResetDetail = vi.fn()
 
 let mockCurrentDetail: Record<string, unknown> | null = null
 let mockIsDetailLoading = false
@@ -44,6 +45,7 @@ vi.mock('../../hooks/useInspirations', () => ({
     isDetailLoading: mockIsDetailLoading,
     copyInspiration: mockCopyInspiration,
     isCopying: mockIsCopying,
+    resetDetail: mockResetDetail,
   }),
 }))
 

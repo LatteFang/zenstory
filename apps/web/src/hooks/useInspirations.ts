@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inspirationsApi } from '../lib/api';
 import { logger } from '../lib/logger';
@@ -114,6 +114,16 @@ export function useInspirations(options: UseInspirationsOptions = {}): UseInspir
   const queryClient = useQueryClient();
   const [currentDetail, setCurrentDetail] = useState<InspirationDetail | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const detailRequestRef = useRef(0);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      detailRequestRef.current += 1;
+    };
+  }, []);
 
   // Fetch inspirations list
   const {
@@ -175,23 +185,28 @@ export function useInspirations(options: UseInspirationsOptions = {}): UseInspir
 
   // Get inspiration detail
   const getDetail = useCallback(async (id: string): Promise<InspirationDetail | null> => {
+    const request = ++detailRequestRef.current;
+    setCurrentDetail(null);
     setIsDetailLoading(true);
     try {
       const detail = await inspirationsApi.get(id);
+      if (!mountedRef.current || detailRequestRef.current !== request) return null;
       setCurrentDetail(detail);
       return detail;
     } catch (err) {
       logger.error('Failed to load inspiration detail:', err);
-      setCurrentDetail(null);
+      if (mountedRef.current && detailRequestRef.current === request) setCurrentDetail(null);
       return null;
     } finally {
-      setIsDetailLoading(false);
+      if (mountedRef.current && detailRequestRef.current === request) setIsDetailLoading(false);
     }
   }, []);
 
   // Reset detail
   const resetDetail = useCallback(() => {
+    detailRequestRef.current += 1;
     setCurrentDetail(null);
+    setIsDetailLoading(false);
   }, []);
 
   // Refetch wrapper

@@ -9,7 +9,7 @@ import { ChatPanel } from "./components/ChatPanel";
 import { PageLoader } from "./components/PageLoader";
 import { SEOHelmet } from "./components/Helmet";
 import { SEOProvider } from "./providers/SEOProvider";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AuthIdentityQueryBoundary, AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { FileSearchProvider } from "./contexts/FileSearchContext";
 import { useProject } from "./contexts/ProjectContext";
@@ -21,6 +21,7 @@ import { SiteBoundary } from "./components/SiteBoundary";
 import { logger } from "./lib/logger";
 import { fileApi } from "./lib/api";
 import { normalizePlanIntent } from "./lib/authFlow";
+import { clearAuthStorage } from "./lib/apiClient";
 import { shouldRequirePersonaOnboarding } from "./lib/onboardingPersona";
 import type { TreeNodeType } from "./types";
 import { lazyRoute } from "./lib/chunkRecovery";
@@ -113,47 +114,62 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // Public route wrapper - redirects to dashboard if already authenticated
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   const [ssoState, setSsoState] = React.useState<'idle' | 'validating' | 'redirecting' | 'failed'>('idle');
+  const [ssoFailureTarget, setSsoFailureTarget] = React.useState<'dashboard' | 'login'>('dashboard');
 
   React.useEffect(() => {
     // Only run SSO validation once when user is loaded
     if (loading || ssoState !== 'idle' || !user) return;
 
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(location.search);
     const redirectUrl = searchParams.get('redirect');
 
     if (redirectUrl) {
       setSsoState('validating');
 
-      // Import and use handleSsoRedirect with validation
-      import('./lib/ssoRedirect').then(async ({ handleSsoRedirect }) => {
-        const result = await handleSsoRedirect(redirectUrl);
+      void (async () => {
+        let redirected = false;
+        try {
+          const { handleSsoRedirect } = await import('./lib/ssoRedirect');
+          const result = await handleSsoRedirect(redirectUrl);
+          if (result.success && result.redirectUrl) {
+            setSsoState('redirecting');
+            redirected = true;
+            logger.log('[PublicRoute] SSO validated, redirecting...');
+            window.location.href = result.redirectUrl;
+            return;
+          }
 
-        if (result.success && result.redirectUrl) {
-          setSsoState('redirecting');
-          logger.log('[PublicRoute] SSO validated, redirecting...');
-          window.location.href = result.redirectUrl;
-        } else {
-          // SSO validation failed - clear tokens and reload to show login
           logger.warn('[PublicRoute] SSO validation failed:', result.error);
-          setSsoState('failed');
-          // Clear invalid tokens
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          localStorage.removeItem('user');
-          // Reload to trigger re-authentication
-          window.location.reload();
+          if (result.clearAuth) {
+            clearAuthStorage('sso_redirect_failed');
+            setSsoFailureTarget('login');
+          } else {
+            setSsoFailureTarget('dashboard');
+          }
+        } catch (error) {
+          logger.warn('[PublicRoute] SSO validation error:', error);
+          setSsoFailureTarget('dashboard');
+        } finally {
+          if (!redirected) setSsoState('failed');
         }
-      });
+      })();
     }
-  }, [user, loading, ssoState]);
+  }, [user, loading, ssoState, location.search]);
 
   if (loading || ssoState === 'validating' || ssoState === 'redirecting') {
     return <PageLoader />;
   }
 
+  if (ssoState === 'failed') {
+    return ssoFailureTarget === 'dashboard'
+      ? <Navigate to="/dashboard" replace />
+      : <>{children}</>;
+  }
+
   if (user) {
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(location.search);
     const redirectUrl = searchParams.get('redirect');
 
     // If there's a redirect URL and we're still processing, show loader
@@ -161,14 +177,12 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
       return <PageLoader />;
     }
 
-    // If SSO failed, we're about to reload - show loader
-    if (ssoState === 'failed') {
-      return <PageLoader />;
-    }
-
     // No redirect URL - go to dashboard
     if (!redirectUrl) {
-      return <Navigate to="/dashboard" replace />;
+      const planIntent = normalizePlanIntent(searchParams.get('plan'));
+      return planIntent && planIntent !== 'free'
+        ? <Navigate to={`/dashboard/billing?plan=${encodeURIComponent(planIntent)}`} replace />
+        : <Navigate to="/dashboard" replace />;
     }
   }
 
@@ -380,6 +394,7 @@ function App() {
           <ThemeProvider>
             <FileSearchProvider>
               <AuthProvider>
+                <AuthIdentityQueryBoundary>
                 <SEOProvider>
                   <SEOHelmet />
                   <RouteChangeTracker />
@@ -530,6 +545,7 @@ function App() {
                   </Suspense>
                 </SEOProvider>
                 <ToastContainer />
+                </AuthIdentityQueryBoundary>
               </AuthProvider>
             </FileSearchProvider>
           </ThemeProvider>

@@ -75,7 +75,8 @@
       "recommended": "推荐",
       "cancel": "取消",
       "confirm": "确认添加",
-      "importFailed": "导入失败，请重试"
+      "importFailed": "导入失败，请重试",
+      "folderLoadFailed": "文件夹加载失败。"
     },
     "skillTriggers": "触发词",
     "skillInstructions": "指令内容",
@@ -201,6 +202,7 @@
     "compare": "对比",
     "loadFailed": "加载版本历史失败",
     "empty": "暂无版本历史",
+    "latestSaved": "最新保存的快照",
     "currentVersion": "当前版本",
     "auto": "自动",
     "manual": "手动",

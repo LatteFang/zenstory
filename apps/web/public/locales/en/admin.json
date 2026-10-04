@@ -2,7 +2,9 @@
   "header": {
     "backToApp": "Back to App",
     "back": "Back",
-    "title": "Admin Panel"
+    "title": "Admin Panel",
+    "openMenu": "Open admin menu",
+    "closeMenu": "Close admin menu"
   },
   "sidebar": {
     "title": "Admin Panel",

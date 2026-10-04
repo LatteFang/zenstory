@@ -12,6 +12,7 @@ from services.auth import get_current_active_user
 from sqlmodel import Session, select
 
 from config.datetime_utils import utcnow
+from config.feature_flags import is_inspirations_enabled
 from core.error_codes import ErrorCode
 from core.error_handler import APIException
 from database import get_session
@@ -25,6 +26,8 @@ PERSONA_ONBOARDING_DEFAULT_ROLLOUT_AT = "2026-03-05T16:00:00Z"
 PERSONA_ONBOARDING_DEFAULT_WINDOW_DAYS = 7
 MAX_PERSONA_SELECTION = 3
 ALLOWED_EXPERIENCE_LEVELS = {"beginner", "intermediate", "advanced"}
+ALLOWED_PERSONA_IDS = {"explorer", "serial", "professional", "fanfic", "studio"}
+ALLOWED_GOAL_IDS = {"finishBook", "buildHabit", "improveQuality", "growAudience", "monetize"}
 
 
 class PersonaRecommendation(BaseModel):
@@ -113,7 +116,7 @@ def _build_recommendations(
 ) -> list[PersonaRecommendation]:
     recommendations: list[PersonaRecommendation] = []
 
-    if "explorer" in selected_personas:
+    if "explorer" in selected_personas and is_inspirations_enabled():
         recommendations.append(
             PersonaRecommendation(
                 id="persona_explorer_template",
@@ -251,11 +254,31 @@ def _validate_payload(payload: PersonaOnboardingUpsertRequest) -> None:
 
     selected_personas = [item.strip() for item in payload.selected_personas if item and item.strip()]
     deduped_personas = list(dict.fromkeys(selected_personas))
+    if any(item not in ALLOWED_PERSONA_IDS for item in deduped_personas):
+        raise APIException(
+            error_code=ErrorCode.VALIDATION_ERROR,
+            status_code=400,
+            detail="Invalid selected_personas",
+        )
+    if not payload.skipped and not deduped_personas:
+        raise APIException(
+            error_code=ErrorCode.VALIDATION_ERROR,
+            status_code=400,
+            detail="At least one selected_persona is required",
+        )
     if len(deduped_personas) > MAX_PERSONA_SELECTION:
         raise APIException(
             error_code=ErrorCode.VALIDATION_ERROR,
             status_code=400,
             detail=f"selected_personas cannot exceed {MAX_PERSONA_SELECTION}",
+        )
+
+    selected_goals = [item.strip() for item in payload.selected_goals if item and item.strip()]
+    if any(item not in ALLOWED_GOAL_IDS for item in selected_goals):
+        raise APIException(
+            error_code=ErrorCode.VALIDATION_ERROR,
+            status_code=400,
+            detail="Invalid selected_goals",
         )
 
 

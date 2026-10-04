@@ -73,6 +73,7 @@ describe("OAuthCallback", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    sessionStorage.clear();
     mockUseAuth.mockReturnValue({
       handleOAuthCallback: mockHandleOAuthCallback,
       user: null,
@@ -115,6 +116,19 @@ describe("OAuthCallback", () => {
     });
     expect(replaceStateSpy).toHaveBeenCalled();
     expect(mockCaptureException).not.toHaveBeenCalled();
+  });
+
+  it("consumes normalized OAuth plan intent once and redirects to billing", async () => {
+    mockHandleOAuthCallback.mockResolvedValue(undefined);
+    sessionStorage.setItem("oauth_plan_intent", "pro");
+    Object.assign(window.location, { hash: "#access_token=access&refresh_token=refresh" });
+
+    render(<MemoryRouter><OAuthCallback /></MemoryRouter>);
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith(
+      "/dashboard/billing?plan=pro", { replace: true },
+    ));
+    expect(sessionStorage.getItem("oauth_plan_intent")).toBeNull();
   });
 
   it("redirects silently to dashboard when callback tokens are missing but auth context already has a user", async () => {

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, ConfigDict, EmailStr, field_serializer
+from pydantic import BaseModel, ConfigDict, EmailStr, field_serializer, field_validator
 from services.auth import (
     ALLOW_LEGACY_REFRESH_WITHOUT_JTI,
     TOKEN_TYPE_REFRESH,
@@ -60,6 +60,19 @@ class RegisterRequest(BaseModel):
     invite_code: str | None = None  # Invitation code for referral
     device_fingerprint: str | None = None  # Device fingerprint for fraud detection
 
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 3:
+            raise ValueError("username must be at least 3 characters")
+        return value
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        return _validate_new_password(value)
+
 
 class LoginResponse(BaseModel):
     access_token: str
@@ -101,10 +114,33 @@ class UpdateUserRequest(BaseModel):
     email: EmailStr | None = None
     avatar_url: str | None = None
 
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if len(value) < 3:
+            raise ValueError("username must be at least 3 characters")
+        return value
+
 
 class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value: str) -> str:
+        return _validate_new_password(value)
+
+
+def _validate_new_password(value: str) -> str:
+    if len(value) < 6:
+        raise ValueError("password must be at least 6 characters")
+    if len(value.encode("utf-8")) > 72:
+        raise ValueError("password must be at most 72 bytes")
+    return value
 
 
 def _normalize_invite_code(code: str) -> str:
@@ -954,6 +990,7 @@ async def refresh_token(
             "avatar_url": user.avatar_url,
             "is_active": user.is_active,
             "is_superuser": user.is_superuser,
+            "email_verified": user.email_verified,
             "created_at": normalize_datetime_to_utc(user.created_at),
             "updated_at": normalize_datetime_to_utc(user.updated_at),
         }

@@ -197,6 +197,66 @@ describe('apiClient', () => {
       expect(localStorage.getItem('refresh_token')).toBeNull()
     })
 
+    it.each([429, 503])('preserves auth storage on retryable refresh status %s', async (status) => {
+      vi.resetModules()
+      const { tryRefreshToken } = await import('../apiClient')
+      localStorage.setItem('access_token', 'old-access')
+      localStorage.setItem('refresh_token', 'test-refresh')
+      localStorage.setItem('user', '{"id":"1"}')
+      const logoutListener = vi.fn()
+      window.addEventListener('auth:logout', logoutListener)
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status }))
+
+      expect(await tryRefreshToken()).toBe(false)
+
+      expect(localStorage.getItem('access_token')).toBe('old-access')
+      expect(localStorage.getItem('refresh_token')).toBe('test-refresh')
+      expect(localStorage.getItem('user')).toBe('{"id":"1"}')
+      expect(logoutListener).not.toHaveBeenCalled()
+      window.removeEventListener('auth:logout', logoutListener)
+    })
+
+    it('ignores a stale successful refresh after the session changes', async () => {
+      vi.resetModules()
+      const { tryRefreshToken } = await import('../apiClient')
+      localStorage.setItem('refresh_token', 'old-refresh')
+      let resolveFetch!: (value: unknown) => void
+      vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(resolve => { resolveFetch = resolve })))
+
+      const refresh = tryRefreshToken()
+      localStorage.setItem('access_token', 'new-access')
+      localStorage.setItem('refresh_token', 'new-refresh')
+      localStorage.setItem('user', '{"id":"new-user"}')
+      resolveFetch({
+        ok: true,
+        json: async () => ({ access_token: 'stale-access', refresh_token: 'stale-refresh', user: { id: 'old-user' } }),
+      })
+
+      expect(await refresh).toBe(false)
+      expect(localStorage.getItem('access_token')).toBe('new-access')
+      expect(localStorage.getItem('refresh_token')).toBe('new-refresh')
+      expect(localStorage.getItem('user')).toBe('{"id":"new-user"}')
+    })
+
+    it('does not clear a newer session when a stale refresh is rejected', async () => {
+      vi.resetModules()
+      const { tryRefreshToken } = await import('../apiClient')
+      localStorage.setItem('refresh_token', 'old-refresh')
+      let resolveFetch!: (value: unknown) => void
+      vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(resolve => { resolveFetch = resolve })))
+
+      const refresh = tryRefreshToken()
+      localStorage.setItem('access_token', 'new-access')
+      localStorage.setItem('refresh_token', 'new-refresh')
+      localStorage.setItem('user', '{"id":"new-user"}')
+      resolveFetch({ ok: false, status: 401 })
+
+      expect(await refresh).toBe(false)
+      expect(localStorage.getItem('access_token')).toBe('new-access')
+      expect(localStorage.getItem('refresh_token')).toBe('new-refresh')
+      expect(localStorage.getItem('user')).toBe('{"id":"new-user"}')
+    })
+
     it('handles network error during refresh', async () => {
       vi.resetModules()
       const { tryRefreshToken } = await import('../apiClient')
@@ -240,6 +300,34 @@ describe('apiClient', () => {
       expect(result1).toBe(true)
       expect(result2).toBe(true)
       expect(refreshCallCount).toBe(1)
+    })
+
+    it('starts a new refresh for a newer session after an old single-flight completes', async () => {
+      vi.resetModules()
+      const { tryRefreshToken } = await import('../apiClient')
+      localStorage.setItem('refresh_token', 'refresh-a')
+      let resolveA!: (value: unknown) => void
+      const mockFetch = vi.fn()
+        .mockReturnValueOnce(new Promise(resolve => { resolveA = resolve }))
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: 'access-b2', refresh_token: 'refresh-b2', user: { id: 'b' } }),
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const refreshA = tryRefreshToken()
+      localStorage.setItem('refresh_token', 'refresh-b')
+      const refreshB = tryRefreshToken()
+      resolveA({
+        ok: true,
+        json: async () => ({ access_token: 'access-a2', refresh_token: 'refresh-a2', user: { id: 'a' } }),
+      })
+
+      expect(await refreshA).toBe(false)
+      expect(await refreshB).toBe(true)
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(localStorage.getItem('access_token')).toBe('access-b2')
+      expect(localStorage.getItem('refresh_token')).toBe('refresh-b2')
     })
 
     it('allows refresh after cooldown period', async () => {
@@ -294,6 +382,23 @@ describe('apiClient', () => {
       // Due to module state persistence, this might still fail
       // The important thing is the cooldown mechanism exists in the code
       expect([true, false]).toContain(result2)
+    })
+  })
+
+  describe('validateToken', () => {
+    it.each([
+      [401, false],
+      [403, false],
+      [429, true],
+      [503, true],
+    ])('classifies status %s retryable=%s', async (status, retryable) => {
+      vi.resetModules()
+      const { validateToken } = await import('../apiClient')
+      localStorage.setItem('access_token', 'access')
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status }))
+
+      expect(await validateToken()).toEqual({ valid: false, isNetworkError: retryable })
+      expect(localStorage.getItem('access_token')).toBe('access')
     })
   })
 
@@ -359,6 +464,89 @@ describe('apiClient', () => {
   })
 
   describe('apiCall', () => {
+    it('does not refresh or replay an old-account request after the session changes', async () => {
+      vi.resetModules()
+      const { apiCall } = await import('../apiClient')
+      localStorage.setItem('access_token', 'access-a')
+      localStorage.setItem('refresh_token', 'refresh-a')
+      let resolveRequest!: (value: unknown) => void
+      const mockFetch = vi.fn().mockReturnValueOnce(new Promise(resolve => { resolveRequest = resolve }))
+      vi.stubGlobal('fetch', mockFetch)
+
+      const request = apiCall('/api/v1/account-a')
+      localStorage.setItem('access_token', 'access-b')
+      localStorage.setItem('refresh_token', 'refresh-b')
+      resolveRequest({ ok: false, status: 401, json: async () => ({ detail: 'unauthorized' }) })
+
+      await expect(request).rejects.toMatchObject({ status: 401 })
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(localStorage.getItem('access_token')).toBe('access-b')
+      expect(localStorage.getItem('refresh_token')).toBe('refresh-b')
+    })
+
+    it('does not clear a newer account when an old retry returns 401', async () => {
+      vi.resetModules()
+      const { apiCall } = await import('../apiClient')
+      localStorage.setItem('access_token', 'access-a')
+      localStorage.setItem('refresh_token', 'refresh-a')
+      let resolveRetry!: (value: unknown) => void
+      const mockFetch = vi.fn()
+        .mockResolvedValueOnce({ ok: false, status: 401 })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: 'access-a2', refresh_token: 'refresh-a2', user: { id: 'a' } }),
+        })
+        .mockReturnValueOnce(new Promise(resolve => { resolveRetry = resolve }))
+      vi.stubGlobal('fetch', mockFetch)
+
+      const request = apiCall('/api/v1/account-a')
+      await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(3))
+      localStorage.setItem('access_token', 'access-b')
+      localStorage.setItem('refresh_token', 'refresh-b')
+      localStorage.setItem('user', '{"id":"b"}')
+      resolveRetry({ ok: false, status: 401, json: async () => ({ detail: 'unauthorized' }) })
+
+      await expect(request).rejects.toMatchObject({ status: 401 })
+      expect(localStorage.getItem('access_token')).toBe('access-b')
+      expect(localStorage.getItem('refresh_token')).toBe('refresh-b')
+      expect(localStorage.getItem('user')).toBe('{"id":"b"}')
+    })
+
+    it('retries a delayed parallel 401 with the same session rotated token', async () => {
+      vi.resetModules()
+      const { apiCall } = await import('../apiClient')
+      localStorage.setItem('access_token', 'access-a')
+      localStorage.setItem('refresh_token', 'refresh-a')
+      let resolveFirst!: (value: unknown) => void
+      let resolveSecond!: (value: unknown) => void
+      const mockFetch = vi.fn()
+        .mockReturnValueOnce(new Promise(resolve => { resolveFirst = resolve }))
+        .mockReturnValueOnce(new Promise(resolve => { resolveSecond = resolve }))
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: 'access-a2', refresh_token: 'refresh-a2', user: { id: 'a' } }),
+        })
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ request: 'first' }) })
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ request: 'second' }) })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const first = apiCall<{ request: string }>('/api/v1/first')
+      const second = apiCall<{ request: string }>('/api/v1/second')
+      resolveFirst({ ok: false, status: 401 })
+      await expect(first).resolves.toEqual({ request: 'first' })
+      expect(localStorage.getItem('access_token')).toBe('access-a2')
+      expect(localStorage.getItem('refresh_token')).toBe('refresh-a2')
+
+      resolveSecond({ ok: false, status: 401 })
+
+      await expect(second).resolves.toEqual({ request: 'second' })
+      expect(mockFetch).toHaveBeenCalledTimes(5)
+      expect(mockFetch).toHaveBeenLastCalledWith(
+        expect.stringContaining('/api/v1/second'),
+        expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer access-a2' }) }),
+      )
+    })
+
     it('makes successful GET request', async () => {
       vi.resetModules()
       const { apiCall } = await import('../apiClient')

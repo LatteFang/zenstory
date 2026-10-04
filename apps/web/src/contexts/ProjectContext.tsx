@@ -80,6 +80,11 @@ const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [projectsOwnerId, setProjectsOwnerId] = useState<string | null>(null);
+  const projectsOwnerIdRef = useRef<string | null>(null);
+  const authUserIdRef = useRef<string | null>(user?.id ?? null);
+  const loadGenerationRef = useRef(0);
+  authUserIdRef.current = user?.id ?? null;
   const [currentProjectId, setCurrentProjectIdState] = useState<string | null>(null);
   // 与 currentProjectId 同步的 ref：用于在同一批更新里判断「项目是否真的换了」。
   const currentProjectIdRef = useRef<string | null>(null);
@@ -316,7 +321,13 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, [diffReviewState]);
 
   // Derive current project from projects list
-  const currentProject = projects.find(p => p.id === currentProjectId) || null;
+  const identityMatchesProjects = projectsOwnerId === (user?.id ?? null);
+  const visibleProjects = useMemo(
+    () => identityMatchesProjects ? projects : [],
+    [identityMatchesProjects, projects],
+  );
+  const visibleCurrentProjectId = identityMatchesProjects ? currentProjectId : null;
+  const currentProject = visibleProjects.find(p => p.id === visibleCurrentProjectId) || null;
 
   const setCurrentProjectId = useCallback((projectId: string | null) => {
     // 同步维护 ref：loadProjects 会在同一批更新里多次调用本函数，
@@ -359,10 +370,29 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   // Load projects when user is authenticated
   const loadProjects = useCallback(async () => {
     if (!user) {
+      loadGenerationRef.current += 1;
+      projectsOwnerIdRef.current = null;
+      setProjectsOwnerId(null);
       setProjects([]);
       setCurrentProjectIdState(null);
       setLoading(false);
       return;
+    }
+
+    const requestedUserId = user.id;
+    const generation = ++loadGenerationRef.current;
+    const ownsRequest = () => (
+      loadGenerationRef.current === generation &&
+      authUserIdRef.current === requestedUserId
+    );
+
+    if (projectsOwnerIdRef.current !== requestedUserId) {
+      projectsOwnerIdRef.current = requestedUserId;
+      setProjectsOwnerId(requestedUserId);
+      setProjects([]);
+      setCurrentProjectIdState(null);
+      currentProjectIdRef.current = null;
+      setSelectedItem(null);
     }
 
     setLoading(true);
@@ -370,6 +400,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     try {
       const projectList = await projectApi.getAll();
+      if (!ownsRequest()) return;
 
       // Filter out any invalid projects (defensive programming)
       const validProjects = (projectList || []).filter(
@@ -386,7 +417,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       //
       // NOTE: We intentionally do NOT expand the full project list for admins here;
       // we only hydrate the currently-selected projectId.
-      const routeChosenId = currentProjectId;
+      const routeChosenId = currentProjectIdRef.current;
       const shouldHydrateRouteProject =
         Boolean(user?.is_superuser) &&
         typeof routeChosenId === 'string' &&
@@ -396,6 +427,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       if (shouldHydrateRouteProject) {
         try {
           const hydrated = await projectApi.get(routeChosenId);
+          if (!ownsRequest()) return;
           if (
             hydrated &&
             typeof hydrated.id === 'string' &&
@@ -413,6 +445,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
 
       // Set projects list
+      if (!ownsRequest()) return;
       setProjects(validProjects);
 
       // Choose current project with correct priority:
@@ -450,25 +483,29 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
         setCurrentProjectId(null);
       }
 
-      setLoading(false);
     } catch (err) {
+      if (!ownsRequest()) return;
       logger.error('Failed to load projects:', err);
       setError(err instanceof Error ? err.message : 'Failed to load projects');
-      setLoading(false);
+    } finally {
+      if (ownsRequest()) setLoading(false);
     }
-  }, [user, currentProjectId, setCurrentProjectId]);
+  }, [user, setCurrentProjectId]);
 
   // Load projects when user changes
   // Use user as direct dependency to ensure immediate reload on login/register
   useEffect(() => {
     if (user) {
       // User logged in or registered - load projects
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadProjects();
     } else {
       // User logged out - clear project data
+      loadGenerationRef.current += 1;
+      projectsOwnerIdRef.current = null;
+      setProjectsOwnerId(null);
       setProjects([]);
       setCurrentProjectIdState(null);
+      currentProjectIdRef.current = null;
       setSelectedItem(null);
       setAiEditingFileId(null);
       setLoading(false);
@@ -476,13 +513,13 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, [user, loadProjects]);
 
   const switchProject = useCallback((projectId: string) => {
-    const projectExists = projects.some(p => p.id === projectId);
+    const projectExists = visibleProjects.some(p => p.id === projectId);
     if (projectExists) {
       setCurrentProjectId(projectId);
     } else {
       logger.error(`Project ${projectId} not found`);
     }
-  }, [projects, setCurrentProjectId]);
+  }, [visibleProjects, setCurrentProjectId]);
 
   const createProject = useCallback(async (name: string, description?: string, projectType?: ProjectType): Promise<Project> => {
     const newProject = await projectApi.create({ 
@@ -542,13 +579,13 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, [loadProjects]);
 
   const contextValue = useMemo<ProjectContextType>(() => ({
-    projects,
+    projects: visibleProjects,
     currentProject,
-    currentProjectId,
+    currentProjectId: visibleCurrentProjectId,
     setCurrentProjectId,
-    loading,
-    error,
-    selectedItem,
+    loading: identityMatchesProjects ? loading : Boolean(user),
+    error: identityMatchesProjects ? error : null,
+    selectedItem: identityMatchesProjects ? selectedItem : null,
     setSelectedItem,
     switchProject,
     createProject,
@@ -560,14 +597,14 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     editorRefreshVersion,
     triggerEditorRefresh,
     lastEditedFileId,
-    aiEditingFileId,
+    aiEditingFileId: identityMatchesProjects ? aiEditingFileId : null,
     setAiEditingFileId,
-    streamingFileId,
-    streamingContent,
+    streamingFileId: identityMatchesProjects ? streamingFileId : null,
+    streamingContent: identityMatchesProjects ? streamingContent : '',
     appendFileContent,
     finishFileStreaming,
     startFileStreaming,
-    diffReviewState,
+    diffReviewState: identityMatchesProjects ? diffReviewState : null,
     enterDiffReview,
     acceptEdit,
     rejectEdit,
@@ -577,11 +614,13 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     exitDiffReview,
     applyDiffReviewChanges,
   }), [
-    projects,
+    visibleProjects,
     currentProject,
-    currentProjectId,
+    visibleCurrentProjectId,
     setCurrentProjectId,
     loading,
+    identityMatchesProjects,
+    user,
     error,
     selectedItem,
     setSelectedItem,

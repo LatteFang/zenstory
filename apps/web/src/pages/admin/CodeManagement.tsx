@@ -11,6 +11,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { AdminPageState, AdminSelect } from "../../components/admin";
+import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { adminApi, type RedemptionCode } from "../../lib/adminApi";
 import { getLocaleCode } from "../../lib/i18n-helpers";
 import { toast } from "../../lib/toast";
@@ -23,7 +24,8 @@ const CodeCard: React.FC<{
   onToggle: (code: RedemptionCode) => void;
   onCopy: (codeStr: string) => void;
   t: (key: string, options?: Record<string, unknown>) => string;
-}> = ({ code, onToggle, onCopy, t }) => {
+  pending: boolean;
+}> = ({ code, onToggle, onCopy, t, pending }) => {
   return (
     <div className="admin-surface p-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -70,11 +72,12 @@ const CodeCard: React.FC<{
         </span>
         <button
           onClick={() => onToggle(code)}
+          disabled={pending}
           className={`p-2 rounded transition-colors ${
             code.is_active
               ? "hover:bg-[hsl(var(--error)/0.1)]"
               : "hover:bg-[hsl(var(--success)/0.1)]"
-          }`}
+          } disabled:opacity-50`}
           title={code.is_active ? t("codes.deactivate") : t("codes.activate")}
         >
           {code.is_active ? (
@@ -96,6 +99,7 @@ export const CodeManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBatchModal, setShowBatchModal] = useState(false);
+  const [codeToDeactivate, setCodeToDeactivate] = useState<RedemptionCode | null>(null);
   const [createFormData, setCreateFormData] = useState<{
     tier: string;
     duration_days: number;
@@ -200,10 +204,22 @@ export const CodeManagement: React.FC = () => {
     : t("common:error");
 
   const handleToggleStatus = (code: RedemptionCode) => {
+    if (code.is_active) {
+      setCodeToDeactivate(code);
+      return;
+    }
     updateMutation.mutate({
       id: code.id,
-      data: { is_active: !code.is_active },
+      data: { is_active: true },
     });
+  };
+
+  const confirmDeactivation = () => {
+    if (!codeToDeactivate) return;
+    updateMutation.mutate(
+      { id: codeToDeactivate.id, data: { is_active: false } },
+      { onSuccess: () => setCodeToDeactivate(null) },
+    );
   };
 
   const handleCopyCode = (codeStr: string) => {
@@ -328,6 +344,7 @@ export const CodeManagement: React.FC = () => {
                 onToggle={handleToggleStatus}
                 onCopy={handleCopyCode}
                 t={t}
+                pending={Boolean(updateMutation.isPending && updateMutation.variables?.id === code.id)}
               />
             ))}
           </div>
@@ -413,11 +430,12 @@ export const CodeManagement: React.FC = () => {
                       <td className="px-4 py-3 text-sm">
                         <button
                           onClick={() => handleToggleStatus(code)}
+                          disabled={Boolean(updateMutation.isPending && updateMutation.variables?.id === code.id)}
                           className={`p-1.5 rounded transition-colors ${
                             code.is_active
                               ? "hover:bg-[hsl(var(--error)/0.1)]"
                               : "hover:bg-[hsl(var(--success)/0.1)]"
-                          }`}
+                          } disabled:opacity-50`}
                           title={code.is_active ? t("codes.deactivate") : t("codes.activate")}
                         >
                           {code.is_active ? (
@@ -467,6 +485,21 @@ export const CodeManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(codeToDeactivate)}
+        onClose={() => setCodeToDeactivate(null)}
+        onConfirm={confirmDeactivation}
+        title={t("codes.deactivateConfirmTitle", "Deactivate redemption code")}
+        message={`${codeToDeactivate?.code ?? ""}: ${t(
+          "codes.deactivateConfirmImpact",
+          "This code can no longer be redeemed until reactivated.",
+        )}`}
+        confirmLabel={t("codes.confirmDeactivate", "Deactivate code")}
+        cancelLabel={t("common:cancel")}
+        variant="danger"
+        loading={Boolean(updateMutation.isPending && updateMutation.variables?.id === codeToDeactivate?.id)}
+      />
 
       {/* Create Single Code Modal */}
       {showCreateModal && (

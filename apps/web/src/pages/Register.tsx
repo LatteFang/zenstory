@@ -115,7 +115,7 @@ export const Register: React.FC = () => {
   const trimmedEmail = email.trim();
   const trimmedInviteCode = inviteCode.trim();
   const isUsernameValid = trimmedUsername.length >= 3;
-  const isEmailValid = trimmedEmail.length > 0;
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
   const isPasswordLengthValid = password.length >= 6;
   const isConfirmPasswordLengthValid = confirmPassword.length >= 6;
   const isPasswordMatched = password.length > 0 && password === confirmPassword;
@@ -263,7 +263,7 @@ export const Register: React.FC = () => {
         }, 0);
         return;
       }
-      googleLogin({ inviteCode: trimmedInviteCode || undefined });
+      googleLogin({ inviteCode: trimmedInviteCode || undefined, planIntent: selectedPlan });
     } else if (provider === 'apple') {
       appleLogin();
     }
@@ -410,6 +410,7 @@ export const Register: React.FC = () => {
                 placeholder={t('auth:register.emailPlaceholder')}
                 required
                 disabled={loading || success}
+                aria-invalid={trimmedEmail.length > 0 && !isEmailValid}
                 aria-describedby={formError ? "register-form-error" : "register-email-helper"}
               />
               <p id="register-email-helper" className="mt-2 text-xs text-[hsl(var(--text-secondary))]">

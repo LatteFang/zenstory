@@ -128,6 +128,7 @@ async def submit_feedback(
     screenshot_original_name: str | None = None
     screenshot_content_type: str | None = None
     screenshot_size_bytes: int | None = None
+    created_screenshot_path: Path | None = None
 
     if screenshot is not None and screenshot.filename:
         ext = _safe_extension(screenshot.filename)
@@ -187,8 +188,9 @@ async def submit_feedback(
         upload_dir = _resolve_upload_dir()
         filename = _build_screenshot_filename(current_user.id, ext)
         final_path = upload_dir / filename
-        with open(final_path, "wb") as f:
+        with open(final_path, "xb") as f:
             f.write(content)
+        created_screenshot_path = final_path
 
         screenshot_path = str(final_path.resolve())
         screenshot_original_name = screenshot.filename
@@ -211,9 +213,22 @@ async def submit_feedback(
         screenshot_size_bytes=screenshot_size_bytes,
         status="open",
     )
-    session.add(feedback)
-    session.commit()
-    session.refresh(feedback)
+    try:
+        session.add(feedback)
+        session.flush()
+        session.refresh(feedback)
+        session.commit()
+    except Exception:
+        try:
+            session.rollback()
+        except Exception as rollback_error:
+            logger.warning("Feedback persistence rollback failed: %s", rollback_error)
+        if created_screenshot_path is not None:
+            try:
+                created_screenshot_path.unlink(missing_ok=True)
+            except OSError as cleanup_error:
+                logger.warning("Failed to remove uncommitted feedback screenshot: %s", cleanup_error)
+        raise
 
     log_with_context(
         logger,

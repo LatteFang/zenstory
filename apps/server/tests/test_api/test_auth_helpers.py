@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+import pytest
+from pydantic import ValidationError
 from sqlmodel import Session
 
 import api.auth as auth_module
@@ -37,7 +39,6 @@ def test_normalize_invite_code_and_policy_resolution(monkeypatch):
         "treatment_optional",
         25,
     )
-
     monkeypatch.setattr(auth_module, "_invite_gray_bucket", lambda identity, salt: 80)
     assert auth_module._resolve_registration_invite_policy(email="user@example.com", username=None) == (
         False,
@@ -45,6 +46,26 @@ def test_normalize_invite_code_and_policy_resolution(monkeypatch):
         25,
     )
 
+
+@pytest.mark.parametrize("username", ["", "  ", "ab"])
+def test_register_request_rejects_short_or_blank_username(username: str):
+    with pytest.raises(ValidationError):
+        auth_module.RegisterRequest(username=username, email="valid@example.com", password="abcdef")
+
+
+@pytest.mark.parametrize("password", ["", "abcde", "é" * 37])
+def test_register_request_rejects_invalid_password_length_or_bcrypt_bytes(password: str):
+    with pytest.raises(ValidationError):
+        auth_module.RegisterRequest(username="valid-user", email="valid@example.com", password=password)
+
+
+def test_request_models_trim_username_and_enforce_password_contract():
+    request = auth_module.RegisterRequest(username="  valid-user  ", email="valid@example.com", password="abcdef")
+    assert request.username == "valid-user"
+    with pytest.raises(ValidationError):
+        auth_module.UpdateUserRequest(username="  ")
+    with pytest.raises(ValidationError):
+        auth_module.ChangePasswordRequest(old_password="old-password", new_password="short")
 
 def test_safe_int_from_env_clamps_invalid_values(monkeypatch):
     monkeypatch.setenv("AUTH_REFRESH_TOKEN_RETENTION_DAYS", "0")

@@ -59,8 +59,9 @@ async def test_admin_prompts_reload_success_triggers_reload_function(
 
     called = {"count": 0}
 
-    def fake_reload_prompts() -> None:
+    def fake_reload_prompts() -> dict[str, int | str]:
         called["count"] += 1
+        return {"source": "primary_database", "count": 2, "version": 4}
 
     monkeypatch.setattr("agent.prompts.reload_prompts", fake_reload_prompts)
 
@@ -70,8 +71,43 @@ async def test_admin_prompts_reload_success_triggers_reload_function(
     )
 
     assert response.status_code == 200
-    assert response.json()["message"] == "System prompt configurations reloaded successfully"
+    assert response.json() == {
+        "message": "System prompt configurations reloaded successfully",
+        "source": "primary_database",
+        "count": 2,
+        "version": 4,
+    }
     assert called["count"] == 1
+
+
+@pytest.mark.integration
+async def test_admin_prompts_reload_returns_generic_error_when_source_unavailable(
+    client: AsyncClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    admin = await create_user(
+        db_session,
+        "admin_prompt_reload_failure",
+        "admin_prompt_reload_failure@example.com",
+        is_superuser=True,
+    )
+    token = await login_user(client, admin.username)
+
+    def fake_reload_prompts() -> dict[str, int | str]:
+        raise RuntimeError("postgresql://user:password@private-host/database")
+
+    monkeypatch.setattr("agent.prompts.reload_prompts", fake_reload_prompts)
+
+    response = await client.post(
+        "/api/admin/prompts/reload",
+        headers=auth_headers(token),
+    )
+
+    assert response.status_code == 503
+    body = response.json()
+    assert body["error_code"] == "ERR_INTERNAL_SERVER_ERROR"
+    assert "password" not in str(body)
 
 
 @pytest.mark.integration

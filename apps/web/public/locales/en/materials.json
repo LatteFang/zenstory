@@ -112,7 +112,9 @@
     "chapterLabel": "Chapter",
     "idLabel": "ID",
     "timeLabel": "Time",
-    "notEnabled": "Not enabled"
+    "notEnabled": "Not enabled",
+    "folderLoadError": "Unable to load this folder.",
+    "loadError": "Unable to load material details. Please retry."
   },
   "quota": {
     "uploadTitle": "Upgrade to unlock the Materials Library",
@@ -132,5 +134,8 @@
     "batchImportSuccess": "Successfully imported {{count}} items",
     "batchImportPartialFailed": "Imported {{successCount}} item(s), {{failedCount}} failed. Please review and try again.",
     "batchImportFailed": "Batch import failed, please try again"
-  }
+  },
+  "libraryLoadFailed": "Unable to load the material library. Please retry.",
+  "listLoadError": "Unable to load materials. Please retry.",
+  "searchLoadFailed": "Material search failed. Please retry."
 }

@@ -19,6 +19,7 @@ const state = vi.hoisted(() => ({
     setSelectedItem: vi.fn(),
   },
   fileGet: vi.fn(),
+  ssoRedirect: vi.fn(),
 }));
 
 vi.mock("../config/inspirations", () => ({
@@ -91,6 +92,7 @@ vi.mock("../contexts/FileSearchContext", () => ({
 
 vi.mock("../contexts/AuthContext", () => ({
   AuthProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
+  AuthIdentityQueryBoundary: ({ children }: { children: ReactNode }) => <>{children}</>,
   useAuth: () => state.auth,
 }));
 
@@ -113,8 +115,8 @@ vi.mock("../lib/onboardingPersona", () => ({
   },
 }));
 
-vi.mock("../lib/authFlow", () => ({
-  normalizePlanIntent: () => null,
+vi.mock("../lib/ssoRedirect", () => ({
+  handleSsoRedirect: (...args: unknown[]) => state.ssoRedirect(...args),
 }));
 
 vi.mock("../lib/logger", () => ({
@@ -158,6 +160,10 @@ vi.mock("../pages/Dashboard", async () => {
 
 vi.mock("../pages/DashboardHome", () => ({
   default: () => <div>Dashboard Home</div>,
+}));
+
+vi.mock("../pages/BillingPage", () => ({
+  default: () => <div>Billing Page</div>,
 }));
 
 vi.mock("../pages/OnboardingPersonaPage", () => ({
@@ -220,6 +226,7 @@ describe("App route guards", () => {
     state.project.refreshProjects.mockReset();
     state.project.setSelectedItem.mockReset();
     state.fileGet.mockReset();
+    state.ssoRedirect.mockReset();
   });
 
   it("redirects unauthenticated users from protected routes to login", async () => {
@@ -267,6 +274,70 @@ describe("App route guards", () => {
     await waitFor(() => {
       expect(screen.getByText("Dashboard Page")).toBeInTheDocument();
     });
+  });
+
+  it("redirects authenticated paid-plan intent to billing", async () => {
+    state.auth.user = { id: "user-auth" };
+    renderAppAt("/login?plan=PRO");
+    await waitFor(() => expect(screen.getByTestId("dashboard-path")).toHaveTextContent(/^\/dashboard\/billing$/));
+  });
+
+  it("preserves auth and exits the loader for an invalid SSO redirect", async () => {
+    state.auth.user = { id: "user-auth" };
+    localStorage.setItem("access_token", "healthy-token");
+    localStorage.setItem("refresh_token", "healthy-refresh");
+    state.ssoRedirect.mockResolvedValue({
+      success: false, clearAuth: false, shouldShowLogin: true, reason: "invalid_redirect", error: "invalid",
+    });
+    renderAppAt("/login?redirect=https%3A%2F%2Fevil.example");
+
+    await waitFor(() => expect(screen.getByText("Dashboard Page")).toBeInTheDocument());
+    expect(localStorage.getItem("access_token")).toBe("healthy-token");
+    expect(localStorage.getItem("refresh_token")).toBe("healthy-refresh");
+    expect(screen.queryByText("Page Loader")).not.toBeInTheDocument();
+  });
+
+  it("clears auth only for a definitive SSO credential failure", async () => {
+    state.auth.user = { id: "user-auth" };
+    localStorage.setItem("access_token", "expired-token");
+    localStorage.setItem("refresh_token", "expired-refresh");
+    state.ssoRedirect.mockResolvedValue({
+      success: false, clearAuth: true, shouldShowLogin: true, reason: "session_expired",
+    });
+    renderAppAt("/login?redirect=https%3A%2F%2Fzenstory.ai");
+
+    await waitFor(() => expect(screen.getByText("Login Page")).toBeInTheDocument());
+    expect(localStorage.getItem("access_token")).toBeNull();
+    expect(localStorage.getItem("refresh_token")).toBeNull();
+  });
+
+  it("preserves credentials and exits the loader for a thrown SSO failure", async () => {
+    state.auth.user = { id: "user-auth" };
+    localStorage.setItem("access_token", "healthy-token");
+    localStorage.setItem("refresh_token", "healthy-refresh");
+    state.ssoRedirect.mockRejectedValue(new Error("chunk failed"));
+    renderAppAt("/login?redirect=https%3A%2F%2Fzenstory.ai");
+
+    await waitFor(() => expect(screen.getByText("Dashboard Page")).toBeInTheDocument());
+    expect(localStorage.getItem("access_token")).toBe("healthy-token");
+    expect(screen.queryByText("Page Loader")).not.toBeInTheDocument();
+  });
+
+  it("preserves the authenticated session on retryable SSO failure", async () => {
+    state.auth.user = { id: "user-auth" };
+    localStorage.setItem("access_token", "healthy-token");
+    localStorage.setItem("refresh_token", "healthy-refresh");
+    const logoutListener = vi.fn();
+    window.addEventListener("auth:logout", logoutListener);
+    state.ssoRedirect.mockResolvedValue({
+      success: false, clearAuth: false, shouldShowLogin: true, reason: "network_error", error: "offline",
+    });
+    renderAppAt("/login?redirect=https%3A%2F%2Fzenstory.ai");
+
+    await waitFor(() => expect(screen.getByText("Dashboard Page")).toBeInTheDocument());
+    expect(localStorage.getItem("access_token")).toBe("healthy-token");
+    expect(logoutListener).not.toHaveBeenCalled();
+    window.removeEventListener("auth:logout", logoutListener);
   });
 
   it("shows loading indicator while auth guard is resolving", () => {

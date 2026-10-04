@@ -276,6 +276,34 @@ describe('SkillsPage', () => {
       // Verify loadDiscoverData was called on mount (discover is default tab)
       expect(publicSkillsApi.list).toHaveBeenCalled()
       expect(publicSkillsApi.getCategories).toHaveBeenCalled()
+      expect(publicSkillsApi.list).toHaveBeenCalledTimes(1)
+    })
+
+    it('ignores a stale public-skill response after a newer category request resolves', async () => {
+      let resolveInitial!: (value: PublicSkillListResponse) => void
+      vi.mocked(publicSkillsApi.list)
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveInitial = resolve }))
+        .mockResolvedValueOnce({
+          skills: [{ ...mockPublicSkills[1], name: 'Newest category result' }],
+          total: 1,
+          page: 1,
+          page_size: 20,
+        })
+      const user = userEvent.setup()
+      render(<SkillsPage />)
+
+      const search = screen.getByPlaceholderText('Search skills...')
+      await user.type(search, 'w')
+      expect(await screen.findByText('Newest category result')).toBeInTheDocument()
+
+      resolveInitial({
+        skills: [{ ...mockPublicSkills[0], name: 'Stale initial result' }],
+        total: 1,
+        page: 1,
+        page_size: 20,
+      })
+      await waitFor(() => expect(screen.queryByText('Stale initial result')).not.toBeInTheDocument())
+      expect(screen.getByText('Newest category result')).toBeInTheDocument()
     })
 
     it('should not throw when useEffect callbacks reference useCallback functions', async () => {

@@ -72,6 +72,108 @@ def _seed_project_with_files(
 
 @pytest.mark.integration
 class TestHybridLexicalGuardrails:
+    @pytest.mark.parametrize("lexical_state", ["disabled", "missing_semaphore", "busy"])
+    @patch("services.infra.vector_search_service.LlamaIndexService.__init__", return_value=None)
+    def test_hybrid_search_raises_when_semantic_fails_and_lexical_never_runs(
+        self, _mock_init, monkeypatch, lexical_state
+    ):
+        service = vss.LlamaIndexService()
+        service.semantic_search = MagicMock(side_effect=RuntimeError("semantic down"))  # type: ignore[method-assign]
+        service._lexical_search = MagicMock(return_value=[])  # type: ignore[method-assign]
+
+        if lexical_state == "disabled":
+            monkeypatch.setattr(vss, "HYBRID_ENABLE_LEXICAL", False)
+        elif lexical_state == "missing_semaphore":
+            monkeypatch.setattr(vss, "HYBRID_ENABLE_LEXICAL", True)
+            monkeypatch.setattr(vss, "_LEXICAL_SEARCH_SEMAPHORE", None)
+        else:
+            semaphore = MagicMock()
+            semaphore.acquire.return_value = False
+            monkeypatch.setattr(vss, "HYBRID_ENABLE_LEXICAL", True)
+            monkeypatch.setattr(vss, "_LEXICAL_SEARCH_SEMAPHORE", semaphore)
+
+        with pytest.raises(vss.VectorSearchUnavailableError):
+            service.hybrid_search(project_id="project-1", query="needle")
+
+        service._lexical_search.assert_not_called()
+
+    @patch("services.infra.vector_search_service.LlamaIndexService.__init__", return_value=None)
+    def test_hybrid_search_accepts_semantic_empty_when_lexical_is_skipped(
+        self, _mock_init, monkeypatch
+    ):
+        monkeypatch.setattr(vss, "HYBRID_ENABLE_LEXICAL", False)
+        service = vss.LlamaIndexService()
+        service.semantic_search = MagicMock(return_value=[])  # type: ignore[method-assign]
+
+        assert service.hybrid_search(project_id="project-1", query="needle") == []
+
+    @patch("services.infra.vector_search_service.LlamaIndexService.__init__", return_value=None)
+    def test_hybrid_search_accepts_lexical_empty_after_semantic_failure(
+        self, _mock_init, monkeypatch
+    ):
+        import database
+
+        semaphore = MagicMock()
+        semaphore.acquire.return_value = True
+        monkeypatch.setattr(vss, "HYBRID_ENABLE_LEXICAL", True)
+        monkeypatch.setattr(vss, "_LEXICAL_SEARCH_SEMAPHORE", semaphore)
+        monkeypatch.setattr(database, "create_session", lambda: nullcontext(object()))
+        service = vss.LlamaIndexService()
+        service.semantic_search = MagicMock(side_effect=RuntimeError("semantic down"))  # type: ignore[method-assign]
+        service._lexical_search = MagicMock(return_value=[])  # type: ignore[method-assign]
+
+        assert service.hybrid_search(project_id="project-1", query="needle") == []
+
+    @patch("services.infra.vector_search_service.LlamaIndexService.__init__", return_value=None)
+    def test_hybrid_search_raises_when_semantic_and_lexical_both_fail(
+        self, _mock_init, monkeypatch
+    ):
+        """A total backend outage must not look like a valid empty result."""
+        import database
+
+        semaphore = MagicMock()
+        semaphore.acquire.return_value = True
+        monkeypatch.setattr(vss, "HYBRID_ENABLE_LEXICAL", True)
+        monkeypatch.setattr(vss, "_LEXICAL_SEARCH_SEMAPHORE", semaphore)
+        monkeypatch.setattr(database, "create_session", lambda: nullcontext(object()))
+
+        service = vss.LlamaIndexService()
+        service.semantic_search = MagicMock(side_effect=RuntimeError("semantic down"))  # type: ignore[method-assign]
+        service._lexical_search = MagicMock(side_effect=RuntimeError("lexical down"))  # type: ignore[method-assign]
+
+        with pytest.raises(RuntimeError, match="[Vv]ector search"):
+            service.hybrid_search(project_id="project-1", query="needle")
+
+        service.semantic_search.assert_called_once_with(
+            project_id="project-1",
+            query="needle",
+            top_k=30,
+            entity_types=None,
+            raise_on_error=True,
+        )
+        semaphore.release.assert_called_once_with()
+
+    @patch("services.infra.vector_search_service.LlamaIndexService.__init__", return_value=None)
+    def test_hybrid_search_keeps_lexical_fallback_after_semantic_failure(
+        self, _mock_init, monkeypatch
+    ):
+        import database
+
+        lexical_result = vss.SearchResult(
+            entity_type="draft", entity_id="file-1", title="Lexical", content=None, score=0.8
+        )
+        semaphore = MagicMock()
+        semaphore.acquire.return_value = True
+        monkeypatch.setattr(vss, "HYBRID_ENABLE_LEXICAL", True)
+        monkeypatch.setattr(vss, "_LEXICAL_SEARCH_SEMAPHORE", semaphore)
+        monkeypatch.setattr(database, "create_session", lambda: nullcontext(object()))
+
+        service = vss.LlamaIndexService()
+        service.semantic_search = MagicMock(side_effect=RuntimeError("semantic down"))  # type: ignore[method-assign]
+        service._lexical_search = MagicMock(return_value=[lexical_result])  # type: ignore[method-assign]
+
+        assert service.hybrid_search(project_id="project-1", query="needle") == [lexical_result]
+
     @patch("services.infra.vector_search_service.LlamaIndexService.__init__", return_value=None)
     def test_lexical_search_candidate_limit_respects_cap(self, _mock_init, db_session: Session, monkeypatch):
         """DB prefilter should not fetch more than HYBRID_LEXICAL_DB_CANDIDATE_CAP rows."""

@@ -7,19 +7,43 @@ import { ApiError } from '../../lib/apiClient'
 
 // Mock SimpleEditor component
 vi.mock('../SimpleEditor', () => ({
-  SimpleEditor: ({ fileTitle, content, onTitleChange, onContentChange, onSave, onFinishReview, isStreaming }: { fileTitle: string; content: string; onTitleChange?: (value: string) => void; onContentChange?: (value: string) => void; onSave?: () => void; onFinishReview?: () => void; isStreaming?: boolean }) => (
-    <div data-testid="simple-editor">
+  SimpleEditor: ({ fileId, fileTitle, content, onTitleChange, onContentChange, onSave, onFlushReady, onFinishReview, isStreaming }: { fileId: string; fileTitle: string; content: string; onTitleChange?: (value: string) => void; onContentChange?: (value: string) => void; onSave?: (submission: { fileId: string; title: string; content: string; previousTitle: string }) => Promise<'saved' | 'conflict' | 'failed'>; onFlushReady?: (flush: (() => Promise<'saved' | 'conflict' | 'failed'>) | null) => void; onFinishReview?: () => void; isStreaming?: boolean }) => {
+    const dirtyRef = React.useRef(false)
+    const draftRef = React.useRef({ fileId, title: fileTitle, content, previousTitle: 'Test Chapter' })
+    if (!dirtyRef.current) draftRef.current = { fileId, title: fileTitle, content, previousTitle: fileTitle }
+    React.useEffect(() => {
+      onFlushReady?.(async () => {
+        if (!dirtyRef.current || !onSave) return 'saved'
+        try {
+          const outcome = await onSave(draftRef.current)
+          if (outcome === 'saved') dirtyRef.current = false
+          return outcome
+        } catch {
+          return 'failed'
+        }
+      })
+      return () => onFlushReady?.(null)
+    }, [onFlushReady, onSave])
+    return <div data-testid="simple-editor">
       <input
         data-testid="title-input"
         value={fileTitle}
-        onChange={(e) => onTitleChange?.(e.target.value)}
+        onChange={(e) => {
+          dirtyRef.current = true
+          draftRef.current = { ...draftRef.current, title: e.target.value }
+          onTitleChange?.(e.target.value)
+        }}
       />
       <textarea
         data-testid="content-input"
         value={content}
-        onChange={(e) => onContentChange?.(e.target.value)}
+        onChange={(e) => {
+          dirtyRef.current = true
+          draftRef.current = { ...draftRef.current, content: e.target.value }
+          onContentChange?.(e.target.value)
+        }}
       />
-      <button data-testid="save-button" onClick={() => onSave?.()}>
+      <button data-testid="save-button" onClick={() => onSave?.(draftRef.current)}>
         Save
       </button>
       <button data-testid="finish-review-button" onClick={() => onFinishReview?.()}>
@@ -28,7 +52,7 @@ vi.mock('../SimpleEditor', () => ({
       <div data-testid="content-display">{content}</div>
       {isStreaming && <div data-testid="streaming-indicator">Streaming...</div>}
     </div>
-  ),
+  },
 }))
 
 vi.mock('../subscription/UpgradePromptModal', () => ({
@@ -332,6 +356,91 @@ describe('Editor', () => {
       expect(api.fileApi.get).toHaveBeenCalledWith('file-1')
       expect(screen.getByTestId('simple-editor')).toBeInTheDocument()
     })
+  })
+
+  it('ignores an out-of-order file load after a newer selection resolves', async () => {
+    let resolveFileA: (file: typeof mockFile) => void = () => {}
+    const fileA = new Promise<typeof mockFile>((resolve) => {
+      resolveFileA = resolve
+    })
+    const fileB = { ...mockFile, id: 'file-b', title: 'File B', content: 'Content B' }
+    vi.mocked(api.fileApi.get).mockImplementation((id) =>
+      id === 'file-a' ? fileA : Promise.resolve(fileB)
+    )
+    mockProjectContext = createMockProjectContext({
+      selectedItem: { id: 'file-a', type: 'draft', title: 'File A' },
+    })
+    const UnmemoizedEditor = (Editor as unknown as { type: React.ComponentType }).type
+    const { rerender } = render(<UnmemoizedEditor />)
+
+    mockProjectContext = createMockProjectContext({
+      selectedItem: { id: 'file-b', type: 'draft', title: 'File B' },
+    })
+    rerender(<UnmemoizedEditor />)
+    await waitFor(() => expect(screen.getByTestId('content-input')).toHaveValue('Content B'))
+
+    resolveFileA({ ...mockFile, id: 'file-a', title: 'File A', content: 'Late A' })
+    await waitFor(() => expect(api.fileApi.get).toHaveBeenCalledWith('file-a'))
+    expect(screen.getByTestId('content-input')).toHaveValue('Content B')
+    expect(api.fileVersionApi.getVersions).not.toHaveBeenCalledWith('file-a', { limit: 1 })
+  })
+
+  it('flushes edits to the previous file before showing a newly selected file', async () => {
+    const fileA = { ...mockFile, id: 'file-a', title: 'File A', content: 'Original A' }
+    const fileB = { ...mockFile, id: 'file-b', title: 'File B', content: 'Original B' }
+    vi.mocked(api.fileApi.get).mockImplementation((id) => Promise.resolve(id === 'file-a' ? fileA : fileB))
+    vi.mocked(api.fileApi.update).mockResolvedValue(fileA)
+    mockProjectContext = createMockProjectContext({
+      selectedItem: { id: 'file-a', type: 'draft', title: 'File A' },
+    })
+    const UnmemoizedEditor = (Editor as unknown as { type: React.ComponentType }).type
+    const { rerender } = render(<UnmemoizedEditor />)
+    await waitFor(() => expect(screen.getByTestId('content-input')).toHaveValue('Original A'))
+    fireEvent.change(screen.getByTestId('content-input'), { target: { value: 'Edited A' } })
+
+    mockProjectContext = createMockProjectContext({
+      selectedItem: { id: 'file-b', type: 'draft', title: 'File B' },
+    })
+    rerender(<UnmemoizedEditor />)
+
+    await waitFor(() => expect(api.fileApi.update).toHaveBeenCalledWith(
+      'file-a',
+      expect.objectContaining({ content: 'Edited A' }),
+    ))
+    await waitFor(() => expect(screen.getByTestId('content-input')).toHaveValue('Original B'))
+  })
+
+  it('blocks a file switch and preserves the draft when flushing the previous file fails', async () => {
+    const fileA = { ...mockFile, id: 'file-a', title: 'File A', content: 'Original A' }
+    const fileB = { ...mockFile, id: 'file-b', title: 'File B', content: 'Original B' }
+    vi.mocked(api.fileApi.get).mockImplementation((id) => Promise.resolve(id === 'file-a' ? fileA : fileB))
+    vi.mocked(api.fileApi.update).mockRejectedValue(new Error('save failed'))
+    mockProjectContext = createMockProjectContext({
+      selectedItem: { id: 'file-a', type: 'draft', title: 'File A' },
+    })
+    const UnmemoizedEditor = (Editor as unknown as { type: React.ComponentType }).type
+    const { rerender } = render(<UnmemoizedEditor />)
+    await waitFor(() => expect(screen.getByTestId('content-input')).toHaveValue('Original A'))
+    fireEvent.change(screen.getByTestId('content-input'), { target: { value: 'Edited A' } })
+
+    mockProjectContext = createMockProjectContext({
+      selectedItem: { id: 'file-b', type: 'draft', title: 'File B' },
+    })
+    rerender(<UnmemoizedEditor />)
+
+    await waitFor(() => expect(api.fileApi.update).toHaveBeenCalledWith(
+      'file-a',
+      expect.objectContaining({ content: 'Edited A' }),
+    ))
+    expect(screen.getByTestId('content-input')).toHaveValue('Edited A')
+    expect(api.fileApi.get).not.toHaveBeenCalledWith('file-b')
+    await waitFor(() => expect(mockProjectContext?.setSelectedItem).toHaveBeenCalledWith(expect.objectContaining({id:'file-a',type:'draft'})))
+    const beforeRestore = vi.mocked(api.fileApi.get).mock.calls.length
+    mockProjectContext = createMockProjectContext({selectedItem:{id:'file-a',type:'draft',title:'File A'}})
+    rerender(<UnmemoizedEditor />)
+    await new Promise(resolve=>setTimeout(resolve,0))
+    expect(api.fileApi.get).toHaveBeenCalledTimes(beforeRestore)
+    expect(screen.getByTestId('content-input')).toHaveValue('Edited A')
   })
 
   it('creates initial version if none exists', async () => {

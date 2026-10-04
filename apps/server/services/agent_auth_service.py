@@ -17,6 +17,7 @@ from core.error_codes import ErrorCode
 from core.error_handler import APIException
 from database import get_session
 from models.agent_api_key import AgentApiKey
+from models.entities import User
 
 # API Key configuration
 API_KEY_PREFIX = "eg_"
@@ -170,7 +171,15 @@ async def get_agent_user(
                 detail="API Key has expired",
             )
 
-    # Update last used timestamp and request count
+    owner = session.get(User, api_key.user_id)
+    if not owner or not owner.is_active:
+        raise APIException(
+            error_code=ErrorCode.AUTH_INACTIVE_USER,
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="API key owner is inactive",
+        )
+
+    # Update usage only after both key and owner are authorized.
     api_key.last_used_at = utcnow()
     api_key.request_count += 1
     session.add(api_key)

@@ -5,6 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mockNavigate = vi.fn();
 const mockGetPersonaOnboardingData = vi.fn();
 const mockSavePersonaOnboardingData = vi.fn();
+const mockGetState = vi.fn();
+const mockSave = vi.fn();
+const mockToastError = vi.fn();
 
 let mockUser: { id: string } | null = { id: "user-onboarding-1" };
 let mockLocationState: { from?: { pathname?: string; search?: string; hash?: string } } | null = {
@@ -43,6 +46,17 @@ vi.mock("../../lib/onboardingPersona", () => ({
   savePersonaOnboardingData: (...args: unknown[]) => mockSavePersonaOnboardingData(...args),
 }));
 
+vi.mock("../../lib/onboardingPersonaApi", () => ({
+  onboardingPersonaApi: {
+    getState: (...args: unknown[]) => mockGetState(...args),
+    save: (...args: unknown[]) => mockSave(...args),
+  },
+}));
+
+vi.mock("../../lib/toast", () => ({
+  toast: { error: (...args: unknown[]) => mockToastError(...args) },
+}));
+
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
   return {
@@ -73,6 +87,14 @@ describe("OnboardingPersonaPage", () => {
     mockUser = { id: "user-onboarding-1" };
     mockLocationState = { from: { pathname: "/dashboard/projects", search: "", hash: "" } };
     mockGetPersonaOnboardingData.mockReturnValue(null);
+    mockGetState.mockResolvedValue({ profile: null });
+    mockSave.mockImplementation(async (payload) => ({
+      profile: {
+        ...payload,
+        version: 1,
+        completed_at: "2026-03-08T00:00:00.000Z",
+      },
+    }));
     mockSavePersonaOnboardingData.mockReturnValue({
       version: 1,
       completed_at: "2026-03-08T00:00:00.000Z",
@@ -148,7 +170,7 @@ describe("OnboardingPersonaPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /explorer/i }));
     fireEvent.click(screen.getByRole("button", { name: /monetize/i }));
-    fireEvent.click(screen.getByRole("button", { name: /advanced/i }));
+    fireEvent.click(screen.getByRole("radio", { name: /advanced/i }));
     expect(submitButton).toBeEnabled();
 
     fireEvent.click(submitButton);
@@ -192,5 +214,36 @@ describe("OnboardingPersonaPage", () => {
         { replace: true, state: undefined },
       );
     });
+  });
+
+  it("keeps the form retryable without caching or navigating when the API save fails", async () => {
+    mockSave.mockRejectedValueOnce(new Error("network"));
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: /explorer/i }));
+    const submitButton = screen.getByRole("button", { name: "保存并进入工作台" });
+    fireEvent.click(submitButton);
+
+    await waitFor(() => expect(mockToastError).toHaveBeenCalled());
+    expect(mockSavePersonaOnboardingData).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(submitButton).toBeEnabled();
+    expect(screen.getByRole("button", { name: /explorer/i })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(submitButton);
+    await waitFor(() => expect(mockSave).toHaveBeenCalledTimes(2));
+  });
+
+  it("exposes selected state for goal and experience choices", () => {
+    renderPage();
+
+    const goal = screen.getByRole("button", { name: /monetize/i });
+    expect(goal).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(goal);
+    expect(goal).toHaveAttribute("aria-pressed", "true");
+
+    expect(screen.getByRole("radio", { name: /beginner/i })).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(screen.getByRole("radio", { name: /advanced/i }));
+    expect(screen.getByRole("radio", { name: /advanced/i })).toHaveAttribute("aria-checked", "true");
   });
 });

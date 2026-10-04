@@ -25,7 +25,13 @@ function isProjectType(value: string): value is ProjectType {
 export default function DashboardProjects() {
   const { t } = useTranslation(['dashboard']);
   const navigate = useNavigate();
-  const { projects, deleteProject: contextDeleteProject } = useProject();
+  const {
+    projects,
+    loading,
+    error,
+    refreshProjects,
+    deleteProject: contextDeleteProject,
+  } = useProject();
 
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
@@ -140,7 +146,7 @@ export default function DashboardProjects() {
       />
 
       {/* Search and Filter */}
-      <div className={`flex ${isMobile ? "flex-col gap-3" : "items-center gap-4"} mb-6`}>
+      {!loading && !error && <div className={`flex ${isMobile ? "flex-col gap-3" : "items-center gap-4"} mb-6`}>
         <DashboardSearchBar
           value={searchQuery}
           onChange={setSearchQuery}
@@ -152,15 +158,32 @@ export default function DashboardProjects() {
           value={filterType}
           onChange={setFilterType}
         />
-      </div>
+      </div>}
 
       {/* Projects Count */}
-      <div className="text-sm text-[hsl(var(--text-secondary))] mb-4">
+      {!loading && !error && <div className="text-sm text-[hsl(var(--text-secondary))] mb-4">
         {t('projects.count', { count: filteredProjects.length })}
-      </div>
+      </div>}
+
+      {loading && (
+        <div data-testid="projects-loading" aria-label={t('common.loading')} className="grid gap-3.5 lg:grid-cols-3">
+          {[0, 1, 2].map((item) => (
+            <div key={item} className="h-32 animate-pulse rounded-lg bg-[hsl(var(--bg-secondary))]" />
+          ))}
+        </div>
+      )}
+
+      {!loading && error && (
+        <div role="alert" className="rounded-lg border border-[hsl(var(--error)/0.3)] bg-[hsl(var(--error)/0.08)] p-6 text-center">
+          <p className="mb-4 text-[hsl(var(--text-primary))]">{error}</p>
+          <button type="button" className="btn-primary" onClick={() => void refreshProjects()}>
+            {t('common.retry')}
+          </button>
+        </div>
+      )}
 
       {/* Empty State */}
-      {filteredProjects.length === 0 && (
+      {!loading && !error && filteredProjects.length === 0 && (
         <div className={`text-center ${isMobile ? "py-16" : "py-20"}`}>
           <div className={`rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg bg-[hsl(var(--bg-secondary))] ${isMobile ? "w-16 h-16" : "w-20 h-20"}`}>
             <Book className={`${isMobile ? "w-8 h-8" : "w-10 h-10"} text-[hsl(var(--text-secondary))]`} />
@@ -175,7 +198,7 @@ export default function DashboardProjects() {
       )}
 
       {/* Project Cards Grid */}
-      {filteredProjects.length > 0 && (
+      {!loading && !error && filteredProjects.length > 0 && (
         <div className={`grid ${isMobile ? "grid-cols-1" : isTablet ? "grid-cols-2" : "lg:grid-cols-3"} gap-3.5`}>
           {filteredProjects.map((project) => {
             const config = getTranslatedConfig(project.project_type);

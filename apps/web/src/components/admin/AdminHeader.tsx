@@ -7,9 +7,11 @@ import { useTranslation } from "react-i18next";
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
+  menuOpen: boolean;
+  menuButtonRef: React.RefObject<HTMLButtonElement | null>;
 }
 
-export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
+export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick, menuOpen, menuButtonRef }) => {
   const navigate = useNavigate();
   const { t } = useTranslation("admin");
   const { user } = useAuth();
@@ -22,9 +24,13 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-[hsl(var(--separator-color))] bg-[linear-gradient(180deg,hsl(var(--bg-secondary)/0.96),hsl(var(--bg-secondary)/0.84))] px-3 shadow-[0_1px_0_hsl(var(--separator-color)),0_8px_24px_hsl(0_0%_0%_/_0.12)] backdrop-blur-xl sm:px-4">
       <div className="flex items-center gap-3">
         <button
+          ref={menuButtonRef}
           onClick={onMenuClick}
           className="rounded-lg p-2 text-[hsl(var(--text-primary))] transition-colors hover:bg-[hsl(var(--bg-tertiary))] md:hidden"
-          aria-label="Toggle menu"
+          aria-label={menuOpen ? t("header.closeMenu", "关闭管理菜单") : t("header.openMenu", "打开管理菜单")}
+          aria-expanded={menuOpen}
+          aria-controls="admin-mobile-navigation"
+          type="button"
         >
           <svg
             width="20"

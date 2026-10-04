@@ -3,7 +3,7 @@ Admin Audit Service - Logs admin actions for compliance and security.
 """
 from fastapi import Request
 from sqlalchemy import or_
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 
 from middleware.rate_limit import get_client_ip
 from models.subscription import AdminAuditLog
@@ -21,7 +21,9 @@ class AdminAuditService:
         resource_id: str | None = None,
         old_value: dict | None = None,
         new_value: dict | None = None,
-        request: Request | None = None
+        request: Request | None = None,
+        *,
+        commit: bool = True,
     ) -> AdminAuditLog:
         """
         Log an admin action.
@@ -59,8 +61,11 @@ class AdminAuditService:
             user_agent=user_agent
         )
         session.add(log)
-        session.commit()
-        session.refresh(log)
+        if commit:
+            session.commit()
+            session.refresh(log)
+        else:
+            session.flush()
         return log
 
     def get_audit_logs(
@@ -88,6 +93,16 @@ class AdminAuditService:
         Returns:
             List of matching audit logs
         """
+        query = self._filtered_query(admin_user_id, resource_type, action, resource_id)
+        query = query.order_by(AdminAuditLog.created_at.desc()).offset(offset).limit(limit)
+        return session.exec(query).all()
+
+    def count_audit_logs(self, session: Session, *, resource_type: str | None = None, action: str | None = None) -> int:
+        query = self._filtered_query(None, resource_type, action, None)
+        return session.exec(select(func.count()).select_from(query.subquery())).one()
+
+    @staticmethod
+    def _filtered_query(admin_user_id: str | None, resource_type: str | None, action: str | None, resource_id: str | None):
         query = select(AdminAuditLog)
         normalized_action = action.strip().lower() if action else None
 
@@ -112,10 +127,7 @@ class AdminAuditService:
         if resource_id:
             query = query.where(AdminAuditLog.resource_id == resource_id)
 
-        query = query.order_by(AdminAuditLog.created_at.desc())
-        query = query.offset(offset).limit(limit)
-
-        return session.exec(query).all()
+        return query
 
 
 # Singleton instance

@@ -28,7 +28,10 @@ import type {
   UsersListResponse,
   SystemPromptConfig,
   PromptConfigRequest,
+  PromptReloadResult,
   PromptsListResponse,
+  PendingSkill,
+  SkillReviewStatus,
   DashboardStats,
   ActivationFunnelStats,
   UpgradeConversionStats,
@@ -52,6 +55,8 @@ import type {
   UserQuotaDetail,
 } from "../types/admin";
 import type { SubscriptionFeatures, SubscriptionPlan } from "../types/subscription";
+
+export type { PendingSkill, SkillReviewStatus } from "../types/admin";
 
 const ADMIN_BASE = "/api/admin";
 const FALLBACK_TIMESTAMP = "1970-01-01T00:00:00.000Z";
@@ -295,6 +300,11 @@ function normalizePendingSkill(skill: unknown): PendingSkill {
     category: asText(raw.category, "general"),
     author_id: asNullableText(raw.author_id),
     author_name: asNullableText(raw.author_name),
+    status: asText(raw.status, "pending") as SkillReviewStatus,
+    reviewed_by: asNullableText(raw.reviewed_by),
+    reviewer_name: asNullableText(raw.reviewer_name),
+    reviewed_at: asNullableText(raw.reviewed_at),
+    rejection_reason: asNullableText(raw.rejection_reason),
     created_at: asIsoDate(raw.created_at),
   };
 }
@@ -449,6 +459,14 @@ function normalizeRedemptionCode(code: unknown): RedemptionCode {
 
 function normalizeAuditLog(log: unknown): AuditLog {
   const raw = resolvePayloadRecord(log);
+  if (
+    !asText(raw.id) || !asText(raw.admin_id) ||
+    (typeof raw.admin_name !== "string" && raw.admin_name !== null) ||
+    !asText(raw.action) || !asText(raw.resource_type) ||
+    !Number.isFinite(Date.parse(asText(raw.created_at)))
+  ) {
+    throw new Error("Invalid audit log response");
+  }
   const oldValue = asRecord(raw.old_value);
   const newValue = asRecord(raw.new_value);
 
@@ -739,31 +757,11 @@ export async function deletePrompt(
  *
  * @returns Promise resolving to success message
  */
-export async function reloadPrompts(): Promise<{ message: string }> {
-  return api.post<{ message: string }>(`${ADMIN_BASE}/prompts/reload`);
+export async function reloadPrompts(): Promise<PromptReloadResult> {
+  return api.post<PromptReloadResult>(`${ADMIN_BASE}/prompts/reload`);
 }
 
 // ==================== 技能审核 API ====================
-
-/** Represents a pending skill awaiting admin review. */
-export interface PendingSkill {
-  /** Unique skill identifier */
-  id: string;
-  /** Skill display name */
-  name: string;
-  /** Optional skill description */
-  description: string | null;
-  /** Skill execution instructions */
-  instructions: string;
-  /** Skill category for organization */
-  category: string;
-  /** ID of the user who created the skill */
-  author_id: string | null;
-  /** Display name of the skill author */
-  author_name: string | null;
-  /** ISO 8601 timestamp of skill creation */
-  created_at: string;
-}
 
 type PendingSkillsPayload =
   | PendingSkill[]
@@ -777,8 +775,10 @@ type PendingSkillsPayload =
  *
  * @returns Promise resolving to array of pending skills
  */
-export async function getPendingSkills(): Promise<PendingSkill[]> {
-  const payload = await api.get<PendingSkillsPayload>(`${ADMIN_BASE}/skills/pending`);
+export async function getPendingSkills(status: SkillReviewStatus = "pending"): Promise<PendingSkill[]> {
+  const payload = await api.get<PendingSkillsPayload>(
+    `${ADMIN_BASE}/skills/pending?status=${encodeURIComponent(status)}`,
+  );
   return pickArray<unknown>(payload, ["items", "skills"]).map(normalizePendingSkill);
 }
 
@@ -1116,13 +1116,21 @@ export async function getAuditLogs(params?: {
 
   const payload = await api.get<unknown>(`${ADMIN_BASE}/audit-logs?${searchParams.toString()}`);
   const payloadRecord = resolvePayloadRecord(payload);
-  const items = pickArray<unknown>(payload, ["items", "logs"]).map(normalizeAuditLog);
+  const rawItems = payloadRecord.items ?? payloadRecord.logs;
+  const total = asNumber(payloadRecord.total, NaN);
+  const page = asNumber(payloadRecord.page, NaN);
+  const pageSize = asNumber(payloadRecord.page_size, NaN);
+  if (!Array.isArray(rawItems) || !Number.isInteger(total) || total < 0 ||
+      !Number.isInteger(page) || page < 1 || !Number.isInteger(pageSize) || pageSize < 1) {
+    throw new Error("Invalid audit log response");
+  }
+  const items = rawItems.map(normalizeAuditLog);
 
   return {
     items,
-    total: asNumber(payloadRecord.total, items.length),
-    page: asNumber(payloadRecord.page, params?.page ?? 1),
-    page_size: asNumber(payloadRecord.page_size, (params?.page_size ?? items.length) || 20),
+    total,
+    page,
+    page_size: pageSize,
   };
 }
 

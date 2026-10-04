@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from httpx import AsyncClient
 
+from api.voice import MAX_VOICE_REQUEST_BYTES
 from models import User
 from services.core.auth_service import hash_password
 
@@ -116,6 +117,60 @@ async def test_recognize_missing_audio_data(client: AsyncClient, db_session):
 
 
 @pytest.mark.integration
+async def test_recognize_requires_authentication_before_provider(client: AsyncClient):
+    """Anonymous callers must not be able to trigger the paid ASR provider."""
+    with patch("api.voice.call_tencent_asr", new_callable=AsyncMock) as mock_asr:
+        response = await client.post(
+            "/api/v1/voice/recognize",
+            json={"audio_data": base64.b64encode(b"audio").decode("ascii")},
+        )
+
+    assert response.status_code == 401
+    mock_asr.assert_not_awaited()
+
+
+@pytest.mark.integration
+async def test_recognize_rejects_oversized_http_body_before_provider(client: AsyncClient):
+    """The route-level size guard runs before parsing a clearly oversized body."""
+    with patch("api.voice.call_tencent_asr", new_callable=AsyncMock) as mock_asr:
+        response = await client.post(
+            "/api/v1/voice/recognize",
+            content=b'{}',
+            headers={"content-type": "application/json", "content-length": "8000000"},
+        )
+
+    assert response.status_code == 413
+    mock_asr.assert_not_awaited()
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("declared_length", [None, "2"])
+async def test_recognize_caps_streamed_body_without_trusting_content_length(
+    client: AsyncClient, declared_length
+):
+    async def oversized_stream():
+        yield b'{"audio_data":"'
+        chunk = b"A" * (MAX_VOICE_REQUEST_BYTES // 2)
+        yield chunk
+        yield chunk
+        yield b'AA"}'
+
+    headers = {"content-type": "application/json"}
+    if declared_length is not None:
+        headers["content-length"] = declared_length
+
+    with patch("api.voice.call_tencent_asr", new_callable=AsyncMock) as mock_asr:
+        response = await client.post(
+            "/api/v1/voice/recognize",
+            content=oversized_stream(),
+            headers=headers,
+        )
+
+    assert response.status_code == 413
+    mock_asr.assert_not_awaited()
+
+
+@pytest.mark.integration
 async def test_recognize_invalid_sample_rate(client: AsyncClient, db_session):
     """Test voice recognize with invalid sample rate."""
     token = await create_verified_user_and_get_token(client, db_session)
@@ -133,10 +188,7 @@ async def test_recognize_invalid_sample_rate(client: AsyncClient, db_session):
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    # The API might accept this but let the ASR service handle it,
-    # or it might validate. Either way, we test it doesn't crash.
-    # This test documents the current behavior.
-    assert response.status_code in [200, 422, 500]
+    assert response.status_code == 422
 
 
 @pytest.mark.integration
@@ -156,9 +208,7 @@ async def test_recognize_invalid_audio_format(client: AsyncClient, db_session):
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    # The API maps unknown formats to "wav" as default
-    # So it should proceed (though the ASR service may fail)
-    assert response.status_code in [200, 500]
+    assert response.status_code == 422
 
 
 # ============================================
@@ -221,9 +271,27 @@ async def test_recognize_invalid_base64_audio(client: AsyncClient, db_session):
             headers={"Authorization": f"Bearer {token}"},
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
         assert "ERR_VOICE_AUDIO_DECODE_FAILED" in str(data)
+
+
+@pytest.mark.integration
+async def test_recognize_rejects_decoded_audio_over_five_mib_before_provider(
+    client: AsyncClient, db_session
+):
+    token = await create_verified_user_and_get_token(client, db_session)
+    oversized_audio = base64.b64encode(b"x" * (5 * 1024 * 1024 + 1)).decode("ascii")
+
+    with patch("api.voice.call_tencent_asr", new_callable=AsyncMock) as mock_asr:
+        response = await client.post(
+            "/api/v1/voice/recognize",
+            json={"audio_data": oversized_audio},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code == 413
+    mock_asr.assert_not_awaited()
 
 
 # ============================================
@@ -421,20 +489,41 @@ async def test_recognize_asr_returns_error(client: AsyncClient, db_session):
                 headers={"Authorization": f"Bearer {token}"},
             )
 
-            # API returns 200 but with success=False
-            assert response.status_code == 200
+            assert response.status_code == 502
             data = response.json()
-            assert data["success"] is False
-            assert data["text"] == ""
-            assert "InvalidParameter" in data["error"]
-            assert "Audio format not supported" in data["error"]
+            assert "ERR_VOICE_API_REQUEST_FAILED" in str(data)
+            assert "Audio format not supported" not in str(data)
+
+
+@pytest.mark.integration
+async def test_recognize_unexpected_provider_error_is_typed_and_sanitized(
+    client: AsyncClient, db_session
+):
+    token = await create_verified_user_and_get_token(client, db_session)
+    audio_data = base64.b64encode(b"fake audio data").decode("ascii")
+
+    with patch.dict(
+        os.environ,
+        {"TENCENT_SECRET_ID": "test-secret-id", "TENCENT_SECRET_KEY": "test-secret-key"},
+    ):
+        with patch("api.voice.call_tencent_asr", new_callable=AsyncMock) as mock_asr:
+            mock_asr.side_effect = RuntimeError("provider secret detail")
+            response = await client.post(
+                "/api/v1/voice/recognize",
+                json={"audio_data": audio_data},
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+    assert response.status_code == 502
+    assert "ERR_VOICE_API_REQUEST_FAILED" in response.text
+    assert "provider secret detail" not in response.text
 
 
 @pytest.mark.integration
 async def test_recognize_asr_api_request_failed(client: AsyncClient, db_session):
     """Test voice recognition when ASR API request fails."""
-    from core.error_handler import APIException
     from core.error_codes import ErrorCode
+    from core.error_handler import APIException
 
     token = await create_verified_user_and_get_token(client, db_session)
 

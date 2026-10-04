@@ -15,6 +15,7 @@ export const PromptEditor: React.FC = () => {
   const queryClient = useQueryClient();
   const isNew = projectType === "new" || !projectType;
   const decodedProjectType = projectType ? decodeURIComponent(projectType) : "";
+  const [selectedProjectType, setSelectedProjectType] = useState("novel");
 
   const [formData, setFormData] = useState<PromptConfigRequest>({
     role_definition: "",
@@ -24,13 +25,18 @@ export const PromptEditor: React.FC = () => {
     file_types: "",
     writing_guidelines: "",
     include_dialogue_guidelines: false,
-    primary_content_type: "novel",
     is_active: true,
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // 获取现有配置
-  const { data: existingConfig, isLoading } = useQuery({
+  const {
+    data: existingConfig,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["admin", "prompts", projectType],
     queryFn: () => adminApi.getPrompt(decodedProjectType),
     enabled: !isNew && !!projectType,
@@ -49,8 +55,8 @@ export const PromptEditor: React.FC = () => {
         file_types: existingConfig.file_types || "",
         writing_guidelines: existingConfig.writing_guidelines || "",
         include_dialogue_guidelines: existingConfig.include_dialogue_guidelines || false,
-        primary_content_type: existingConfig.primary_content_type || "novel",
         is_active: existingConfig.is_active ?? true,
+        expected_version: existingConfig.version,
       });
     }
   }, [existingConfig]);
@@ -58,7 +64,7 @@ export const PromptEditor: React.FC = () => {
   // 保存/更新 mutation
   const saveMutation = useMutation({
     mutationFn: (data: PromptConfigRequest) => {
-      const targetProjectType = isNew ? data.primary_content_type : decodedProjectType;
+      const targetProjectType = isNew ? selectedProjectType : decodedProjectType;
       return adminApi.upsertPrompt(targetProjectType, data);
     },
     onSuccess: () => {
@@ -87,7 +93,14 @@ export const PromptEditor: React.FC = () => {
   });
 
   const handleSave = () => {
-    saveMutation.mutate(formData);
+    if (!formData.role_definition.trim() || !formData.capabilities.trim()) {
+      return;
+    }
+    saveMutation.mutate({
+      ...formData,
+      role_definition: formData.role_definition.trim(),
+      capabilities: formData.capabilities.trim(),
+    });
   };
 
   const handleDeleteClick = () => {
@@ -109,6 +122,31 @@ export const PromptEditor: React.FC = () => {
       </div>
     );
   }
+
+  if (!isNew && isError) {
+    const errorText = error instanceof Error && error.message
+      ? error.message
+      : t("common:error");
+    return (
+      <div className="admin-page">
+        <div className="admin-surface flex flex-col items-center gap-4 py-12 text-center">
+          <AlertTriangle className="text-[hsl(var(--error))]" size={32} />
+          <p className="text-[hsl(var(--text-secondary))]">{errorText}</p>
+          <button
+            type="button"
+            onClick={() => { void refetch(); }}
+            className="px-4 py-2.5 min-h-11 rounded-lg bg-[hsl(var(--accent-primary))] text-white"
+          >
+            {t("common:retry")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const canSave = formData.role_definition.trim().length > 0
+    && formData.capabilities.trim().length > 0
+    && (isNew || Boolean(existingConfig));
 
   return (
     <div className="admin-page">
@@ -143,7 +181,7 @@ export const PromptEditor: React.FC = () => {
           )}
           <button
             onClick={handleSave}
-            disabled={saveMutation.isPending}
+            disabled={saveMutation.isPending || !canSave}
             className="flex items-center justify-center gap-2 px-4 py-2.5 min-h-11 bg-[hsl(var(--accent-primary))] text-white rounded-lg hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 flex-1 sm:flex-none"
           >
             {saveMutation.isPending ? (
@@ -175,8 +213,8 @@ export const PromptEditor: React.FC = () => {
               <FormField label={t("promptEditor.projectType")} className="sm:col-span-2">
                 <AdminSelect
                   fullWidth
-                  value={formData.primary_content_type}
-                  onChange={(e) => handleInputChange("primary_content_type", e.target.value)}
+                  value={selectedProjectType}
+                  onChange={(e) => setSelectedProjectType(e.target.value)}
                   className="text-[hsl(var(--text-primary))]"
                 >
                   <option value="novel">{t("promptEditor.novel")}</option>
@@ -207,6 +245,8 @@ export const PromptEditor: React.FC = () => {
         <FormSection title={t("promptEditor.promptConfig")}>
           <FormField label={t("promptEditor.roleDefinition")}>
             <textarea
+              aria-label={t("promptEditor.roleDefinition")}
+              required
               value={formData.role_definition}
               onChange={(e) => handleInputChange("role_definition", e.target.value)}
               rows={6}
@@ -216,6 +256,8 @@ export const PromptEditor: React.FC = () => {
 
           <FormField label={t("promptEditor.capabilities")}>
             <textarea
+              aria-label={t("promptEditor.capabilities")}
+              required
               value={formData.capabilities}
               onChange={(e) => handleInputChange("capabilities", e.target.value)}
               rows={8}

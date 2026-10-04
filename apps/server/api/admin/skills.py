@@ -4,8 +4,9 @@ Admin Skill Review Management API endpoints.
 This module contains all skill review management endpoints for admin operations.
 """
 import logging
+from typing import Literal
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlmodel import Session, select
 
 from config.datetime_utils import utcnow
@@ -13,6 +14,7 @@ from core.error_codes import ErrorCode
 from core.error_handler import APIException
 from database import get_session
 from models import PublicSkill, User, UserSkill
+from services.admin_audit_service import admin_audit_service
 from services.core.auth_service import get_current_superuser
 from utils.logger import get_logger, log_with_context
 
@@ -28,6 +30,7 @@ router = APIRouter(tags=["admin-skills"])
 
 @router.get("/skills/pending", response_model=list[PendingSkillResponse])
 def get_pending_skills(
+    review_status: Literal["pending", "approved", "rejected"] = Query("pending", alias="status"),
     current_user: User = Depends(get_current_superuser),
     session: Session = Depends(get_session),
 ):
@@ -38,7 +41,7 @@ def get_pending_skills(
     """
     stmt = (
         select(PublicSkill)
-        .where(PublicSkill.status == "pending")
+        .where(PublicSkill.status == review_status)
         .order_by(PublicSkill.created_at.asc())
     )
     skills = session.exec(stmt).all()
@@ -50,6 +53,11 @@ def get_pending_skills(
             author = session.get(User, skill.author_id)
             author_name = author.username if author else None
 
+        reviewer_name = None
+        if skill.reviewed_by:
+            reviewer = session.get(User, skill.reviewed_by)
+            reviewer_name = reviewer.username if reviewer else None
+
         result.append(PendingSkillResponse(
             id=skill.id,
             name=skill.name,
@@ -58,6 +66,11 @@ def get_pending_skills(
             category=skill.category,
             author_id=skill.author_id,
             author_name=author_name,
+            status=skill.status,
+            reviewed_by=skill.reviewed_by,
+            reviewer_name=reviewer_name,
+            reviewed_at=skill.reviewed_at,
+            rejection_reason=skill.rejection_reason,
             created_at=skill.created_at,
         ))
 
@@ -75,6 +88,7 @@ def get_pending_skills(
 @router.post("/skills/{skill_id}/approve")
 def approve_skill(
     skill_id: str,
+    http_request: Request,
     current_user: User = Depends(get_current_superuser),
     session: Session = Depends(get_session),
 ):
@@ -83,7 +97,9 @@ def approve_skill(
 
     Requires superuser privileges.
     """
-    skill = session.get(PublicSkill, skill_id)
+    skill = session.exec(
+        select(PublicSkill).where(PublicSkill.id == skill_id).with_for_update()
+    ).first()
     if not skill:
         raise APIException(
             error_code=ErrorCode.NOT_FOUND,
@@ -93,8 +109,8 @@ def approve_skill(
 
     if skill.status != "pending":
         raise APIException(
-            error_code=ErrorCode.VALIDATION_ERROR,
-            status_code=status.HTTP_400_BAD_REQUEST,
+            error_code=ErrorCode.RESOURCE_CONFLICT,
+            status_code=status.HTTP_409_CONFLICT,
             detail="Skill is not pending review",
         )
 
@@ -104,7 +120,17 @@ def approve_skill(
     skill.updated_at = utcnow()
 
     session.add(skill)
-    session.commit()
+    try:
+        admin_audit_service.log_action(
+            session, current_user.id, "approve_skill", "skill", skill_id,
+            old_value={"status": "pending"},
+            new_value={"status": "approved", "reviewed_by": current_user.id},
+            request=http_request, commit=False,
+        )
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
 
     log_with_context(
         logger,
@@ -122,6 +148,7 @@ def approve_skill(
 def reject_skill(
     skill_id: str,
     request: SkillReviewRequest,
+    http_request: Request,
     current_user: User = Depends(get_current_superuser),
     session: Session = Depends(get_session),
 ):
@@ -130,7 +157,9 @@ def reject_skill(
 
     Requires superuser privileges.
     """
-    skill = session.get(PublicSkill, skill_id)
+    skill = session.exec(
+        select(PublicSkill).where(PublicSkill.id == skill_id).with_for_update()
+    ).first()
     if not skill:
         raise APIException(
             error_code=ErrorCode.NOT_FOUND,
@@ -140,8 +169,8 @@ def reject_skill(
 
     if skill.status != "pending":
         raise APIException(
-            error_code=ErrorCode.VALIDATION_ERROR,
-            status_code=status.HTTP_400_BAD_REQUEST,
+            error_code=ErrorCode.RESOURCE_CONFLICT,
+            status_code=status.HTTP_409_CONFLICT,
             detail="Skill is not pending review",
         )
 
@@ -162,7 +191,21 @@ def reject_skill(
         session.add(user_skill)
 
     session.add(skill)
-    session.commit()
+    try:
+        admin_audit_service.log_action(
+            session, current_user.id, "reject_skill", "skill", skill_id,
+            old_value={"status": "pending"},
+            new_value={
+                "status": "rejected",
+                "reviewed_by": current_user.id,
+                "rejection_reason": request.rejection_reason,
+            },
+            request=http_request, commit=False,
+        )
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
 
     log_with_context(
         logger,

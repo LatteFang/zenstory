@@ -3,6 +3,7 @@
 Provides hybrid retrieval (semantic + lexical fusion) for external AI agents using X-Agent-API-Key authentication.
 """
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends
@@ -78,21 +79,24 @@ async def search(
     - top_k: Maximum results (1-50, default 10)
     - file_types: Filter by file types (optional)
     """
-    session, user_id, api_key = context
+    _session, user_id, api_key = context
 
     top_k = max(1, min(body.top_k, 50))
 
     try:
         from services.llama_index import get_llama_index_service
 
-        svc = get_llama_index_service()
-        results = svc.hybrid_search(
-            project_id=project_id,
-            query=body.query,
-            top_k=top_k,
-            entity_types=body.file_types,
-            include_content=body.include_content,
-        )
+        def run_search():
+            svc = get_llama_index_service()
+            return svc.hybrid_search(
+                project_id=project_id,
+                query=body.query,
+                top_k=top_k,
+                entity_types=body.file_types,
+                include_content=body.include_content,
+            )
+
+        results = await asyncio.to_thread(run_search)
     except Exception as e:
         raise APIException(
             error_code=ErrorCode.VECTOR_SEARCH_UNAVAILABLE,

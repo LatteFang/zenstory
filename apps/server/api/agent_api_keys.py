@@ -112,6 +112,13 @@ def validate_scopes(scopes: list[str] | None) -> list[str]:
     if scopes is None:
         return DEFAULT_SCOPES.copy()
 
+    if not scopes:
+        raise APIException(
+            error_code=ErrorCode.VALIDATION_ERROR,
+            status_code=400,
+            detail="At least one permission scope is required",
+        )
+
     for scope in scopes:
         if scope not in valid_scopes:
             raise APIException(

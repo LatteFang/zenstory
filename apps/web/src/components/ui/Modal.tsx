@@ -16,6 +16,7 @@ import React, { createContext, useContext, useEffect, useCallback, useRef, useId
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useDialogInteractions } from './dialogFocus';
 
 /**
  * Props for the Modal component.
@@ -247,7 +248,6 @@ export const Modal: React.FC<ModalProps> & {
   const descriptionId = useId();
   const { t } = useTranslation();
   const modalRef = useRef<HTMLDivElement>(null);
-  const previousActiveElement = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
   const closeOnEscapeRef = useRef(closeOnEscape);
 
@@ -274,46 +274,14 @@ export const Modal: React.FC<ModalProps> & {
     event.stopPropagation();
   }, []);
 
-  // Focus management and scroll lock
-  useEffect(() => {
-    if (!open) return;
-
-    // Store the currently focused element
-    previousActiveElement.current = document.activeElement as HTMLElement;
-
-    // Lock body scroll
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && closeOnEscapeRef.current) {
-        onCloseRef.current();
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
-
-    // Prefer text input focus to avoid close-button auto-focus stealing typing.
-    const preferredFocusable = modalRef.current?.querySelector(
-      '[data-modal-autofocus], input, textarea, select'
-    ) as HTMLElement | null;
-    const fallbackFocusable = modalRef.current?.querySelector(
-      'button, [href], [tabindex]:not([tabindex="-1"])'
-    ) as HTMLElement | null;
-    (preferredFocusable ?? fallbackFocusable)?.focus();
-
-    return () => {
-      // Restore body scroll
-      document.body.style.overflow = originalOverflow;
-
-      // Remove keyboard listener
-      document.removeEventListener('keydown', onKeyDown);
-
-      // Restore focus to the previously focused element
-      if (previousActiveElement.current) {
-        previousActiveElement.current.focus();
-      }
-    };
-  }, [open]);
+  useDialogInteractions({
+    open,
+    dialogRef: modalRef,
+    initialFocusSelector: '[data-modal-autofocus], input, textarea, select',
+    onEscape: () => {
+      if (closeOnEscapeRef.current) onCloseRef.current();
+    },
+  });
 
   // Don't render if not open
   if (!open) {
@@ -344,6 +312,7 @@ export const Modal: React.FC<ModalProps> & {
           className={contentClasses}
           onClick={handleContentClick}
           role="dialog"
+          tabIndex={-1}
           aria-modal="true"
           aria-labelledby={title ? titleId : undefined}
           aria-describedby={description ? descriptionId : undefined}

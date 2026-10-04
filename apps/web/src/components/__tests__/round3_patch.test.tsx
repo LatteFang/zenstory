@@ -18,6 +18,7 @@ import { ApiError } from '../../lib/apiClient'
 
 vi.mock('../SimpleEditor', () => ({
   SimpleEditor: ({
+    fileId,
     fileTitle,
     content,
     onTitleChange,
@@ -25,11 +26,12 @@ vi.mock('../SimpleEditor', () => ({
     onSave,
     onFinishReview,
   }: {
+    fileId: string
     fileTitle: string
     content: string
     onTitleChange?: (value: string) => void
     onContentChange?: (value: string) => void
-    onSave?: () => void
+    onSave?: (submission: {fileId:string;title:string;content:string;previousTitle:string}) => void
     onFinishReview?: () => void
   }) => (
     <div data-testid="simple-editor">
@@ -43,7 +45,7 @@ vi.mock('../SimpleEditor', () => ({
         value={content}
         onChange={(e) => onContentChange?.(e.target.value)}
       />
-      <button data-testid="save-button" onClick={() => onSave?.()}>
+      <button data-testid="save-button" onClick={() => onSave?.({fileId,title:fileTitle,content,previousTitle:"Test Chapter"})}>
         Save
       </button>
       <button data-testid="finish-review-button" onClick={() => onFinishReview?.()}>

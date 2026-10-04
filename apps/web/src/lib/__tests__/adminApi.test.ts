@@ -458,6 +458,11 @@ describe('adminApi', () => {
           category: 'writing',
           author_id: 'author1',
           author_name: 'Author 1',
+          status: 'pending',
+          reviewed_by: null,
+          reviewer_name: null,
+          reviewed_at: null,
+          rejection_reason: null,
           created_at: '2024-01-01T00:00:00Z',
         },
         {
@@ -468,6 +473,11 @@ describe('adminApi', () => {
           category: 'editing',
           author_id: null,
           author_name: null,
+          status: 'pending',
+          reviewed_by: null,
+          reviewer_name: null,
+          reviewed_at: null,
+          rejection_reason: null,
           created_at: '2024-01-02T00:00:00Z',
         },
       ]
@@ -475,7 +485,7 @@ describe('adminApi', () => {
 
       const result = await getPendingSkills()
 
-      expect(mockApi.get).toHaveBeenCalledWith('/api/admin/skills/pending')
+      expect(mockApi.get).toHaveBeenCalledWith('/api/admin/skills/pending?status=pending')
       expect(result).toEqual(mockSkills)
     })
 
@@ -955,7 +965,19 @@ describe('adminApi', () => {
       expect(result).toEqual(apiPayload)
     })
 
-    it('normalizes audit logs query response and pagination defaults', async () => {
+    it('rejects an audit payload missing its required total rather than inventing a healthy count', async () => {
+      const { getAuditLogs } = await import('../adminApi')
+      mockApi.get.mockResolvedValue({ items: [], page: 1, page_size: 20 })
+      await expect(getAuditLogs()).rejects.toThrow('Invalid audit log response')
+    })
+
+    it('rejects an audit row missing actor identity rather than hiding it as an empty string', async () => {
+      const { getAuditLogs } = await import('../adminApi')
+      mockApi.get.mockResolvedValue({ items: [{ id: 'log-1', action: 'update_user', resource_type: 'user', created_at: '2026-10-04T00:00:00Z' }], total: 1, page: 1, page_size: 20 })
+      await expect(getAuditLogs()).rejects.toThrow('Invalid audit log response')
+    })
+
+    it('normalizes the supported audit query response and pagination', async () => {
       const { getAuditLogs } = await import('../adminApi')
       mockApi.get.mockResolvedValue({
         data: {

@@ -51,6 +51,18 @@ test('post-build output cannot shadow host rewrites; sitemap uses canonical rout
     for (const f of ['index.html','robots.txt','sitemap.xml']) assert.equal(existsSync(join(dir,f)), false)
     assert.match(readFileSync(join(dir,'_app/home.html'),'utf8'), /href="https:\/\/app\.zenstory\.ai\/"/)
     assert.doesNotMatch(readFileSync(join(dir,'_app/index.html'),'utf8'), /rel="canonical"/)
+    const privacy = readFileSync(join(dir, 'privacy-policy/index.html'), 'utf8')
+    const terms = readFileSync(join(dir, 'terms-of-service/index.html'), 'utf8')
+    for (const html of [privacy, terms]) {
+      assert.match(html, /<main\b/)
+      assert.match(html, /<h1\b[^>]*>[^<]+<\/h1>/)
+      assert.match(html, /<p\b[^>]*>[^<]+<\/p>/)
+      assert.match(html, /<div id="root"><main\b/)
+    }
+    assert.match(privacy, /Privacy Policy/)
+    assert.match(privacy, /committed to protecting your personal data/)
+    assert.match(terms, /Terms of Service/)
+    assert.match(terms, /By accessing or using zenstory/)
     const siteMap=readFileSync(join(dir,'_site/sitemap.xml'),'utf8')
     assert.match(siteMap, /xmlns:xhtml="http:\/\/www\.w3\.org\/1999\/xhtml"/)
     // Single-URL pages list no alternates; language pairs list both languages and x-default on each entry.

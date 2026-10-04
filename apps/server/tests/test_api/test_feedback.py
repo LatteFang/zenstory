@@ -2,11 +2,14 @@
 
 import io
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from httpx import AsyncClient
 from sqlmodel import select
+from starlette.datastructures import Headers, UploadFile
 
+from api.feedback import submit_feedback
 from core.error_codes import ErrorCode
 from models import User, UserFeedback
 from services.core.auth_service import hash_password
@@ -17,6 +20,99 @@ VALID_PNG_BYTES = (
     b"\x00\x00\x00\nIDATx\x9cc\xf8\x0f\x00\x01\x01\x01\x00\x18\xdd\x8d\xe1"
     b"\x00\x00\x00\x00IEND\xaeB`\x82"
 )
+
+
+@pytest.mark.parametrize("failure_point", ["commit", "refresh"])
+@pytest.mark.asyncio
+async def test_submit_feedback_removes_new_screenshot_when_persistence_fails(
+    monkeypatch, tmp_path, failure_point
+):
+    monkeypatch.setenv("FEEDBACK_UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr("api.feedback._build_screenshot_filename", lambda *_args: "owned.png")
+
+    class _FailingSession:
+        def __init__(self):
+            self.rollback_calls = 0
+
+        def add(self, _feedback):
+            return None
+
+        def commit(self):
+            if failure_point == "commit":
+                raise RuntimeError("commit failed")
+
+        def flush(self):
+            return None
+
+        def refresh(self, _feedback):
+            if failure_point == "refresh":
+                raise RuntimeError("refresh failed")
+
+        def rollback(self):
+            self.rollback_calls += 1
+
+    session = _FailingSession()
+    screenshot = UploadFile(
+        filename="bug.png",
+        file=io.BytesIO(VALID_PNG_BYTES),
+        headers=Headers({"content-type": "image/png"}),
+    )
+
+    with pytest.raises(RuntimeError, match=f"{failure_point} failed"):
+        await submit_feedback(
+            issue_text="persistence failure",
+            source_page="editor",
+            source_route=None,
+            trace_id=None,
+            request_id=None,
+            agent_run_id=None,
+            project_id=None,
+            agent_session_id=None,
+            screenshot=screenshot,
+            current_user=SimpleNamespace(id="user-1"),
+            session=session,
+        )
+
+    assert session.rollback_calls == 1
+    assert not (tmp_path / "owned.png").exists()
+
+
+@pytest.mark.asyncio
+async def test_submit_feedback_never_deletes_a_preexisting_filename(monkeypatch, tmp_path):
+    monkeypatch.setenv("FEEDBACK_UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr("api.feedback._build_screenshot_filename", lambda *_args: "existing.png")
+    existing = tmp_path / "existing.png"
+    existing.write_bytes(b"not owned by this request")
+
+    screenshot = UploadFile(
+        filename="bug.png",
+        file=io.BytesIO(VALID_PNG_BYTES),
+        headers=Headers({"content-type": "image/png"}),
+    )
+    session = SimpleNamespace(
+        add=lambda _feedback: None,
+        flush=lambda: None,
+        refresh=lambda _feedback: None,
+        commit=lambda: None,
+        rollback=lambda: None,
+    )
+
+    with pytest.raises(FileExistsError):
+        await submit_feedback(
+            issue_text="collision",
+            source_page="editor",
+            source_route=None,
+            trace_id=None,
+            request_id=None,
+            agent_run_id=None,
+            project_id=None,
+            agent_session_id=None,
+            screenshot=screenshot,
+            current_user=SimpleNamespace(id="user-1"),
+            session=session,
+        )
+
+    assert existing.read_bytes() == b"not owned by this request"
 
 
 async def create_test_user(

@@ -89,14 +89,17 @@ class ResultBuilder:
         failed_stories = story_result.get("failed_stories", [])
         neo4j_failed_chapters = relationship_result.get("neo4j_failed_chapters", [])
         failed_characters = character_entity_result.get("failed_characters", [])
+        meta_extraction = stage1_data.get("meta_extraction")
+        meta_failed = bool(meta_extraction and meta_extraction.get("succeeded") is False)
         failed_count = (
             int(stage1_data.get("failed_count", 0) or 0)
             + len(failed_stories)
             + int(character_entity_result.get("failed_count", 0) or 0)
             + len(neo4j_failed_chapters)
+            + int(meta_failed)
         )
 
-        return {
+        result = {
             "novel_id": novel_id,
             "job_id": job_id,
             "chapters_count": len(chapter_ids),
@@ -119,3 +122,6 @@ class ResultBuilder:
             "status": status,
             "elapsed_ms": elapsed_ms,
         }
+        if meta_extraction is not None:
+            result["meta_extraction"] = meta_extraction
+        return result

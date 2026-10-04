@@ -53,3 +53,17 @@ Generators share `site-shell.mjs`, plain CSS, no new dependencies; isolated gene
 - Native controls and direct-watch links, with no startup video download, are preferred over carousel/player dependencies; an inline script replaces the native bar with one play button until the first play. The hero carries no install command: a single command next to one case read as “install this to reproduce it”; install commands live on project pages, reached from the tool rows.
 - The full ten-topic directory stays on `/guides`; homepage establishes learning layers instead of ten equal topic cards.
 - Local acceptance is based on independent screenshot review, native playback, static contract tests and build evidence. Public release verification is separate. Only recap has a confirmed caption track; public embedding permissions are not independently established by repository licenses. No search-ranking or AI-citation gains are claimed.
+
+## React workbench scope — module review, 2026-10-04
+This section governs `app.zenstory.ai` only; it does not change the organization-site contract above. Evidence: `apps/web/src/index.css`, `components/ui/Modal.tsx`, `ConfirmDialog.tsx`, `Toast.tsx`, `BottomTabs.tsx`, `Layout.tsx`, and `apps/web/docs/ui-async-state-standard.md`.
+
+- **Goal:** preserve the writing workflow and supported capabilities while fixing demonstrated interaction, accessibility, and state-management defects. No visual redesign or new design-system layer.
+- **Visual language:** retain the existing light/dark HSL semantic tokens, serif writing typography, sans-serif controls, spacing, icons, and elevation. Reuse existing primitives; do not import the organization site's palette into the workbench.
+- **Navigation:** keep dashboard, project editor, materials, skills, billing, settings, and admin boundaries. Inspirations and complex material-analysis stages stay disabled by default; historical data remains readable.
+- **Dialogs:** maintain accessible names, initial focus, Tab/Shift+Tab containment, Escape/backdrop policies, scroll locking, and focus restoration. Loading confirmations must not allow cancellation. Nested dialogs must not release the outer dialog's scroll lock.
+- **Mobile workspace:** preserve mounted editor/chat/file state across switches. Tabs must reference real labelled panels; inactive panels must be unavailable to keyboard interaction. Retain the existing 768/1024 px layout boundaries and 44 px touch targets.
+- **Feedback:** success/info notifications use polite announcements; errors use alert semantics. Keep current deduplication, maximum visible count, and expiry. Loading, empty, error/retry, and disabled states follow the existing async-state standard, not ad-hoc placeholder screens.
+- **Motion:** honor reduced-motion preferences without changing normal animations or removing functional progress indicators.
+- **Content:** reuse existing bilingual translation keys, task-oriented labels, and terminology. Do not expose inert actions as working controls.
+- **Verification:** regression tests precede behavioral changes; run targeted component/page tests, TypeScript/lint, and keyboard/mobile browser checks. DOM semantics alone do not establish physical focus behavior or visual quality.
+- **Open question:** email-change re-verification policy is not established by existing product contracts; preserve it rather than silently introducing a new access policy.

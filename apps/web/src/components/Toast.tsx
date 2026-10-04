@@ -129,6 +129,9 @@ export function ToastContainer() {
       {toasts.map((t) => (
         <div
           key={t.id}
+          role={t.type === 'error' ? 'alert' : 'status'}
+          aria-live={t.type === 'error' ? 'assertive' : 'polite'}
+          aria-atomic="true"
           className={`pointer-events-auto max-w-[calc(100vw-2rem)] px-4 py-2 rounded-lg shadow-lg text-sm text-white animate-slide-in-bottom ${
             t.type === 'error'
               ? 'bg-[hsl(var(--error))]'

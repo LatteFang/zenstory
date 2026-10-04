@@ -60,11 +60,7 @@ export const FileTreePane: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const draftFileInputRef = useRef<HTMLInputElement>(null);
 
-  // File search state - use context state when available
-  const { isSearchOpen: isContextSearchOpen, openSearch: openContextSearch } = useFileSearchContext();
-  const [internalFileSearchOpen, setInternalFileSearchOpen] = useState(false);
-  const isFileSearchOpen = isContextSearchOpen ?? internalFileSearchOpen;
-  const setIsFileSearchOpen = isContextSearchOpen !== undefined ? openContextSearch : setInternalFileSearchOpen;
+  const { isSearchOpen: isFileSearchOpen, openSearch, closeSearch } = useFileSearchContext();
 
   const [fileSearchQuery, setFileSearchQuery] = useState('');
   const [selectedResultIndex, setSelectedResultIndex] = useState(0);
@@ -168,9 +164,9 @@ export const FileTreePane: React.FC = () => {
   // Clear search when project changes
   useEffect(() => {
     clearFileSearch();
-    setIsFileSearchOpen(false);
+    closeSearch();
     setSelectedResultIndex(0);
-  }, [currentProjectId, clearFileSearch, setIsFileSearchOpen]);
+  }, [currentProjectId, clearFileSearch, closeSearch]);
 
   // Focus search input when opened via keyboard shortcut
   useEffect(() => {
@@ -226,20 +222,21 @@ export const FileTreePane: React.FC = () => {
   // Handle search result selection
   const handleSearchResultSelect = useCallback((result: { id: string; fileType: string; title: string }) => {
     handleSelect(result.id, result.fileType, result.title);
-    setIsFileSearchOpen(false);
+    closeSearch();
     clearFileSearch();
 
     // On mobile, switch to editor panel
     if (isMobile) {
       switchToEditor();
     }
-  }, [isMobile, switchToEditor, clearFileSearch, handleSelect, setIsFileSearchOpen]);
+  }, [isMobile, switchToEditor, clearFileSearch, handleSelect, closeSearch]);
 
   // Keyboard navigation for search results
   useEffect(() => {
     if (!isFileSearchOpen || fileSearchResults.length === 0) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.isComposing || e.keyCode === 229) return;
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
@@ -261,7 +258,7 @@ export const FileTreePane: React.FC = () => {
           break;
         case 'Escape':
           e.preventDefault();
-          setIsFileSearchOpen(false);
+          closeSearch();
           clearFileSearch();
           break;
       }
@@ -269,7 +266,7 @@ export const FileTreePane: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFileSearchOpen, fileSearchResults, selectedResultIndex, handleSearchResultSelect, clearFileSearch, setIsFileSearchOpen]);
+  }, [isFileSearchOpen, fileSearchResults, selectedResultIndex, handleSearchResultSelect, clearFileSearch, closeSearch]);
 
   // Start creating new item
   const startCreate = (parentId: string, fileType: string) => {
@@ -682,15 +679,15 @@ export const FileTreePane: React.FC = () => {
             value={fileSearchQuery}
             onChange={(value) => {
               setFileSearchQuery(value);
-              setIsFileSearchOpen(true);
+              openSearch();
               setSelectedResultIndex(0);
             }}
             onClear={() => {
               setFileSearchQuery('');
-              setIsFileSearchOpen(false);
+              closeSearch();
               clearFileSearch();
             }}
-            onFocus={() => setIsFileSearchOpen(true)}
+            onFocus={openSearch}
             placeholder={t('editor:fileTree.searchPlaceholder')}
             className="flex-1"
           />
@@ -705,7 +702,7 @@ export const FileTreePane: React.FC = () => {
             onHover={setSelectedResultIndex}
             visible={isFileSearchOpen && fileSearchQuery.length > 0}
             loading={isFileSearching}
-            onClose={() => setIsFileSearchOpen(false)}
+            onClose={closeSearch}
           />
         )}
       </div>

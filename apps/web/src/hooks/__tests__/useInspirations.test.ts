@@ -461,6 +461,25 @@ describe('useInspirations', () => {
       expect(result.current.isDetailLoading).toBe(false)
     })
 
+    it('keeps a newer detail when an older request resolves later', async () => {
+      let resolveOld!: (value: InspirationDetail) => void
+      vi.mocked(api.inspirationsApi.get)
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve }))
+        .mockResolvedValueOnce(createMockInspirationDetail({ id: 'new-detail', name: 'New detail' }))
+      const { result } = renderHook(() => useInspirations())
+
+      let oldRequest!: Promise<InspirationDetail | null>
+      act(() => { oldRequest = result.current.getDetail('old-detail') })
+      await act(async () => { await result.current.getDetail('new-detail') })
+      expect(result.current.currentDetail?.id).toBe('new-detail')
+
+      await act(async () => {
+        resolveOld(createMockInspirationDetail({ id: 'old-detail', name: 'Old detail' }))
+        await oldRequest
+      })
+      expect(result.current.currentDetail?.id).toBe('new-detail')
+    })
+
     it('resets detail state', async () => {
       const mockDetail = createMockInspirationDetail({ id: 'detail-1' })
       vi.mocked(api.inspirationsApi.get).mockResolvedValue(mockDetail)

@@ -343,6 +343,7 @@ const MobileLayoutContent: React.FC<LayoutProps> = ({ middle, right }) => {
       <div className="h-full relative" {...bind()}>
         {/* Files Panel - always mounted */}
         <div
+          id="files-panel"
           ref={filesPanelRef}
           onScroll={handleScroll('files')}
           className={`absolute inset-x-0 top-0 overflow-auto bg-[hsl(var(--bg-primary))] transition-opacity duration-200 ${
@@ -350,12 +351,16 @@ const MobileLayoutContent: React.FC<LayoutProps> = ({ middle, right }) => {
           }`}
           style={{ bottom: mobilePanelBottomInset }}
           aria-hidden={activePanel !== "files"}
+          aria-labelledby="files-tab"
+          role="tabpanel"
+          inert={activePanel !== "files" ? true : undefined}
         >
           <MobileFileTree />
         </div>
 
         {/* Editor Panel - always mounted */}
         <div
+          id="editor-panel"
           ref={editorPanelRef}
           onScroll={handleScroll('editor')}
           className={`absolute inset-x-0 top-0 overflow-hidden bg-[hsl(var(--bg-primary))] transition-opacity duration-200 ${
@@ -363,12 +368,16 @@ const MobileLayoutContent: React.FC<LayoutProps> = ({ middle, right }) => {
           }`}
           style={{ bottom: mobilePanelBottomInset }}
           aria-hidden={activePanel !== "editor"}
+          aria-labelledby="editor-tab"
+          role="tabpanel"
+          inert={activePanel !== "editor" ? true : undefined}
         >
           {middle}
         </div>
 
         {/* Chat Panel - always mounted */}
         <div
+          id="chat-panel"
           ref={chatPanelRef}
           onScroll={handleScroll('chat')}
           className={`absolute inset-x-0 top-0 overflow-hidden bg-[hsl(var(--bg-primary))] transition-opacity duration-200 ${
@@ -376,6 +385,9 @@ const MobileLayoutContent: React.FC<LayoutProps> = ({ middle, right }) => {
           }`}
           style={{ bottom: mobilePanelBottomInset }}
           aria-hidden={activePanel !== "chat"}
+          aria-labelledby="chat-tab"
+          role="tabpanel"
+          inert={activePanel !== "chat" ? true : undefined}
         >
           {right}
         </div>

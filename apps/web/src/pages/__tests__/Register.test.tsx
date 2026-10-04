@@ -101,7 +101,7 @@ vi.mock("../../lib/toast", () => ({
 
 vi.mock("../../config/auth", () => ({
   authConfig: mockAuthConfig,
-  hasOAuthProviders: () => false,
+  hasOAuthProviders: () => mockAuthConfig.oauthProviders.google.enabled || mockAuthConfig.oauthProviders.apple.enabled,
 }));
 
 import Register from "../Register";
@@ -163,6 +163,16 @@ describe("Register", () => {
 
     expect(screen.getByRole("link", { name: "auth:register.login" })).toHaveAttribute("href", "/login?plan=pro");
     expect(screen.getByText(/auth:register.planIntentTitle/)).toBeInTheDocument();
+  });
+
+  it("passes normalized plan intent through Google registration", async () => {
+    mockAuthConfig.oauthProviders.google.enabled = true;
+    renderWithRoute("/register?plan=PRO&code=abcd1234");
+    await waitFor(() => expect(screen.getByTestId("invite-code-input")).toHaveAttribute("data-value", "ABCD-1234"));
+
+    fireEvent.click(screen.getByRole("button", { name: "auth:register.googleRegister" }));
+
+    expect(mockGoogleLogin).toHaveBeenCalledWith({ inviteCode: "ABCD-1234", planIntent: "pro" });
   });
 
   it("keeps plan intent when navigating to verify-email after success", async () => {
@@ -375,5 +385,19 @@ describe("Register", () => {
         "ABCD-1234",
       );
     });
+  });
+
+  it("keeps malformed email disabled and marks the field invalid", async () => {
+    const user = userEvent.setup();
+    renderWithRoute("/register?code=abcd1234");
+    fireEvent.change(screen.getByLabelText("auth:register.usernameLabel"), { target: { value: "writer" } });
+    fireEvent.change(screen.getByLabelText("auth:register.emailLabel"), { target: { value: "not-an-email" } });
+    fireEvent.change(screen.getByLabelText("auth:register.passwordLabel"), { target: { value: "SecurePass123!" } });
+    fireEvent.change(screen.getByLabelText("auth:register.confirmPasswordLabel"), { target: { value: "SecurePass123!" } });
+    await acceptTerms(user);
+
+    expect(screen.getByLabelText("auth:register.emailLabel")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("button", { name: "auth:register.submit" })).toBeDisabled();
+    expect(mockGetRegistrationPolicy).not.toHaveBeenCalledWith(expect.objectContaining({ email: "not-an-email" }));
   });
 });

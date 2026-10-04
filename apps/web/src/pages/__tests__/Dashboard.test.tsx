@@ -174,6 +174,24 @@ describe('Dashboard user panel and quick switches', () => {
     expect(mockChangeLanguage).toHaveBeenCalledWith('en')
   })
 
+  it('exposes and dismisses the mobile navigation disclosure with focus return', () => {
+    mockIsMobile = true
+    mockIsDesktop = false
+    renderDashboard()
+
+    const trigger = screen.getByRole('button', { name: 'Open mobile menu' })
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(trigger).toHaveAttribute('aria-controls', 'dashboard-mobile-navigation')
+
+    fireEvent.click(trigger)
+    expect(screen.getByRole('button', { name: 'Close mobile menu' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('navigation', { name: 'Mobile navigation' })).toHaveAttribute('id', 'dashboard-mobile-navigation')
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('navigation', { name: 'Mobile navigation' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open mobile menu' })).toHaveFocus()
+  })
+
   it('highlights inspirations nav item for /dashboard/inspirations/* routes', () => {
     renderDashboard(['/dashboard/inspirations/test-inspiration-id'])
 

@@ -14,7 +14,7 @@ Tests endpoints for programmatic access using X-Agent-API-Key authentication:
 """
 
 from datetime import datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient
@@ -708,6 +708,33 @@ async def test_search_success_with_mock(client: AsyncClient, db_session: Session
         assert data["results"][0]["line_start"] == 1
         assert data["results"][0]["fused_score"] == 0.98
         assert data["results"][0]["sources"] == ["semantic", "lexical"]
+
+
+@pytest.mark.integration
+async def test_search_offloads_sync_service_without_request_session(
+    client: AsyncClient, db_session: Session
+):
+    user = create_test_user(db_session, "search_user_thread")
+    project = create_test_project(db_session, user.id)
+    _, plain_key = create_test_api_key(db_session, user.id)
+
+    async def run_inline(function, /, *args, **kwargs):
+        return function(*args, **kwargs)
+
+    with patch("services.llama_index.get_llama_index_service") as mock_factory:
+        mock_factory.return_value.hybrid_search.return_value = []
+        with patch("api.vector_search.asyncio.to_thread", new_callable=AsyncMock) as to_thread:
+            to_thread.side_effect = run_inline
+            response = await client.post(
+                f"/api/v1/agent/projects/{project.id}/search",
+                headers={"X-Agent-API-Key": plain_key},
+                json={"query": "hero"},
+            )
+
+    assert response.status_code == 200
+    to_thread.assert_awaited_once()
+    _, *thread_args = to_thread.await_args.args
+    assert db_session not in thread_args
 
 
 @pytest.mark.integration

@@ -42,7 +42,7 @@ def get_check_in_stats(
     """
     today = utcnow().date()
     yesterday = today - timedelta(days=1)
-    week_ago = today - timedelta(days=7)
+    week_ago = today - timedelta(days=6)
 
     # Today's check-ins
     today_count = session.exec(

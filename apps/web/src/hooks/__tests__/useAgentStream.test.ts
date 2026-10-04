@@ -839,6 +839,20 @@ describe('useAgentStream', () => {
       expect(result.current.isStreaming).toBe(false)
     })
 
+    it('retains retryable from the current error and resets it for the next stream', () => {
+      const { result } = renderHook(() => useAgentStream('test-project-id'))
+      const controller = createMockStreamController()
+
+      act(() => result.current.startStream({ message: 'first' }))
+      act(() => controller.getCallbacks()!.onError?.('temporary', 'TEMP', true))
+      expect(result.current.retryable).toBe(true)
+      act(() => vi.advanceTimersByTime(3000))
+      expect(result.current.error).toBe('temporary')
+
+      act(() => result.current.startStream({ message: 'second' }))
+      expect(result.current.retryable).toBe(false)
+    })
+
     it('calls onError callback', () => {
       const onError = vi.fn()
       const { result } = renderHook(() =>

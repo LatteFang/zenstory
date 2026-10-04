@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
 from sqlmodel import Session
 
+from api.persona import _build_recommendations
 from config.datetime_utils import utcnow
 from models import User
 from services.core.auth_service import hash_password
@@ -48,6 +48,22 @@ async def _login(client: AsyncClient, username: str, password: str = "password12
 
 def _auth_headers(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
+
+
+def test_explorer_recommendation_respects_inspirations_flag(monkeypatch):
+    monkeypatch.delenv("INSPIRATIONS_ENABLED", raising=False)
+    disabled = _build_recommendations(
+        selected_personas=["explorer"], selected_goals=[], experience_level="intermediate"
+    )
+    assert all(item.action != "/dashboard/inspirations" for item in disabled)
+
+    monkeypatch.setenv("INSPIRATIONS_ENABLED", "true")
+    enabled = _build_recommendations(
+        selected_personas=["explorer"], selected_goals=[], experience_level="intermediate"
+    )
+    assert [(item.id, item.action) for item in enabled] == [
+        ("persona_explorer_template", "/dashboard/inspirations")
+    ]
 
 
 @pytest.mark.integration
@@ -113,6 +129,112 @@ async def test_persona_onboarding_can_be_saved_and_returns_recommendations(
     assert recommendations_response.status_code == 200
     recommendations = recommendations_response.json()["recommendations"]
     assert len(recommendations) >= 1
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    ("field", "invalid_value"),
+    [
+        ("selected_personas", "unknown-persona"),
+        ("selected_goals", "unknown-goal"),
+    ],
+)
+async def test_persona_onboarding_rejects_unknown_choice_ids(
+    client: AsyncClient,
+    db_session: Session,
+    field: str,
+    invalid_value: str,
+):
+    await _create_user(
+        db_session,
+        username=f"persona_invalid_{field}",
+        email=f"persona_invalid_{field}@example.com",
+        created_at=utcnow(),
+    )
+    token = await _login(client, f"persona_invalid_{field}")
+    payload = {
+        "selected_personas": ["serial"],
+        "selected_goals": ["finishBook"],
+        "experience_level": "beginner",
+        "skipped": False,
+    }
+    payload[field] = [invalid_value]
+
+    response = await client.put(
+        "/api/v1/persona/onboarding",
+        headers=_auth_headers(token),
+        json=payload,
+    )
+
+    assert response.status_code == 400
+
+
+@pytest.mark.integration
+async def test_persona_onboarding_requires_a_persona_unless_skipped(
+    client: AsyncClient,
+    db_session: Session,
+):
+    await _create_user(
+        db_session,
+        username="persona_empty_user",
+        email="persona_empty_user@example.com",
+        created_at=utcnow(),
+    )
+    token = await _login(client, "persona_empty_user")
+    payload = {
+        "selected_personas": [],
+        "selected_goals": ["finishBook"],
+        "experience_level": "beginner",
+        "skipped": False,
+    }
+
+    response = await client.put(
+        "/api/v1/persona/onboarding",
+        headers=_auth_headers(token),
+        json=payload,
+    )
+    assert response.status_code == 400
+
+    payload["skipped"] = True
+    skipped_response = await client.put(
+        "/api/v1/persona/onboarding",
+        headers=_auth_headers(token),
+        json=payload,
+    )
+    assert skipped_response.status_code == 200
+    assert skipped_response.json()["profile"]["selected_personas"] == []
+    assert skipped_response.json()["profile"]["selected_goals"] == []
+
+
+@pytest.mark.integration
+async def test_persona_onboarding_preserves_valid_deduplicated_choices(
+    client: AsyncClient,
+    db_session: Session,
+):
+    await _create_user(
+        db_session,
+        username="persona_dedup_user",
+        email="persona_dedup_user@example.com",
+        created_at=utcnow(),
+    )
+    token = await _login(client, "persona_dedup_user")
+
+    response = await client.put(
+        "/api/v1/persona/onboarding",
+        headers=_auth_headers(token),
+        json={
+            "selected_personas": ["serial", "serial", "professional"],
+            "selected_goals": ["finishBook", "finishBook", "monetize"],
+            "experience_level": "advanced",
+            "skipped": False,
+        },
+    )
+
+    assert response.status_code == 200
+    profile = response.json()["profile"]
+    assert profile["selected_personas"] == ["serial", "professional"]
+    assert profile["selected_goals"] == ["finishBook", "monetize"]
+    assert profile["experience_level"] == "advanced"
 
 
 @pytest.mark.integration

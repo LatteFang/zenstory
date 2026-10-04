@@ -268,9 +268,13 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
       longPressTimerRef.current = null;
     }
     
-    // 如果是长按并且正在录音，停止录音
-    if (isLongPressRef.current && isRecording) {
-      stopRecording();
+    // Permission may still be pending after the finger is released.
+    if (isLongPressRef.current) {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        cancelRecording();
+      }
     }
     
     isLongPressRef.current = false;
@@ -283,7 +287,7 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
       longPressTimerRef.current = null;
     }
     
-    if (isLongPressRef.current && isRecording) {
+    if (isLongPressRef.current) {
       cancelRecording();
       toast.info(t('chat:voice.cancelled'));
     }

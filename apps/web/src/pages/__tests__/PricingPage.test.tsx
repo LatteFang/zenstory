@@ -199,6 +199,9 @@ describe("PricingPage", () => {
 
     expect(monthlyControl).not.toBeNull();
     expect(yearlyControl).not.toBeNull();
+    expect(monthlyControl).toHaveAttribute("role", "radio");
+    expect(monthlyControl).toHaveAttribute("aria-checked", "true");
+    expect(yearlyControl).toHaveAttribute("aria-checked", "false");
 
     if (yearlyControl) {
       fireEvent.click(yearlyControl);
@@ -207,6 +210,7 @@ describe("PricingPage", () => {
     await waitFor(() => {
       expect(screen.getByText(/¥399\/年|¥399\/year/i)).toBeInTheDocument();
       expect(screen.getByText(/省|节省|save/i)).toBeInTheDocument();
+      expect(yearlyControl).toHaveAttribute("aria-checked", "true");
     });
   });
 

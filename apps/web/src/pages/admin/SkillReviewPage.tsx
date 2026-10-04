@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { LazyMarkdown } from "../../components/LazyMarkdown";
 import { Check, X, Zap, ChevronDown, ChevronUp, AlertTriangle, RefreshCw } from "lucide-react";
-import { AdminPageState } from "../../components/admin";
-import { adminApi, type PendingSkill } from "../../lib/adminApi";
+import { AdminPageState, AdminSelect } from "../../components/admin";
+import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
+import { adminApi, type PendingSkill, type SkillReviewStatus } from "../../lib/adminApi";
 import { getLocaleCode } from "../../lib/i18n-helpers";
 import { logger } from "../../lib/logger";
 
@@ -15,6 +16,9 @@ export default function SkillReviewPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<SkillReviewStatus>("pending");
+  const [decisionError, setDecisionError] = useState<string | null>(null);
 
   const loadPendingSkills = useCallback(async (showLoadingIndicator = true) => {
     setLoadError(null);
@@ -22,7 +26,7 @@ export default function SkillReviewPage() {
       if (showLoadingIndicator) {
         setLoading(true);
       }
-      const data = await adminApi.getPendingSkills();
+      const data = await adminApi.getPendingSkills(statusFilter);
       setSkills(Array.isArray(data) ? data : []);
     } catch (error) {
       logger.error("Failed to load pending skills:", error);
@@ -33,7 +37,7 @@ export default function SkillReviewPage() {
         setLoading(false);
       }
     }
-  }, [t]);
+  }, [statusFilter, t]);
 
   useEffect(() => {
     void loadPendingSkills();
@@ -42,20 +46,26 @@ export default function SkillReviewPage() {
   const handleApprove = async (skillId: string) => {
     try {
       setProcessingId(skillId);
+      setDecisionError(null);
       await adminApi.approveSkill(skillId);
       setSkills((prev) => prev.filter((s) => s.id !== skillId));
       // Refresh without loading indicator to avoid flashing
       await loadPendingSkills(false);
     } catch (error) {
       logger.error("Failed to approve skill:", error);
+      setDecisionError(error instanceof Error && error.message
+        ? error.message
+        : t("admin:skills.decisionFailed", "审核操作失败，请重试"));
     } finally {
       setProcessingId(null);
+      setApprovingId(null);
     }
   };
 
   const handleReject = async (skillId: string) => {
     try {
       setProcessingId(skillId);
+      setDecisionError(null);
       await adminApi.rejectSkill(skillId, rejectReason || undefined);
       setSkills((prev) => prev.filter((s) => s.id !== skillId));
       setRejectingId(null);
@@ -64,6 +74,9 @@ export default function SkillReviewPage() {
       await loadPendingSkills(false);
     } catch (error) {
       logger.error("Failed to reject skill:", error);
+      setDecisionError(error instanceof Error && error.message
+        ? error.message
+        : t("admin:skills.decisionFailed", "审核操作失败，请重试"));
     } finally {
       setProcessingId(null);
     }
@@ -71,6 +84,7 @@ export default function SkillReviewPage() {
 
   const hasBlockingError = Boolean(loadError) && skills.length === 0;
   const displayError = loadError ?? t("admin:dashboard.loadError", "加载失败，请稍后重试");
+  const approvingSkill = skills.find((skill) => skill.id === approvingId);
 
   return (
     <div className="admin-page">
@@ -82,6 +96,22 @@ export default function SkillReviewPage() {
           {t("admin:skills.description", "审核社区提交的技能")}
         </p>
       </div>
+
+      <AdminSelect
+        value={statusFilter}
+        onChange={(event) => setStatusFilter(event.target.value as SkillReviewStatus)}
+        aria-label={t("admin:skills.statusFilter", "审核状态")}
+      >
+        <option value="pending">{t("admin:skills.pending", "待审核")}</option>
+        <option value="approved">{t("admin:skills.approved", "已批准")}</option>
+        <option value="rejected">{t("admin:skills.rejected", "已拒绝")}</option>
+      </AdminSelect>
+
+      {decisionError && (
+        <div role="alert" className="rounded-lg border border-[hsl(var(--error)/0.3)] bg-[hsl(var(--error)/0.08)] p-4 text-sm text-[hsl(var(--error))]">
+          {decisionError}
+        </div>
+      )}
 
       {loadError && skills.length > 0 && (
         <div className="mb-4 rounded-lg border border-[hsl(var(--error)/0.3)] bg-[hsl(var(--error)/0.08)] p-4 text-sm">
@@ -110,7 +140,9 @@ export default function SkillReviewPage() {
         isEmpty={skills.length === 0}
         loadingText={t("common:loading")}
         errorText={displayError}
-        emptyText={t("admin:skills.noPending", "没有待审核的技能")}
+        emptyText={statusFilter === "pending"
+          ? t("admin:skills.noPending", "没有待审核的技能")
+          : t("admin:skills.noHistory", "没有符合条件的审核记录")}
         retryText={t("common:retry")}
         onRetry={() => {
           void loadPendingSkills(true);
@@ -121,7 +153,7 @@ export default function SkillReviewPage() {
             <SkillReviewCard
               key={skill.id}
               skill={skill}
-              onApprove={() => handleApprove(skill.id)}
+              onApprove={() => setApprovingId(skill.id)}
               onReject={() => setRejectingId(skill.id)}
               processing={processingId === skill.id}
             />
@@ -142,6 +174,20 @@ export default function SkillReviewPage() {
           processing={processingId === rejectingId}
         />
       )}
+
+      <ConfirmDialog
+        open={Boolean(approvingId)}
+        onClose={() => setApprovingId(null)}
+        onConfirm={() => approvingId ? handleApprove(approvingId) : undefined}
+        title={t("admin:skills.approveTitle", "批准技能")}
+        message={`${approvingSkill?.name ?? ""}: ${t(
+          "admin:skills.approveConfirmation",
+          "批准后该技能将公开可用。确认继续吗？",
+        )}`}
+        confirmLabel={t("admin:skills.confirmApprove", "确认批准")}
+        cancelLabel={t("common:cancel")}
+        loading={Boolean(approvingId && processingId === approvingId)}
+      />
     </div>
   );
 }
@@ -193,26 +239,30 @@ function SkillReviewCard({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={onApprove}
-            disabled={processing}
-            className="p-2 rounded-lg bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))] hover:bg-[hsl(var(--success)/0.2)] transition-colors disabled:opacity-50"
-            title={t("admin:skills.approve", "批准")}
-          >
-            {processing ? (
-              <div className="w-5 h-5 animate-spin rounded-full border-2 border-[hsl(var(--success))] border-t-transparent" />
-            ) : (
-              <Check className="w-5 h-5" />
-            )}
-          </button>
-          <button
-            onClick={onReject}
-            disabled={processing}
-            className="p-2 rounded-lg bg-[hsl(var(--error)/0.1)] text-[hsl(var(--error))] hover:bg-[hsl(var(--error)/0.2)] transition-colors disabled:opacity-50"
-            title={t("admin:skills.reject", "拒绝")}
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {skill.status === "pending" && (
+            <>
+              <button
+                onClick={onApprove}
+                disabled={processing}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))] hover:bg-[hsl(var(--success)/0.2)] transition-colors disabled:opacity-50"
+              >
+                {processing ? (
+                  <div className="w-5 h-5 animate-spin rounded-full border-2 border-[hsl(var(--success))] border-t-transparent" />
+                ) : (
+                  <Check className="w-5 h-5" />
+                )}
+                {t("admin:skills.approve", "批准")}
+              </button>
+              <button
+                onClick={onReject}
+                disabled={processing}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[hsl(var(--error)/0.1)] text-[hsl(var(--error))] hover:bg-[hsl(var(--error)/0.2)] transition-colors disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+                {t("admin:skills.reject", "拒绝")}
+              </button>
+            </>
+          )}
           <button
             onClick={() => setExpanded(!expanded)}
             className="p-2 rounded-lg text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-tertiary))] transition-colors"
@@ -221,6 +271,17 @@ function SkillReviewCard({
           </button>
         </div>
       </div>
+
+      {skill.status !== "pending" && (
+        <div className="mt-3 rounded-lg bg-[hsl(var(--bg-tertiary))] p-3 text-xs text-[hsl(var(--text-secondary))]">
+          <p>{t("admin:skills.status", "状态")}: {skill.status}</p>
+          <p>{t("admin:skills.reviewedBy", "审核人")}: {skill.reviewer_name || skill.reviewed_by || "-"}</p>
+          <p>{t("admin:skills.reviewedAt", "审核时间")}: {skill.reviewed_at ? new Date(skill.reviewed_at).toLocaleString(getLocaleCode()) : "-"}</p>
+          {skill.rejection_reason && (
+            <p>{t("admin:skills.rejectReason", "拒绝原因")}: {skill.rejection_reason}</p>
+          )}
+        </div>
+      )}
 
       {expanded && (
         <div className="mt-4 pt-4 border-t border-[hsl(var(--border-color))]">

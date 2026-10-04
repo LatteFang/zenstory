@@ -17,7 +17,7 @@ import json
 import pytest
 from httpx import AsyncClient
 
-from models import Project, PublicSkill, User, UserAddedSkill, UserSkill
+from models import Project, PublicSkill, SkillResource, User, UserAddedSkill, UserSkill
 
 
 async def create_user_and_login(client: AsyncClient, db_session, username: str, email: str):
@@ -716,6 +716,73 @@ async def test_share_skill_success(client: AsyncClient, db_session):
     db_session.refresh(skill)
     assert skill.is_shared is True
     assert skill.shared_skill_id == data["public_skill_id"]
+
+
+@pytest.mark.integration
+async def test_share_skill_rolls_back_public_copy_when_user_link_staging_fails(
+    client: AsyncClient, db_session, monkeypatch
+):
+    setup = await create_user_and_login(
+        client, db_session, "skillshareatomic", "skillshareatomic@example.com"
+    )
+    user = setup["user"]
+    token = setup["token"]
+    skill = UserSkill(
+        user_id=user.id,
+        name="Atomic share",
+        triggers="[]",
+        instructions="Atomic instructions",
+    )
+    db_session.add(skill)
+    db_session.commit()
+    db_session.add(
+        SkillResource(
+            user_skill_id=skill.id,
+            path="references/atomic.md",
+            content="atomic",
+            size=6,
+        )
+    )
+    db_session.commit()
+
+    session_type = type(db_session)
+    original_add = session_type.add
+
+    def fail_when_link_is_staged(session, instance, *args, **kwargs):
+        if isinstance(instance, UserSkill) and instance.id == skill.id and instance.is_shared:
+            raise RuntimeError("injected user-skill link failure")
+        return original_add(session, instance, *args, **kwargs)
+
+    monkeypatch.setattr(session_type, "add", fail_when_link_is_staged)
+    with pytest.raises(RuntimeError, match="injected user-skill link failure"):
+        await client.post(
+            f"/api/v1/skills/{skill.id}/share",
+            json={"category": "writing"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    db_session.rollback()
+    assert db_session.query(PublicSkill).filter(PublicSkill.author_id == user.id).count() == 0
+    assert db_session.query(SkillResource).filter(SkillResource.public_skill_id.is_not(None)).count() == 0
+    db_session.refresh(skill)
+    assert skill.is_shared is False
+    assert skill.shared_skill_id is None
+
+    monkeypatch.undo()
+    retry = await client.post(
+        f"/api/v1/skills/{skill.id}/share",
+        json={"category": "writing"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert retry.status_code == 200
+    public_skill_id = retry.json()["public_skill_id"]
+    assert db_session.query(PublicSkill).filter(PublicSkill.author_id == user.id).count() == 1
+    assert (
+        db_session.query(SkillResource)
+        .filter(SkillResource.public_skill_id == public_skill_id)
+        .count()
+        == 1
+    )
 
 
 @pytest.mark.integration

@@ -231,9 +231,7 @@ export const AuditLogPage: React.FC = () => {
   });
 
   const logs = data?.items ?? [];
-  // Backend doesn't return total, so we can't calculate exact pages
-  // If we get less than pageSize, we've reached the end
-  const hasMore = logs.length === pageSize;
+  const hasMore = page * pageSize < (data?.total ?? 0);
   const queryErrorText = error instanceof Error && error.message
     ? error.message
     : t("common:error");
@@ -447,7 +445,7 @@ export const AuditLogPage: React.FC = () => {
           </span>
           <button
             onClick={() => setPage((p) => p + 1)}
-            disabled={!hasMore}
+            disabled={!hasMore || isFetching || isError}
             className="px-4 py-2.5 min-h-11 bg-[hsl(var(--bg-secondary))] border border-[hsl(var(--separator-color))] rounded-lg hover:bg-[hsl(var(--bg-tertiary))] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
           >
             {t("common:next")}

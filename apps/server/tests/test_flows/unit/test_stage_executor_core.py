@@ -39,6 +39,164 @@ class _FakeCheckpointManager:
 
 
 class TestStageExecutorCore:
+    def test_meta_failure_payloads_never_expose_raw_exception(self, monkeypatch):
+        monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
+        monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_META_EXTRACTION", True)
+        cp = _FakeCheckpointManager()
+        executor = se_mod.StageExecutor(1, [1], cp, None)
+        raw_error = "SQL password=private-token provider-secret"
+
+        class _FailedFuture:
+            def result(self):
+                raise RuntimeError(raw_error)
+
+        monkeypatch.setattr(executor, "_handle_meta_extraction", lambda **_kwargs: _FailedFuture())
+        chapter_module = SimpleNamespace(
+            chapter_extraction_flow=lambda **_kwargs: {
+                "summaries_count": 1,
+                "failed_count": 0,
+                "status": "completed",
+            }
+        )
+        monkeypatch.setitem(
+            __import__("sys").modules,
+            "flows.pipelines.subflows.chapter_extraction_flow",
+            chapter_module,
+        )
+        job_payloads = []
+        monkeypatch.setattr(
+            executor,
+            "_sync_job_stage",
+            lambda *_args, **kwargs: job_payloads.append(kwargs.get("payload")),
+        )
+
+        stage1 = executor.execute_stage1()
+        result = se_mod.ResultBuilder.build_final_result(
+            novel_id=1,
+            job_id=None,
+            chapter_ids=[1],
+            stage1_result=stage1,
+            story_result={},
+            relationship_result={},
+            character_entity_result={},
+            status="completed_with_errors",
+            elapsed_ms=0,
+        )
+        executor._save_final_checkpoint(stage1, {}, {}, {})
+        executor.publisher.publish_completion(1, [1], result)
+        serialized = json.dumps(
+            {
+                "stage1": stage1,
+                "checkpoint": cp.completed_calls,
+                "job": job_payloads,
+                "completion": executor.publisher.completions,
+            }
+        )
+
+        assert raw_error not in serialized
+        assert stage1["meta_extraction"]["error"] == "Metadata extraction failed"
+        assert stage1["meta_extraction"]["error_code"] == "ERR_MATERIAL_META_EXTRACTION_FAILED"
+
+    def test_meta_persistence_checkpoint_uses_sanitized_error(self, monkeypatch):
+        monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
+        monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
+        executor = se_mod.StageExecutor(1, [1], _FakeCheckpointManager(), None)
+        raw_error = "SQL password=private-token provider-secret"
+
+        class _SessionContext:
+            def __enter__(self):
+                return SimpleNamespace(
+                    exec=lambda _statement: SimpleNamespace(
+                        first=lambda: (_ for _ in ()).throw(RuntimeError(raw_error))
+                    )
+                )
+
+            def __exit__(self, *_args):
+                return False
+
+        monkeypatch.setattr(se_mod, "get_prefect_db_session", _SessionContext)
+
+        assert executor._save_meta_result({}) is False
+        payload = executor.checkpoint_manager.update_calls[-1][2]
+        assert raw_error not in json.dumps(payload)
+        assert payload == {
+            "meta_extracted": False,
+            "meta_error": "Metadata extraction failed",
+            "meta_error_code": "ERR_MATERIAL_META_EXTRACTION_FAILED",
+        }
+
+    @pytest.mark.parametrize("failure_point", ["provider", "persistence"])
+    def test_meta_failure_is_explicit_and_makes_final_status_retryable(
+        self, monkeypatch, failure_point
+    ):
+        monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
+        monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_META_EXTRACTION", True)
+        cp = _FakeCheckpointManager()
+        executor = se_mod.StageExecutor(1, [1], cp, None)
+
+        if failure_point == "provider":
+            class _FailedFuture:
+                def result(self):
+                    raise RuntimeError("provider unavailable")
+
+            monkeypatch.setattr(executor, "_handle_meta_extraction", lambda **_kwargs: _FailedFuture())
+        else:
+            class _SuccessfulFuture:
+                def result(self):
+                    return {"golden_fingers": [], "worldview": {}}
+
+            monkeypatch.setattr(executor, "_handle_meta_extraction", lambda **_kwargs: _SuccessfulFuture())
+            monkeypatch.setattr(executor, "_save_meta_result", lambda _result: False)
+
+        chapter_module = SimpleNamespace(
+            chapter_extraction_flow=lambda **_kwargs: {
+                "summaries_count": 1,
+                "plots_count": 0,
+                "failed_count": 0,
+                "status": "completed",
+            }
+        )
+        monkeypatch.setitem(
+            __import__("sys").modules,
+            "flows.pipelines.subflows.chapter_extraction_flow",
+            chapter_module,
+        )
+        monkeypatch.setattr(executor, "_sync_job_stage", lambda *_args, **_kwargs: None)
+
+        stage1 = executor.execute_stage1()
+
+        assert stage1["meta_extraction"]["executed"] is True
+        assert stage1["meta_extraction"]["succeeded"] is False
+        assert stage1["meta_extraction"]["error"]
+        assert stage1["meta_extraction"]["retry_available"] is True
+        assert executor._derive_final_status(stage1, {}, {}, {}) == "completed_with_errors"
+
+    def test_valid_empty_meta_result_is_success(self, monkeypatch):
+        monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
+        monkeypatch.setattr(se_mod, "ProgressPublisher", _DummyPublisher)
+        monkeypatch.setattr(se_mod.settings, "ENABLE_META_EXTRACTION", True)
+        executor = se_mod.StageExecutor(1, [1], _FakeCheckpointManager(), None)
+        executor._meta_extraction = {
+            "executed": True,
+            "succeeded": None,
+            "error": None,
+            "error_code": None,
+            "retry_available": False,
+        }
+        monkeypatch.setattr(executor, "_save_meta_result", lambda _result: True)
+
+        executor._complete_meta_extraction({})
+
+        assert executor._meta_extraction == {
+            "executed": True,
+            "succeeded": True,
+            "error": None,
+            "error_code": None,
+            "retry_available": False,
+        }
+
     def test_execute_stage2_publishes_real_partial_completion_payload(self, monkeypatch):
         monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
         fake_client = MagicMock()
@@ -86,6 +244,13 @@ class TestStageExecutorCore:
                 "plots_count": 4,
                 "failed_count": 1,
                 "failed_chapters": [2],
+                "meta_extraction": {
+                    "executed": True,
+                    "succeeded": False,
+                    "error": "Metadata extraction failed",
+                    "error_code": "ERR_MATERIAL_META_EXTRACTION_FAILED",
+                    "retry_available": True,
+                },
             }
         )
 
@@ -99,6 +264,13 @@ class TestStageExecutorCore:
         assert payload["summaries_count"] == 2
         assert payload["relationships_count"] == 5
         assert payload["novel_summary"] == {"id": 7, "chapters_count": 2}
+        assert result["meta_extraction"] == {
+            "executed": True,
+            "succeeded": False,
+            "error": "Metadata extraction failed",
+            "error_code": "ERR_MATERIAL_META_EXTRACTION_FAILED",
+            "retry_available": True,
+        }
 
     def test_parse_cp_data_handles_variants(self):
         assert se_mod._parse_cp_data(None) == {}
@@ -482,6 +654,13 @@ class TestStageExecutorCore:
                 "failed_count": 2,
                 "failed_chapters": [1],
                 "failed_mention_chapters": [2],
+                "meta_extraction": {
+                    "executed": True,
+                    "succeeded": False,
+                    "error": "Metadata extraction failed",
+                    "error_code": "ERR_MATERIAL_META_EXTRACTION_FAILED",
+                    "retry_available": True,
+                },
             },
             {"failed_stories": ["story-1"]},
             {"neo4j_failed_chapters": [3]},
@@ -491,3 +670,6 @@ class TestStageExecutorCore:
         assert captured["job_id"] == 42
         assert captured["kwargs"]["status"] == "completed_with_errors"
         assert captured["kwargs"]["processed_chapters"] == 2
+        assert captured["kwargs"]["stage_data"]["meta_extraction"]["error_code"] == (
+            "ERR_MATERIAL_META_EXTRACTION_FAILED"
+        )

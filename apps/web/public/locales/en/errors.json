@@ -9,6 +9,7 @@
   "ERR_AUTH_INVALID_CREDENTIALS": "Invalid username or password",
   "ERR_AUTH_TOKEN_EXPIRED": "Session expired, please login again",
   "ERR_AUTH_TOKEN_INVALID": "Invalid session, please login again",
+  "ERR_AUTH_SCOPE_DENIED": "API key lacks the required permission",
   "ERR_AUTH_INACTIVE_USER": "Account has been disabled",
   "ERR_AUTH_USERNAME_EXISTS": "Username already registered",
   "ERR_AUTH_EMAIL_EXISTS": "Email already registered",

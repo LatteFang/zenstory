@@ -555,7 +555,6 @@ async def share_skill(
             user_skill.shared_skill_id = None
             user_skill.updated_at = utcnow()
             session.add(user_skill)
-            session.commit()
         else:
             return ShareSkillResponse(
                 success=False,
@@ -579,18 +578,23 @@ async def share_skill(
         author_id=current_user.id,
         status="pending",
     )
-    session.add(public_skill)
-    session.flush()
-    skill_package_service.copy_resources_to_public_skill(session, user_skill.id, public_skill.id)
-    session.commit()
-    session.refresh(public_skill)
+    try:
+        session.add(public_skill)
+        session.flush()
+        skill_package_service.copy_resources_to_public_skill(
+            session, user_skill.id, public_skill.id
+        )
 
-    # Update user skill
-    user_skill.is_shared = True
-    user_skill.shared_skill_id = public_skill.id
-    user_skill.updated_at = utcnow()
-    session.add(user_skill)
-    session.commit()
+        # Stage the source-skill link in the same transaction as the public copy.
+        user_skill.is_shared = True
+        user_skill.shared_skill_id = public_skill.id
+        user_skill.updated_at = utcnow()
+        session.add(user_skill)
+        session.commit()
+        session.refresh(public_skill)
+    except Exception:
+        session.rollback()
+        raise
 
     log_with_context(
         logger, 20, "Skill shared",

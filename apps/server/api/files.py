@@ -1233,6 +1233,9 @@ def reorder_files(
     if not request.ordered_ids:
         return {"message": "No files to reorder"}
 
+    if len(set(request.ordered_ids)) != len(request.ordered_ids):
+        raise APIException(error_code=ErrorCode.VALIDATION_ERROR, status_code=400)
+
     # Get all files and validate
     files_to_update = []
     parent_id = None
@@ -1252,7 +1255,7 @@ def reorder_files(
             )
 
         # All files should have the same parent
-        if parent_id is None:
+        if not files_to_update:
             parent_id = file.parent_id
         elif file.parent_id != parent_id:
             raise APIException(
@@ -1573,9 +1576,11 @@ async def upload_drafts(
 
     # 3. Resolve target folder
     if parent_id:
+        try:
+            validate_parent_assignment(session, project_id, parent_id)
+        except ValueError:
+            raise APIException(error_code=ErrorCode.VALIDATION_ERROR, status_code=400) from None
         target_folder = session.get(File, parent_id)
-        if not target_folder or target_folder.project_id != project_id or target_folder.file_type != "folder":
-            raise APIException(error_code=ErrorCode.VALIDATION_ERROR, status_code=400)
     else:
         target_folder = _ensure_draft_folder(session, project_id)
 
@@ -1695,6 +1700,7 @@ async def upload_drafts(
                 background_tasks.add_task(
                     schedule_index_upsert,
                     project_id=project_id,
+                    user_id=current_user.id,
                     entity_type=f.file_type,
                     entity_id=f.id,
                     content=f.content,

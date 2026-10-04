@@ -9,6 +9,7 @@ import type { PointsBalance } from '../../types/points'
 vi.mock('../../lib/pointsApi', () => ({
   pointsApi: {
     getBalance: vi.fn(),
+    getConfig: vi.fn(),
     redeemForPro: vi.fn(),
   },
 }))
@@ -53,7 +54,50 @@ describe('RedeemProModal', () => {
   const mockOnClose = vi.fn()
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
+    mockPointsApi.getConfig.mockResolvedValue({check_in:5,check_in_streak:20,referral:50,skill_contribution:50,inspiration_contribution:50,profile_complete:20,pro_7days_cost:100,streak_bonus_threshold:7})
+  })
+
+  it('uses the configured base cost and disables options above the real balance', async () => {
+    mockPointsApi.getConfig.mockResolvedValue({check_in:5,check_in_streak:20,referral:50,skill_contribution:50,inspiration_contribution:50,profile_complete:20,pro_7days_cost:250,streak_bonus_threshold:7})
+    mockPointsApi.getBalance.mockResolvedValue({available:400,pending_expiration:0,nearest_expiration_date:null})
+    render(<RedeemProModal isOpen onClose={mockOnClose} />, {wrapper:createWrapper()})
+    expect(await screen.findByText('250 积分')).toBeInTheDocument()
+    expect(screen.getByRole('button',{name:/7 天 250 积分/})).toBeEnabled()
+    expect(screen.getByRole('button',{name:/14 天 500 积分/})).toBeDisabled()
+  })
+
+  it('shows a config failure and retries without inventing default prices', async () => {
+    mockPointsApi.getConfig.mockRejectedValueOnce(new Error('Pricing unavailable')).mockResolvedValue({check_in:5,check_in_streak:20,referral:50,skill_contribution:50,inspiration_contribution:50,profile_complete:20,pro_7days_cost:100,streak_bonus_threshold:7})
+    mockPointsApi.getBalance.mockResolvedValue({available:400,pending_expiration:0,nearest_expiration_date:null})
+    render(<RedeemProModal isOpen onClose={mockOnClose} />, {wrapper:createWrapper()})
+    expect(await screen.findByRole('alert')).toHaveTextContent('Pricing unavailable')
+    expect(screen.queryByText('100 积分')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button',{name:'重试'}))
+    expect(await screen.findByText('100 积分')).toBeInTheDocument()
+  })
+
+  it('does not present a balance load failure as a zero balance', async () => {
+    mockPointsApi.getBalance.mockRejectedValue(new Error('Balance unavailable'))
+    render(<RedeemProModal isOpen onClose={mockOnClose} />, {wrapper:createWrapper()})
+    expect(await screen.findByRole('alert')).toHaveTextContent('Balance unavailable')
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+    expect(screen.getByRole('button',{name:'兑换'})).toBeDisabled()
+  })
+
+  it('blocks every close path while redemption is in flight', async () => {
+    mockPointsApi.getBalance.mockResolvedValue({available:400,pending_expiration:0,nearest_expiration_date:null})
+    mockPointsApi.redeemForPro.mockReturnValue(new Promise(()=>{}))
+    render(<RedeemProModal isOpen onClose={mockOnClose} />, {wrapper:createWrapper()})
+    const redeem=await screen.findByRole('button',{name:'兑换'})
+    await waitFor(()=>expect(redeem).toBeEnabled())
+    fireEvent.click(redeem)
+    await screen.findByRole('button',{name:'处理中...'})
+    fireEvent.click(screen.getByRole('button',{name:'取消'}))
+    fireEvent.click(document.querySelector('[role="presentation"]')!)
+    fireEvent.keyDown(document,{key:'Escape'})
+    expect(screen.queryByRole('button',{name:'Close modal'})).not.toBeInTheDocument()
+    expect(mockOnClose).not.toHaveBeenCalled()
   })
 
   describe('Open/Close Behavior', () => {
@@ -805,7 +849,9 @@ describe('RedeemProModal', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('0')).toBeInTheDocument()
+        expect(screen.getByRole('alert')).toHaveTextContent('无法加载积分余额')
+        expect(screen.queryByText('0')).not.toBeInTheDocument()
+        expect(screen.getByRole('button', {name:'兑换'})).toBeDisabled()
       })
     })
 
@@ -817,7 +863,9 @@ describe('RedeemProModal', () => {
       })
 
       await waitFor(() => {
-        expect(screen.getByText('0')).toBeInTheDocument()
+        expect(screen.getByRole('alert')).toHaveTextContent('无法加载积分余额')
+        expect(screen.queryByText('0')).not.toBeInTheDocument()
+        expect(screen.getByRole('button', {name:'兑换'})).toBeDisabled()
       })
     })
 

@@ -56,7 +56,65 @@ describe('AgentApiKeysPanel', () => {
     apiBaseMock.mockReturnValue('https://api.zenstory.ai')
   })
 
-  it('shows the CLI connect guide when the user has no keys', async () => {
+  it('does not submit when all permission scopes are deselected', async () => {
+    listMock.mockResolvedValue({ keys: [] })
+    renderPanel(<AgentApiKeysPanel />)
+    fireEvent.click(await screen.findByText('apiKeys.create'))
+    const name = screen.getByPlaceholderText('apiKeys.form.namePlaceholder')
+    fireEvent.change(name, { target: { value: 'No permissions' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'settings:apiKeys.permissions.read' }))
+    expect(screen.getByRole('button', { name: 'apiKeys.create' })).toBeDisabled()
+    fireEvent.submit(name.closest('form')!)
+    expect(createMock).not.toHaveBeenCalled()
+  })
+
+  it('shows list errors and supports retry instead of claiming there are no keys', async () => {
+    listMock.mockRejectedValueOnce(new Error('Key list unavailable')).mockResolvedValue({ keys: [makeKey()] })
+    renderPanel(<AgentApiKeysPanel />)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Key list unavailable')
+    expect(screen.queryByText('apiKeys.noKeys')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(await screen.findByText('My key')).toBeInTheDocument()
+  })
+
+  it('surfaces failed creation while preserving the entered form', async () => {
+    listMock.mockResolvedValue({ keys: [] })
+    createMock.mockRejectedValue(new Error('Key creation failed'))
+    renderPanel(<AgentApiKeysPanel />)
+    fireEvent.click(await screen.findByText('apiKeys.create'))
+    const name = screen.getByPlaceholderText('apiKeys.form.namePlaceholder')
+    fireEvent.change(name, { target: { value: 'Retryable form' } })
+    fireEvent.submit(name.closest('form')!)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Key creation failed')
+    expect(name).toHaveValue('Retryable form')
+  })
+
+  it('does not offer a misleading credential check for an expired stored key', async () => {
+    listMock.mockResolvedValue({ keys: [{ ...makeKey(), expires_at: '2025-01-01T00:00:00Z' }] })
+    renderPanel(<AgentApiKeysPanel />)
+    await screen.findByText('My key')
+    expect(screen.queryByTitle('apiKeys.testConnection')).not.toBeInTheDocument()
+    expect(screen.queryByText('apiKeys.testSuccess')).not.toBeInTheDocument()
+  })
+
+  it('retains the one-time key through Escape and backdrop clicks until explicit Done', async () => {
+    listMock.mockResolvedValue({keys:[]})
+    createMock.mockResolvedValue({key:'once-only-key'})
+    renderPanel(<AgentApiKeysPanel />)
+    fireEvent.click(await screen.findByText('apiKeys.create'))
+    const name=screen.getByPlaceholderText('apiKeys.form.namePlaceholder')
+    fireEvent.change(name,{target:{value:'New key'}})
+    fireEvent.submit(name.closest('form')!)
+    const dialog=await screen.findByRole('dialog',{name:'apiKeys.createdTitle'})
+    fireEvent.keyDown(document,{key:'Escape'})
+    expect(dialog).toBeInTheDocument()
+    fireEvent.click(dialog.parentElement!)
+    expect(screen.getByText('once-only-key')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'apiKeys.done' }))
+    await waitFor(() => expect(dialog).not.toBeInTheDocument())
+  })
+
+  it('shows the CLI connect guide when the user has no keys' , async () => {
     listMock.mockResolvedValue({ keys: [] })
     renderPanel(<AgentApiKeysPanel />)
 

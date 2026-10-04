@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "../../lib/apiClient";
 
 const mockNavigate = vi.fn();
 const mockGet = vi.fn();
@@ -211,6 +212,31 @@ describe("MaterialDetailPage", () => {
     expect(screen.queryByText("materials:detail.relationships")).not.toBeInTheDocument();
   });
 
+  it("shows stored historical relationships while the global producer flag is off", async () => {
+    mockGet.mockResolvedValueOnce({
+      id: "novel-1", title: "Historical Novel", status: "completed", chapters_count: 1,
+      relationships_count: 2,
+      enabled_stages: { relationships: false },
+      created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z",
+    });
+    render(<MaterialDetailPage />, { wrapper: createWrapper() });
+    expect(await screen.findByText("Historical Novel")).toBeInTheDocument();
+    expect(screen.getByText("materials:detail.relationships")).toBeInTheDocument();
+  });
+
+  it("distinguishes a genuine 404 from a retryable detail failure", async () => {
+    mockGet.mockRejectedValueOnce(new Error("network down"));
+    const { unmount } = render(<MaterialDetailPage />, { wrapper: createWrapper() });
+    expect(await screen.findByText("素材详情加载失败，请重试。")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "重试" })).toBeInTheDocument();
+    unmount();
+
+    mockGet.mockRejectedValueOnce(new ApiError(404, "not found"));
+    render(<MaterialDetailPage />, { wrapper: createWrapper() });
+    expect(await screen.findByText("materials:detail.notFound")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "重试" })).not.toBeInTheDocument();
+  });
+
   it("shows relationships folder when relationships UI is enabled", async () => {
     materialsConfigState.relationshipsEnabled = true;
 
@@ -248,6 +274,7 @@ describe("MaterialDetailPage", () => {
     await waitFor(() => {
       expect(mockGetCharacters).toHaveBeenCalledTimes(1);
     });
+    expect(await screen.findByText("加载失败。")).toBeInTheDocument();
 
     fireEvent.click(charactersFolder);
     fireEvent.click(charactersFolder);

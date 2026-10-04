@@ -9,8 +9,8 @@ import {
   Zap,
   Plus,
   Check,
-  X,
 } from "lucide-react";
+import { Modal } from "../ui/Modal";
 
 /**
  * SkillsPane - Skills browser component
@@ -128,34 +128,40 @@ export const SkillsPane: React.FC = () => {
 
       {/* Skill detail modal */}
       {selectedSkill && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-white/10" onClick={handleCloseModal}>
-          <div
-            className="bg-[hsl(var(--bg-secondary))] rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[80vh] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border-primary))]">
-              <div className="flex items-center gap-2">
-                <Zap size={18} className="text-[hsl(var(--accent-primary))]" />
-                <h3 className="font-medium text-[hsl(var(--text-primary))]">{selectedSkill.name}</h3>
-                <span className={`text-xs px-1.5 py-0.5 rounded ${
-                  selectedSkill.source === 'builtin'
-                    ? 'bg-[hsl(var(--accent-primary)/0.1)] text-[hsl(var(--accent-primary))]'
-                    : 'bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]'
-                }`}>
-                  {selectedSkill.source === 'builtin' ? t('editor:fileTree.builtinSkill') : t('editor:fileTree.userSkill')}
-                </span>
-              </div>
-              <button
-                onClick={handleCloseModal}
-                className="p-1 text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))] transition-colors"
-              >
-                <X size={18} />
-              </button>
+        <Modal
+          open
+          onClose={handleCloseModal}
+          title={(
+            <div className="flex items-center gap-2">
+              <Zap size={18} className="text-[hsl(var(--accent-primary))]" />
+              <span>{selectedSkill.name}</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                selectedSkill.source === 'builtin'
+                  ? 'bg-[hsl(var(--accent-primary)/0.1)] text-[hsl(var(--accent-primary))]'
+                  : 'bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))]'
+              }`}>
+                {selectedSkill.source === 'builtin' ? t('editor:fileTree.builtinSkill') : t('editor:fileTree.userSkill')}
+              </span>
             </div>
-
-            {/* Modal content */}
-            <div className="p-4 overflow-y-auto max-h-[60vh]">
+          )}
+          footer={(
+            <button
+              type="button"
+              onClick={(e) => {
+                handleUseSkill(e, selectedSkill);
+                handleCloseModal();
+              }}
+              disabled={selectedIds.has(selectedSkill.id) || selectionFull}
+              className="btn-primary h-9 px-4 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {selectedIds.has(selectedSkill.id)
+                ? t('editor:fileTree.skillSelected')
+                : t('editor:fileTree.useSkill')}
+            </button>
+          )}
+          size="md"
+        >
+            <div className="overflow-y-auto max-h-[60vh]">
               {/* Description */}
               {selectedSkill.description && (
                 <p className="text-sm text-[hsl(var(--text-secondary))] mb-4">
@@ -192,25 +198,7 @@ export const SkillsPane: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Modal footer - select for next message */}
-            <div className="flex justify-end px-4 py-3 border-t border-[hsl(var(--border-primary))]">
-              <button
-                type="button"
-                onClick={(e) => {
-                  handleUseSkill(e, selectedSkill);
-                  handleCloseModal();
-                }}
-                disabled={selectedIds.has(selectedSkill.id) || selectionFull}
-                className="btn-primary h-9 px-4 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {selectedIds.has(selectedSkill.id)
-                  ? t('editor:fileTree.skillSelected')
-                  : t('editor:fileTree.useSkill')}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

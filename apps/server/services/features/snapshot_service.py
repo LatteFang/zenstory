@@ -25,6 +25,7 @@ from models import File, FileVersion, Snapshot
 from models.file_version import (
     CHANGE_SOURCE_SYSTEM,
     CHANGE_TYPE_CREATE,
+    CHANGE_TYPE_EDIT,
     CHANGE_TYPE_RESTORE,
 )
 from models.utils import generate_uuid
@@ -50,7 +51,8 @@ class VersionService:
         project_id: str,
         file_id: str | None = None,
         description: str | None = None,
-        snapshot_type: str = "auto"
+        snapshot_type: str = "auto",
+        commit: bool = True,
     ) -> Snapshot:
         """
         Create a snapshot of the current state.
@@ -95,11 +97,13 @@ class VersionService:
         self._link_versions_to_snapshot(session, snapshot.id, data)
         link_ms = (time.perf_counter() - link_start) * 1000
 
-        # Single commit for snapshot + version linking.
+        # Single commit for snapshot + version linking. Rollback owns the wider
+        # transaction and therefore asks this helper to only flush.
         commit_start = time.perf_counter()
-        session.commit()
+        if commit:
+            session.commit()
+            session.refresh(snapshot)
         commit_ms = (time.perf_counter() - commit_start) * 1000
-        session.refresh(snapshot)
 
         total_ms = (time.perf_counter() - start_time) * 1000
         if total_ms > SLOW_SNAPSHOT_THRESHOLD_MS:
@@ -202,23 +206,30 @@ class VersionService:
         # Parse snapshot data
         snapshot_data = json.loads(snapshot.data)
 
-        # Create a "before rollback" snapshot
-        pre_rollback = self.create_snapshot(
-            session,
-            project_id=snapshot.project_id,
-            file_id=snapshot.file_id,
-            description=f"Before rollback to snapshot {snapshot_id}",
-            snapshot_type="pre_rollback"
-        )
+        try:
+            # The safety snapshot, all file mutations, and all restore versions
+            # form one transaction. A later-file failure must not leave a
+            # partially restored project or a committed pre-rollback snapshot.
+            pre_rollback = self.create_snapshot(
+                session,
+                project_id=snapshot.project_id,
+                file_id=snapshot.file_id,
+                description=f"Before rollback to snapshot {snapshot_id}",
+                snapshot_type="pre_rollback",
+                commit=False,
+            )
 
-        # Restore data
-        restored = self._restore_snapshot_data(
-            session=session,
-            snapshot_data=snapshot_data,
-            project_id=snapshot.project_id,
-            scope_file_id=snapshot.file_id,
-            snapshot_id=snapshot.id,
-        )
+            restored = self._restore_snapshot_data(
+                session=session,
+                snapshot_data=snapshot_data,
+                project_id=snapshot.project_id,
+                scope_file_id=snapshot.file_id,
+                snapshot_id=snapshot.id,
+            )
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
 
         return {
             "snapshot_id": snapshot_id,
@@ -273,28 +284,68 @@ class VersionService:
             data_old = parsed_data2 if parsed_data2 else json.loads(snap_old.data)
             data_new = parsed_data1 if parsed_data1 else json.loads(snap_new.data)
 
-        # Build dictionaries for file version comparison
+        # Compare the union of content references and stored file metadata.
         fv_old = {fv["file_id"]: fv for fv in data_old.get("file_versions", [])}
         fv_new = {fv["file_id"]: fv for fv in data_new.get("file_versions", [])}
+        metadata_old = {
+            fm["id"]: fm
+            for fm in data_old.get("files_metadata", [])
+            if isinstance(fm, dict) and fm.get("id")
+        }
+        metadata_new = {
+            fm["id"]: fm
+            for fm in data_new.get("files_metadata", [])
+            if isinstance(fm, dict) and fm.get("id")
+        }
 
-        # Use set operations for better performance
-        old_ids = set(fv_old.keys())
-        new_ids = set(fv_new.keys())
+        old_ids = set(fv_old) | set(metadata_old)
+        new_ids = set(fv_new) | set(metadata_new)
+
+        def snapshot_entry(
+            file_id: str,
+            versions: dict[str, dict[str, Any]],
+            metadata: dict[str, dict[str, Any]],
+        ) -> dict[str, Any]:
+            entry = {"file_id": file_id}
+            entry.update(metadata.get(file_id, {}))
+            entry.pop("id", None)
+            entry.update(versions.get(file_id, {}))
+            return entry
 
         changes = {
-            "added": [fv_new[fid] for fid in new_ids - old_ids],
-            "removed": [fv_old[fid] for fid in old_ids - new_ids],
+            "added": [
+                snapshot_entry(fid, fv_new, metadata_new)
+                for fid in sorted(new_ids - old_ids)
+            ],
+            "removed": [
+                snapshot_entry(fid, fv_old, metadata_old)
+                for fid in sorted(old_ids - new_ids)
+            ],
             "modified": []
         }
 
-        # Compare only common files for modifications
-        for file_id in old_ids & new_ids:
-            if fv_old[file_id]["version_number"] != fv_new[file_id]["version_number"]:
-                changes["modified"].append({
+        metadata_fields = ("title", "file_type", "parent_id", "order", "file_metadata")
+        for file_id in sorted(old_ids & new_ids):
+            old_version = fv_old.get(file_id, {}).get("version_number")
+            new_version = fv_new.get(file_id, {}).get("version_number")
+            metadata_changes = {
+                field: {
+                    "old": metadata_old.get(file_id, {}).get(field),
+                    "new": metadata_new.get(file_id, {}).get(field),
+                }
+                for field in metadata_fields
+                if metadata_old.get(file_id, {}).get(field)
+                != metadata_new.get(file_id, {}).get(field)
+            }
+            if old_version != new_version or metadata_changes:
+                modified = {
                     "file_id": file_id,
-                    "old_version": fv_old[file_id]["version_number"],
-                    "new_version": fv_new[file_id]["version_number"],
-                })
+                    "old_version": old_version,
+                    "new_version": new_version,
+                }
+                if metadata_changes:
+                    modified["metadata_changes"] = metadata_changes
+                changes["modified"].append(modified)
 
         return {
             "snapshot1": {"id": snap_old.id, "created_at": snap_old.created_at.isoformat()},
@@ -397,6 +448,7 @@ class VersionService:
             "version_ref_count": 0,
             "missing_version_file_count": 0,
             "baseline_version_created_count": 0,
+            "live_version_created_count": 0,
         }
 
         # Get files
@@ -404,13 +456,12 @@ class VersionService:
             file = session.get(File, file_id)
             files = [file] if (file and not file.is_deleted) else []
         else:
-            # NOTE: Avoid loading file content for full-project snapshots.
-            # Content can be large and is not needed here (we snapshot by FileVersion refs).
             files = list(
                 session.exec(
                     select(
                         File.id,
                         File.title,
+                        File.content,
                         File.file_type,
                         File.parent_id,
                         File.order,
@@ -439,69 +490,58 @@ class VersionService:
             file_ids=content_file_ids,
         )
 
-        missing_version_file_ids = [
-            fid for fid in content_file_ids if fid not in latest_versions_by_file_id
-        ]
+        missing_version_file_ids = [fid for fid in content_file_ids if fid not in latest_versions_by_file_id]
         missing_version_file_id_set = set(missing_version_file_ids)
         stats["missing_version_file_count"] = len(missing_version_file_ids)
-        missing_content_by_file_id: dict[str, str] = {}
         if missing_version_file_ids:
-            missing_rows = session.exec(
-                select(File.id, File.content).where(File.id.in_(missing_version_file_ids))
-            ).all()
-            missing_content_by_file_id = {
-                row.id: row.content for row in missing_rows
+            live_content_by_file_id = {
+                file.id: (file.content or "")
+                for file in files
+                if file and file.id in missing_version_file_id_set
             }
-
-            # Bulk backfill baseline versions for files that predate the FileVersion system.
-            #
-            # Previously we called file_version_service.create_version(...) per file, which
-            # commits each time. For large projects this causes slow snapshot creation due
-            # to many small transactions.
-            #
-            # Here we do a single INSERT ... ON CONFLICT DO NOTHING (supported by Postgres
-            # and SQLite) and then re-query the latest versions for the missing files.
             bind = session.get_bind()
             dialect_name = getattr(getattr(bind, "dialect", None), "name", None)
             if dialect_name in {"postgresql", "sqlite"}:
                 created_at = datetime.utcnow()
                 baseline_rows: list[dict[str, Any]] = []
-                for fid in missing_version_file_ids:
-                    content = missing_content_by_file_id.get(fid, "")
-                    lines_added, lines_removed = file_version_service._calculate_diff_stats("", content)  # type: ignore[attr-defined]
-                    baseline_rows.append({
-                        "id": generate_uuid(),
-                        "file_id": fid,
-                        "project_id": project_id,
-                        "version_number": 1,
-                        "content": content,
-                        "is_base_version": True,
-                        "word_count": count_words(content),
-                        "char_count": len(content),
-                        "change_type": CHANGE_TYPE_CREATE,
-                        "change_source": CHANGE_SOURCE_SYSTEM,
-                        "change_summary": "Snapshot baseline version",
-                        "lines_added": lines_added,
-                        "lines_removed": lines_removed,
-                        "created_at": created_at,
-                        "snapshot_id": None,
-                    })
-
-                if baseline_rows:
-                    if dialect_name == "postgresql":
-                        from sqlalchemy.dialects.postgresql import insert as dialect_insert
-                    else:
-                        from sqlalchemy.dialects.sqlite import insert as dialect_insert
-
-                    insert_stmt = dialect_insert(FileVersion).values(baseline_rows)
-                    insert_stmt = insert_stmt.on_conflict_do_nothing(
-                        index_elements=["file_id", "version_number"],
+                for missing_file_id in missing_version_file_ids:
+                    content = live_content_by_file_id.get(missing_file_id, "")
+                    lines_added, lines_removed = file_version_service._calculate_diff_stats(  # type: ignore[attr-defined]
+                        "", content
                     )
-                    result = session.exec(insert_stmt)
-                    inserted_count = max(0, int(getattr(result, "rowcount", 0) or 0))
-                    stats["baseline_version_created_count"] += inserted_count
+                    baseline_rows.append(
+                        {
+                            "id": generate_uuid(),
+                            "file_id": missing_file_id,
+                            "project_id": project_id,
+                            "version_number": 1,
+                            "content": content,
+                            "is_base_version": True,
+                            "word_count": count_words(content),
+                            "char_count": len(content),
+                            "change_type": CHANGE_TYPE_CREATE,
+                            "change_source": CHANGE_SOURCE_SYSTEM,
+                            "change_summary": "Snapshot baseline version",
+                            "lines_added": lines_added,
+                            "lines_removed": lines_removed,
+                            "created_at": created_at,
+                            "snapshot_id": None,
+                        }
+                    )
 
-                # Refresh mapping (covers both inserted rows and concurrent baseline inserts).
+                if dialect_name == "postgresql":
+                    from sqlalchemy.dialects.postgresql import insert as dialect_insert
+                else:
+                    from sqlalchemy.dialects.sqlite import insert as dialect_insert
+
+                insert_stmt = dialect_insert(FileVersion).values(baseline_rows)
+                insert_stmt = insert_stmt.on_conflict_do_nothing(
+                    index_elements=["file_id", "version_number"],
+                )
+                result = session.exec(insert_stmt)
+                stats["baseline_version_created_count"] += max(
+                    0, int(getattr(result, "rowcount", 0) or 0)
+                )
                 latest_versions_by_file_id.update(
                     self._get_latest_versions_for_files(
                         session=session,
@@ -509,19 +549,20 @@ class VersionService:
                     )
                 )
             else:
-                # Fallback: keep the old behavior for unknown dialects.
-                for fid in missing_version_file_ids:
+                for missing_file_id in missing_version_file_ids:
                     latest_version = file_version_service.create_version(
                         session=session,
-                        file_id=fid,
-                        new_content=missing_content_by_file_id.get(fid, ""),
+                        file_id=missing_file_id,
+                        new_content=live_content_by_file_id.get(missing_file_id, ""),
                         change_type=CHANGE_TYPE_CREATE,
                         change_source=CHANGE_SOURCE_SYSTEM,
                         change_summary="Snapshot baseline version",
                         force_base=True,
+                        skip_quota=True,
+                        commit=False,
                     )
                     stats["baseline_version_created_count"] += 1
-                    latest_versions_by_file_id[fid] = latest_version
+                    latest_versions_by_file_id[missing_file_id] = latest_version
 
         for file in files:
             if not file:
@@ -531,21 +572,38 @@ class VersionService:
             file_type_value = getattr(file, "file_type", None)
 
             if file_type_value != "folder":
-                # Get latest version for content-bearing files only.
                 latest_version = latest_versions_by_file_id.get(file_id_value)
-                if not latest_version and file_id_value in missing_version_file_id_set:
-                    # Last-resort fallback: if something went wrong with the bulk backfill
-                    # above (or another dialect is in use), ensure we still pin a version.
+                live_content = file.content or ""
+                latest_content = (
+                    file_version_service.get_content_at_version(
+                        session, file_id_value, latest_version.version_number
+                    )
+                    if latest_version
+                    else None
+                )
+                if latest_content != live_content:
+                    is_baseline = latest_version is None
                     latest_version = file_version_service.create_version(
                         session=session,
                         file_id=file_id_value,
-                        new_content=missing_content_by_file_id.get(file_id_value, ""),
-                        change_type=CHANGE_TYPE_CREATE,
+                        new_content=live_content,
+                        change_type=CHANGE_TYPE_CREATE if is_baseline else CHANGE_TYPE_EDIT,
                         change_source=CHANGE_SOURCE_SYSTEM,
-                        change_summary="Snapshot baseline version",
-                        force_base=True,
+                        change_summary=(
+                            "Snapshot baseline version"
+                            if is_baseline
+                            else "Snapshot synchronized live content"
+                        ),
+                        force_base=is_baseline,
+                        skip_quota=True,
+                        commit=False,
                     )
-                    stats["baseline_version_created_count"] += 1
+                    stat_key = (
+                        "baseline_version_created_count"
+                        if is_baseline
+                        else "live_version_created_count"
+                    )
+                    stats[stat_key] += 1
                     latest_versions_by_file_id[file_id_value] = latest_version
 
                 if latest_version:
@@ -729,6 +787,8 @@ class VersionService:
                         else "Restored from snapshot"
                     ),
                     force_base=True,
+                    skip_quota=True,
+                    commit=False,
                 )
                 if snapshot_id:
                     restored_version.snapshot_id = snapshot_id
@@ -749,7 +809,6 @@ class VersionService:
                 session.add(project_file)
                 restored["deleted_extra_files"] += 1
 
-        session.commit()
         return restored
 
 

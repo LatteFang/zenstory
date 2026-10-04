@@ -67,6 +67,7 @@ export const MaterialsPane: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<MaterialSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState(false);
 
   // Track loading state with ref to avoid stale closure
   const entityListLoadingRef = useRef<Record<string, boolean>>({});
@@ -179,11 +180,13 @@ export const MaterialsPane: React.FC = () => {
     }
     if (!query.trim()) {
       setSearchResults([]);
+      setSearchError(false);
       setIsSearching(false);
       return;
     }
     searchTimeoutRef.current = setTimeout(async () => {
       setIsSearching(true);
+      setSearchError(false);
       try {
         const results = await materialsApi.searchMaterials(query);
         if (searchRequestSeqRef.current === requestSeq) {
@@ -193,6 +196,7 @@ export const MaterialsPane: React.FC = () => {
         logger.error('Failed to search materials:', err);
         if (searchRequestSeqRef.current === requestSeq) {
           setSearchResults([]);
+          setSearchError(true);
         }
       } finally {
         if (searchRequestSeqRef.current === requestSeq) {
@@ -276,7 +280,7 @@ export const MaterialsPane: React.FC = () => {
     { type: 'goldenfingers', countKey: 'golden_fingers' },
     { type: 'storylines', countKey: 'storylines' },
     { type: 'stories', countKey: 'stories' },
-    ...(materialsConfig.relationshipsEnabled
+    ...(materialsConfig.relationshipsEnabled || materialLib.libraries.some((library) => Number(library.counts.relationships) > 0)
       ? [{ type: 'relationships' as const, countKey: 'relationships' as const }]
       : []),
   ];
@@ -322,6 +326,13 @@ export const MaterialsPane: React.FC = () => {
           {isSearching ? (
             <div className="px-2 py-2 text-[hsl(var(--text-secondary))] text-xs italic">
               {t('common:loading')}
+            </div>
+          ) : searchError ? (
+            <div className="px-2 py-2 text-xs text-[hsl(var(--error))]">
+              <p>{t('materials:searchLoadFailed', { defaultValue: '素材搜索失败，请重试。' })}</p>
+              <button className="mt-1 underline" onClick={() => handleSearch(searchQuery)}>
+                {t('common:retry', { defaultValue: '重试' })}
+              </button>
             </div>
           ) : searchResults.length === 0 ? (
             <div className="px-2 py-2 text-[hsl(var(--text-secondary))] text-xs italic">
@@ -372,6 +383,13 @@ export const MaterialsPane: React.FC = () => {
         isLibraryLoading ? (
           <div className="px-2 py-2 text-[hsl(var(--text-secondary))] text-xs italic">
             {t('common:loading')}
+          </div>
+        ) : materialLib.error ? (
+          <div className="px-3 py-3 text-xs text-[hsl(var(--error))]">
+            <p>{t('materials:libraryLoadFailed', { defaultValue: '素材库加载失败，请重试。' })}</p>
+            <button className="mt-1 underline" onClick={() => void materialLib.refetch()}>
+              {t('common:retry', { defaultValue: '重试' })}
+            </button>
           </div>
         ) : materialLib.libraries.length === 0 ? (
           <div className="px-3 py-3 text-[hsl(var(--text-secondary))] text-xs">

@@ -4,16 +4,14 @@ AI Prompt templates for different project types.
 This module provides modular prompt templates that can be customized
 based on project type (novel, short story, screenplay).
 
-The module supports loading prompt configurations from:
-1. Remote database (PROMPT_DATABASE_URL) - highest priority
-2. Local database (DATABASE_URL) - fallback
-3. Default Python constants - final fallback when no DB config exists
+The module loads prompt configurations from the application's primary database,
+which is the same source used by the admin prompt API. Built-in Python
+constants are a bootstrap fallback only when that database was read
+successfully and has no active row for a requested project type.
 """
 
-import os
 from typing import Any
 
-from sqlalchemy import create_engine
 from sqlmodel import Session, select
 
 from database import sync_engine
@@ -35,44 +33,14 @@ PROMPT_CONFIGS: dict[str, dict[str, Any]] = {
 # In-memory cache for database configurations
 _db_config_cache: dict[str, dict[str, Any]] | None = None
 
-# Remote prompt database engine (lazy initialization)
-_remote_engine = None
-
-
-def _get_remote_engine():
-    """
-    Get or create the remote prompt database engine.
-
-    Uses PROMPT_DATABASE_URL environment variable for remote prompt management.
-    Returns None if not configured.
-    """
-    global _remote_engine
-
-    if _remote_engine is not None:
-        return _remote_engine
-
-    remote_url = os.getenv("PROMPT_DATABASE_URL")
-    if not remote_url:
-        return None
-
-    try:
-        _remote_engine = create_engine(remote_url, pool_size=5, max_overflow=0)
-        return _remote_engine
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.warning(f"Failed to create remote prompt database engine: {e}")
-        return None
-
 
 def _load_db_configs() -> dict[str, dict[str, Any]]:
     """
     Load all active system prompt configurations from database.
 
-    Priority order:
-    1. Remote database (PROMPT_DATABASE_URL) - for centralized prompt management
-    2. Local database (DATABASE_URL) - fallback
-    3. Returns empty dict if both fail (will use file-based defaults)
+    Database errors intentionally propagate. File defaults are only a bootstrap
+    fallback for project types without an active row after a successful read;
+    they must not mask source unavailability.
 
     Returns:
         Dict mapping project_type to config dict
@@ -83,46 +51,19 @@ def _load_db_configs() -> dict[str, dict[str, Any]]:
     if _db_config_cache is not None:
         return _db_config_cache
 
-    db_configs = {}
-    import logging
-    logger = logging.getLogger(__name__)
-
-    # Try remote database first
-    remote_engine = _get_remote_engine()
-    if remote_engine is not None:
-        try:
-            db_configs = _load_configs_from_engine(remote_engine, "remote")
-            if db_configs:
-                logger.info(f"Loaded {len(db_configs)} prompt configs from remote database")
-                _db_config_cache = db_configs
-                return db_configs
-        except Exception as e:
-            logger.warning(f"Failed to load from remote database: {e}")
-
-    # Fallback to local database
-    try:
-        db_configs = _load_configs_from_engine(sync_engine, "local")
-        if db_configs:
-            logger.info(f"Loaded {len(db_configs)} prompt configs from local database")
-    except Exception as e:
-        logger.error(f"Failed to load from local database: {e}")
-        db_configs = {}
-
-    # Cache the loaded configs
+    db_configs, _version = _load_configs_from_engine(sync_engine)
     _db_config_cache = db_configs
     return db_configs
 
 
-def _load_configs_from_engine(engine, _source: str) -> dict[str, dict[str, Any]]:
+def _load_configs_from_engine(engine) -> tuple[dict[str, dict[str, Any]], int]:
     """
     Load prompt configurations from a specific database engine.
 
     Args:
         engine: SQLAlchemy engine to use
-        source: Source name for logging ("remote" or "local")
-
     Returns:
-        Dict mapping project_type to config dict
+        Configs mapped by project type and the highest active config version.
     """
     configs = {}
 
@@ -142,10 +83,10 @@ def _load_configs_from_engine(engine, _source: str) -> dict[str, dict[str, Any]]
                 "file_types": config.file_types or "",
                 "writing_guidelines": config.writing_guidelines or "",
                 "include_dialogue_guidelines": config.include_dialogue_guidelines,
-                "primary_content_type": config.primary_content_type or "draft",
             }
 
-    return configs
+    max_version = max((config.version for config in results), default=0)
+    return configs, max_version
 
 
 def get_prompt_for_project_type(
@@ -182,15 +123,21 @@ def get_prompt_for_project_type(
     return base_prompt
 
 
-def reload_prompts() -> None:
+def reload_prompts() -> dict[str, int | str]:
     """
-    Clear the in-memory cache and reload prompt configurations from database.
+    Eagerly reload prompt configurations from the primary database.
 
     This function should be called when system prompt configurations are
     updated through the admin interface to ensure changes take effect immediately.
     """
     global _db_config_cache
-    _db_config_cache = None
+    configs, version = _load_configs_from_engine(sync_engine)
+    _db_config_cache = configs
+    return {
+        "source": "primary_database",
+        "count": len(configs),
+        "version": version,
+    }
 
 
 __all__ = [

@@ -130,6 +130,13 @@ describe("SettingsDialog language switching", () => {
     localStorage.clear();
   });
 
+  it("keeps the profile display read-only without an inert unnamed action", () => {
+    render(<SettingsDialog isOpen onClose={vi.fn()} />);
+    expect(screen.getByText("Test User")).toBeInTheDocument();
+    expect(screen.getByText("user@example.com")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "" })).not.toBeInTheDocument();
+  });
+
   it("highlights zh button for zh-CN locale and persists language switch", () => {
     render(<SettingsDialog isOpen onClose={vi.fn()} />);
 
@@ -144,5 +151,31 @@ describe("SettingsDialog language switching", () => {
 
     expect(mockChangeLanguage).toHaveBeenCalledWith("en");
     expect(localStorage.getItem("zenstory-language")).toBe("en");
+  });
+
+  it("exposes keyboard-operable tabs with linked tabpanel state", () => {
+    render(<SettingsDialog isOpen onClose={vi.fn()} />);
+
+    const profileTab = screen.getByRole("tab", { name: "Profile" });
+    const generalTab = screen.getByRole("tab", { name: "General" });
+    expect(profileTab).toHaveAttribute("aria-selected", "true");
+    expect(profileTab).toHaveAttribute("aria-controls", "settings-panel");
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", profileTab.id);
+
+    profileTab.focus();
+    fireEvent.keyDown(profileTab, { key: "ArrowRight" });
+    expect(generalTab).toHaveFocus();
+    expect(generalTab).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("id", "settings-panel");
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", generalTab.id);
+  });
+
+  it("exposes language, theme, and localized accent colors as selected choices", () => {
+    render(<SettingsDialog isOpen onClose={vi.fn()} defaultTab="general" />);
+
+    expect(screen.getByRole("radio", { name: "中文" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "Blue" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "Green" })).toHaveAttribute("aria-checked", "false");
   });
 });

@@ -134,6 +134,34 @@ describe('login / logout / whoami', () => {
     expect(() => statSync(configPath(env))).toThrow();
   });
 
+  it.each([
+    ['inactive user', 'ERR_AUTH_INACTIVE_USER', 'Account has been disabled'],
+    ['project permission denial', 'ERR_NOT_AUTHORIZED', 'API key cannot access this project'],
+    ['localized denial', undefined, '账户已被禁用'],
+    ['unknown denial', 'ERR_SOMETHING_NEW', 'Forbidden'],
+  ])('does not save a key after an unrecognized 403 (%s)', async (_label, errorCode, errorDetail) => {
+    const env = { XDG_CONFIG_HOME: tempDir() };
+    const { fetch } = mockFetch(() => ({
+      status: 403,
+      body: { detail: errorCode ?? errorDetail, ...(errorCode ? { error_code: errorCode } : {}), error_detail: errorDetail },
+    }));
+    const res = await runCli(['login', '--key', KEY], { env, fetch });
+    expect(res.code).toBe(3);
+    expect(() => statSync(configPath(env))).toThrow();
+  });
+
+  it('saves an explicitly scope-limited key without relying on localized error text', async () => {
+    const env = { XDG_CONFIG_HOME: tempDir() };
+    const { fetch } = mockFetch(() => ({
+      status: 403,
+      body: { detail: 'ERR_AUTH_SCOPE_DENIED', error_code: 'ERR_AUTH_SCOPE_DENIED', error_detail: '缺少所需权限' },
+    }));
+    const res = await runCli(['login', '--key', KEY], { env, fetch });
+    expect(res.code).toBe(0);
+    expect(res.stderr).toContain('lacks the "read" scope');
+    expect(JSON.parse(readFileSync(configPath(env), 'utf8'))).toEqual({ apiKey: KEY });
+  });
+
   it('rejects keys without the eg_ prefix before any request', async () => {
     const { fetch, calls } = mockFetch(() => ({ body: [] }));
     const res = await runCli(['login', '--key', 'sk-123'], { env: { XDG_CONFIG_HOME: tempDir() }, fetch });
@@ -159,12 +187,28 @@ describe('login / logout / whoami', () => {
     const { fetch } = mockFetch((c) =>
       c.method === 'GET'
         ? { body: [] }
-        : { status: 403, body: { detail: 'ERR_NOT_AUTHORIZED', error_code: 'ERR_NOT_AUTHORIZED', error_detail: 'API Key lacks required scope: write' } },
+        : { status: 403, body: { detail: 'ERR_AUTH_SCOPE_DENIED', error_code: 'ERR_AUTH_SCOPE_DENIED', error_detail: 'API Key lacks required scope: write' } },
     );
     const res = await runCli(['whoami'], { env: loggedInEnv(), fetch });
     expect(res.code).toBe(0);
     expect(res.stdout).toMatch(/Write scope\s+no/);
     expect(res.stdout).toMatch(/Read scope\s+yes/);
+  });
+
+  it.each([
+    ['project permission', 'ERR_NOT_AUTHORIZED', 'API key cannot access this project'],
+    ['localized response', undefined, '没有项目权限'],
+    ['unknown response', 'ERR_SOMETHING_NEW', 'Forbidden'],
+  ])('whoami never infers write scope from an unrecognized 403 (%s)', async (_label, errorCode, errorDetail) => {
+    const { fetch } = mockFetch((c) => c.method === 'GET'
+      ? { body: [] }
+      : {
+          status: 403,
+          body: { detail: errorCode ?? errorDetail, ...(errorCode ? { error_code: errorCode } : {}), error_detail: errorDetail },
+        });
+    const res = await runCli(['whoami', '--json'], { env: loggedInEnv(), fetch });
+    expect(res.code).toBe(0);
+    expect(JSON.parse(res.stdout).scopes.write).toBeNull();
   });
 
   it('whoami without a key exits 3 with setup guidance', async () => {

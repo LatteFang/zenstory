@@ -10,25 +10,86 @@ import json
 import logging
 import os
 import time
+from collections.abc import Callable, Coroutine
+from typing import Any, Literal
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi.routing import APIRoute
 from pydantic import BaseModel
+from services.auth import get_current_active_user
 
 from core.error_codes import ErrorCode
 from core.error_handler import APIException
+from middleware.rate_limit import require_user_rate_limit
+from models import User
 from utils.logger import get_logger, log_with_context
 
-router = APIRouter(prefix="/api/v1/voice", tags=["voice"])
 logger = get_logger(__name__)
+
+MAX_AUDIO_BYTES = 5 * 1024 * 1024
+MAX_BASE64_LENGTH = ((MAX_AUDIO_BYTES + 2) // 3) * 4
+MAX_VOICE_REQUEST_BYTES = MAX_BASE64_LENGTH + 4096
+VOICE_RATE_LIMIT_MAX_REQUESTS = 60
+VOICE_RATE_LIMIT_WINDOW_SECONDS = 3600
+SUPPORTED_AUDIO_FORMATS = ("wav", "pcm", "mp3", "m4a", "flac", "ogg-opus", "webm")
+
+
+class _VoiceRequestRoute(APIRoute):
+    """Reject clearly oversized JSON bodies before FastAPI materializes them."""
+
+    def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
+        original_handler = super().get_route_handler()
+
+        async def handler(request: Request) -> Response:
+            content_length = request.headers.get("content-length")
+            if (
+                content_length
+                and content_length.strip().isdigit()
+                and int(content_length) > MAX_VOICE_REQUEST_BYTES
+            ):
+                raise APIException(
+                    error_code=ErrorCode.VOICE_AUDIO_DECODE_FAILED,
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail="Voice request body exceeds the supported limit",
+                )
+
+            original_receive = request.receive
+            received_bytes = 0
+
+            async def limited_receive() -> dict[str, Any]:
+                nonlocal received_bytes
+                message = await original_receive()
+                if message.get("type") == "http.request":
+                    received_bytes += len(message.get("body", b""))
+                    if received_bytes > MAX_VOICE_REQUEST_BYTES:
+                        raise APIException(
+                            error_code=ErrorCode.VOICE_AUDIO_DECODE_FAILED,
+                            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                            detail="Voice request body exceeds the supported limit",
+                        )
+                return message
+
+            request._receive = limited_receive
+            await request.body()
+            return await original_handler(request)
+
+        return handler
+
+
+router = APIRouter(
+    prefix="/api/v1/voice",
+    tags=["voice"],
+    route_class=_VoiceRequestRoute,
+)
 
 
 # Request/Response schemas
 class VoiceRecognizeRequest(BaseModel):
     """语音识别请求"""
     audio_data: str  # Base64 编码的音频数据
-    audio_format: str = "wav"  # wav, pcm, mp3, m4a, flac, ogg-opus
-    sample_rate: int = 16000  # 采样率: 8000 或 16000
-    language: str = "zh"  # zh | en (also accepts zh-CN/en-US)
+    audio_format: Literal["wav", "pcm", "mp3", "m4a", "flac", "ogg-opus", "webm"] = "wav"
+    sample_rate: Literal[8000, 16000] = 16000
+    language: Literal["zh", "en", "zh-CN", "en-US"] = "zh"
 
 
 class VoiceRecognizeResponse(BaseModel):
@@ -146,7 +207,7 @@ async def call_tencent_asr(
         "ogg-opus": "ogg-opus",
         "webm": "ogg-opus",  # WebM 通常使用 opus 编码
     }
-    voice_format = format_map.get(audio_format.lower(), "wav")
+    voice_format = format_map[audio_format]
 
     # Engine type (Tencent ASR)
     lang = (language or "").lower()
@@ -162,14 +223,14 @@ async def call_tencent_asr(
     # 计算音频数据长度
     try:
         # 清理Base64字符串（移除可能的空白字符和换行符）
-        clean_audio_data = audio_data.strip().replace('\n', '').replace('\r', '')
-        audio_bytes = base64.b64decode(clean_audio_data)
+        clean_audio_data = audio_data
+        audio_bytes = base64.b64decode(clean_audio_data, validate=True)
         data_len = len(audio_bytes)
     except Exception as e:
         raise APIException(
             error_code=ErrorCode.VOICE_AUDIO_DECODE_FAILED,
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"音频数据 Base64 解码失败: {str(e)}"
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Audio data must be strict Base64"
         ) from e
 
     # 请求参数
@@ -248,7 +309,6 @@ async def call_tencent_asr(
                 logging.ERROR,
                 "腾讯云API请求失败",
                 status_code=response.status_code,
-                response=response.text[:500],  # Limit response length
             )
             raise APIException(
                 error_code=ErrorCode.VOICE_API_REQUEST_FAILED,
@@ -260,7 +320,17 @@ async def call_tencent_asr(
 
 
 @router.post("/recognize", response_model=VoiceRecognizeResponse)
-async def recognize_voice(request: VoiceRecognizeRequest):
+async def recognize_voice(
+    request: VoiceRecognizeRequest,
+    _current_user: User = Depends(get_current_active_user),
+    _rate_limit: int = Depends(
+        require_user_rate_limit(
+            "voice_recognize",
+            VOICE_RATE_LIMIT_MAX_REQUESTS,
+            VOICE_RATE_LIMIT_WINDOW_SECONDS,
+        )
+    ),
+):
     """
     一句话语音识别
 
@@ -271,6 +341,22 @@ async def recognize_voice(request: VoiceRecognizeRequest):
     - **sample_rate**: 采样率 (8000 或 16000)
     """
     try:
+        try:
+            audio_bytes = base64.b64decode(request.audio_data, validate=True)
+        except (ValueError, TypeError) as exc:
+            raise APIException(
+                error_code=ErrorCode.VOICE_AUDIO_DECODE_FAILED,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Audio data must be strict Base64",
+            ) from exc
+
+        if len(audio_bytes) > MAX_AUDIO_BYTES:
+            raise APIException(
+                error_code=ErrorCode.VOICE_AUDIO_DECODE_FAILED,
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Audio data exceeds the 5 MiB limit",
+            )
+
         # 获取凭证
         secret_id, secret_key = get_tencent_credentials()
 
@@ -291,11 +377,16 @@ async def recognize_voice(request: VoiceRecognizeRequest):
         error = response_data.get("Error")
         if error:
             error_code = error.get("Code", "UnknownError")
-            error_message = error.get("Message", "未知错误")
-            return VoiceRecognizeResponse(
-                text="",
-                success=False,
-                error=f"{error_code}: {error_message}"
+            log_with_context(
+                logger,
+                logging.ERROR,
+                "Tencent ASR returned an error",
+                provider_error_code=error_code,
+            )
+            raise APIException(
+                error_code=ErrorCode.VOICE_API_REQUEST_FAILED,
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Voice recognition provider rejected the request",
             )
 
         # 获取识别结果
@@ -311,11 +402,17 @@ async def recognize_voice(request: VoiceRecognizeRequest):
     except APIException:
         raise
     except Exception as e:
-        return VoiceRecognizeResponse(
-            text="",
-            success=False,
-            error=f"语音识别失败: {str(e)}"
+        log_with_context(
+            logger,
+            logging.ERROR,
+            "Unexpected voice recognition provider failure",
+            error_type=type(e).__name__,
         )
+        raise APIException(
+            error_code=ErrorCode.VOICE_API_REQUEST_FAILED,
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Voice recognition provider unavailable",
+        ) from e
 
 
 @router.get("/status")
@@ -331,5 +428,5 @@ async def voice_status():
         "provider": "tencent",
         "service": "一句话识别",
         "max_duration_seconds": 60,
-        "supported_formats": ["wav", "pcm", "mp3", "m4a", "flac", "ogg-opus", "webm"]
+        "supported_formats": list(SUPPORTED_AUDIO_FORMATS)
     }

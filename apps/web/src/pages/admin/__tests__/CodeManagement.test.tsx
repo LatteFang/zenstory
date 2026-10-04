@@ -95,7 +95,7 @@ describe("CodeManagement", () => {
     expect(screen.getByText("common:noData")).toBeInTheDocument();
   });
 
-  it("toggles code status", () => {
+  it("confirms deactivation with the code and impact before mutating", () => {
     useQueryMock.mockReturnValue({
       data: {
         items: [
@@ -129,10 +129,53 @@ describe("CodeManagement", () => {
     mutateMock.mockClear();
     fireEvent.click(screen.getAllByTitle("codes.deactivate")[0]);
 
-    expect(mutateMock).toHaveBeenCalledWith({
+    expect(mutateMock).not.toHaveBeenCalled();
+    expect(screen.getByText(/TESTCODE: codes.deactivateConfirmImpact/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "codes.confirmDeactivate" }));
+
+    expect(mutateMock.mock.calls[0][0]).toEqual({
       id: "code-1",
       data: { is_active: false },
     });
+  });
+
+  it("disables the affected row while its update is pending", () => {
+    let mutationCall = 0;
+    useMutationMock.mockImplementation(() => {
+      mutationCall += 1;
+      return mutationCall === 3
+        ? { mutate: mutateMock, isPending: true, variables: { id: "code-1" } }
+        : { mutate: mutateMock, isPending: false };
+    });
+    useQueryMock.mockReturnValue({
+      data: {
+        items: [{
+          id: "code-1",
+          code: "INACTIVECODE",
+          tier: "pro",
+          duration_days: 30,
+          code_type: "single_use",
+          max_uses: 1,
+          current_uses: 0,
+          is_active: false,
+          notes: null,
+          created_at: "2026-03-08T00:00:00Z",
+          updated_at: "2026-03-08T00:00:00Z",
+        }],
+        total: 1,
+        page: 1,
+        page_size: 20,
+      },
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<CodeManagement />);
+    const activationButtons = screen.getAllByTitle("codes.activate");
+    expect(activationButtons.every((button) => button.hasAttribute("disabled"))).toBe(true);
   });
 
   it("submits single and batch create", () => {

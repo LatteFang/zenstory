@@ -12,6 +12,19 @@ describe('ToastContainer', () => {
     vi.useRealTimers()
   })
 
+  it('announces errors urgently and success/info politely without duplicate messages', () => {
+    render(<ToastContainer />)
+    act(() => {
+      toast.error('Cannot save')
+      toast.success('Saved')
+      toast.info('Ready')
+      toast.info('Ready')
+    })
+    expect(screen.getByRole('alert')).toHaveTextContent('Cannot save')
+    expect(screen.getAllByRole('status')).toHaveLength(2)
+    expect(screen.getByText('Ready')).toHaveAttribute('aria-atomic', 'true')
+  })
+
   it('renders toast messages and auto-dismisses them', async () => {
     render(<ToastContainer />)
 

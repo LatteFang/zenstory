@@ -1,7 +1,8 @@
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { renderHook, act, waitFor, render, screen, fireEvent } from '@testing-library/react'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ReactNode } from 'react'
-import { AuthProvider, useAuth, User } from '../AuthContext'
+import { AuthIdentityQueryBoundary, AuthProvider, useAuth, User } from '../AuthContext'
 import * as api from '@/lib/api'
 
 // Mock authApi
@@ -63,6 +64,7 @@ describe('AuthContext', () => {
     mockFetch.mockReset()
     // Clear localStorage
     localStorage.clear()
+    sessionStorage.clear()
     // Reset window.location.href mock
     Object.defineProperty(window, 'location', {
       value: {
@@ -209,9 +211,105 @@ describe('AuthContext', () => {
       // Tokens preserved for potential retry
       expect(localStorage.getItem('access_token')).toBe('some-token')
     })
+
+    it('preserves tokens when init refresh receives a retryable HTTP failure', async () => {
+      localStorage.setItem('access_token', 'expired-access')
+      localStorage.setItem('refresh_token', 'valid-refresh')
+      mockFetch
+        .mockResolvedValueOnce({ ok: false, status: 401 })
+        .mockResolvedValueOnce({ ok: false, status: 503 })
+
+      const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() })
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      expect(result.current.user).toBeNull()
+      expect(localStorage.getItem('access_token')).toBe('expired-access')
+      expect(localStorage.getItem('refresh_token')).toBe('valid-refresh')
+    })
   })
 
   describe('login', () => {
+    it('clears account A queries before account B mounts and ignores a late A request', async () => {
+      let resolveLateA!: (value: string) => void
+      let aRequestCount = 0
+      const loadIdentityData = vi.fn((userId: string) => {
+        if (userId === 'user-a') {
+          aRequestCount += 1
+          return aRequestCount === 1
+            ? Promise.resolve('account-a-data')
+            : new Promise<string>(resolve => { resolveLateA = resolve })
+        }
+        return Promise.resolve('account-b-data')
+      })
+      vi.mocked(api.authApi.login).mockImplementation(async (username: string) =>
+        createMockAuthResponse({ id: username, username }),
+      )
+      mockFetch.mockResolvedValue({ ok: true })
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+      })
+
+      function Probe() {
+        const auth = useAuth()
+        const query = useQuery({
+          queryKey: ['identity-data'],
+          enabled: Boolean(auth.user),
+          queryFn: () => loadIdentityData(auth.user!.id),
+        })
+        return (
+          <div>
+            <button onClick={() => void auth.login('user-a', 'password')}>Login A</button>
+            <button onClick={() => void auth.login('user-b', 'password')}>Login B</button>
+            <button onClick={auth.logout}>Logout</button>
+            <span>{query.data}</span>
+          </div>
+        )
+      }
+
+      render(
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <AuthIdentityQueryBoundary><Probe /></AuthIdentityQueryBoundary>
+          </AuthProvider>
+        </QueryClientProvider>,
+      )
+      await screen.findByRole('button', { name: 'Login A' })
+      fireEvent.click(screen.getByRole('button', { name: 'Login A' }))
+      expect(await screen.findByText('account-a-data')).toBeInTheDocument()
+
+      void queryClient.invalidateQueries({ queryKey: ['identity-data'] })
+      await waitFor(() => expect(loadIdentityData).toHaveBeenCalledTimes(2))
+      fireEvent.click(screen.getByRole('button', { name: 'Logout' }))
+      await waitFor(() => expect(screen.queryByText('account-a-data')).not.toBeInTheDocument())
+      fireEvent.click(screen.getByRole('button', { name: 'Login B' }))
+      expect(await screen.findByText('account-b-data')).toBeInTheDocument()
+
+      resolveLateA('late-account-a-data')
+      await act(async () => Promise.resolve())
+
+      expect(screen.getByText('account-b-data')).toBeInTheDocument()
+      expect(screen.queryByText('late-account-a-data')).not.toBeInTheDocument()
+      expect(queryClient.getQueryData(['identity-data'])).toBe('account-b-data')
+      expect(loadIdentityData.mock.calls.filter(([id]) => id === 'user-b')).toHaveLength(1)
+    })
+
+    it('does not let a rejected stale init request clear a newer login', async () => {
+      localStorage.setItem('access_token', 'old-access')
+      localStorage.setItem('refresh_token', 'old-refresh')
+      let rejectInit!: (error: Error) => void
+      mockFetch.mockReturnValueOnce(new Promise((_resolve, reject) => { rejectInit = reject }))
+      const newResponse = createMockAuthResponse({ id: 'new-user' })
+      vi.mocked(api.authApi.login).mockResolvedValueOnce(newResponse)
+      const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() })
+
+      await act(async () => result.current.login('new-user', 'password'))
+      rejectInit(new Error('old request failed'))
+
+      await waitFor(() => expect(result.current.loading).toBe(false))
+      expect(result.current.user).toEqual(newResponse.user)
+      expect(localStorage.getItem('access_token')).toBe(newResponse.access_token)
+    })
+
     it('logs in successfully with valid credentials', async () => {
       const mockResponse = createMockAuthResponse()
       vi.mocked(api.authApi.login).mockResolvedValueOnce(mockResponse)
@@ -305,6 +403,73 @@ describe('AuthContext', () => {
       expect(localStorage.getItem('access_token')).toBe(null)
       expect(localStorage.getItem('refresh_token')).toBe(null)
       expect(localStorage.getItem('user')).toBe(null)
+    })
+
+    it('clears locally immediately and sends best-effort server logout with the captured token', async () => {
+      const mockUser = createMockUser()
+      localStorage.setItem('access_token', 'captured-access')
+      localStorage.setItem('refresh_token', 'captured-refresh')
+      localStorage.setItem('user', JSON.stringify(mockUser))
+      localStorage.setItem('auth_validated_at', Date.now().toString())
+      mockFetch
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockUser) })
+        .mockRejectedValueOnce(new Error('offline'))
+      const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() })
+      await waitFor(() => expect(result.current.user).toEqual(mockUser))
+
+      act(() => result.current.logout())
+
+      expect(result.current.user).toBeNull()
+      expect(localStorage.getItem('access_token')).toBeNull()
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/auth/logout'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: { Authorization: 'Bearer captured-access' },
+        }),
+      )
+    })
+
+    it('does not let late background validation resurrect a logged-out session', async () => {
+      const mockUser = createMockUser()
+      localStorage.setItem('access_token', 'old-access')
+      localStorage.setItem('refresh_token', 'old-refresh')
+      localStorage.setItem('user', JSON.stringify(mockUser))
+      localStorage.setItem('auth_validated_at', Date.now().toString())
+      let resolveValidation!: (response: unknown) => void
+      mockFetch
+        .mockReturnValueOnce(new Promise(resolve => { resolveValidation = resolve }))
+        .mockResolvedValueOnce({ ok: true })
+      const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() })
+      await waitFor(() => expect(result.current.user).toEqual(mockUser))
+
+      act(() => result.current.logout())
+      resolveValidation({ ok: true, json: () => Promise.resolve(mockUser) })
+
+      await waitFor(() => expect(result.current.user).toBeNull())
+      expect(localStorage.getItem('user')).toBeNull()
+      expect(localStorage.getItem('access_token')).toBeNull()
+    })
+
+    it('does not let late background validation overwrite a newer account', async () => {
+      const oldUser = createMockUser({ id: 'old-user', username: 'old-user' })
+      const newResponse = createMockAuthResponse({ id: 'new-user', username: 'new-user' })
+      localStorage.setItem('access_token', 'old-access')
+      localStorage.setItem('refresh_token', 'old-refresh')
+      localStorage.setItem('user', JSON.stringify(oldUser))
+      localStorage.setItem('auth_validated_at', Date.now().toString())
+      let resolveValidation!: (response: unknown) => void
+      mockFetch.mockReturnValueOnce(new Promise(resolve => { resolveValidation = resolve }))
+      vi.mocked(api.authApi.login).mockResolvedValueOnce(newResponse)
+      const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() })
+      await waitFor(() => expect(result.current.user).toEqual(oldUser))
+
+      await act(async () => result.current.login('new-user', 'password'))
+      resolveValidation({ ok: true, json: () => Promise.resolve(oldUser) })
+
+      await waitFor(() => expect(result.current.user).toEqual(newResponse.user))
+      expect(localStorage.getItem('access_token')).toBe(newResponse.access_token)
+      expect(JSON.parse(localStorage.getItem('user') || '{}').id).toBe('new-user')
     })
   })
 
@@ -413,7 +578,9 @@ describe('AuthContext', () => {
       localStorage.setItem('user', JSON.stringify(mockUser))
       localStorage.setItem('auth_validated_at', Date.now().toString())
 
-      vi.mocked(api.authApi.refreshToken).mockRejectedValueOnce(new Error('Refresh failed'))
+      vi.mocked(api.authApi.refreshToken).mockRejectedValueOnce(
+        Object.assign(new Error('Refresh failed'), { status: 401 }),
+      )
 
       // Mock background validation to succeed (so cache stays valid during init)
       mockFetch.mockResolvedValueOnce({
@@ -456,6 +623,54 @@ describe('AuthContext', () => {
       await waitFor(() => {
         expect(result.current.user).toBe(null)
       })
+    })
+
+    it('preserves the current session on retryable direct refresh failure', async () => {
+      const mockUser = createMockUser()
+      localStorage.setItem('refresh_token', 'valid-refresh-token')
+      localStorage.setItem('access_token', 'some-access-token')
+      localStorage.setItem('user', JSON.stringify(mockUser))
+      localStorage.setItem('auth_validated_at', Date.now().toString())
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockUser) })
+      vi.mocked(api.authApi.refreshToken).mockRejectedValueOnce(
+        Object.assign(new Error('Service unavailable'), { status: 503 }),
+      )
+      const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() })
+      await waitFor(() => expect(result.current.user).toEqual(mockUser))
+
+      await expect(act(async () => result.current.refreshToken())).rejects.toThrow('Service unavailable')
+
+      expect(result.current.user).toEqual(mockUser)
+      expect(localStorage.getItem('access_token')).toBe('some-access-token')
+      expect(localStorage.getItem('refresh_token')).toBe('valid-refresh-token')
+    })
+
+    it('ignores a late direct refresh after switching accounts', async () => {
+      const oldUser = createMockUser({ id: 'old-user' })
+      const newResponse = createMockAuthResponse({ id: 'new-user' })
+      const staleResponse = createMockAuthResponse({ id: 'old-user' })
+      localStorage.setItem('refresh_token', 'old-refresh')
+      localStorage.setItem('access_token', 'old-access')
+      localStorage.setItem('user', JSON.stringify(oldUser))
+      localStorage.setItem('auth_validated_at', Date.now().toString())
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(oldUser) })
+      let resolveRefresh!: (value: typeof staleResponse) => void
+      vi.mocked(api.authApi.refreshToken).mockReturnValueOnce(
+        new Promise(resolve => { resolveRefresh = resolve }),
+      )
+      vi.mocked(api.authApi.login).mockResolvedValueOnce(newResponse)
+      const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() })
+      await waitFor(() => expect(result.current.user).toEqual(oldUser))
+
+      let refreshPromise!: Promise<void>
+      act(() => { refreshPromise = result.current.refreshToken() })
+      await act(async () => result.current.login('new-user', 'password'))
+      resolveRefresh(staleResponse)
+      await act(async () => refreshPromise)
+
+      expect(result.current.user).toEqual(newResponse.user)
+      expect(localStorage.getItem('access_token')).toBe(newResponse.access_token)
+      expect(localStorage.getItem('refresh_token')).toBe(newResponse.refresh_token)
     })
   })
 
@@ -603,10 +818,11 @@ describe('AuthContext', () => {
       })
 
       act(() => {
-        result.current.googleLogin()
+        result.current.googleLogin({ planIntent: 'pro' })
       })
 
       expect(window.location.href).toContain('/api/auth/google')
+      expect(sessionStorage.getItem('oauth_plan_intent')).toBe('pro')
     })
 
     it('passes redirect parameter to OAuth endpoint', async () => {

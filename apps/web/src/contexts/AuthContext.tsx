@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../lib/api';
 import type { UserSubscription, UsageQuota } from '../types/subscription';
 import { logger } from '../lib/logger';
-import { getApiBase, tryRefreshToken as tryRefreshTokenSingleFlight } from '../lib/apiClient';
+import { clearAuthStorage, getApiBase, tryRefreshToken as tryRefreshTokenSingleFlight } from '../lib/apiClient';
 import { identifyUser, resetAnalytics, trackEvent } from '../lib/analytics';
+import { saveOAuthPlanIntent, type PlanIntent } from '../lib/authFlow';
 
 export interface User {
   id: string;
@@ -31,11 +33,37 @@ export interface AuthContextType {
   handleOAuthCallback: (accessToken: string, refreshToken: string) => Promise<void>;
   verifyEmail: (email: string, code: string) => Promise<void>;
   resendVerification: (email: string) => Promise<void>;
-  googleLogin: (options?: { inviteCode?: string; redirectUrl?: string }) => void;
+  googleLogin: (options?: { inviteCode?: string; redirectUrl?: string; planIntent?: PlanIntent | null }) => void;
   appleLogin: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+/**
+ * Clears identity-bound React Query state before descendants for a new user
+ * are allowed to mount. AuthProvider intentionally stays independent from
+ * QueryClientProvider so its unit and embedded consumers keep working.
+ */
+export const AuthIdentityQueryBoundary: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const identity = user?.id ?? null;
+  const [clearedIdentity, setClearedIdentity] = useState<string | null>(identity);
+
+  React.useLayoutEffect(() => {
+    if (clearedIdentity === identity) return;
+
+    // Cancellation prevents cooperative query functions from finishing, while
+    // removal also detaches non-cooperative in-flight requests from the cache.
+    void queryClient.cancelQueries();
+    queryClient.removeQueries();
+    setClearedIdentity(identity);
+  }, [clearedIdentity, identity, queryClient]);
+
+  if (clearedIdentity !== identity) return null;
+
+  return <React.Fragment key={identity ?? 'anonymous'}>{children}</React.Fragment>;
+};
 
 // Cache TTL: 5 minutes (conservative to balance performance and security)
 const AUTH_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -49,11 +77,8 @@ const CACHE_KEYS = {
 } as const;
 
 // Helper to clear auth state (including cache)
-const clearAuthState = (setUser: (user: User | null) => void) => {
-  localStorage.removeItem(CACHE_KEYS.ACCESS_TOKEN);
-  localStorage.removeItem(CACHE_KEYS.REFRESH_TOKEN);
-  localStorage.removeItem(CACHE_KEYS.USER);
-  localStorage.removeItem(CACHE_KEYS.VALIDATED_AT);
+const clearAuthState = (setUser: (user: User | null) => void, reason = 'auth_state_cleared') => {
+  clearAuthStorage(reason);
   setUser(null);
 };
 
@@ -93,62 +118,47 @@ const getValidCachedUser = (): User | null => {
 };
 
 // Helper to attempt token refresh
-const attemptTokenRefresh = async (setUser: (user: User | null) => void): Promise<boolean> => {
+const attemptTokenRefresh = async (
+  setUser: (user: User | null) => void,
+  ownsGeneration: () => boolean,
+): Promise<boolean> => {
   const refreshed = await tryRefreshTokenSingleFlight();
-  if (!refreshed) return false;
+  if (!refreshed || !ownsGeneration()) return false;
 
   // tryRefreshTokenSingleFlight already persisted tokens + user cache.
   const cachedUserStr = localStorage.getItem(CACHE_KEYS.USER);
   if (cachedUserStr) {
     try {
       const cachedUser = JSON.parse(cachedUserStr) as User;
-      setUser(cachedUser);
+      if (ownsGeneration()) setUser(cachedUser);
     } catch {
       // Corrupted cache - fallback to unauthenticated state.
-      setUser(null);
+      if (ownsGeneration()) setUser(null);
     }
   }
 
-  return true;
-};
-
-// Background validation - doesn't block UI, updates cache silently
-const validateTokenInBackground = async (
-  accessToken: string,
-  setUser: (user: User | null) => void
-): Promise<void> => {
-  try {
-    const response = await fetch(`${getApiBase()}/api/auth/me`, {
-      headers: { 'Authorization': `Bearer ${accessToken}` },
-    });
-
-    if (response.ok) {
-      const serverUser = await response.json();
-      setUser(serverUser);
-      saveUserCache(serverUser);
-      logger.log('[Auth] Background validation succeeded');
-    } else {
-      // Token invalid in background - clear silently
-      logger.warn('[Auth] Background validation failed: token invalid');
-      clearAuthState(setUser);
-    }
-  } catch (error) {
-    // Background validation failed - don't disrupt UX
-    logger.warn('[Auth] Background validation failed (network error):', error);
-  }
+  return ownsGeneration();
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const previousUserIdRef = React.useRef<string | null>(null);
+  const authGenerationRef = React.useRef(0);
+
+  const ownsSession = React.useCallback((generation: number, accessToken: string) => (
+    authGenerationRef.current === generation &&
+    localStorage.getItem(CACHE_KEYS.ACCESS_TOKEN) === accessToken
+  ), []);
 
   // Initialize user from localStorage on mount with validation
   // Cache Strategy: Use cached user within TTL for instant load, validate in background
   useEffect(() => {
     const initializeAuth = async () => {
+      const generation = authGenerationRef.current;
+      let accessToken: string | null = null;
       try {
-        const accessToken = localStorage.getItem(CACHE_KEYS.ACCESS_TOKEN);
+        accessToken = localStorage.getItem(CACHE_KEYS.ACCESS_TOKEN);
         const refreshToken = localStorage.getItem(CACHE_KEYS.REFRESH_TOKEN);
 
         // No token at all - nothing to validate, clear any stale cache
@@ -168,7 +178,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
           // Validate token in background to ensure freshness
           // This doesn't block the UI - user sees cached data immediately
-          validateTokenInBackground(accessToken, setUser);
+          void (async () => {
+            try {
+              const response = await fetch(`${getApiBase()}/api/auth/me`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` },
+              });
+              if (!ownsSession(generation, accessToken)) return;
+              if (response.ok) {
+                const serverUser = await response.json();
+                if (!ownsSession(generation, accessToken)) return;
+                setUser(serverUser);
+                saveUserCache(serverUser);
+              } else if (response.status === 401 || response.status === 403) {
+                clearAuthState(setUser, 'background_validation_failed');
+              }
+            } catch (error) {
+              logger.warn('[Auth] Background validation failed (network error):', error);
+            }
+          })();
           return;
         }
 
@@ -178,49 +205,70 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const response = await fetch(`${getApiBase()}/api/auth/me`, {
             headers: { 'Authorization': `Bearer ${accessToken}` },
           });
+          if (!ownsSession(generation, accessToken)) return;
 
           if (response.ok) {
             // Token valid - use server response and cache it
             const serverUser = await response.json();
+            if (!ownsSession(generation, accessToken)) return;
             saveUserCache(serverUser);
             setUser(serverUser);
             logger.log('[Auth] Token validated on init');
-          } else {
+          } else if (response.status === 401 || response.status === 403) {
             // Token invalid - try refresh
             logger.log('[Auth] Token invalid on init, attempting refresh...');
             if (refreshToken) {
-              const refreshed = await attemptTokenRefresh(setUser);
+              const refreshed = await attemptTokenRefresh(
+                setUser,
+                () => authGenerationRef.current === generation,
+              );
               if (refreshed) {
                 logger.log('[Auth] Token refreshed on init');
               } else {
-                logger.warn('[Auth] Token refresh failed on init, clearing state');
-                clearAuthState(setUser);
+                logger.warn('[Auth] Token refresh failed on init');
+                // Definitive rejection clears storage inside apiClient. If the
+                // captured token remains, the failure was transient.
+                if (
+                  authGenerationRef.current === generation &&
+                  localStorage.getItem(CACHE_KEYS.REFRESH_TOKEN) === refreshToken
+                ) {
+                  setUser(null);
+                }
               }
             } else {
               clearAuthState(setUser);
             }
+          } else {
+            logger.warn('[Auth] Transient validation failure during init:', response.status);
+            setUser(null);
           }
         } catch {
           // Network error - avoid cached user to prevent stale SSO state,
           // but preserve tokens because the failure may be transient.
           logger.warn('[Auth] Network error during init, marking unauthenticated without clearing tokens');
-          setUser(null);
+          if (accessToken && ownsSession(generation, accessToken)) setUser(null);
         }
       } catch (error) {
         logger.error('Failed to initialize auth:', error);
-        clearAuthState(setUser);
+        if (
+          authGenerationRef.current === generation &&
+          localStorage.getItem(CACHE_KEYS.ACCESS_TOKEN) === accessToken
+        ) {
+          clearAuthState(setUser);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     initializeAuth();
-  }, []);
+  }, [ownsSession]);
 
   // Keep auth state in sync when API client clears tokens (same-tab)
   useEffect(() => {
     const onLogout = () => {
       logger.log('[Auth] Logout event received');
+      authGenerationRef.current += 1;
       setUser(null);
     };
 
@@ -247,6 +295,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (username: string, password: string) => {
     const data = await authApi.login(username, password);
+    authGenerationRef.current += 1;
 
     // Store tokens and user data with cache timestamp
     localStorage.setItem(CACHE_KEYS.ACCESS_TOKEN, data.access_token);
@@ -275,14 +324,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
+    const accessToken = localStorage.getItem(CACHE_KEYS.ACCESS_TOKEN);
+    authGenerationRef.current += 1;
     trackEvent('logout');
     resetAnalytics();
-    // Clear all auth data including cache
-    clearAuthState(setUser);
+    clearAuthState(setUser, 'user_initiated');
+    if (accessToken) {
+      void Promise.resolve(fetch(`${getApiBase()}/api/auth/logout`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      })).catch((error) => logger.warn('[Auth] Server logout failed:', error));
+    }
   };
 
   const verifyEmail = async (email: string, code: string) => {
     const data = await authApi.verifyEmail(email, code);
+    authGenerationRef.current += 1;
 
     // Store tokens and user data with cache timestamp
     localStorage.setItem(CACHE_KEYS.ACCESS_TOKEN, data.access_token);
@@ -305,8 +362,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       throw new Error('No refresh token available');
     }
 
+    const generation = authGenerationRef.current;
     try {
       const data = await authApi.refreshToken(refreshToken);
+
+      if (
+        authGenerationRef.current !== generation ||
+        localStorage.getItem(CACHE_KEYS.REFRESH_TOKEN) !== refreshToken
+      ) {
+        return;
+      }
 
       // Update tokens and cache
       localStorage.setItem(CACHE_KEYS.ACCESS_TOKEN, data.access_token);
@@ -315,13 +380,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       setUser(data.user);
     } catch (error) {
-      // If refresh fails, logout
-      logout();
+      const status = (error as { status?: number } | null)?.status;
+      if (
+        authGenerationRef.current === generation &&
+        localStorage.getItem(CACHE_KEYS.REFRESH_TOKEN) === refreshToken &&
+        (status === 401 || status === 403)
+      ) {
+        clearAuthState(setUser, 'refresh_failed');
+      }
       throw error;
     }
   };
 
   const handleOAuthCallback = async (accessToken: string, refreshToken: string) => {
+    const generation = ++authGenerationRef.current;
     // After OAuth callback, we need to fetch user info using the access token
     const response = await fetch(`${getApiBase()}/api/auth/me`, {
       headers: {
@@ -330,11 +402,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     if (!response.ok) {
-      logout();
+      if (authGenerationRef.current === generation) {
+        clearAuthState(setUser, 'oauth_callback_failed');
+      }
       throw new Error('Failed to fetch user info');
     }
 
     const user = await response.json();
+    if (authGenerationRef.current !== generation) return;
 
     // Store tokens and user data with cache timestamp
     localStorage.setItem(CACHE_KEYS.ACCESS_TOKEN, accessToken);
@@ -345,11 +420,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     trackEvent('oauth_callback_success');
   };
 
-  const googleLogin = (options?: { inviteCode?: string; redirectUrl?: string }) => {
+  const googleLogin = (options?: { inviteCode?: string; redirectUrl?: string; planIntent?: PlanIntent | null }) => {
     // Check for redirect parameter from external apps
     const params = new URLSearchParams(window.location.search);
     const redirectUrl = options?.redirectUrl ?? params.get('redirect');
     const inviteCode = options?.inviteCode?.trim();
+    saveOAuthPlanIntent(options?.planIntent);
 
     // Redirect to backend Google OAuth endpoint
     const googleAuthUrl = `${getApiBase()}/api/auth/google`;

@@ -38,7 +38,7 @@ def get_base_prompt(
     parts.append("")
 
     # 3. 工具使用指南 (The Hands) - 紧跟逻辑
-    parts.append(get_tool_usage_guide(folder_ids, config.get("primary_content_type", "draft")))
+    parts.append(get_tool_usage_guide(folder_ids))
     parts.append("")
 
     # 4. 项目具体资料 (The Knowledge)
@@ -178,7 +178,7 @@ OUTPUT_PROTOCOL = """## 双模态输出协议 [绝对准则]
 直接输出这些格式而不调用工具是严重错误，会导致用户数据丢失。"""
 
 
-def get_tool_usage_guide(folder_ids: dict[str, str], primary_content_type: str) -> str:
+def get_tool_usage_guide(folder_ids: dict[str, str]) -> str:
     """Generate tool usage guide with appropriate folder IDs."""
 
     # Build folder reference based on available folders
@@ -197,9 +197,6 @@ def get_tool_usage_guide(folder_ids: dict[str, str], primary_content_type: str) 
         folder_refs.append(f"- 创建素材(snippet) → parent_id='{folder_ids['material']}'")
 
     folder_refs_str = "\n".join(folder_refs)
-
-    # Determine primary content folder
-    folder_ids.get(primary_content_type, folder_ids.get("draft", ""))
 
     return f"""## 工具使用规则
 

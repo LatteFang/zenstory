@@ -295,6 +295,7 @@ def update_user_subscription(
             session=session,
             user_id=user_id,
             source="admin_update_bootstrap",
+            commit=False,
         )
         sub = session.exec(
             select(UserSubscription).where(UserSubscription.user_id == user_id)
@@ -329,7 +330,8 @@ def update_user_subscription(
     if has_plan and request.plan_name and request.duration_days:
         sub = subscription_service.upgrade_subscription(
             session, user_id, request.plan_name, request.duration_days,
-            metadata={"source": "admin_update", "admin_id": current_user.id}
+            metadata={"source": "admin_update", "admin_id": current_user.id},
+            commit=False,
         )
         has_changes = True
 
@@ -338,7 +340,6 @@ def update_user_subscription(
             sub.status = normalized_status
             sub.updated_at = utcnow()
             session.add(sub)
-            session.commit()
         has_changes = True
 
     if not has_changes:
@@ -348,17 +349,21 @@ def update_user_subscription(
             detail="No valid update fields provided",
         )
 
-    # Audit log
-    admin_audit_service.log_action(
-        session, current_user.id, "update_subscription", "subscription", user_id,
-        old_value=old_value,
-        new_value={
-            "plan_name": request.plan_name,
-            "duration_days": request.duration_days,
-            "status": normalized_status
-        },
-        request=http_request
-    )
+    try:
+        admin_audit_service.log_action(
+            session, current_user.id, "update_subscription", "subscription", user_id,
+            old_value=old_value,
+            new_value={
+                "plan_name": request.plan_name,
+                "duration_days": request.duration_days,
+                "status": normalized_status,
+            },
+            request=http_request, commit=False,
+        )
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
 
     log_with_context(
         logger,

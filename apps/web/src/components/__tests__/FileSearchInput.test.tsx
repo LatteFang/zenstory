@@ -183,6 +183,28 @@ describe('FileSearchInput', () => {
   })
 
   describe('IME Composition', () => {
+    it('does not send composition-confirming keys to navigation or window listeners', () => {
+      const onKeyDown = vi.fn()
+      const windowKeyDown = vi.fn()
+      window.addEventListener('keydown', windowKeyDown)
+      try {
+        render(<FileSearchInput {...defaultProps} onKeyDown={onKeyDown} />)
+        const input = screen.getByRole('searchbox')
+        fireEvent.compositionStart(input)
+        fireEvent.keyDown(input, { key: 'Enter' })
+        fireEvent.compositionEnd(input)
+        fireEvent.keyDown(input, { key: 'Enter', isComposing: true })
+        fireEvent.keyDown(input, { key: 'Enter', keyCode: 229 })
+        expect(onKeyDown).not.toHaveBeenCalled()
+        expect(windowKeyDown).not.toHaveBeenCalled()
+        fireEvent.keyDown(input, { key: 'Enter' })
+        expect(onKeyDown).toHaveBeenCalledTimes(1)
+        expect(windowKeyDown).toHaveBeenCalledTimes(1)
+      } finally {
+        window.removeEventListener('keydown', windowKeyDown)
+      }
+    })
+
     it('updates value during IME composition', () => {
       render(<FileSearchInput {...defaultProps} />)
 
