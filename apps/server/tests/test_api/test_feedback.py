@@ -1,6 +1,7 @@
 """Tests for in-app feedback submission API."""
 
 import io
+import re
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -227,7 +228,13 @@ async def test_submit_feedback_with_screenshot_success(
             "source_page": "editor",
             "source_route": "/project/test-id",
         },
-        files={"screenshot": ("bug.png", io.BytesIO(screenshot_bytes), "image/png")},
+        files={
+            "screenshot": (
+                "nested/../../dangerous-looking.PnG",
+                io.BytesIO(screenshot_bytes),
+                "image/png",
+            )
+        },
         headers={"Authorization": f"Bearer {token}"},
     )
 
@@ -237,11 +244,14 @@ async def test_submit_feedback_with_screenshot_success(
         select(UserFeedback).where(UserFeedback.id == payload["id"])
     ).first()
     assert feedback is not None
-    assert feedback.screenshot_original_name == "bug.png"
+    assert feedback.screenshot_original_name == "nested/../../dangerous-looking.PnG"
     assert feedback.screenshot_content_type == "image/png"
     assert feedback.screenshot_size_bytes == len(screenshot_bytes)
     assert feedback.screenshot_path is not None
-    assert Path(feedback.screenshot_path).exists()
+    stored_path = Path(feedback.screenshot_path)
+    assert stored_path.parent == tmp_path
+    assert re.fullmatch(r"[0-9a-f]{32}\.png", stored_path.name)
+    assert stored_path.exists()
 
 
 @pytest.mark.integration

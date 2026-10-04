@@ -104,3 +104,16 @@ test("readiness runs trusted controls rather than executing a supplied source ch
   assert.match(workflow, /Checkout trusted main receipt controls/);
   assert.match(workflow, /node scripts\/ci\/deployment-receipt\.mjs "\$GITHUB_REPOSITORY" "\$SOURCE_SHA" "\$CI_RUN_ID"/);
 });
+
+test("canonical E2E account fixtures use email domains accepted by admin EmailStr", async () => {
+  for (const file of [
+    ".github/actions/setup-backend/action.yml", ".github/workflows/e2e.yml",
+    "apps/server/scripts/seed_test_user.py", "apps/server/scripts/seed_test_admin.py",
+    "apps/web/e2e/config/test-users.ts", "apps/web/e2e/admin.spec.ts",
+    "apps/web/e2e/dashboard-coachmark.spec.ts", "apps/web/e2e/helpers/common.ts",
+    "scripts/ci/ci.sh", "apps/web/e2e/README.md",
+  ]) {
+    const source = await readFile(file, "utf8");
+    assert.doesNotMatch(source, /@zenstory\.(?:local|test)\b/, `${file}: invalid seeded email identity`);
+  }
+});

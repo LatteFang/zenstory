@@ -372,7 +372,7 @@ test.describe('Security - SQL Injection', () => {
 
     const serverLeak = page.locator('text=/sqlite|postgres|traceback|internal server error|syntax error at or near/i');
     expect(await serverLeak.count()).toBe(0);
-    await expect(page.locator('.overflow-auto')).toBeVisible();
+    await expect(page.locator('[data-editor-scroll-container="true"]')).toBeVisible();
   });
 });
 
@@ -409,7 +409,7 @@ test.describe('Security - Path Traversal', () => {
 
     const bodyText = (await page.locator('body').textContent()) ?? '';
     expect(bodyText).not.toContain('root:x:0:0');
-    await expect(page.locator('.overflow-auto')).toBeVisible();
+    await expect(page.locator('[data-editor-scroll-container="true"]')).toBeVisible();
   });
 
   /**
@@ -510,7 +510,7 @@ test.describe('Security - Input Validation', () => {
     await page.waitForResponse(resp => resp.url().includes('/api/v1/files') && resp.request().method() === 'POST', { timeout: 5000 }).catch(() => {});
 
     // App should handle gracefully - no crashes
-    await expect(page.locator('.overflow-auto')).toBeVisible();
+    await expect(page.locator('[data-editor-scroll-container="true"]')).toBeVisible();
   });
 
   /**

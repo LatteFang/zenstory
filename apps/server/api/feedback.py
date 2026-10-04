@@ -16,7 +16,6 @@ from pydantic import BaseModel
 from services.auth import get_current_active_user
 from sqlmodel import Session
 
-from config.datetime_utils import utcnow
 from core.error_codes import ErrorCode
 from core.error_handler import APIException
 from database import get_session
@@ -63,10 +62,16 @@ def _safe_extension(filename: str) -> str:
     return ext if ext in ALLOWED_EXTENSIONS else ""
 
 
-def _build_screenshot_filename(user_id: str, ext: str) -> str:
-    timestamp = utcnow().strftime("%Y%m%d_%H%M%S")
-    random_suffix = uuid4().hex[:8]
-    return f"feedback_{user_id}_{timestamp}_{random_suffix}{ext}"
+def _build_screenshot_filename(image_format: str) -> str:
+    """Build an opaque server-owned filename with a canonical image extension."""
+    generated_id = uuid4().hex
+    if image_format == "png":
+        return f"{generated_id}.png"
+    if image_format == "jpeg":
+        return f"{generated_id}.jpg"
+    if image_format == "webp":
+        return f"{generated_id}.webp"
+    raise ValueError(f"Unsupported image format: {image_format}")
 
 
 def _detect_image_format(content: bytes) -> str | None:
@@ -186,7 +191,7 @@ async def submit_feedback(
             )
 
         upload_dir = _resolve_upload_dir()
-        filename = _build_screenshot_filename(current_user.id, ext)
+        filename = _build_screenshot_filename(detected_format)
         final_path = upload_dir / filename
         with open(final_path, "xb") as f:
             f.write(content)

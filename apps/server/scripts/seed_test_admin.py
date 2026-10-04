@@ -20,7 +20,7 @@ from models import User  # noqa: E402
 
 def main():
     # Get test admin credentials from environment or use defaults
-    email = os.getenv("E2E_TEST_ADMIN_EMAIL", "test-admin@zenstory.test")
+    email = os.getenv("E2E_TEST_ADMIN_EMAIL", "test-admin@example.com")
     password = os.getenv("E2E_TEST_ADMIN_PASSWORD", "TestAdmin123!")
     username = os.getenv("E2E_TEST_ADMIN_USERNAME", "test-admin")
 
