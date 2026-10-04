@@ -185,7 +185,11 @@ def test_default_stages_skip_plot_and_story_work_and_complete(monkeypatch, defau
 
     monkeypatch.setattr(story_mod, "get_run_logger", lambda: MagicMock())
     monkeypatch.setattr(story_mod, "create_performance_monitor", lambda _name: FakeMonitor())
-    monkeypatch.setattr(story_mod, "create_checkpoint_manager", lambda _novel_id: _FakeCheckpointManager())
+    monkeypatch.setattr(
+        story_mod,
+        "create_checkpoint_manager",
+        lambda _novel_id, job_id=None: _FakeCheckpointManager(),
+    )
     monkeypatch.setattr(story_mod, "get_db_session", _session_ctx)
     monkeypatch.setattr(chapters_service_mod, "ChaptersService", _ChaptersService)
     monkeypatch.setattr(
@@ -205,8 +209,14 @@ def test_default_stages_skip_plot_and_story_work_and_complete(monkeypatch, defau
         monkeypatch.setattr(story_mod, name, _Forbidden(name, forbidden_calls))
 
     class _StoryWrapper:
-        def submit(self, nid, cids, _cid):
-            return FakeFuture(story_mod.story_aggregate_flow.fn(novel_id=nid, chapter_ids=cids))
+        def submit(self, nid, cids, _cid, job_id=None):
+            return FakeFuture(
+                story_mod.story_aggregate_flow.fn(
+                    novel_id=nid,
+                    chapter_ids=cids,
+                    job_id=job_id,
+                )
+            )
 
     character_task = FakeTask(
         {"created_count": 2, "updated_count": 0, "failed_count": 0, "failed_characters": [], "status": "completed"}

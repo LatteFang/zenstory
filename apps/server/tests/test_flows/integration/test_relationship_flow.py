@@ -36,15 +36,21 @@ class TestRelationshipFlow:
 
         monkeypatch.setattr(rel_mod, "get_run_logger", lambda: MagicMock())
         monkeypatch.setattr(rel_mod, "create_performance_monitor", lambda _name: FakeMonitor())
-        monkeypatch.setattr(rel_mod, "create_checkpoint_manager", lambda _novel_id: cp)
+        checkpoint_args = []
+        monkeypatch.setattr(
+            rel_mod,
+            "create_checkpoint_manager",
+            lambda novel_id, job_id=None: checkpoint_args.append((novel_id, job_id)) or cp,
+        )
 
         monkeypatch.setattr(rel_mod.settings, "ENABLE_RELATIONSHIP_EXTRACTION", False)
         monkeypatch.setattr(rel_mod.settings, "ENABLE_NEO4J_STORAGE", False)
 
-        result = rel_mod.relationship_flow.fn(novel_id=1, chapter_ids=[1, 2])
+        result = rel_mod.relationship_flow.fn(novel_id=1, chapter_ids=[1, 2], job_id=88)
 
         assert result["relationships_count"] == 0
         assert result["neo4j_persisted"] is False
+        assert checkpoint_args == [(1, 88)]
         assert cp.update_calls[-1][0] == "stage2b"
 
     def test_flow_collects_neo4j_failed_chapters(self, monkeypatch):
@@ -53,7 +59,12 @@ class TestRelationshipFlow:
 
         monkeypatch.setattr(rel_mod, "get_run_logger", lambda: MagicMock())
         monkeypatch.setattr(rel_mod, "create_performance_monitor", lambda _name: FakeMonitor())
-        monkeypatch.setattr(rel_mod, "create_checkpoint_manager", lambda _novel_id: cp)
+        checkpoint_args = []
+        monkeypatch.setattr(
+            rel_mod,
+            "create_checkpoint_manager",
+            lambda novel_id, job_id=None: checkpoint_args.append((novel_id, job_id)) or cp,
+        )
 
         monkeypatch.setattr(rel_mod.settings, "ENABLE_RELATIONSHIP_EXTRACTION", True)
         monkeypatch.setattr(rel_mod.settings, "ENABLE_PLOT_EXTRACTION", True)
@@ -83,3 +94,4 @@ class TestRelationshipFlow:
         assert result["neo4j_failed_chapters"] == [2]
         assert result["status"] == "completed_with_errors"
         assert len(persist_task.calls) == 3
+        assert checkpoint_args == [(9, None)]

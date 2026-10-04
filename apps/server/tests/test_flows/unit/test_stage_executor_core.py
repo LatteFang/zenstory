@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -38,6 +39,67 @@ class _FakeCheckpointManager:
 
 
 class TestStageExecutorCore:
+    def test_execute_stage2_publishes_real_partial_completion_payload(self, monkeypatch):
+        monkeypatch.setattr(se_mod, "get_run_logger", lambda: MagicMock())
+        fake_client = MagicMock()
+        monkeypatch.setattr(
+            se_mod.ProgressPublisher,
+            "_create_redis_client",
+            lambda self: fake_client,
+        )
+        monkeypatch.setattr(
+            se_mod.ProgressPublisher,
+            "_build_novel_summary",
+            lambda self, novel_id, chapters_count: {
+                "id": novel_id,
+                "chapters_count": chapters_count,
+            },
+        )
+
+        executor = se_mod.StageExecutor(7, [1, 2], _FakeCheckpointManager(), "cid", job_id=33)
+        monkeypatch.setattr(executor, "_check_stage2_completion", lambda: (False, False, False))
+        monkeypatch.setattr(
+            executor,
+            "_execute_parallel_stages",
+            lambda _stage2a_done, _stage2c_done: (
+                {"stories_count": 3, "storylines_count": 1, "failed_stories": []},
+                {"created_count": 2, "updated_count": 0, "failed_count": 0},
+            ),
+        )
+        monkeypatch.setattr(
+            executor,
+            "_execute_relationship_stage",
+            lambda _stage2b_done: {
+                "relationships_count": 5,
+                "neo4j_failed_chapters": [],
+            },
+        )
+        monkeypatch.setattr(executor, "_update_stage2_checkpoints", lambda *_args: None)
+        monkeypatch.setattr(executor, "_sync_job_stage", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(executor, "_update_job_status", lambda *_args: None)
+        monkeypatch.setattr(executor, "_get_job_id", lambda: 33)
+        monkeypatch.setattr(executor, "_save_final_checkpoint", lambda *_args: None)
+
+        result = executor.execute_stage2(
+            stage1_result={
+                "summaries_count": 2,
+                "plots_count": 4,
+                "failed_count": 1,
+                "failed_chapters": [2],
+            }
+        )
+
+        channel, serialized = fake_client.publish.call_args_list[-1].args
+        payload = json.loads(serialized)
+        assert result["status"] == "completed_with_errors"
+        assert channel == "ingestion:cid"
+        assert payload["type"] == "completed"
+        assert payload["status"] == "completed_with_errors"
+        assert payload["job_id"] == 33
+        assert payload["summaries_count"] == 2
+        assert payload["relationships_count"] == 5
+        assert payload["novel_summary"] == {"id": 7, "chapters_count": 2}
+
     def test_parse_cp_data_handles_variants(self):
         assert se_mod._parse_cp_data(None) == {}
         assert se_mod._parse_cp_data(SimpleNamespace(checkpoint_data={"a": 1})) == {"a": 1}

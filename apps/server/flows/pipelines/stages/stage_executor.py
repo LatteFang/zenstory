@@ -40,16 +40,36 @@ def _parse_cp_data(checkpoint) -> dict[str, Any]:
 
 # 任务包装器函数定义在此处，避免循环导入
 @task(name="run_story_aggregate_subflow", persist_result=False)
-def _task_run_story_aggregate(novel_id: int, chapter_ids: list[int], correlation_id: str | None = None) -> dict[str, Any]:
+def _task_run_story_aggregate(
+    novel_id: int,
+    chapter_ids: list[int],
+    correlation_id: str | None = None,
+    job_id: int | None = None,
+) -> dict[str, Any]:
     """任务包装器：执行剧情聚合子流程"""
     from flows.pipelines.subflows.story_aggregate_flow import story_aggregate_flow
-    return story_aggregate_flow(novel_id=novel_id, chapter_ids=chapter_ids, correlation_id=correlation_id)
+    return story_aggregate_flow(
+        novel_id=novel_id,
+        chapter_ids=chapter_ids,
+        correlation_id=correlation_id,
+        job_id=job_id,
+    )
 
 @task(name="run_relationship_subflow", persist_result=False)
-def _task_run_relationship(novel_id: int, chapter_ids: list[int], correlation_id: str | None = None) -> dict[str, Any]:
+def _task_run_relationship(
+    novel_id: int,
+    chapter_ids: list[int],
+    correlation_id: str | None = None,
+    job_id: int | None = None,
+) -> dict[str, Any]:
     """任务包装器：执行人物关系子流程"""
     from flows.pipelines.subflows.relationship_flow import relationship_flow
-    return relationship_flow(novel_id=novel_id, chapter_ids=chapter_ids, correlation_id=correlation_id)
+    return relationship_flow(
+        novel_id=novel_id,
+        chapter_ids=chapter_ids,
+        correlation_id=correlation_id,
+        job_id=job_id,
+    )
 
 @task(name="run_character_entity_build_subflow", persist_result=False)
 def _task_run_character_entity_build(novel_id: int, correlation_id: str | None = None) -> dict[str, Any]:
@@ -578,7 +598,11 @@ class StageExecutor:
         # 启动任务
         if not stage2a_done:
             self.logger.info("[阶段2-剧情] 子流未完成，并行执行 story_aggregate_flow")
-            story_future = _task_run_story_aggregate.submit(self.novel_id, self.chapter_ids, self.correlation_id)  # 【修复】传递关联ID
+            story_args = (self.novel_id, self.chapter_ids, self.correlation_id)
+            if self.job_id is None:
+                story_future = _task_run_story_aggregate.submit(*story_args)
+            else:
+                story_future = _task_run_story_aggregate.submit(*story_args, job_id=self.job_id)
         else:
             self.logger.info("[阶段2-剧情] 子流已完成，跳过执行")
 
@@ -672,7 +696,14 @@ class StageExecutor:
 
         if not stage2b_done:
             self.logger.info("[阶段2-关系] 子流未完成，执行 relationship_flow")
-            relationship_future = _task_run_relationship.submit(self.novel_id, self.chapter_ids, self.correlation_id)  # 【修复】传递关联ID
+            relationship_args = (self.novel_id, self.chapter_ids, self.correlation_id)
+            if self.job_id is None:
+                relationship_future = _task_run_relationship.submit(*relationship_args)
+            else:
+                relationship_future = _task_run_relationship.submit(
+                    *relationship_args,
+                    job_id=self.job_id,
+                )
             relationship_result = relationship_future.result()
             relationship_result["_executed"] = True
             relationship_result["executed_capabilities"] = ["relationships"]

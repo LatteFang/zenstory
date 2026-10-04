@@ -54,6 +54,7 @@ def story_aggregate_flow(
     novel_id: int,
     chapter_ids: list[int],
     correlation_id: str | None = None,  # noqa: ARG001
+    job_id: int | None = None,
 ) -> dict[str, Any]:
     """
     剧情聚合流程
@@ -83,7 +84,7 @@ def story_aggregate_flow(
     try:
         # 初始化监控与 checkpoint
         monitor = create_performance_monitor("story_aggregate_flow")
-        checkpoint = create_checkpoint_manager(novel_id)
+        checkpoint = create_checkpoint_manager(novel_id, job_id=job_id)
 
         # 【修复 Bug #2】使用独立的 stage2a checkpoint，避免与 relationship_flow 冲突
         checkpoint_stage = "stage2a"
