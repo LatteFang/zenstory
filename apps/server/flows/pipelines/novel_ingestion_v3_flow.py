@@ -169,6 +169,35 @@ def novel_ingestion_v3(
             raise ValueError("传入 job_id 时必须同时传入 novel_id")
         _validate_and_repair_job_identity(novel_id, job_id, correlation_id)
 
+    persisted_chapter_ids: list[int] | None = None
+    if novel_id is not None:
+        from models.material_models import Novel
+        from services.material.chapters_service import ChaptersService
+
+        with get_prefect_db_session() as session:
+            existing_novel = session.get(Novel, novel_id)
+            if existing_novel is None:
+                raise ValueError(f"预创建的小说不存在: novel_id={novel_id}")
+            if existing_novel.user_id != user_id:
+                raise ValueError(f"novel_id={novel_id} 不属于 user_id={user_id}")
+            if existing_novel.deleted_at is not None:
+                raise ValueError(f"小说已删除: novel_id={novel_id}")
+
+            persisted_chapters = ChaptersService().list_by_novel_ordered(
+                session, novel_id
+            )
+            if persisted_chapters and all(
+                chapter.original_content for chapter in persisted_chapters
+            ):
+                persisted_chapter_ids = [
+                    chapter.id
+                    for chapter in persisted_chapters
+                    if chapter.id is not None
+                ]
+
+    normalized_path: str | None = None
+    content_hash: str | None = None
+    encoding: str | None = None
     try:
         # =================================================================
         # 阶段0: 初始化和文件验证
@@ -181,30 +210,37 @@ def novel_ingestion_v3(
             message="开始解析小说文件..."
         )
 
-        # 文件名标准化（解决中文文件名问题）
-        logger.info("[阶段0] 确保文件可用并标准化")
-        file_path = _ensure_file_local(file_path, user_id, logger)
-        temp_dir = Path(file_path).parent / "temp"
-        normalized_path = normalize_filename(file_path, str(temp_dir))
+        if persisted_chapter_ids is None:
+            # 文件名标准化（解决中文文件名问题）
+            logger.info("[阶段0] 确保文件可用并标准化")
+            file_path = _ensure_file_local(file_path, user_id, logger)
+            temp_dir = Path(file_path).parent / "temp"
+            normalized_path = normalize_filename(file_path, str(temp_dir))
 
-        # 复制原文件到新位置
-        import shutil
-        shutil.copy2(file_path, normalized_path)
-        logger.info(f"文件已复制到: {normalized_path}")
+            # 复制原文件到新位置
+            import shutil
+            shutil.copy2(file_path, normalized_path)
+            logger.info(f"文件已复制到: {normalized_path}")
 
-        # 文件验证
-        logger.info("[阶段0] 文件验证")
-        validated = validate_input(normalized_path)
+            # 文件验证
+            logger.info("[阶段0] 文件验证")
+            validated = validate_input(normalized_path)
 
-        # 计算文件哈希
-        checksums = calculate_checksum(normalized_path)
-        content_hash = checksums["md5_checksum"]
+            # 计算文件哈希
+            checksums = calculate_checksum(normalized_path)
+            content_hash = checksums["md5_checksum"]
 
-        # 检测编码
-        encoding_info = detect_encoding(normalized_path)
-        encoding = encoding_info["encoding"] or "utf-8"
+            # 检测编码
+            encoding_info = detect_encoding(normalized_path)
+            encoding = encoding_info["encoding"] or "utf-8"
 
-        logger.info("文件验证通过: %s", validated["file_path"])
+            logger.info("文件验证通过: %s", validated["file_path"])
+        else:
+            logger.info(
+                "[阶段0] 复用持久化章节，跳过原始文件读取: novel_id=%s chapters=%s",
+                novel_id,
+                len(persisted_chapter_ids),
+            )
 
         # =================================================================
         # 阶段1: 检查断点续传
@@ -212,6 +248,8 @@ def novel_ingestion_v3(
         if resume_from_checkpoint and not novel_id:
             # 仅在 novel_id 未由 upload 端点预创建时，才通过 content_hash 查找断点
             # 当 novel_id 已传入时，跳过 content_hash 查找，避免覆盖为其他 novel
+            if content_hash is None:
+                raise ValueError("缺少原始文件哈希")
             resume_result = _check_and_resume_from_checkpoint(
                 content_hash=content_hash,
                 user_id=user_id,
@@ -236,9 +274,12 @@ def novel_ingestion_v3(
         # =================================================================
         if novel_id:
             # 检查该 novel 是否已有章节
-            with get_prefect_db_session() as session:
-                from services.material.novels_service import NovelsService
-                chapter_ids = NovelsService().list_chapter_ids(session, novel_id)
+            if persisted_chapter_ids is not None:
+                chapter_ids = persisted_chapter_ids
+            else:
+                with get_prefect_db_session() as session:
+                    from services.material.novels_service import NovelsService
+                    chapter_ids = NovelsService().list_chapter_ids(session, novel_id)
 
             if chapter_ids:
                 # 已有章节，直接复用
@@ -254,6 +295,8 @@ def novel_ingestion_v3(
                     )
             else:
                 # novel 已存在但无章节（由 upload 端点预创建），执行 stage0 填充章节
+                if normalized_path is None or content_hash is None or encoding is None:
+                    raise ValueError("缺少已验证的原始文件信息")
                 stage0_result = _execute_stage0(
                     file_path=normalized_path,
                     novel_title=novel_title,
@@ -272,6 +315,8 @@ def novel_ingestion_v3(
                 checkpoint_manager = stage0_result["checkpoint_manager"]
                 job_id = stage0_result["job_id"]
         else:
+            if normalized_path is None or content_hash is None or encoding is None:
+                raise ValueError("缺少已验证的原始文件信息")
             stage0_result = _execute_stage0(
                 file_path=normalized_path,
                 novel_title=novel_title,
@@ -334,13 +379,13 @@ def novel_ingestion_v3(
         # 处理完成后清理临时文件
         try:
             import shutil
-            if Path(normalized_path).exists():
+            if normalized_path and Path(normalized_path).exists():
                 Path(normalized_path).unlink()
                 logger.info("已删除临时文件: %s", normalized_path)
 
             # 如果temp目录为空，删除temp目录
-            temp_dir = Path(normalized_path).parent
-            if temp_dir.exists() and temp_dir.name == "temp" and not any(temp_dir.iterdir()):
+            temp_dir = Path(normalized_path).parent if normalized_path else None
+            if temp_dir and temp_dir.exists() and temp_dir.name == "temp" and not any(temp_dir.iterdir()):
                 temp_dir.rmdir()
                 logger.info("已删除空临时目录: %s", temp_dir)
         except Exception as cleanup_error:
@@ -365,12 +410,12 @@ def novel_ingestion_v3(
         # 即使出错也清理临时文件
         try:
             import shutil
-            if 'normalized_path' in locals() and Path(normalized_path).exists():
+            if normalized_path and Path(normalized_path).exists():
                 Path(normalized_path).unlink()
                 logger.info("已删除临时文件: %s", normalized_path)
 
             # 如果temp目录为空，删除temp目录
-            temp_dir = Path(normalized_path).parent if 'normalized_path' in locals() else None
+            temp_dir = Path(normalized_path).parent if normalized_path else None
             if temp_dir and temp_dir.exists() and temp_dir.name == "temp" and not any(temp_dir.iterdir()):
                 temp_dir.rmdir()
                 logger.info("已删除空临时目录: %s", temp_dir)
