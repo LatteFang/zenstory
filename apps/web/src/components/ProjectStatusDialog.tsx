@@ -8,6 +8,7 @@ import type { Project, PatchProjectRequest } from "../types";
 import { Modal } from "./ui/Modal";
 import { toast } from "../lib/toast";
 import { logger } from "../lib/logger";
+import { inspirationsConfig } from "../config/inspirations";
 
 interface ProjectStatusDialogProps {
   isOpen: boolean;
@@ -209,19 +210,23 @@ export const ProjectStatusDialog: React.FC<ProjectStatusDialogProps> = ({
       }
       footer={
         <div className="w-full flex flex-col sm:flex-row sm:flex-wrap sm:justify-end gap-2 sm:gap-3">
-          <button
-            onClick={handleSubmitInspiration}
-            disabled={submittingInspiration || loading || !project}
-            className="w-full sm:w-auto px-4 py-2 bg-[hsl(var(--bg-secondary))] text-[hsl(var(--accent-primary))] border border-[hsl(var(--accent-primary)/0.35)] rounded-lg text-sm hover:bg-[hsl(var(--accent-primary)/0.08)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {submittingInspiration ? t('sharingInspiration') : t('shareAsInspiration')}
-          </button>
-          <button
-            onClick={handleViewInspirationLibrary}
-            className="w-full sm:w-auto px-4 py-2 bg-[hsl(var(--bg-secondary))] text-[hsl(var(--text-primary))] border border-[hsl(var(--border-color))] rounded-lg text-sm hover:bg-[hsl(var(--bg-tertiary))] transition-colors"
-          >
-            {t('viewInspirationLibrary')}
-          </button>
+          {inspirationsConfig.enabled && (
+            <>
+              <button
+                onClick={handleSubmitInspiration}
+                disabled={submittingInspiration || loading || !project}
+                className="w-full sm:w-auto px-4 py-2 bg-[hsl(var(--bg-secondary))] text-[hsl(var(--accent-primary))] border border-[hsl(var(--accent-primary)/0.35)] rounded-lg text-sm hover:bg-[hsl(var(--accent-primary)/0.08)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {submittingInspiration ? t('sharingInspiration') : t('shareAsInspiration')}
+              </button>
+              <button
+                onClick={handleViewInspirationLibrary}
+                className="w-full sm:w-auto px-4 py-2 bg-[hsl(var(--bg-secondary))] text-[hsl(var(--text-primary))] border border-[hsl(var(--border-color))] rounded-lg text-sm hover:bg-[hsl(var(--bg-tertiary))] transition-colors"
+              >
+                {t('viewInspirationLibrary')}
+              </button>
+            </>
+          )}
           <button
             onClick={onClose}
             className="w-full sm:w-auto px-4 py-2 bg-[hsl(var(--bg-tertiary))] text-[hsl(var(--text-secondary))] rounded-lg text-sm hover:bg-[hsl(var(--border-color))] transition-colors"

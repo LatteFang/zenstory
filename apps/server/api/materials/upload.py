@@ -27,7 +27,6 @@ from core.permissions import (
     QuotaExceededException,
     check_quota,
     consume_quota,
-    require_quota,
 )
 from database import get_session
 from models import User
@@ -285,7 +284,6 @@ async def download_upload_file_for_worker(
 # ==================== Upload Endpoints ====================
 
 @router.post("/upload", response_model=MaterialUploadResponse)
-@require_quota("material_decompose")
 async def upload_material(
     file: UploadFile = FastAPIFile(...),
     title: str | None = Query(None, description="Novel title (optional, auto-detect from file)"),
@@ -330,91 +328,133 @@ async def upload_material(
             status_code=400,
         )
 
-    # 3. Save file to uploads directory
-    from config.material_settings import material_settings
-
-    upload_dir = material_settings.UPLOAD_FOLDER
-    os.makedirs(upload_dir, exist_ok=True)
-
-    # Generate unique filename with timestamp, random token, and sanitized original filename
-    timestamp = utcnow().strftime("%Y%m%d_%H%M%S")
     original_filename = file.filename
     sanitized_original_filename = _sanitize_original_filename(original_filename)
-    _, file_path = _write_upload_file_without_overwrite(
-        upload_dir=upload_dir,
-        user_id=current_user.id,
-        timestamp=timestamp,
-        sanitized_original_filename=sanitized_original_filename,
-        content_bytes=content_bytes,
-    )
-
-    logger.info(f"File saved: {file_path} ({len(content_bytes)} bytes)")
-
-    # 4. Use provided title or extract from filename
     novel_title = title or os.path.splitext(file.filename)[0]
 
-    # 5. Create Novel record (will be populated by flow)
-    source_meta = {
-        "file_path": file_path,
-        "file_size": len(content_bytes),
-        "char_count": char_count,
-        "original_filename": original_filename,
-    }
-
-    novel = Novel(
-        user_id=current_user.id,
-        title=novel_title,
-        author=author,
-        source_meta=json.dumps(source_meta),
-    )
-    session.add(novel)
-    session.commit()
-    session.refresh(novel)
-
-    # 6. Create IngestionJob record
-    job = IngestionJob(
-        novel_id=novel.id,
-        source_path=file_path,
-        status="pending",
-        total_chapters=0,
-        processed_chapters=0,
-    )
-    job.update_stage_progress("queue", "pending", message="等待调度")
-    session.add(job)
-    session.commit()
-    session.refresh(job)
-
-    # 7. Start flow via Prefect deployment and only return success after dispatch is accepted.
-    flow_run_id = await _start_flow_deployment(
-        file_path=file_path,
-        novel_title=novel_title,
-        author=author,
-        user_id=str(current_user.id),
-        novel_id=novel.id,
-    )
-
-    if flow_run_id is None:
-        _mark_job_dispatch_failed(session, job.id)
-        raise APIException(
-            error_code=ErrorCode.SERVICE_UNAVAILABLE,
-            status_code=503,
-            detail=DISPATCH_FAILURE_MESSAGE,
+    # Quota is consumed atomically after request/file validation and before any
+    # runnable job exists. The endpoint owns compensation until Prefect accepts.
+    check_quota("material_decompose", session, current_user.id)
+    if not consume_quota("material_decompose", session, current_user.id):
+        _, used, limit = quota_service.check_feature_quota(
+            session, current_user.id, "material_decompose"
+        )
+        raise QuotaExceededException(
+            feature_type="material_decompose",
+            used=used,
+            limit=limit,
         )
 
-    logger.info(
-        "Novel ingestion dispatched: novel_id=%s, job_id=%s, flow_run_id=%s",
-        novel.id,
-        job.id,
-        flow_run_id,
-    )
+    quota_consumed = True
+    dispatch_accepted = False
+    job_id: int | None = None
 
-    return MaterialUploadResponse(
-        novel_id=novel.id,
-        title=novel.title,
-        job_id=job.id,
-        status="pending",
-        message="Novel upload successful, decomposition started",
-    )
+    def _refund_once() -> None:
+        nonlocal quota_consumed
+        if not quota_consumed:
+            return
+        quota_consumed = False
+        try:
+            quota_service.release_feature_quota(
+                session, current_user.id, "material_decompose"
+            )
+        except Exception as refund_error:
+            logger.error(
+                "Failed to refund material upload quota after pre-dispatch failure: %s",
+                refund_error,
+                exc_info=True,
+            )
+
+    try:
+        # 3. Save file to uploads directory
+        from config.material_settings import material_settings
+
+        upload_dir = material_settings.UPLOAD_FOLDER
+        os.makedirs(upload_dir, exist_ok=True)
+        timestamp = utcnow().strftime("%Y%m%d_%H%M%S")
+        _, file_path = _write_upload_file_without_overwrite(
+            upload_dir=upload_dir,
+            user_id=current_user.id,
+            timestamp=timestamp,
+            sanitized_original_filename=sanitized_original_filename,
+            content_bytes=content_bytes,
+        )
+        logger.info(f"File saved: {file_path} ({len(content_bytes)} bytes)")
+
+        source_meta = {
+            "file_path": file_path,
+            "file_size": len(content_bytes),
+            "char_count": char_count,
+            "original_filename": original_filename,
+        }
+        novel = Novel(
+            user_id=current_user.id,
+            title=novel_title,
+            author=author,
+            source_meta=json.dumps(source_meta),
+        )
+        session.add(novel)
+        session.commit()
+        session.refresh(novel)
+
+        job = IngestionJob(
+            novel_id=novel.id,
+            source_path=file_path,
+            status="pending",
+            total_chapters=0,
+            processed_chapters=0,
+        )
+        job.update_stage_progress("queue", "pending", message="等待调度")
+        session.add(job)
+        session.commit()
+        session.refresh(job)
+        job_id = job.id
+
+        flow_run_id = await _start_flow_deployment(
+            file_path=file_path,
+            novel_title=novel_title,
+            author=author,
+            user_id=str(current_user.id),
+            novel_id=novel.id,
+            job_id=job.id,
+        )
+
+        if flow_run_id is None:
+            raise APIException(
+                error_code=ErrorCode.SERVICE_UNAVAILABLE,
+                status_code=503,
+                detail=DISPATCH_FAILURE_MESSAGE,
+            )
+
+        dispatch_accepted = True
+        logger.info(
+            "Novel ingestion dispatched: novel_id=%s, job_id=%s, flow_run_id=%s",
+            novel.id,
+            job.id,
+            flow_run_id,
+        )
+        return MaterialUploadResponse(
+            novel_id=novel.id,
+            title=novel.title,
+            job_id=job.id,
+            status="pending",
+            message="Novel upload successful, decomposition started",
+        )
+    except Exception:
+        session.rollback()
+        if not dispatch_accepted:
+            if job_id is not None:
+                try:
+                    _mark_job_dispatch_failed(session, job_id)
+                except Exception:
+                    session.rollback()
+                    logger.error(
+                        "Failed to persist material upload dispatch failure: job_id=%s",
+                        job_id,
+                        exc_info=True,
+                    )
+            _refund_once()
+        raise
 
 
 # ==================== Retry Endpoints ====================
@@ -428,7 +468,7 @@ async def retry_material_job(
     """
     Retry failed decomposition task.
 
-    Creates a new ingestion job and restarts the flow from the beginning.
+    Creates a new ingestion job and resumes its incomplete capabilities.
     """
     # Verify novel ownership and soft delete check
     novel = _get_novel_or_404(session, novel_id, current_user.id)
@@ -450,8 +490,8 @@ async def retry_material_job(
             detail="Decomposition job is already running",
         )
 
-    # Only allow retry for failed jobs
-    if latest_job.status != "failed":
+    # Failed and partially completed jobs can resume their incomplete work.
+    if latest_job.status not in {"failed", "completed_with_errors"}:
         raise APIException(
             error_code=ErrorCode.VALIDATION_ERROR,
             status_code=400,
@@ -466,72 +506,93 @@ async def retry_material_job(
     if not compensatory_retry:
         check_quota("material_decompose", session, current_user.id)
 
-    # Create new job
-    new_job = IngestionJob(
-        novel_id=novel_id,
-        source_path=latest_job.source_path,
-        status="pending",
-        total_chapters=0,
-        processed_chapters=0,
-    )
-    new_job.update_stage_progress("queue", "pending", message="等待重试调度")
-    session.add(new_job)
-    session.commit()
-    session.refresh(new_job)
-
     quota_consumed = False
+
+    def _refund_retry_quota_once() -> None:
+        nonlocal quota_consumed
+        if not quota_consumed:
+            return
+        quota_consumed = False
+        try:
+            quota_service.release_feature_quota(
+                session, current_user.id, "material_decompose"
+            )
+        except Exception as refund_error:
+            logger.error(
+                "Failed to refund material retry quota after pre-dispatch failure: %s",
+                refund_error,
+                exc_info=True,
+            )
+
     if not compensatory_retry:
         if consume_quota("material_decompose", session, current_user.id):
             quota_consumed = True
         else:
-            session.delete(new_job)
-            session.commit()
-            allowed, used, limit = quota_service.check_feature_quota(
+            _allowed, used, limit = quota_service.check_feature_quota(
                 session, current_user.id, "material_decompose"
             )
-            # This request did not charge quota, so it must not proceed to
-            # dispatch (and a possible refund). Raise regardless of a racy
-            # allowed==True (a concurrent decrement could flip it): new_job is
-            # already deleted and nothing was consumed for this request.
+            # This request did not charge quota, so it must not create a new
+            # runnable job, dispatch, or refund. Raise even if a concurrent
+            # change makes the advisory check report allowed=True.
             raise QuotaExceededException(
                 feature_type="material_decompose",
                 used=used,
                 limit=limit,
             )
 
-    # Parse source_meta to get file path
-    source_meta = {}
-    if novel.source_meta:
-        with contextlib.suppress(Exception):
-            parsed = json.loads(novel.source_meta)
-            if isinstance(parsed, dict):
-                source_meta = parsed
-    file_path = source_meta.get("file_path", latest_job.source_path)
-
-    flow_run_id = await _start_flow_deployment(
-        file_path=file_path,
-        novel_title=novel.title,
-        author=novel.author,
-        user_id=str(current_user.id),
-        novel_id=novel_id,
-    )
-
-    if flow_run_id is None:
-        # Only refund quota that THIS request actually consumed, so a dispatch
-        # failure cannot under-count usage (refund-leak) when no unit was charged.
-        if quota_consumed:
-            quota_service.release_feature_quota(
-                session, current_user.id, "material_decompose"
-            )
-
-        _mark_job_dispatch_failed(session, new_job.id)
-
-        raise APIException(
-            error_code=ErrorCode.SERVICE_UNAVAILABLE,
-            status_code=503,
-            detail=DISPATCH_FAILURE_MESSAGE,
+    new_job: IngestionJob | None = None
+    try:
+        # Create a runnable job only after the atomic quota decision succeeds.
+        new_job = IngestionJob(
+            novel_id=novel_id,
+            source_path=latest_job.source_path,
+            status="pending",
+            total_chapters=0,
+            processed_chapters=0,
         )
+        new_job.update_stage_progress("queue", "pending", message="等待重试调度")
+        session.add(new_job)
+        session.commit()
+        session.refresh(new_job)
 
+        source_meta = {}
+        if novel.source_meta:
+            with contextlib.suppress(Exception):
+                parsed = json.loads(novel.source_meta)
+                if isinstance(parsed, dict):
+                    source_meta = parsed
+        file_path = source_meta.get("file_path", latest_job.source_path)
+
+        flow_run_id = await _start_flow_deployment(
+            file_path=file_path,
+            novel_title=novel.title,
+            author=novel.author,
+            user_id=str(current_user.id),
+            novel_id=novel_id,
+            job_id=new_job.id,
+        )
+        if flow_run_id is None:
+            raise APIException(
+                error_code=ErrorCode.SERVICE_UNAVAILABLE,
+                status_code=503,
+                detail=DISPATCH_FAILURE_MESSAGE,
+            )
+    except Exception:
+        session.rollback()
+        if new_job is not None and new_job.id is not None:
+            try:
+                _mark_job_dispatch_failed(session, new_job.id)
+            except Exception:
+                session.rollback()
+                logger.error(
+                    "Failed to persist material retry dispatch failure: job_id=%s",
+                    new_job.id,
+                    exc_info=True,
+                )
+        _refund_retry_quota_once()
+        raise
+
+    assert new_job.id is not None
     logger.info(
         "Material job retry dispatched: novel_id=%s, new_job_id=%s, flow_run_id=%s",
         novel_id,

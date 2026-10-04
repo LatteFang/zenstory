@@ -17,6 +17,7 @@ import type { QuotaResponse } from "../types/subscription";
 import { buildUpgradeUrl, getUpgradePromptDefinition } from "../config/upgradeExperience";
 import { trackUpgradeClick, trackUpgradeConversion } from "../lib/upgradeAnalytics";
 import { trackEvent } from "../lib/analytics";
+import { inspirationsConfig } from "../config/inspirations";
 
 type UsageKey =
   | "ai_conversations"
@@ -93,7 +94,7 @@ export default function BillingPage() {
         { key: "material_decompositions", label: t("settings:subscription.features.material_decompositions", "素材拆解次数") },
         { key: "skill_creates", label: t("settings:subscription.features.custom_skills", "自定义技能数量") },
         { key: "inspiration_copies", label: t("settings:subscription.features.inspiration_copies_monthly", "灵感复用次数") },
-      ] as { key: UsageKey; label: string }[],
+      ].filter((item) => inspirationsConfig.enabled || item.key !== "inspiration_copies") as { key: UsageKey; label: string }[],
     [t]
   );
 

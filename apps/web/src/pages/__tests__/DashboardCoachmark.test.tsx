@@ -107,6 +107,10 @@ vi.mock('../../config/dashboardOnboarding', () => ({
   dashboardOnboardingFlags: mockDashboardOnboardingFlags,
 }));
 
+vi.mock('../../config/inspirations', () => ({
+  inspirationsConfig: { enabled: true },
+}));
+
 vi.mock('../../lib/onboardingPersona', () => ({
   getPersonaOnboardingData: () =>
     mockHasPersonaOnboarding
@@ -122,6 +126,9 @@ vi.mock('../../lib/onboardingPersona', () => ({
 }));
 
 import Dashboard from '../Dashboard';
+import { DASHBOARD_FIRST_RUN_TOUR } from '../../config/productTours/dashboardFirstRun';
+
+const enabledTourSteps = DASHBOARD_FIRST_RUN_TOUR.steps;
 
 const renderDashboard = () => {
   const queryClient = new QueryClient({
@@ -170,6 +177,7 @@ describe('Dashboard coachmark tour', () => {
     mockProjects = [];
     mockProjectsLoading = false;
     mockDashboardOnboardingFlags.coachmarkTourEnabled = true;
+    DASHBOARD_FIRST_RUN_TOUR.steps = enabledTourSteps;
   });
 
   it('auto-starts for eligible users and advances through the configured steps', async () => {
@@ -203,6 +211,17 @@ describe('Dashboard coachmark tour', () => {
     fireEvent.change(screen.getByRole('textbox'), { target: { value: '一个关于复仇的短剧开场' } });
     fireEvent.click(screen.getByRole('button', { name: '下一步' }));
 
+    expect(await screen.findByText('一键创建项目')).toBeInTheDocument();
+    expect(screen.queryByText('没想法就先来这里')).not.toBeInTheDocument();
+  });
+
+  it('continues to project creation when the library step is disabled and the idea is empty', async () => {
+    DASHBOARD_FIRST_RUN_TOUR.steps = enabledTourSteps.filter((step) => step.id !== 'inspirations_link');
+    renderDashboard();
+    expect(await screen.findByText('先选你要写什么')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '知道了' }));
+    expect(await screen.findByText('从一句核心冲突开始')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '下一步' }));
     expect(await screen.findByText('一键创建项目')).toBeInTheDocument();
     expect(screen.queryByText('没想法就先来这里')).not.toBeInTheDocument();
   });

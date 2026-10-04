@@ -24,6 +24,10 @@ const useExternalBackend = process.env.PLAYWRIGHT_EXTERNAL_BACKEND === '1'
 const reuseExistingServer = process.env.E2E_REUSE_EXISTING_SERVER !== 'false'
 const authStateFile = process.env.PLAYWRIGHT_AUTH_FILE
 const ciMaxFailures = Number.parseInt(process.env.E2E_MAX_FAILURES ?? '5', 10)
+// The full browser regression suite exercises optional modules explicitly.
+// Product defaults remain off; set both flags to false to test the disabled app.
+const inspirationTestFlag = process.env.INSPIRATIONS_ENABLED ?? 'true'
+const inspirationWebTestFlag = process.env.VITE_INSPIRATIONS_ENABLED ?? inspirationTestFlag
 
 /**
  * Performance-optimized Playwright configuration
@@ -141,6 +145,7 @@ export default defineConfig({
     ? [
       {
         command: 'pnpm dev --host 127.0.0.1 --port 5173',
+        env: { VITE_INSPIRATIONS_ENABLED: inspirationWebTestFlag },
         url: process.env.E2E_BASE_URL || 'http://127.0.0.1:5173',
         reuseExistingServer,
         // Reduced from 120s - dev server should start faster
@@ -151,6 +156,7 @@ export default defineConfig({
       {
         command:
           'cd ../server && if [ -f .env.test ]; then cp .env.test .env; fi && if [ -d .venv312 ]; then . .venv312/bin/activate; elif [ -d venv ]; then . venv/bin/activate; elif [ -d .venv ]; then . .venv/bin/activate; fi && AUTH_RATE_LIMIT_ENABLED=false ASYNC_VECTOR_INDEX_ENABLED=false python main.py',
+        env: { INSPIRATIONS_ENABLED: inspirationTestFlag },
         url: process.env.E2E_API_HEALTH_URL || 'http://127.0.0.1:8000/health',
         reuseExistingServer,
         // Reduced from 120s - server should start faster
@@ -160,6 +166,7 @@ export default defineConfig({
       },
       {
         command: 'pnpm dev --host 127.0.0.1 --port 5173',
+        env: { VITE_INSPIRATIONS_ENABLED: inspirationWebTestFlag },
         url: process.env.E2E_BASE_URL || 'http://127.0.0.1:5173',
         reuseExistingServer,
         // Reduced from 120s - dev server should start faster

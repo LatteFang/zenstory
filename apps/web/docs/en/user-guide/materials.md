@@ -65,6 +65,8 @@ Choose the function you want to learn, then decide your own characters, actions 
 
 ## Implementation sources
 
+2026-10-04 maintenance note: the unused `MaterialViewer` has been removed; current result display lives in [`MaterialDetailPage`](https://github.com/zenstory-ai/zenstory/blob/main/apps/web/src/pages/MaterialDetailPage.tsx). The fixed-commit links below remain historical evidence.
+
 Source checked on 2026-09-13. These pinned references support format, task, display and context details; they are not account-run or analysis-quality tests.
 
 - [Upload format, size and character limits](https://github.com/zenstory-ai/zenstory/blob/306059d9418dbdd6612d67574816ad960f58e51c/apps/server/api/materials/upload.py#L287-L331)

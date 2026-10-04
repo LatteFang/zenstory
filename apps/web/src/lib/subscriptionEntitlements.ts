@@ -2,6 +2,7 @@ import type {
   SubscriptionCatalogEntitlements,
   SubscriptionCatalogTier,
 } from "../types/subscription";
+import { inspirationsConfig } from "../config/inspirations";
 
 type TranslateFn = (
   key: string,
@@ -107,7 +108,7 @@ export function getEntitlementMetricDefinitions(
     "次/月",
   );
 
-  return [
+  const definitions: EntitlementMetricDefinition[] = [
     {
       key: "writing_credits_monthly",
       label: translate(t, "dashboard:billing.metricWriting", "可创作体量"),
@@ -237,6 +238,10 @@ export function getEntitlementMetricDefinitions(
       compareValue: (plan) => [...plan.entitlements.export_formats].sort(),
     },
   ];
+
+  return definitions.filter(
+    (definition) => inspirationsConfig.enabled || definition.key !== "inspiration_copies_monthly",
+  );
 }
 
 export function toComparableMetricValue(value: unknown): string {

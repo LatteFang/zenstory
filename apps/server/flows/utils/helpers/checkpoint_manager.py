@@ -51,9 +51,6 @@ class CheckpointManager:
 
         with get_prefect_db_session() as session:
             svc = CheckpointService()
-            checkpoint = svc.get(session, self.novel_id, stage)
-
-            # 【修复】明确传递 None 而不是空字典，避免混淆
             checkpoint = svc.upsert(
                 session,
                 self.novel_id,
@@ -87,7 +84,7 @@ class CheckpointManager:
 
         with get_prefect_db_session() as session:
             svc = CheckpointService()
-            checkpoint = svc.get(session, self.novel_id, stage)
+            checkpoint = self._service_get(svc, session, stage)
 
             if checkpoint:
                 # 需要 detach from session
@@ -101,7 +98,7 @@ class CheckpointManager:
 
         with get_prefect_db_session() as session:
             svc = CheckpointService()
-            checkpoint = svc.get_latest(session, self.novel_id)
+            checkpoint = self._service_get_latest(svc, session)
             if checkpoint:
                 session.expunge(checkpoint)
             return checkpoint
@@ -140,29 +137,71 @@ class CheckpointManager:
         """标记阶段失败"""
         self.update_checkpoint(stage, status="failed", error=error)
 
-    def get_completed_chapters(self, stage: str) -> list[int]:
+    @staticmethod
+    def _capability_keys(capability: str) -> tuple[str, str]:
+        keys = {
+            "summaries": ("completed_chapter_ids", "failed_chapter_ids"),
+            "plots": ("completed_plot_chapter_ids", "failed_plot_chapter_ids"),
+            "mentions": (
+                "completed_mention_chapter_ids",
+                "failed_mention_chapter_ids",
+            ),
+        }
+        try:
+            return keys[capability]
+        except KeyError as exc:
+            raise ValueError(f"未知章节能力: {capability}") from exc
+
+    @staticmethod
+    def _normalize_ids(values: Any) -> list[int]:
+        if not isinstance(values, list):
+            return []
+        seen: set[int] = set()
+        normalized: list[int] = []
+        for value in values:
+            if isinstance(value, bool) or not isinstance(value, int) or value in seen:
+                continue
+            seen.add(value)
+            normalized.append(value)
+        return normalized
+
+    def _service_get(self, svc: CheckpointService, session: Any, stage: str) -> Any | None:
+        """Call the job-scoped checkpoint service contract."""
+        return svc.get(session, self.novel_id, stage, job_id=self.job_id)
+
+    def _service_get_latest(self, svc: CheckpointService, session: Any) -> Any | None:
+        return svc.get_latest(session, self.novel_id, job_id=self.job_id)
+
+    def get_completed_chapters(
+        self, stage: str, capability: str = "summaries"
+    ) -> list[int]:
         """获取已完成的章节ID列表"""
         checkpoint = self.get_checkpoint(stage)
         data = self._parse_checkpoint_data(checkpoint)
-        return data.get("completed_chapter_ids", [])
+        completed_key, _ = self._capability_keys(capability)
+        return self._normalize_ids(data.get(completed_key, []))
 
-    def get_failed_chapters(self, stage: str) -> list[int]:
+    def get_failed_chapters(
+        self, stage: str, capability: str = "summaries"
+    ) -> list[int]:
         """获取失败的章节ID列表"""
         checkpoint = self.get_checkpoint(stage)
         data = self._parse_checkpoint_data(checkpoint)
-        return data.get("failed_chapter_ids", [])
+        _, failed_key = self._capability_keys(capability)
+        return self._normalize_ids(data.get(failed_key, []))
 
-    def get_pending_chapters(self, stage: str, all_chapter_ids: list[int]) -> list[int]:
+    def get_pending_chapters(
+        self,
+        stage: str,
+        all_chapter_ids: list[int],
+        capability: str = "summaries",
+    ) -> list[int]:
         """获取待处理的章节ID列表"""
-        completed = set(self.get_completed_chapters(stage))
-        failed = set(self.get_failed_chapters(stage))
-
-        # 待处理 = 全部 - 已完成 - 失败
-        pending = [
-            cid for cid in all_chapter_ids if cid not in completed and cid not in failed
-        ]
-
-        return pending
+        completed = set(self.get_completed_chapters(stage, capability))
+        # Failed chapters are intentionally pending on the next attempt.  De-duplicate
+        # invalid/repeated input without changing the caller's chapter order.
+        normalized_all = self._normalize_ids(all_chapter_ids)
+        return [cid for cid in normalized_all if cid not in completed]
 
     def clear_checkpoints(self) -> None:
         """清除所有检查点"""

@@ -115,7 +115,12 @@ async def test_admin_list_plans_and_update_plan_success(client: AsyncClient, db_
 
 
 @pytest.mark.integration
-async def test_admin_dashboard_stats_aggregates_core_metrics(client: AsyncClient, db_session: Session):
+async def test_admin_dashboard_stats_aggregates_core_metrics(
+    client: AsyncClient,
+    db_session: Session,
+    monkeypatch,
+):
+    monkeypatch.setenv("INSPIRATIONS_ENABLED", "true")
     now = utcnow().replace(tzinfo=None)
     yesterday = now - timedelta(days=1)
 

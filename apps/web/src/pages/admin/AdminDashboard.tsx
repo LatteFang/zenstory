@@ -6,6 +6,7 @@ import { adminApi } from '@/lib/adminApi';
 import { AdminPageState } from '@/components/admin';
 import { StatsCard } from '@/components/admin/StatsCard';
 import { RecentActivityList } from '@/components/admin/RecentActivityList';
+import { inspirationsConfig } from '@/config/inspirations';
 
 const WINDOW_OPTIONS = [7, 14, 30] as const;
 const MAX_VISIBLE_SOURCES = 8;
@@ -170,12 +171,14 @@ export default function AdminDashboard() {
               value={stats?.total_projects ?? 0}
               isLoading={isLoading}
             />
-            <StatsCard
-              icon={<Lightbulb className="h-5 w-5" />}
-              title={t('admin:dashboard.totalInspirations')}
-              value={stats?.total_inspirations ?? 0}
-              isLoading={isLoading}
-            />
+            {inspirationsConfig.enabled && (
+              <StatsCard
+                icon={<Lightbulb className="h-5 w-5" />}
+                title={t('admin:dashboard.totalInspirations')}
+                value={stats?.total_inspirations ?? 0}
+                isLoading={isLoading}
+              />
+            )}
             <StatsCard
               icon={<CreditCard className="h-5 w-5" />}
               title={t('admin:dashboard.activeSubscriptions')}

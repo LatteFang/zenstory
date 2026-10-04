@@ -45,7 +45,7 @@ class TestStageExecutorIntegration:
         monkeypatch.setattr(
             chapter_flow_mod,
             "chapter_extraction_flow",
-            lambda novel_id, chapter_ids, correlation_id=None: {
+            lambda novel_id, chapter_ids, correlation_id=None, job_id=None: {
                 "summaries_count": len(chapter_ids),
                 "plots_count": len(chapter_ids) * 2,
                 "mentions_extracted": True,

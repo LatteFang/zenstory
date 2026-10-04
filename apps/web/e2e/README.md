@@ -81,6 +81,17 @@ Canonical maintainer governance note:
 
 ## Running Tests
 
+### Optional inspiration-library module
+
+The product defaults to `INSPIRATIONS_ENABLED=false` (server) and
+`VITE_INSPIRATIONS_ENABLED=false` (web). The full browser regression harness
+explicitly enables both for its managed servers so existing discovery, copying,
+submission and admin scenarios still run. `scripts/ci/ci.sh e2e` does the same.
+When reusing externally started servers, enable both flags yourself and restart
+the servers (rebuild the web bundle for production). Default-disabled behavior
+is covered by the feature-flag unit/API tests; override both flags to `false`
+when running a disabled-state browser check, rather than the full feature suite.
+
 ### Prerequisites
 
 Ensure the test environment is properly configured:

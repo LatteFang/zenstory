@@ -7,38 +7,62 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from sqlalchemy import and_, or_
 from sqlmodel import Session, select
 
-from models.material_models import ProcessCheckpoint
+from config.datetime_utils import utcnow
+from models.material_models import IngestionJob, ProcessCheckpoint
 
 
 class CheckpointService:
     """Process checkpoint service using SQLModel patterns."""
 
     def get(
-        self, session: Session, novel_id: int, stage: str
+        self, session: Session, novel_id: int, stage: str, job_id: int | None = None
     ) -> ProcessCheckpoint | None:
-        """Get the latest checkpoint for a specific stage."""
-        statement = (
-            select(ProcessCheckpoint)
-            .where(
-                ProcessCheckpoint.novel_id == novel_id,
-                ProcessCheckpoint.stage == stage,
-            )
-            .order_by(ProcessCheckpoint.created_at.desc())
-        )
-        return session.exec(statement).first()
+        """Read this job's checkpoint, or a prior terminal/legacy resume seed."""
+        return self._read(session, novel_id, stage, job_id)
 
     def get_latest(
-        self, session: Session, novel_id: int
+        self, session: Session, novel_id: int, job_id: int | None = None
     ) -> ProcessCheckpoint | None:
         """Get the latest checkpoint for a novel (any stage)."""
-        statement = (
-            select(ProcessCheckpoint)
-            .where(ProcessCheckpoint.novel_id == novel_id)
-            .order_by(ProcessCheckpoint.created_at.desc())
+        return self._read(session, novel_id, None, job_id)
+
+    def _read(
+        self, session: Session, novel_id: int, stage: str | None, job_id: int | None,
+    ) -> ProcessCheckpoint | None:
+        statement = select(ProcessCheckpoint).where(ProcessCheckpoint.novel_id == novel_id)
+        if stage is not None:
+            statement = statement.where(ProcessCheckpoint.stage == stage)
+        if job_id is None:
+            # Existing unscoped callers retain historical read behavior.
+            return session.exec(statement.order_by(
+                ProcessCheckpoint.created_at.desc(), ProcessCheckpoint.id.desc(),
+            )).first()
+
+        statement = statement.order_by(ProcessCheckpoint.updated_at.desc(), ProcessCheckpoint.id.desc())
+
+        job = session.get(IngestionJob, job_id)
+        if not job or job.novel_id != novel_id:
+            raise ValueError("Checkpoint job does not belong to novel")
+        current = session.exec(statement.where(ProcessCheckpoint.job_id == job_id)).first()
+        if current:
+            return current
+
+        previous_jobs = select(IngestionJob.id).where(
+            IngestionJob.novel_id == novel_id,
+            IngestionJob.status.in_(["failed", "completed", "completed_with_errors"]),
+            or_(
+                IngestionJob.created_at < job.created_at,
+                and_(IngestionJob.created_at == job.created_at, IngestionJob.id < job_id),
+            ),
         )
-        return session.exec(statement).first()
+        # A seed is immutable input to a new job, never a row the new job owns.
+        return session.exec(statement.where(
+            ProcessCheckpoint.updated_at <= job.created_at,
+            or_(ProcessCheckpoint.job_id.is_(None), ProcessCheckpoint.job_id.in_(previous_jobs)),
+        )).first()
 
     def upsert(
         self,
@@ -51,12 +75,14 @@ class CheckpointService:
         job_id: int | None = None,
         error: str | None = None,
     ) -> ProcessCheckpoint:
-        """Upsert a checkpoint. Creates new or updates existing."""
+        """Write only this job's row; copy historical resume data on first write."""
+        source = self.get(session, novel_id, stage, job_id=job_id) if job_id is not None else None
         statement = (
             select(ProcessCheckpoint)
             .where(
                 ProcessCheckpoint.novel_id == novel_id,
                 ProcessCheckpoint.stage == stage,
+                ProcessCheckpoint.job_id == job_id,
             )
             .order_by(ProcessCheckpoint.created_at.desc())
         )
@@ -64,13 +90,21 @@ class CheckpointService:
 
         if cp is None:
             # Create new checkpoint
-            checkpoint_data_str = json.dumps(data) if data else "{}"
+            inherited = {}
+            if source and source.checkpoint_data:
+                try:
+                    inherited = json.loads(source.checkpoint_data)
+                except (json.JSONDecodeError, TypeError):
+                    inherited = {}
+                if not isinstance(inherited, dict):
+                    inherited = {}
+            inherited.update(data or {})
             cp = ProcessCheckpoint(
                 novel_id=novel_id,
                 job_id=job_id,
                 stage=stage,
-                stage_status=status or "processing",
-                checkpoint_data=checkpoint_data_str,
+                stage_status=status or (source.stage_status if source else "processing"),
+                checkpoint_data=json.dumps(inherited),
             )
             session.add(cp)
             session.flush()
@@ -91,6 +125,8 @@ class CheckpointService:
             cp.checkpoint_data = json.dumps(existing_data)
         if error:
             cp.mark_failed(error)
+
+        cp.updated_at = utcnow()
 
         session.add(cp)
         session.flush()

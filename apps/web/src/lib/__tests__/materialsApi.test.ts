@@ -23,7 +23,6 @@ import {
   type MaterialImportRequest,
   type MaterialImportResponse,
   type MaterialUploadResponse,
-  type MaterialStatusResponse,
   type MaterialSearchResult,
   type BatchImportItem,
   type BatchImportResponse,
@@ -254,44 +253,6 @@ describe('materialsApi', () => {
       vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'))
 
       await expect(materialsApi.upload(mockFile)).rejects.toThrow('Network error')
-    })
-  })
-
-  describe('getStatus', () => {
-    it('returns material status', async () => {
-      const mockStatus: MaterialStatusResponse = {
-        novel_id: 'novel-1',
-        status: 'completed',
-        progress: 100,
-        total_chapters: 10,
-        total_characters: 5,
-      }
-      mockApiGet.mockResolvedValue(mockStatus)
-
-      const result = await materialsApi.getStatus('novel-1')
-
-      expect(result).toEqual(mockStatus)
-      expect(mockApiGet).toHaveBeenCalledWith('/api/v1/materials/novel-1/status')
-    })
-
-    it('returns status with error message', async () => {
-      const mockStatus: MaterialStatusResponse = {
-        novel_id: 'novel-1',
-        status: 'failed',
-        error_message: 'Parsing failed',
-      }
-      mockApiGet.mockResolvedValue(mockStatus)
-
-      const result = await materialsApi.getStatus('novel-1')
-
-      expect(result.status).toBe('failed')
-      expect(result.error_message).toBe('Parsing failed')
-    })
-
-    it('propagates API errors', async () => {
-      mockApiGet.mockRejectedValue(new Error('Not found'))
-
-      await expect(materialsApi.getStatus('novel-1')).rejects.toThrow('Not found')
     })
   })
 
@@ -1029,7 +990,7 @@ describe('materialsApi', () => {
   })
 
   describe('integration scenarios', () => {
-    it('full workflow: upload, check status, get details', async () => {
+    it('full workflow: upload and poll material details', async () => {
       // Upload
       const mockFile = new File(['content'], 'test.txt', { type: 'text/plain' })
       const mockUploadResponse: MaterialUploadResponse = {
@@ -1044,31 +1005,6 @@ describe('materialsApi', () => {
 
       const uploadResult = await materialsApi.upload(mockFile)
       expect(uploadResult.novel_id).toBe('novel-1')
-
-      // Check status (processing)
-      const mockStatus: MaterialStatusResponse = {
-        novel_id: 'novel-1',
-        status: 'processing',
-        progress: 50,
-      }
-      mockApiGet.mockResolvedValue(mockStatus)
-
-      const statusResult = await materialsApi.getStatus('novel-1')
-      expect(statusResult.status).toBe('processing')
-      expect(statusResult.progress).toBe(50)
-
-      // Check status (completed)
-      const mockCompletedStatus: MaterialStatusResponse = {
-        novel_id: 'novel-1',
-        status: 'completed',
-        progress: 100,
-        total_chapters: 10,
-        total_characters: 5,
-      }
-      mockApiGet.mockResolvedValue(mockCompletedStatus)
-
-      const completedStatus = await materialsApi.getStatus('novel-1')
-      expect(completedStatus.status).toBe('completed')
 
       // Get details
       const mockNovel: MaterialNovel = {

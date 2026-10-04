@@ -18,6 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, func, select
 
 from config.datetime_utils import utcnow
+from config.feature_flags import is_inspirations_enabled
 from core.error_codes import ErrorCode
 from core.error_handler import APIException
 from models.entities import User
@@ -710,21 +711,22 @@ class PointsService:
             "is_available": True,
         })
 
-        # Inspiration contribution (check if user has contributed inspirations)
-        from models.inspiration import Inspiration
-        contributed_inspirations = session.exec(
-            select(Inspiration)
-            .where(Inspiration.author_id == user_id)
-            .where(Inspiration.status == "approved")
-        ).all()
+        if is_inspirations_enabled():
+            # Inspiration contribution (check if user has contributed inspirations)
+            from models.inspiration import Inspiration
+            contributed_inspirations = session.exec(
+                select(Inspiration)
+                .where(Inspiration.author_id == user_id)
+                .where(Inspiration.status == "approved")
+            ).all()
 
-        opportunities.append({
-            "type": "inspiration_contribution",
-            "points": POINTS_INSPIRATION_CONTRIBUTION,
-            "description": "opportunity.inspiration_contribution",
-            "is_completed": len(contributed_inspirations) > 0,
-            "is_available": True,
-        })
+            opportunities.append({
+                "type": "inspiration_contribution",
+                "points": POINTS_INSPIRATION_CONTRIBUTION,
+                "description": "opportunity.inspiration_contribution",
+                "is_completed": len(contributed_inspirations) > 0,
+                "is_available": True,
+            })
 
         # Profile completion (check if user has completed profile)
         from models.entities import User

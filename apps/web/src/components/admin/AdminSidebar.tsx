@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, FileText, Zap, Ticket, CreditCard, Lightbulb, ScrollText, Package, Coins, CalendarCheck, Gift, ChartBar, Bug } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { inspirationsConfig } from "../../config/inspirations";
 
 interface AdminSidebarProps {
   onClose?: () => void;
@@ -97,7 +98,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose }) => {
       icon: ChartBar,
       path: "/admin/quota",
     },
-  ];
+  ].filter((item) => inspirationsConfig.enabled || item.key !== "inspirations");
 
   const handleNavigate = (path: string) => {
     navigate(path);

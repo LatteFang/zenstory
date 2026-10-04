@@ -565,7 +565,12 @@ async def test_subscription_status_quota_and_history_roundtrip(client: AsyncClie
 
 
 @pytest.mark.asyncio
-async def test_inspirations_submit_list_detail_and_copy_roundtrip(client: AsyncClient, db_session: Session):
+async def test_inspirations_submit_list_detail_and_copy_roundtrip(
+    client: AsyncClient,
+    db_session: Session,
+    monkeypatch,
+):
+    monkeypatch.setenv("INSPIRATIONS_ENABLED", "true")
     admin = await _create_user(db_session, prefix="inspiration_admin", is_superuser=True)
     consumer = await _create_user(db_session, prefix="inspiration_consumer")
 
@@ -974,7 +979,9 @@ async def test_admin_redemption_codes_roundtrip_create_list_and_update(
 async def test_admin_dashboard_stats_roundtrip_reports_commercialization_metrics(
     client: AsyncClient,
     db_session: Session,
+    monkeypatch,
 ):
+    monkeypatch.setenv("INSPIRATIONS_ENABLED", "true")
     admin = await _create_user(db_session, prefix="admin_dashboard", is_superuser=True)
     active_user = await _create_user(db_session, prefix="dashboard_user")
 

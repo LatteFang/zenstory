@@ -6,6 +6,7 @@ const mockGetDashboardStats = vi.fn();
 const mockGetActivationFunnel = vi.fn();
 const mockGetUpgradeFunnelStats = vi.fn();
 const mockGetUpgradeConversionStats = vi.fn();
+const inspirationFeature = vi.hoisted(() => ({ enabled: true }));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -31,6 +32,10 @@ vi.mock('@/components/admin/RecentActivityList', () => ({
   RecentActivityList: () => <div data-testid="recent-activity-placeholder" />,
 }));
 
+vi.mock('@/config/inspirations', () => ({
+  inspirationsConfig: inspirationFeature,
+}));
+
 import AdminDashboard from '../AdminDashboard';
 
 function createWrapper() {
@@ -54,6 +59,7 @@ function createWrapper() {
 describe('AdminDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    inspirationFeature.enabled = true;
 
     mockGetDashboardStats.mockResolvedValue({
       total_users: 100,
@@ -119,5 +125,16 @@ describe('AdminDashboard', () => {
     await waitFor(() => {
       expect(mockGetUpgradeConversionStats).toHaveBeenCalledWith(14);
     });
+  });
+
+  it('hides the inspiration statistics card when disabled', async () => {
+    inspirationFeature.enabled = false;
+    render(<AdminDashboard />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('付费转化归因')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('admin:dashboard.totalInspirations')).not.toBeInTheDocument();
+    expect(screen.queryByText('22')).not.toBeInTheDocument();
   });
 });

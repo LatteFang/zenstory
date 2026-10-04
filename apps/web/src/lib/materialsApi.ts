@@ -442,24 +442,6 @@ export interface MaterialUploadResponse {
 }
 
 /**
- * Response from the material status endpoint.
- */
-export interface MaterialStatusResponse {
-  /** ID of the material library */
-  novel_id: string;
-  /** Current processing status */
-  status: 'pending' | 'processing' | 'completed' | 'completed_with_errors' | 'failed';
-  /** Processing progress percentage (0-100) */
-  progress?: number;
-  /** Error message if failed */
-  error_message?: string;
-  /** Total chapters detected */
-  total_chapters?: number;
-  /** Total characters extracted */
-  total_characters?: number;
-}
-
-/**
  * Search result item from material search.
  */
 export interface MaterialSearchResult {
@@ -504,7 +486,7 @@ export const materialsApi = {
   /**
    * Upload a novel file for decomposition.
    *
-   * The file will be processed asynchronously. Use getStatus() to poll
+   * The file will be processed asynchronously. Use get() to poll
    * for completion. Supports .txt uploads only.
    *
    * @param file - The novel file to upload
@@ -561,18 +543,6 @@ export const materialsApi = {
 
     return response.json();
   },
-
-  /**
-   * Get decomposition status of a material library.
-   *
-   * Use this to poll for completion after upload. The status progresses
-   * from 'pending' to 'processing' to 'completed' or 'failed'.
-   *
-   * @param novelId - The unique identifier of the material library
-   * @returns Promise resolving to status response with progress info
-   */
-  getStatus: (novelId: string) =>
-    api.get<MaterialStatusResponse>(`/api/v1/materials/${novelId}/status`),
 
   /**
    * Delete a material library and all associated data.

@@ -199,7 +199,9 @@ async def test_admin_subscriptions_roundtrip_lists_fetches_and_updates_user_subs
 async def test_admin_inspiration_moderation_roundtrip_lists_details_and_approves_submission(
     client: AsyncClient,
     db_session: Session,
+    monkeypatch,
 ):
+    monkeypatch.setenv("INSPIRATIONS_ENABLED", "true")
     admin = await _create_user(db_session, prefix="admin_inspiration_flow", is_superuser=True)
     author = await _create_user(db_session, prefix="inspiration_author")
 

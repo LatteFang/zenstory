@@ -31,10 +31,6 @@ export interface MaterialLibraryState {
   toggleNovel: (novelId: number) => void;
   /** Toggle entity type expansion */
   toggleEntityType: (novelId: number, entityType: MaterialEntityType) => void;
-  /** Whether the reference library section is expanded */
-  isExpanded: boolean;
-  /** Toggle the reference library section */
-  toggleExpanded: () => void;
   /** Current preview data */
   preview: MaterialPreviewResponse | null;
   /** Preview entity info (for import dialog) */
@@ -48,7 +44,6 @@ export interface MaterialLibraryState {
 }
 
 export function useMaterialLibrary(): MaterialLibraryState {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [expandedNovels, setExpandedNovels] = useState<Set<number>>(new Set());
   const [expandedTypes, setExpandedTypes] = useState<Map<string, boolean>>(new Map());
   const [preview, setPreview] = useState<MaterialPreviewResponse | null>(null);
@@ -64,10 +59,6 @@ export function useMaterialLibrary(): MaterialLibraryState {
     queryFn: () => materialsApi.getLibrarySummary(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-
-  const toggleExpanded = useCallback(() => {
-    setIsExpanded(prev => !prev);
-  }, []);
 
   const toggleNovel = useCallback((novelId: number) => {
     setExpandedNovels(prev => {
@@ -120,8 +111,10 @@ export function useMaterialLibrary(): MaterialLibraryState {
   }, []);
 
   const clearPreview = useCallback(() => {
+    previewSeqRef.current += 1;
     setPreview(null);
     setPreviewEntityInfo(null);
+    setIsPreviewLoading(false);
   }, []);
 
   return {
@@ -133,8 +126,6 @@ export function useMaterialLibrary(): MaterialLibraryState {
     expandedTypes,
     toggleNovel,
     toggleEntityType,
-    isExpanded,
-    toggleExpanded,
     preview,
     previewEntityInfo,
     isPreviewLoading,

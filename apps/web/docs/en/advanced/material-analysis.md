@@ -122,6 +122,8 @@ Continue with the [decisions-to-prose workflow](workflow-tips.md) and [project-m
 
 ## Implementation sources
 
+2026-10-04 maintenance note: the unused `MaterialViewer` has been removed; current result display lives in [`MaterialDetailPage`](https://github.com/zenstory-ai/zenstory/blob/main/apps/web/src/pages/MaterialDetailPage.tsx). The fixed-commit links below remain historical evidence.
+
 Source checked on 2026-09-13. These pinned references support the result-display and context boundaries. The fictional passages and readings are original editorial examples, not model outcomes established by the code.
 
 - [Loading categories when their folders expand](https://github.com/zenstory-ai/zenstory/blob/306059d9418dbdd6612d67574816ad960f58e51c/apps/web/src/pages/MaterialDetailPage.tsx#L82-L209)

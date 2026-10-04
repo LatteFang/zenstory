@@ -5,6 +5,7 @@ import { Search, ChartBar, Upload, Zap, Lightbulb, MessageSquare } from "lucide-
 import { adminApi } from "../../lib/adminApi";
 import { AdminPageState } from "../../components/admin";
 import { StatsCard } from "../../components/admin/StatsCard";
+import { inspirationsConfig } from "../../config/inspirations";
 
 export const QuotaManagement: React.FC = () => {
   const { t } = useTranslation(["admin", "common"]);
@@ -116,11 +117,13 @@ export const QuotaManagement: React.FC = () => {
               title={t("quota.skillCreates")}
               value={stats?.skill_creates ?? 0}
             />
-            <StatsCard
-              icon={<Lightbulb className="h-5 w-5" />}
-              title={t("quota.inspirationCopies")}
-              value={stats?.inspiration_copies ?? 0}
-            />
+            {inspirationsConfig.enabled && (
+              <StatsCard
+                icon={<Lightbulb className="h-5 w-5" />}
+                title={t("quota.inspirationCopies")}
+                value={stats?.inspiration_copies ?? 0}
+              />
+            )}
           </div>
         </AdminPageState>
       </div>
@@ -287,7 +290,7 @@ export const QuotaManagement: React.FC = () => {
               </div>
 
               {/* Inspiration Copy */}
-              <div className="admin-surface p-4">
+              {inspirationsConfig.enabled && <div className="admin-surface p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--accent-primary)/0.15)] text-[hsl(var(--accent-primary))]">
                     <Lightbulb className="h-5 w-5" />
@@ -317,7 +320,7 @@ export const QuotaManagement: React.FC = () => {
                     </div>
                   </div>
                 )}
-              </div>
+              </div>}
             </div>
           </div>
         </AdminPageState>

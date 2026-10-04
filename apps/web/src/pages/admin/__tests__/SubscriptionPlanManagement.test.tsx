@@ -7,6 +7,7 @@ const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
 const invalidateQueriesMock = vi.fn();
 const mutateMock = vi.fn();
+const inspirationFeature = vi.hoisted(() => ({ enabled: true }));
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -29,6 +30,10 @@ vi.mock("../../../lib/toast", () => ({
   },
 }));
 
+vi.mock("../../../config/inspirations", () => ({
+  inspirationsConfig: inspirationFeature,
+}));
+
 const plan = {
   id: "plan-pro",
   name: "pro",
@@ -47,6 +52,7 @@ const plan = {
 describe("SubscriptionPlanManagement", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    inspirationFeature.enabled = true;
     useMutationMock.mockReturnValue({
       mutate: mutateMock,
       isPending: false,
@@ -134,5 +140,27 @@ describe("SubscriptionPlanManagement", () => {
         },
       },
     });
+  });
+
+  it("hides the inspiration entitlement from plan cards when disabled", () => {
+    inspirationFeature.enabled = false;
+    useQueryMock.mockReturnValue({
+      data: [{
+        ...plan,
+        features: {
+          ...plan.features,
+          inspiration_copies_monthly: 10,
+        },
+      }],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<SubscriptionPlanManagement />);
+
+    expect(screen.queryByText("plans.featuresDetail.inspiration_copies_monthly")).not.toBeInTheDocument();
   });
 });

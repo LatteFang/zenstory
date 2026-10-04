@@ -28,6 +28,7 @@ from services.features.points_service import (
     STREAK_BONUS_THRESHOLD,
     points_service,
 )
+
 from .test_core_api_e2e import _auth_headers, _create_user, _login
 
 pytestmark = pytest.mark.e2e
@@ -203,7 +204,9 @@ async def test_points_redeem_contract_rejects_insufficient_balance_with_required
 async def test_points_earn_opportunities_contract_reflects_completed_and_available_states(
     client: AsyncClient,
     db_session: Session,
+    monkeypatch,
 ):
+    monkeypatch.setenv("INSPIRATIONS_ENABLED", "true")
     user = await _create_user(db_session, prefix="points_opportunity_contract")
     user.avatar_url = "https://example.com/avatar.png"
     db_session.add(user)

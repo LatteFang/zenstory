@@ -20,6 +20,7 @@ from services.auth import get_current_active_user
 from sqlmodel import Session, func, select
 
 from config.datetime_utils import utcnow
+from config.feature_flags import require_inspirations_enabled
 from core.error_codes import ErrorCode
 from core.error_handler import APIException
 from core.permissions import QuotaExceededException
@@ -38,7 +39,11 @@ from utils.logger import get_logger, log_with_context
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/api/v1/inspirations", tags=["Inspirations"])
+router = APIRouter(
+    prefix="/api/v1/inspirations",
+    tags=["Inspirations"],
+    dependencies=[Depends(require_inspirations_enabled)],
+)
 
 
 # ==================== Enums ====================

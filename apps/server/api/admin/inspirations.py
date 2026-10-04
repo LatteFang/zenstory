@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, func, select
 
 from config.datetime_utils import utcnow
+from config.feature_flags import require_inspirations_enabled
 from core.error_codes import ErrorCode
 from core.error_handler import APIException
 from database import get_session
@@ -31,7 +32,10 @@ from .schemas import (
 
 logger = get_logger(__name__)
 
-router = APIRouter(tags=["admin-inspirations"])
+router = APIRouter(
+    tags=["admin-inspirations"],
+    dependencies=[Depends(require_inspirations_enabled)],
+)
 
 
 # ==================== Inspiration Management ====================

@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 
 const mockNavigate = vi.fn()
 const mockProjectGet = vi.fn()
+const inspirationFeature = vi.hoisted(() => ({ enabled: true }))
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
@@ -81,11 +82,16 @@ vi.mock('../../lib/projectStatusEvents', () => ({
   subscribeProjectStatusUpdated: () => () => undefined,
 }))
 
+vi.mock('../../config/inspirations', () => ({
+  inspirationsConfig: inspirationFeature,
+}))
+
 import { ProjectStatusDialog } from '../ProjectStatusDialog'
 
 describe('ProjectStatusDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    inspirationFeature.enabled = true
     mockProjectGet.mockResolvedValue({
       id: 'project-1',
       name: 'Test Project',
@@ -119,5 +125,16 @@ describe('ProjectStatusDialog', () => {
 
     expect(onClose).toHaveBeenCalledTimes(1)
     expect(mockNavigate).toHaveBeenCalledWith('/dashboard/inspirations')
+  })
+
+  it('hides inspiration actions while keeping save available when disabled', async () => {
+    inspirationFeature.enabled = false
+    render(<ProjectStatusDialog isOpen={true} onClose={vi.fn()} projectId="project-1" />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '保存' })).toBeInTheDocument()
+    })
+    expect(screen.queryByRole('button', { name: '投稿到灵感库' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '查看灵感库' })).not.toBeInTheDocument()
   })
 })

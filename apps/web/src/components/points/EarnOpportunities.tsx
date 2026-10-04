@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { pointsApi } from '../../lib/pointsApi';
 import { useTranslation } from 'react-i18next';
 import { Card } from '../ui/Card';
+import { inspirationsConfig } from '../../config/inspirations';
 
 interface EarnOpportunitiesProps {
   className?: string;
@@ -49,7 +50,9 @@ export function EarnOpportunities({ className = '' }: EarnOpportunitiesProps) {
     queryKey: ['earn-opportunities'],
     queryFn: () => pointsApi.getEarnOpportunities(),
   });
-  const opportunityItems = opportunities ?? [];
+  const opportunityItems = (opportunities ?? []).filter(
+    (opportunity) => inspirationsConfig.enabled || opportunity.type !== 'inspiration_contribution',
+  );
   const isOpportunitiesLoading = isLoading || (isFetching && opportunityItems.length === 0);
 
   if (!isOpportunitiesLoading && opportunityItems.length === 0) return null;

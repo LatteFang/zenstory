@@ -4,6 +4,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import QuotaManagement from "../QuotaManagement";
 
 const useQueryMock = vi.fn();
+const inspirationFeature = vi.hoisted(() => ({ enabled: true }));
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -15,9 +16,14 @@ vi.mock("@tanstack/react-query", () => ({
   useQuery: (...args: unknown[]) => useQueryMock(...args),
 }));
 
+vi.mock("../../../config/inspirations", () => ({
+  inspirationsConfig: inspirationFeature,
+}));
+
 describe("QuotaManagement", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    inspirationFeature.enabled = true;
   });
 
   const mockQueries = ({
@@ -124,5 +130,28 @@ describe("QuotaManagement", () => {
     expect(screen.getByText("pro")).toBeInTheDocument();
     expect(screen.getByText("50 / 100")).toBeInTheDocument();
     expect(screen.getByText("10 / 20")).toBeInTheDocument();
+  });
+
+  it("hides inspiration quota operations when disabled", () => {
+    inspirationFeature.enabled = false;
+    mockQueries({
+      userData: {
+        user_id: "user-1",
+        username: "writer",
+        plan_name: "pro",
+        inspiration_copy_used: 5,
+        inspiration_copy_limit: 10,
+      },
+    });
+
+    render(<QuotaManagement />);
+    expect(screen.queryByText("quota.inspirationCopies")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("quota.searchUser"), {
+      target: { value: "user-1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "common:search" }));
+    expect(screen.queryByText("quota.inspirationCopy")).not.toBeInTheDocument();
+    expect(screen.queryByText("5 / 10")).not.toBeInTheDocument();
   });
 });

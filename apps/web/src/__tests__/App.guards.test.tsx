@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
   requireOnboarding: false,
   shouldRequireCalls: [] as unknown[],
   initialPath: "/",
+  inspirationsEnabled: false,
   project: {
     currentProject: null as { id: string; name?: string } | null,
     projects: [] as Array<{ id: string; name?: string }>,
@@ -18,6 +19,12 @@ const state = vi.hoisted(() => ({
     setSelectedItem: vi.fn(),
   },
   fileGet: vi.fn(),
+}));
+
+vi.mock("../config/inspirations", () => ({
+  inspirationsConfig: {
+    get enabled() { return state.inspirationsEnabled; },
+  },
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -139,9 +146,15 @@ vi.mock("../pages/ForgotPassword", () => ({
   default: () => <div>Forgot Password Page</div>,
 }));
 
-vi.mock("../pages/Dashboard", () => ({
-  default: () => <div>Dashboard Page</div>,
-}));
+vi.mock("../pages/Dashboard", async () => {
+  const { Outlet, useLocation } = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+  return {
+    default: function DashboardMock() {
+      const location = useLocation();
+      return <><div>Dashboard Page</div><div data-testid="dashboard-path">{location.pathname}</div><Outlet /></>;
+    },
+  };
+});
 
 vi.mock("../pages/DashboardHome", () => ({
   default: () => <div>Dashboard Home</div>,
@@ -159,8 +172,26 @@ vi.mock("../components/AdminRoute", () => ({
   default: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 
-vi.mock("../components/admin/AdminLayout", () => ({
-  default: () => <div>Admin Layout</div>,
+vi.mock("../components/admin/AdminLayout", async () => {
+  const { Outlet, useLocation } = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+  return {
+    default: function AdminLayoutMock() {
+      const location = useLocation();
+      return <><div>Admin Layout</div><div data-testid="admin-path">{location.pathname}</div><Outlet /></>;
+    },
+  };
+});
+
+vi.mock("../pages/InspirationsPage", () => ({
+  default: () => <div>Inspiration List Page</div>,
+}));
+
+vi.mock("../pages/InspirationDetailPage", () => ({
+  default: () => <div>Inspiration Detail Page</div>,
+}));
+
+vi.mock("../pages/admin/InspirationManagement", () => ({
+  default: () => <div>Inspiration Admin Page</div>,
 }));
 
 vi.mock("../pages/admin/AdminDashboard", () => ({
@@ -182,6 +213,7 @@ describe("App route guards", () => {
     state.requireOnboarding = false;
     state.shouldRequireCalls = [];
     state.initialPath = "/";
+    state.inspirationsEnabled = false;
     state.project.currentProject = null;
     state.project.projects = [];
     state.project.setCurrentProjectId.mockReset();
@@ -196,6 +228,35 @@ describe("App route guards", () => {
     await waitFor(() => {
       expect(screen.getByText("Login Page")).toBeInTheDocument();
     });
+  });
+
+  it.each(["/dashboard/inspirations", "/dashboard/inspirations/template-1"])(
+    "redirects disabled library deep link %s without rendering the feature",
+    async (path) => {
+      state.auth.user = { id: "user-auth" };
+      renderAppAt(path);
+      await waitFor(() => expect(screen.getByTestId("dashboard-path")).toHaveTextContent(/^\/dashboard$/));
+      expect(screen.queryByText("Inspiration List Page")).not.toBeInTheDocument();
+      expect(screen.queryByText("Inspiration Detail Page")).not.toBeInTheDocument();
+    },
+  );
+
+  it("redirects disabled admin library deep links", async () => {
+    state.auth.user = { id: "admin-user" };
+    renderAppAt("/admin/inspirations");
+    await waitFor(() => expect(screen.getByTestId("admin-path")).toHaveTextContent(/^\/admin$/));
+    expect(screen.queryByText("Inspiration Admin Page")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["/dashboard/inspirations", "Inspiration List Page"],
+    ["/dashboard/inspirations/template-1", "Inspiration Detail Page"],
+    ["/admin/inspirations", "Inspiration Admin Page"],
+  ])("preserves enabled feature route %s", async (path, page) => {
+    state.auth.user = { id: "user-auth" };
+    state.inspirationsEnabled = true;
+    renderAppAt(path);
+    expect(await screen.findByText(page)).toBeInTheDocument();
   });
 
   it("redirects authenticated users away from login to dashboard", async () => {
