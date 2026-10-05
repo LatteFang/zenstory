@@ -31,8 +31,25 @@ describe('persisted chat display sequence', () => {
     expect(new Set(items.map(item => item.id)).size).toBe(events.length);
   });
 
+  it('maps reasoning, routing, exhaustion and completion using the same fields as live callbacks', () => {
+    const events = [
+      { type: 'thinking_content', content: 'Reasoning' },
+      { type: 'router_thinking', data: { message: 'Choosing an agent' } },
+      { type: 'router_decided', data: { initial_agent: 'planner', workflow_plan: 'Plan then write', workflow_agents: ['planner', 'writer'], routing_metadata: { decision: 'explicit' } } },
+      { type: 'iteration_exhausted', data: { layer: 'tool_call', iterations_used: 4, max_iterations: 4, reason: 'Limit', last_agent: 'writer' } },
+      { type: 'workflow_complete', data: { reason: 'complete', agent_type: 'writer', message: 'Done', confidence: 1 } },
+    ];
+    const items = parseChatDisplayEvents(JSON.stringify({ display_events: events }), [], timestamp, t)!;
+    expect(items.map(item => item.type)).toEqual(events.map(event => event.type));
+    expect(items[0].content).toBe('Reasoning');
+    expect(items[1].content).toBe('Choosing an agent');
+    expect(items[2]).toMatchObject({ initialAgent: 'planner', workflowPlan: 'Plan then write', workflowAgents: ['planner', 'writer'], routingMetadata: { decision: 'explicit' } });
+    expect(items[3]).toMatchObject({ layer: 'tool_call', iterationsUsed: 4, maxIterations: 4, lastAgent: 'writer' });
+    expect(items[4]).toMatchObject({ reason: 'complete', agentType: 'writer', message: 'Done', confidence: 1 });
+  });
+
   it.each([
-    null, '{', '{}', '{"display_events":[]}',
+    null, '{', '{}', 'null', '{"display_events":[null]}', '{"display_events":[{"type":"agent_selected"}]}', '{"display_events":[]}',
     JSON.stringify({ display_events: [{ type: 'tool_call', tool_call_index: 9 }] }),
     JSON.stringify({ display_events: [{ type: 'tool_call', tool_call_index: -1 }] }),
     JSON.stringify({ display_events: [{ type: 'content', content: null }] }),
