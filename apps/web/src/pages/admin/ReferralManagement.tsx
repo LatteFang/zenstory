@@ -267,7 +267,7 @@ export const ReferralManagement: React.FC = () => {
             >
               <>
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <table className="w-full min-w-[760px]">
                     <thead>
                       <tr className="border-b border-[hsl(var(--separator-color))]">
                         <th className="px-4 py-3 text-left text-sm font-semibold text-[hsl(var(--text-primary))]">
@@ -385,7 +385,7 @@ export const ReferralManagement: React.FC = () => {
           >
             <>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[820px]">
                   <thead>
                     <tr className="border-b border-[hsl(var(--separator-color))]">
                       <th className="px-4 py-3 text-left text-sm font-semibold text-[hsl(var(--text-primary))]">

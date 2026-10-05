@@ -26,7 +26,7 @@
     "fileVersionLimitDesc": "Your current plan's file version limit has been reached. You can upgrade your plan, or compare plans first."
   },
   "input": {
-    "placeholder": "Describe the character, scene, or plot you want to create...",
+    "placeholder": "Describe your idea…",
     "placeholderWhileProcessing": "AI is generating — you can type now and send when it finishes…",
     "steerPlaceholder": "Add a follow-up instruction…",
     "steerButton": "Add instruction",

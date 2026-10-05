@@ -9,7 +9,7 @@ import { AdminPageState, AdminSelect } from "../../components/admin";
 import { getLocaleCode } from "../../lib/i18n-helpers";
 import { toast } from "../../lib/toast";
 import Modal from "../../components/ui/Modal";
-import { useIsMobile } from "../../hooks/useMediaQuery";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 
 type ScreenshotFilter = "all" | "with" | "without";
 
@@ -20,7 +20,7 @@ const statusOrder: AdminFeedbackStatus[] = ["open", "processing", "resolved"];
 export default function FeedbackManagement() {
   const { t } = useTranslation(["admin", "common"]);
   const queryClient = useQueryClient();
-  const isMobile = useIsMobile();
+  const isCompact = useMediaQuery("(max-width: 1023px)");
   const [page, setPage] = useState(0);
   const [statusFilter, setStatusFilter] = useState<AdminFeedbackStatus | "">("");
   const [sourceFilter, setSourceFilter] = useState<"dashboard" | "editor" | "">("");
@@ -273,7 +273,7 @@ export default function FeedbackManagement() {
           void refetch();
         }}
       >
-        {isMobile ? (
+        {isCompact ? (
           <div className="space-y-3">
             {feedbackItems.map((feedback) => (
               <div
@@ -342,7 +342,7 @@ export default function FeedbackManagement() {
           </div>
         ) : (
           <div className="admin-table-shell overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
+            <table className="min-w-[900px] text-left text-sm">
               <thead className="bg-[hsl(var(--bg-tertiary))] text-[hsl(var(--text-secondary))]">
                 <tr>
                   <th className="px-4 py-3 font-medium">{t("feedback.columns.user", "用户")}</th>

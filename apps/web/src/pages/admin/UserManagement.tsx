@@ -188,7 +188,7 @@ export const UserManagement: React.FC = () => {
       >
         <>
           {/* 移动端卡片视图 */}
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 lg:hidden">
             {users.map((user) => (
               <UserCard
                 key={user.id}
@@ -201,7 +201,7 @@ export const UserManagement: React.FC = () => {
           </div>
 
           {/* 桌面端表格视图 */}
-          <div className="hidden md:block admin-table-shell">
+          <div className="hidden lg:block admin-table-shell">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>

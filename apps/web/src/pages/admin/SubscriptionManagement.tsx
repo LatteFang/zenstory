@@ -436,7 +436,7 @@ export const SubscriptionManagement: React.FC = () => {
       >
         <>
           {/* Mobile card view */}
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 lg:hidden">
             {subscriptions.map((sub) => (
               <SubscriptionCard
                 key={sub.id}
@@ -451,7 +451,7 @@ export const SubscriptionManagement: React.FC = () => {
           </div>
 
           {/* Desktop table view */}
-          <div className="hidden md:block admin-table-shell">
+          <div className="hidden lg:block admin-table-shell">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>

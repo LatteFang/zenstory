@@ -510,14 +510,14 @@ const ToolResultCardComponent: React.FC<ToolResultCardProps> = ({
       
       return (
         <div className="bg-[hsl(var(--result-bg))] border border-[hsl(var(--result-border))] rounded-lg px-3 py-2">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[hsl(var(--success-light))]" />
-            <span className="text-sm text-[hsl(var(--success-light))]">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-[hsl(var(--success-light))]" />
+            <span className="shrink-0 text-sm text-[hsl(var(--success-light))]">
               {t('chat:tool.created', { type: typeInfo.label })}
             </span>
-            <span className="flex items-center gap-1 text-sm text-[hsl(var(--text-primary))]">
-              {typeInfo.icon}
-              {title}
+            <span className="flex basis-full min-w-0 items-start gap-1 pl-6 text-sm text-[hsl(var(--text-primary))]">
+              <span className="shrink-0">{typeInfo.icon}</span>
+              <span className="min-w-0 break-words">{title}</span>
             </span>
             {contentLength > 0 && (
               <span className="text-xs text-[hsl(var(--text-secondary))] ml-auto">

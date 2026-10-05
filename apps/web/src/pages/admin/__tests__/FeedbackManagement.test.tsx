@@ -33,6 +33,7 @@ vi.mock("@tanstack/react-query", () => ({
 
 vi.mock("../../../hooks/useMediaQuery", () => ({
   useIsMobile: () => false,
+  useMediaQuery: () => false,
 }));
 
 describe("FeedbackManagement", () => {

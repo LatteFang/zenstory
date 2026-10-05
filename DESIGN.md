@@ -67,3 +67,9 @@ This section governs `app.zenstory.ai` only; it does not change the organization
 - **Content:** reuse existing bilingual translation keys, task-oriented labels, and terminology. Do not expose inert actions as working controls.
 - **Verification:** regression tests precede behavioral changes; run targeted component/page tests, TypeScript/lint, and keyboard/mobile browser checks. DOM semantics alone do not establish physical focus behavior or visual quality.
 - **Open question:** email-change re-verification policy is not established by existing product contracts; preserve it rather than silently introducing a new access policy.
+
+## React responsive decisions — 2026-10-05
+- Dashboard and admin own viewport-height shells with independent main scrolling; public/docs long pages remain document-scrolled. Fixed workbench/admin shells use inset sizing, not100vw alongside document scrollbar gutters.
+- Workbench panel units are explicit: desktop20/48/32%, sidebar minimum180px/chat300px; tablet25/40/35%, chat280px. Keep existing768/1024 breakpoints, draggable panes, mobile mounted/inert state and keyboard viewport handling.
+- Desktop chat textarea minimum64px, saved input-panel floor144px; mobile44px controls remain. Empty placeholder is a concise idea prompt; long typed text/accessories remain scrollable. Tool status stays together; filenames wrap fully rather than losing text.
+- All reachable React routes and generated static template families are checked at small laptop, tablet and mobile viewports. A scrollbar alone is not a defect: preserve legitimate file/message/table/code/long-page scroll, repair clipping and competing outer scroll boundaries.

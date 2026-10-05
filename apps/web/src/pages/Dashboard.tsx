@@ -347,10 +347,10 @@ function DashboardContent() {
   );
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--bg-primary))] flex">
+    <div className="h-dvh min-h-0 overflow-hidden bg-[hsl(var(--bg-primary))] flex">
       {/* Tablet: Collapsed Sidebar (icons only) */}
       {isTablet && (
-        <aside className="w-20 flex-shrink-0 bg-[hsl(var(--bg-secondary))] border-r border-[hsl(var(--border-color))] flex flex-col h-screen sticky top-0 z-40">
+        <aside className="w-20 flex-shrink-0 bg-[hsl(var(--bg-secondary))] border-r border-[hsl(var(--border-color))] flex flex-col h-full min-h-0 z-40">
           {/* Logo */}
           <div className="h-12 flex items-center justify-center border-b border-[hsl(var(--border-color))]">
             <LogoMark className="w-7 h-7" />
@@ -405,7 +405,7 @@ function DashboardContent() {
 
       {/* Desktop: Full Sidebar */}
       {isDesktop && (
-        <aside className="w-56 flex-shrink-0 bg-[hsl(var(--bg-secondary))] border-r border-[hsl(var(--border-color))] flex flex-col h-screen sticky top-0 z-40">
+        <aside className="w-56 flex-shrink-0 bg-[hsl(var(--bg-secondary))] border-r border-[hsl(var(--border-color))] flex flex-col h-full min-h-0 z-40">
           {/* Logo */}
           <div className="h-12 px-4 flex items-center border-b border-[hsl(var(--border-color))]">
             <Logo className="h-7 w-auto" />
@@ -461,7 +461,7 @@ function DashboardContent() {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto" style={{ contain: 'layout style paint', scrollbarGutter: 'stable' }}>
+      <main className="flex-1 min-w-0 min-h-0 overflow-auto" style={{ contain: 'layout style paint', scrollbarGutter: 'stable' }}>
         {/* Mobile Header */}
         {isMobile && (
           <header className="h-12 bg-[hsl(var(--bg-secondary))] flex items-center px-4 justify-between shrink-0 shadow-sm sticky top-0 z-30">

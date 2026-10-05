@@ -208,7 +208,7 @@ const GENERATION_MODE_STORAGE_KEY_PREFIX = "zenstory_generation_mode_";
 type GenerationMode = "fast" | "quality";
 
 /** Minimum height of the chat input panel in pixels */
-const CHAT_INPUT_PANEL_MIN_HEIGHT_PX = 120;
+const CHAT_INPUT_PANEL_MIN_HEIGHT_PX = 144;
 
 /** Maximum height of the chat input panel in pixels */
 const CHAT_INPUT_PANEL_MAX_HEIGHT_PX = 520;
@@ -1791,6 +1791,7 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
       {/* Input panel (resizable on desktop, fixed on mobile) */}
       <div
         ref={inputPanelRef}
+        data-testid="chat-input-panel"
         className={`shrink-0 flex flex-col overflow-hidden ${isMobile ? 'border-t border-[hsl(var(--separator-color))]' : ''}`}
         style={
           isMobile

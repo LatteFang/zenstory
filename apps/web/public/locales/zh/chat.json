@@ -26,7 +26,7 @@
     "fileVersionLimitDesc": "当前套餐可保留的文件版本已达上限。可前往订阅页升级，或先查看套餐对比后再决定。"
   },
   "input": {
-    "placeholder": "描述你想创作的角色、场景或剧情...",
+    "placeholder": "描述你的创作想法…",
     "placeholderWhileProcessing": "AI 正在生成，你可以先输入，结束后再发送…",
     "steerPlaceholder": "追加补充指令…",
     "steerButton": "追加指令",

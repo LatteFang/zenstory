@@ -208,6 +208,11 @@ describe('MessageInput', () => {
     expect(screen.getByPlaceholderText('Custom placeholder')).toBeInTheDocument()
   })
 
+  it('reserves room for a wrapped desktop placeholder instead of clipping it to one line', () => {
+    render(<MessageInput {...defaultProps} layout="fill" />)
+    expect(screen.getByTestId('chat-input')).toHaveStyle({ minHeight: '64px' })
+  })
+
   it('displays AI suggestions', () => {
     const aiSuggestions = ['Suggestion 1', 'Suggestion 2', 'Suggestion 3']
     render(<MessageInput {...defaultProps} aiSuggestions={aiSuggestions} />)
