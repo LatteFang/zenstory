@@ -142,7 +142,11 @@ test.describe('Admin responsive routes with populated mocked data', () => {
     if (new URL(page.url()).pathname === '/admin') {
       await expect(page.locator('.admin-page')).toBeVisible();
     } else {
-      await expect(page.getByText('Urban fantasy mystery with a deliberately long title')).toBeVisible();
+      const populatedInspiration = page
+        .getByText('Urban fantasy mystery with a deliberately long title', { exact: true })
+        .filter({ visible: true });
+      await expect(populatedInspiration).toHaveCount(1);
+      await expect(populatedInspiration).toBeVisible();
     }
   });
 
