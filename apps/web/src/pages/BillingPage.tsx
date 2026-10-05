@@ -14,7 +14,7 @@ import {
   getLocalizedPlanDisplayName,
 } from "../lib/subscriptionEntitlements";
 import type { QuotaResponse } from "../types/subscription";
-import { buildUpgradeUrl, getUpgradePromptDefinition } from "../config/upgradeExperience";
+import { getUpgradePromptDefinition } from "../config/upgradeExperience";
 import { trackUpgradeClick, trackUpgradeConversion } from "../lib/upgradeAnalytics";
 import { trackEvent } from "../lib/analytics";
 import { inspirationsConfig } from "../config/inspirations";
@@ -31,7 +31,7 @@ export default function BillingPage() {
   const [searchParams] = useSearchParams();
   const trackedConversionSourceRef = useRef<string | null>(null);
   const billingUpgradePrompt = getUpgradePromptDefinition("billing_header_upgrade");
-  const [showRedeemCodeModal, setShowRedeemCodeModal] = useState(false);
+  const [showRedeemCodeModal, setShowRedeemCodeModal] = useState(() => searchParams.get("plan") === "pro");
   const attributionSource = useMemo(() => {
     const rawSource = searchParams.get("source");
     if (!rawSource) {
@@ -145,12 +145,10 @@ export default function BillingPage() {
                   trackUpgradeClick(
                     effectiveUpgradeSource,
                     "direct",
-                    "pricing",
+                    "redeem",
                     "page"
                   );
-                  window.location.assign(
-                    buildUpgradeUrl(billingUpgradePrompt.pricingPath, effectiveUpgradeSource)
-                  );
+                  setShowRedeemCodeModal(true);
                 }}
               >
                 {t("dashboard:billing.ctaUpgradePro", "升级专业版")}
@@ -189,11 +187,23 @@ export default function BillingPage() {
             </div>
             {isUpgradableTier && (
               <p className="mt-2 text-xs text-[hsl(var(--text-secondary))]">
-                {t("dashboard:billing.unlockHint", "可通过右上角升级入口查看方案，或使用兑换码直接兑换。")}
+                {t("dashboard:billing.unlockHint", "点击“升级专业版”可直接兑换开通，无需再跳转套餐页。")}
               </p>
             )}
           </div>
         </div>
+      </Card>
+
+      <Card variant="outlined" padding="lg">
+        <h2 className="text-base font-semibold text-[hsl(var(--text-primary))]">
+          {t("dashboard:billing.activationTitle", "如何开通专业版")}
+        </h2>
+        <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">
+          {t("dashboard:billing.activationGuide", "专业版目前通过兑换码开通，暂不支持在线支付。已有兑换码可直接兑换；还没有兑换码，请联系下方微信咨询套餐与获取方式。")}
+        </p>
+        <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">
+          {t("settings:subscription.wechatGuide", "没有兑换码？可添加微信号获取：AIchuangzuo999")}
+        </p>
       </Card>
 
       <Card variant="outlined" padding="lg">
@@ -327,7 +337,7 @@ export default function BillingPage() {
       <RedeemCodeModal
         isOpen={showRedeemCodeModal}
         onClose={() => setShowRedeemCodeModal(false)}
-        source={attributionSource}
+        source={effectiveUpgradeSource}
       />
     </div>
   );

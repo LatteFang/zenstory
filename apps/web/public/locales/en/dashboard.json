@@ -43,7 +43,7 @@
     "currentPlan": "Current Plan",
     "unknownPlan": "Not subscribed",
     "unlockPro": "Unlock Pro",
-    "unlockHint": "Use \"Unlock Pro\" in the top right, or redeem a code to activate directly.",
+    "unlockHint": "Choose Upgrade Pro to redeem a code directly, without returning to the pricing page.",
     "usageTitle": "Current Quota Usage",
     "compareTitle": "Plan Comparison",
     "catalogSubtitle": "Choose by outcomes you want to achieve, not technical specs",
@@ -76,8 +76,8 @@
     "ctaFreeStart": "Start Free",
     "ctaUpgradePro": "Upgrade to Pro",
     "trustTitle": "Upgrade with confidence",
-    "trustFlexible": "Upgrade or downgrade anytime; changes apply next billing cycle",
-    "trustBilling": "Transparent billing with clear prices and cycles",
+    "trustFlexible": "Activate with a code, without setting up automatic renewal",
+    "trustBilling": "Monthly and yearly prices are plan references; confirm the code duration before activation",
     "trustSecurity": "Your data is protected in transit and at rest",
     "summaryStarter": "Validate ideas quickly and move from concept to first draft with less friction.",
     "summaryCreator": "Built for consistent publishing so your workflow stays uninterrupted.",
@@ -118,7 +118,9 @@
     "metricPriorityQueue": "Queue priority",
     "metricPriorityQueueOutcome": "Start tasks faster during peak usage windows",
     "priorityQueueStandard": "Standard queue",
-    "priorityQueuePriority": "Priority queue"
+    "priorityQueuePriority": "Priority queue",
+    "activationTitle": "How to activate Pro",
+    "activationGuide": "Pro is currently activated with a redeem code; online checkout is not available. Redeem your code directly, or contact us on WeChat below to ask about plans and get a code."
   },
   "todayActionPlan": {
     "title": "Today's 3-step plan",
