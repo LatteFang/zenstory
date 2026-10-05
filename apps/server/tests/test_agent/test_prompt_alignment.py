@@ -7,7 +7,6 @@ tools that are not available in the Tool registry.
 import pytest
 
 from agent.prompts.base import get_base_prompt
-from agent.prompts.novel import NOVEL_PROMPT_CONFIG
 
 
 @pytest.mark.unit
@@ -21,7 +20,9 @@ def test_base_prompt_does_not_suggest_removed_tools():
             "lore": "lore-folder",
             "material": "material-folder",
         },
-        config=NOVEL_PROMPT_CONFIG,
+        config={"role_definition": "Test role", "capabilities": "Test capabilities",
+                "directory_structure": "Draft folder: {draft}", "content_structure": "Test structure",
+                "file_types": "draft", "writing_guidelines": "Test guidelines"},
     )
 
     # We allow a plain-language note that tools don't exist, but the prompt

@@ -16,7 +16,7 @@ from passlib.context import CryptContext  # noqa: E402
 from sqlmodel import Session, select  # noqa: E402
 
 from database import sync_engine  # noqa: E402
-from models import User  # noqa: E402
+from models import SystemPromptConfig, User  # noqa: E402
 from models.referral import InviteCode  # noqa: E402
 from models.subscription import SubscriptionPlan, UsageQuota, UserSubscription  # noqa: E402
 
@@ -236,6 +236,14 @@ def main():
     invite_code = os.getenv("E2E_TEST_INVITE_CODE", "E2E1-TST1")
 
     with Session(sync_engine) as session:
+        # E2E-only synthetic fixtures, never an official catalog or runtime fallback.
+        for project_type in ("novel", "short", "screenplay"):
+            if not session.exec(select(SystemPromptConfig).where(SystemPromptConfig.project_type == project_type)).first():
+                session.add(SystemPromptConfig(
+                    project_type=project_type, role_definition=f"E2E {project_type} editor",
+                    capabilities="E2E writing capabilities", writing_guidelines="E2E test scope only",
+                ))
+        session.commit()
         free_plan = upsert_plan(
             session,
             name="free",

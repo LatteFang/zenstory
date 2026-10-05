@@ -16,8 +16,9 @@ docker compose up -d --build
 docker compose exec -e ZENSTORY_ADMIN_EMAIL=you@example.com \
   -e ZENSTORY_ADMIN_PASSWORD='CHANGE-ME' server python scripts/create_admin.py
 
-#    可选：把 13 个内置技能导入「技能 → 发现技能」
-docker compose exec server python scripts/migrate_skills.py --db-url sqlite:////app/db/zenstory.db
+#    项目提示词由管理后台「系统提示词」维护；保存后重新加载。
+#    新数据库必须配置 novel、short、screenplay，缺失时写作会明确报错。
+#    官方技能仅存 public_skill 数据库表，不再提供源码默认值或导入种子。
 
 # 4. 访问
 # Web:  http://localhost:5173

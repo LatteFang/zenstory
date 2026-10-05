@@ -30,6 +30,8 @@ from models import ChatMessage, File, Project, User
 from services.core.auth_service import hash_password
 from tests.test_agent.test_round3_steering import _FakeRedis
 
+pytestmark = pytest.mark.usefixtures("writing_prompt_configs")
+
 CHAPTER = "第四章 荒原的信使\n" + "他把信塞进石缝里。" * 20
 LATE_TEXT = "结尾再收一下，别烂尾"
 _ONE_DAY = 24 * 3600

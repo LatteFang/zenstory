@@ -76,7 +76,7 @@ def _parse_sse_payload(raw_text: str) -> list[tuple[str, dict]]:
 
 
 @pytest.mark.asyncio
-async def test_agent_stream_emits_session_started_content_and_done(client: AsyncClient, db_session: Session):
+async def test_agent_stream_emits_session_started_content_and_done(client: AsyncClient, db_session: Session, writing_prompt_configs):
     from unittest.mock import patch
 
     _, token, project = await _create_user_login_project(
@@ -142,3 +142,22 @@ async def test_agent_steer_enqueues_message_for_owned_runtime_session(client: As
         assert pending[0].content == "Focus on chapter two pacing"
     finally:
         await cleanup_steering_queue_async(session_id)
+
+
+@pytest.mark.asyncio
+async def test_missing_writing_config_emits_error_without_starting_workflow(client: AsyncClient, db_session: Session):
+    from unittest.mock import patch
+
+    _, token, project = await _create_user_login_project(client, db_session, username="missing_config_e2e")
+    with patch("agent.service.run_writing_workflow_streaming") as workflow:
+        response = await client.post(
+            "/api/v1/agent/stream",
+            json={"project_id": str(project.id), "message": "Write the next paragraph"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    # SSE headers are already sent: the explicit error event, not HTTP 503, is the boundary.
+    assert response.status_code == 200
+    events = _parse_sse_payload(response.text)
+    assert any(name == "error" and "Writing configuration is unavailable" in str(payload) for name, payload in events)
+    assert not any(name in ("content", "done") for name, _ in events)
+    workflow.assert_not_called()

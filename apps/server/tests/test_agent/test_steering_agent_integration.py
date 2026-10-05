@@ -12,6 +12,8 @@ from agent.core.steering import (
     get_steering_queue_async,
 )
 
+pytestmark = pytest.mark.usefixtures("writing_prompt_configs")
+
 
 @pytest.mark.integration
 class TestSteeringAgentLoopIntegration:

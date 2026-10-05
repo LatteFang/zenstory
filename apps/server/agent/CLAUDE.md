@@ -27,11 +27,8 @@ agent/
 │   └── router.py           # 意图路由
 ├── llm/                    # LLM 集成
 │   └── openai_agents/     # openai-agents-python / DeepSeek 写作 Agent 适配层
-├── prompts/                # 提示词模板
+├── prompts/                # 共享协议与角色提示（项目配置仅存数据库）
 │   ├── base.py             # 基础提示
-│   ├── novel.py            # 小说项目提示
-│   ├── screenplay.py       # 剧本项目提示
-│   ├── short_story.py      # 短篇故事提示
 │   ├── subagents.py        # 子代理提示 (planner/writer/quality_reviewer)
 │   └── suggestions.py      # 建议生成提示
 ├── schemas/                # 数据模型
@@ -39,9 +36,7 @@ agent/
 ├── skills/                 # 技能系统（标准 SKILL.md，渐进式加载，永不执行脚本）
 │   ├── active_skills.py    # 当前用户启用中的技能视图（目录/工具/显式选择共用）
 │   ├── context_injector.py # L1 技能目录（只含名称 + 用途）
-│   ├── loader.py           # 内置技能加载（builtin/<id>/SKILL.md）
-│   ├── package.py          # SKILL.md 解析、zip 导入安全检查、导出打包
-│   └── builtin/            # 官方技能（由 services/builtin_skill_seed.py 写入 PublicSkill）
+│   └── package.py          # SKILL.md 解析、zip 导入安全检查、导出打包
 └── tools/                  # 工具实现
     ├── tool_schemas.py     # provider-neutral 工具 schema 定义
     ├── file_executor.py    # 文件操作执行器

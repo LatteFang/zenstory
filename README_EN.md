@@ -153,8 +153,8 @@ docker compose up -d --build
 docker compose exec -e ZENSTORY_ADMIN_EMAIL=you@example.com \
   -e ZENSTORY_ADMIN_PASSWORD='CHANGE-ME' server python scripts/create_admin.py
 
-# Optional: load the 13 built-in skills into Skills → Discover
-docker compose exec server python scripts/migrate_skills.py --db-url sqlite:////app/db/zenstory.db
+# Project prompts live only in DB: configure novel, short and screenplay in admin, then reload.
+# Official skills also live only in DB; maintenance: docs/agent-writing-guidance.md.
 ```
 
 Sign in at <http://localhost:5173>; the API reference is at <http://localhost:8000/docs>. The database is SQLite and lives in a Docker volume together with uploads and the vector index, so `docker compose down` and image rebuilds keep your data.
