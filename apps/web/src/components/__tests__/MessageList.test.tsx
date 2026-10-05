@@ -122,6 +122,43 @@ describe('MessageList', () => {
     // MessageList returns null for empty messages, so we just check it doesn't throw
   })
 
+  it('replays saved text, tools, handoff and agent selection in observed order without duplicates', () => {
+    const timestamp = new Date('2026-10-05T10:00:00Z')
+    const tool = { id: 'tool-ordered', tool_name: 'create_file', arguments: {}, status: 'success' as const, result: { title: 'Ordered file' } }
+    const displayItems = [
+      { id: 'one', type: 'content' as const, content: 'First text', timestamp },
+      { id: 'tool', type: 'tool_calls' as const, toolCalls: [tool], timestamp },
+      { id: 'two', type: 'content' as const, content: 'Second text', timestamp },
+      { id: 'handoff', type: 'thinking_status' as const, content: 'Handing off now', timestamp },
+      { id: 'agent', type: 'agent_selected' as const, agentName: 'Writer agent', timestamp },
+      { id: 'three', type: 'content' as const, content: 'Last text', timestamp },
+    ]
+    const message = createMessage({ role: 'assistant', content: 'First textSecond textLast text', toolResults: [tool], ...{ displayItems } })
+    const { container, rerender } = render(<MessageList messages={[]} streamRenderItems={displayItems} />)
+    const markers = ['First text', 'Ordered file', 'Second text', 'Handing off now', 'Writer agent', 'Last text']
+    const positions = () => markers.map(marker => container.textContent!.indexOf(marker))
+    const livePositions = positions()
+    expect(livePositions.every((position, index) => position >= 0 && (index === 0 || position > livePositions[index - 1]))).toBe(true)
+    rerender(<MessageList messages={[message]} />)
+    const historyPositions = positions()
+    expect(historyPositions.every((position, index) => position >= 0 && (index === 0 || position > historyPositions[index - 1]))).toBe(true)
+    for (const marker of markers) expect(screen.getAllByText(marker)).toHaveLength(1)
+  })
+
+  it('shows the live thinking indicator without a streaming message id, but not on replay', () => {
+    const displayItems = [{ id: 'thinking', type: 'thinking_content' as const, content: 'Thinking about continuity', timestamp: new Date() }]
+    const { container, rerender } = render(<MessageList messages={[]} streamRenderItems={displayItems} />)
+    expect(container.querySelectorAll('.animate-pulse')).toHaveLength(3)
+    rerender(<MessageList messages={[createMessage({ role: 'assistant', content: '', displayItems })]} />)
+    expect(container.querySelectorAll('.animate-pulse')).toHaveLength(0)
+  })
+
+  it('keeps saved agent-only timeline turns visible', () => {
+    const message = createMessage({ role: 'assistant', content: '', ...{ displayItems: [{ id: 'agent-only', type: 'agent_selected', agentName: 'Planner agent', timestamp: new Date() }] } })
+    render(<MessageList messages={[message]} />)
+    expect(screen.getByText('Planner agent')).toBeInTheDocument()
+  })
+
   it('renders user message correctly', () => {
     const messages = [createMessage({ role: 'user', content: 'Hello' })]
     render(<MessageList messages={messages} />)

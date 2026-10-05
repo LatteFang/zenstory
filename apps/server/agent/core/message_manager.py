@@ -66,6 +66,7 @@ class MessageManager:
         assistant_usage: dict[str, Any] | None = None,
         assistant_status_cards: list[dict[str, Any]] | None = None,
         steering_messages: list[str] | None = None,
+        assistant_display_events: list[dict[str, Any]] | None = None,
     ) -> str | None:
         """
         Save messages to chat history.
@@ -79,8 +80,11 @@ class MessageManager:
             reasoning_content: Thinking/reasoning content from the model
             assistant_stop_reason: Model stop reason from MESSAGE_END
             assistant_usage: Model usage payload from MESSAGE_END
+            assistant_status_cards: Terminal workflow status cards
             steering_messages: Steering messages injected mid-run, persisted as
                 their own user-role turns so they survive into later requests
+            assistant_display_events: Ordered renderer timeline for the assistant
+                row; omitted for legacy callers that do not provide one
 
         Returns:
             Persisted assistant message ID when history save succeeds
@@ -97,6 +101,7 @@ class MessageManager:
                 assistant_usage,
                 assistant_status_cards,
                 steering_messages,
+                assistant_display_events,
             )
         return self._save_messages_with_session(
             session,
@@ -109,6 +114,7 @@ class MessageManager:
             assistant_usage,
             assistant_status_cards,
             steering_messages,
+            assistant_display_events,
         )
 
     def _should_offload_session_work(self, session: Session) -> bool:
@@ -128,6 +134,7 @@ class MessageManager:
         assistant_usage: dict[str, Any] | None = None,
         assistant_status_cards: list[dict[str, Any]] | None = None,
         steering_messages: list[str] | None = None,
+        assistant_display_events: list[dict[str, Any]] | None = None,
     ) -> str | None:
         """Persist chat history with a fresh sync DB session."""
         with create_session() as session:
@@ -142,6 +149,7 @@ class MessageManager:
                 assistant_usage,
                 assistant_status_cards,
                 steering_messages,
+                assistant_display_events,
             )
 
     def _save_messages_with_session(
@@ -156,6 +164,7 @@ class MessageManager:
         assistant_usage: dict[str, Any] | None = None,
         assistant_status_cards: list[dict[str, Any]] | None = None,
         steering_messages: list[str] | None = None,
+        assistant_display_events: list[dict[str, Any]] | None = None,
     ) -> str | None:
         """Core chat-history persistence logic using the provided session."""
         from models import ChatMessage, ChatSession
@@ -279,17 +288,19 @@ class MessageManager:
                 stop_reason=assistant_stop_reason,
                 usage=assistant_usage,
                 status_cards=assistant_status_cards,
+                display_events=assistant_display_events,
             )
 
             # 本轮没有任何 assistant 产出时不写空行：这条消息前端永远渲染不出来，
             # 却会占掉"最近消息"窗口的一格，把更早的真实消息挤出上下文。
             # 判据与 service.py::_has_assistant_payload 一致——正文、工具调用、
-            # 状态卡片、思维链任一非空即视为有产出。
+            # 状态卡片、有序展示事件、思维链任一非空即视为有产出。
             assistant_chat_message: ChatMessage | None = None
             if (
                 (assistant_message or "").strip()
                 or tool_calls
                 or assistant_status_cards
+                or assistant_display_events
                 or (reasoning_content or "").strip()
             ):
                 assistant_chat_message = ChatMessage(
@@ -391,6 +402,7 @@ class MessageManager:
         stop_reason: str | None = None,
         usage: dict[str, Any] | None = None,
         status_cards: list[dict[str, Any]] | None = None,
+        display_events: list[dict[str, Any]] | None = None,
     ) -> str | None:
         """Serialize assistant metadata payload to JSON."""
         payload: dict[str, Any] = {}
@@ -400,6 +412,8 @@ class MessageManager:
             payload["usage"] = usage
         if status_cards and isinstance(status_cards, list):
             payload["status_cards"] = status_cards
+        if display_events and isinstance(display_events, list):
+            payload["display_events"] = display_events
 
         if not payload:
             return None

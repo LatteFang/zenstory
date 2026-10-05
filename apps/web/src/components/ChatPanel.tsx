@@ -29,6 +29,7 @@ import { useMaterialAttachment } from "../contexts/MaterialAttachmentContext";
 import { useTextQuote } from "../contexts/TextQuoteContext";
 import { useAgentStream } from "../hooks/useAgentStream";
 import type { MessageSegment, StreamCompletionMeta } from "../hooks/useAgentStream";
+import { parseChatDisplayEvents } from "../lib/chatDisplayEvents";
 import { useChatStreaming } from "../hooks/useChatStreaming";
 import { MessageList } from "./MessageList";
 import type { Message, MessageListRef, MessageStatusCard } from "./MessageList";
@@ -134,7 +135,7 @@ const parseMessageStatusCardsFromMetadata = (metadataRaw?: string | null): Messa
   }
 };
 
-const parseToolCallsFromHistory = (toolCallsRaw?: string | null): Pick<Message, "toolCalls" | "toolResults"> => {
+const parseToolCallsFromHistory = (toolCallsRaw?: string | null): Pick<Message, "toolCalls" | "toolResults"> & { orderedToolCalls?: import("../types").ToolCall[] } => {
   if (!toolCallsRaw) return {};
 
   try {
@@ -183,6 +184,7 @@ const parseToolCallsFromHistory = (toolCallsRaw?: string | null): Pick<Message, 
     if (normalized.length === 0) return {};
 
     return {
+      orderedToolCalls: normalized,
       toolCalls: normalized.filter((toolCall) => toolCall.status === "pending"),
       toolResults: normalized.filter((toolCall) => toolCall.status !== "pending"),
     };
@@ -399,6 +401,7 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
   // Use the useChatStreaming hook for streaming UI state management
   const {
     streamRenderItems,
+    getStreamItemsSnapshot,
     clearStreamItems,
     editProgress,
     setEditProgress,
@@ -777,9 +780,12 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
     const statusCards = terminalStatusCardsRef.current;
     terminalStatusCardsRef.current = [];
     const toolResults = extractCompletedToolResults(completedSegments);
+    // React state can still be throttled when the final SSE event arrives.
+    const displayItems = getStreamItemsSnapshot?.() ?? [];
+
 
     // 添加到 messages（正文、状态卡片、已完成的工具结果都会随消息一起保留）
-    if (accumulatedContent.trim() || statusCards.length > 0 || toolResults?.length) {
+    if (accumulatedContent.trim() || statusCards.length > 0 || toolResults?.length || displayItems.length) {
       const aiMessage: Message = {
         id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
         backendMessageId: completionMeta?.assistantMessageId,
@@ -788,6 +794,7 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
         timestamp: new Date(),
         statusCards: statusCards.length > 0 ? statusCards : undefined,
         toolResults,
+        displayItems: displayItems.length ? displayItems : undefined,
       };
       setMessages(prev => [...prev, aiMessage]);
 
@@ -825,6 +832,7 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
     }, 1500);
   }, [
     streamCallbacks,
+    getStreamItemsSnapshot,
     currentProjectId,
     fetchAndApplySuggestions,
     finalizePendingContextClears,
@@ -964,7 +972,7 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
       const loadedMessages: Message[] = historyMessages.map((msg) => {
         const feedback = parseMessageFeedbackFromMetadata(msg.metadata);
         const statusCards = parseMessageStatusCardsFromMetadata(msg.metadata);
-        const { toolCalls, toolResults } = parseToolCallsFromHistory(msg.tool_calls);
+        const { toolCalls, toolResults, orderedToolCalls } = parseToolCallsFromHistory(msg.tool_calls);
 
         return {
           id: msg.id,
@@ -976,6 +984,7 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
           statusCards,
           toolCalls,
           toolResults,
+          displayItems: parseChatDisplayEvents(msg.metadata, orderedToolCalls ?? [], parseUTCDate(msg.created_at), t),
         };
       });
 
@@ -997,7 +1006,7 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = () => {
         setIsLoadingHistory(false);
       }
     }
-  }, []);
+  }, [t]);
 
   const handleSubmitFeedback = useCallback(async (message: Message, vote: MessageFeedbackVote) => {
     const backendMessageId = message.backendMessageId ?? null;

@@ -647,6 +647,212 @@ class TestAgentServiceProcessStream:
         assert call_by_id["tool-2"]["name"] == "query_files"
         assert call_by_id["tool-2"]["status"] == "success"
 
+    async def test_process_stream_persists_ordered_display_events(
+        self, mock_agent_service, test_user_with_project, db_session: Session
+    ):
+        """Persist cross-type display order without duplicating tool payloads."""
+        from agent.core.workflow_events import StreamEvent, StreamEventType
+
+        service, _ = mock_agent_service
+        project = test_user_with_project["project"]
+        user = test_user_with_project["user"]
+
+        async def ordered_stream():
+            yield StreamEvent(
+                type=StreamEventType.ROUTER_THINKING,
+                data={"message": "Choosing the best agent"},
+            )
+            yield StreamEvent(
+                type=StreamEventType.ROUTER_DECIDED,
+                data={"agent_type": "planner", "reason": "Outline first"},
+            )
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": "before "})
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": "tool"})
+            yield StreamEvent(
+                type=StreamEventType.TOOL_USE,
+                data={
+                    "id": "tool-1",
+                    "name": "query_files",
+                    "input": {"query": "first"},
+                    "status": "complete",
+                },
+            )
+            yield StreamEvent(
+                type=StreamEventType.TOOL_RESULT,
+                data={"tool_use_id": "tool-1", "name": "query_files", "result": {"ok": True}},
+            )
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": " after"})
+            yield StreamEvent(
+                type=StreamEventType.HANDOFF,
+                data={"target_agent": "writer", "reason": "draft", "context": "draft it"},
+            )
+            yield StreamEvent(
+                type=StreamEventType.AGENT_SELECTED,
+                data={"agent_type": "writer", "agent_name": "Writer", "iteration": 2},
+            )
+            yield StreamEvent(type=StreamEventType.THINKING, data={"thinking": "plan "})
+            yield StreamEvent(type=StreamEventType.THINKING, data={"thinking": "details"})
+            yield StreamEvent(type=StreamEventType.TEXT, data={"text": "final"})
+            yield StreamEvent(
+                type=StreamEventType.TOOL_USE,
+                data={
+                    "id": "tool-2",
+                    "name": "query_files",
+                    "input": {"query": "outline"},
+                    "status": "complete",
+                },
+            )
+            yield StreamEvent(
+                type=StreamEventType.TOOL_USE,
+                data={
+                    "id": "tool-3",
+                    "name": "query_files",
+                    "input": {"query": "chapter"},
+                    "status": "complete",
+                },
+            )
+            yield StreamEvent(
+                type=StreamEventType.TOOL_RESULT,
+                data={"tool_use_id": "tool-3", "name": "query_files", "result": {"ok": True}},
+            )
+            yield StreamEvent(
+                type=StreamEventType.ITERATION_EXHAUSTED,
+                data={
+                    "layer": "collaboration",
+                    "iterations_used": 3,
+                    "max_iterations": 3,
+                    "reason": "limit reached",
+                    "last_agent": "writer",
+                },
+            )
+            yield StreamEvent(
+                type=StreamEventType.WORKFLOW_COMPLETE,
+                data={"reason": "completed", "agent_type": "writer"},
+            )
+            yield StreamEvent(type=StreamEventType.MESSAGE_END, data={"stop_reason": "end_turn"})
+
+        with patch("agent.service.run_writing_workflow_streaming", return_value=ordered_stream()):
+            async for _ in service.process_stream(
+                project_id=str(project.id),
+                user_id=str(user.id),
+                message="keep the visible order",
+                session=db_session,
+            ):
+                pass
+
+        latest_assistant = db_session.exec(
+            select(ChatMessage)
+            .where(ChatMessage.role == "assistant")
+            .order_by(desc(ChatMessage.created_at), desc(ChatMessage.id))
+        ).first()
+        assert latest_assistant is not None
+        assert latest_assistant.message_metadata is not None
+        metadata = json.loads(latest_assistant.message_metadata)
+        assert metadata["display_events"] == [
+            {"type": "router_thinking", "data": {"message": "Choosing the best agent"}},
+            {
+                "type": "router_decided",
+                "data": {"agent_type": "planner", "reason": "Outline first"},
+            },
+            {"type": "content", "content": "before tool"},
+            {"type": "tool_call", "tool_call_index": 0},
+            {"type": "content", "content": " after"},
+            {
+                "type": "handoff",
+                "data": {"target_agent": "writer", "reason": "draft", "context": "draft it"},
+            },
+            {
+                "type": "agent_selected",
+                "data": {
+                    "agent_type": "writer",
+                    "agent_name": "Writer",
+                    "iteration": 2,
+                    "max_iterations": None,
+                    "remaining": None,
+                },
+            },
+            {"type": "thinking_content", "content": "plan details"},
+            {"type": "content", "content": "final"},
+            {"type": "tool_call", "tool_call_index": 1},
+            {"type": "tool_call", "tool_call_index": 2},
+            {
+                "type": "iteration_exhausted",
+                "data": {
+                    "layer": "collaboration",
+                    "iterations_used": 3,
+                    "max_iterations": 3,
+                    "reason": "limit reached",
+                    "last_agent": "writer",
+                },
+            },
+            {"type": "workflow_complete", "data": {"reason": "completed", "agent_type": "writer"}},
+        ]
+        assert [event for event in metadata["display_events"] if event["type"] == "tool_call"] == [
+            {"type": "tool_call", "tool_call_index": 0},
+            {"type": "tool_call", "tool_call_index": 1},
+            {"type": "tool_call", "tool_call_index": 2},
+        ]
+        assert all("arguments" not in event and "result" not in event for event in metadata["display_events"])
+        serialized_tool_calls = json.loads(latest_assistant.tool_calls or "[]")
+        assert len(serialized_tool_calls) == 3
+        assert serialized_tool_calls[0]["status"] == "success"
+        assert serialized_tool_calls[1]["status"] == "pending"
+        assert serialized_tool_calls[2]["status"] == "success"
+
+    async def test_process_stream_persists_control_only_display_timeline(
+        self, mock_agent_service, test_user_with_project, db_session: Session
+    ):
+        """A meaningful control timeline must not be discarded as an empty assistant row."""
+        from agent.core.workflow_events import StreamEvent, StreamEventType
+
+        service, _ = mock_agent_service
+        project = test_user_with_project["project"]
+        user = test_user_with_project["user"]
+
+        async def control_only_stream():
+            yield StreamEvent(
+                type=StreamEventType.AGENT_SELECTED,
+                data={
+                    "agent_type": "writer",
+                    "agent_name": "Writer",
+                    "iteration": 1,
+                    "max_iterations": 3,
+                    "remaining": 2,
+                },
+            )
+            yield StreamEvent(type=StreamEventType.MESSAGE_END, data={"stop_reason": "end_turn"})
+
+        with patch(
+            "agent.service.run_writing_workflow_streaming", return_value=control_only_stream()
+        ):
+            async for _ in service.process_stream(
+                project_id=str(project.id),
+                user_id=str(user.id),
+                message="route only",
+                session=db_session,
+            ):
+                pass
+
+        latest_assistant = db_session.exec(
+            select(ChatMessage)
+            .where(ChatMessage.role == "assistant")
+            .order_by(desc(ChatMessage.created_at), desc(ChatMessage.id))
+        ).first()
+        assert latest_assistant is not None
+        assert latest_assistant.content == ""
+        assert json.loads(latest_assistant.message_metadata or "{}")["display_events"] == [
+            {
+                "type": "agent_selected",
+                "data": {
+                    "agent_type": "writer",
+                    "agent_name": "Writer",
+                    "iteration": 1,
+                    "max_iterations": 3,
+                    "remaining": 2,
+                },
+            }
+        ]
+
     async def test_process_stream_with_custom_session_id(
         self, mock_agent_service, test_user_with_project, db_session: Session, mock_workflow_stream
     ):
@@ -860,6 +1066,12 @@ class TestAgentServiceProcessStream:
         assert saved_assistant.message_metadata is not None
         metadata = json.loads(saved_assistant.message_metadata)
         assert metadata["status_cards"][0]["reason"] == "clarification_needed"
+        assert metadata["display_events"] == [
+            {
+                "type": "workflow_stopped",
+                "data": {"reason": "clarification_needed", "question": "请确认主角姓名"},
+            }
+        ]
 
     async def test_process_stream_pg_offload_branch_initializes_message_manager_before_save(
         self, mock_agent_service, test_user_with_project, db_session: Session
@@ -973,6 +1185,10 @@ class TestAgentServiceProcessStream:
         assert len(persisted_messages) == 2
         assert any(m.role == "user" and m.content == "hello" for m in persisted_messages)
         assert any(m.role == "assistant" and m.content == "partial reply" for m in persisted_messages)
+        partial_assistant = next(m for m in persisted_messages if m.role == "assistant")
+        assert json.loads(partial_assistant.message_metadata or "{}")["display_events"] == [
+            {"type": "content", "content": "partial reply"}
+        ]
 
     async def test_process_stream_schedules_background_cleanup_on_cancellation(
         self, mock_agent_service, test_user_with_project, db_session: Session
@@ -1091,6 +1307,10 @@ class TestAgentServiceProcessStream:
         assert any(
             m.role == "assistant" and m.content == "partial reply" for m in saved_messages
         )
+        partial_assistant = next(m for m in saved_messages if m.role == "assistant")
+        assert json.loads(partial_assistant.message_metadata or "{}")["display_events"] == [
+            {"type": "content", "content": "partial reply"}
+        ]
 
     async def test_process_stream_prompt_ledger_counts_embedded_sections_once(
         self, mock_agent_service, test_user_with_project, db_session: Session
