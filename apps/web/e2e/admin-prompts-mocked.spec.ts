@@ -58,6 +58,32 @@ async function bootstrapAdminSession(page: Page) {
 }
 
 test.describe('Admin prompts (mocked)', () => {
+  test('shows populated prompt cards with localized active and inactive status', async ({ page }) => {
+    await bootstrapAdminSession(page);
+    await page.route('**/api/admin/prompts', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: ['novel', 'short', 'screenplay'].map((project_type) => ({
+            project_type,
+            version: 1,
+            is_active: project_type !== 'short',
+            updated_at: '2026-03-08T00:00:00Z',
+          })),
+        }),
+      });
+    });
+
+    await page.goto('/admin/prompts');
+    const cards = page.locator('.grid > div');
+    await expect(cards).toHaveCount(3);
+    const novel = cards.filter({ has: page.getByRole('heading', { name: 'novel', exact: true }) });
+    const short = cards.filter({ has: page.getByRole('heading', { name: 'short', exact: true }) });
+    await expect(novel.getByText(/^(已启用|Active)$/)).toBeVisible();
+    await expect(short.getByText(/^(已禁用|Inactive)$/)).toBeVisible();
+  });
+
   test('can create a new prompt config from editor', async ({ page }) => {
     await bootstrapAdminSession(page);
 
