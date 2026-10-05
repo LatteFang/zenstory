@@ -457,39 +457,20 @@ test.describe('Admin Functionality', () => {
     });
 
     test('admin can list all prompt configurations', async ({ page }) => {
-      // Wait for prompts to load
-      await waitForNetworkSettled(page);
-
-      // Check for prompt cards
+      // The E2E database intentionally seeds all supported project types.
       const promptCards = page.locator(PROMPT_MANAGEMENT.promptCard);
-      const cardCount = await promptCards.count();
-
-      // There should be at least some prompt configurations
-      expect(cardCount).toBeGreaterThanOrEqual(0);
+      await expect(promptCards).toHaveCount(3);
+      for (const projectType of ['novel', 'short', 'screenplay']) {
+        await expect(promptCards.getByRole('heading', { name: projectType, exact: true })).toBeVisible();
+      }
     });
 
     test('admin can view prompt card details', async ({ page }) => {
-      // Wait for prompts to load
-      await waitForNetworkSettled(page);
-
       const promptCards = page.locator(PROMPT_MANAGEMENT.promptCard);
-      const cardCount = await promptCards.count();
-
-      if (cardCount > 0) {
-        const firstCard = promptCards.first();
-
-        // Check for project type name
-        await expect(firstCard.locator('h3')).toBeVisible();
-
-        // Check for status badge
-        const statusBadge = firstCard.locator('span.rounded-full, span.bg-green-100, span.bg-gray-100');
-        await expect(statusBadge.first()).toBeVisible();
-      } else {
-        // No prompts - check for empty state
-        const emptyState = page.locator('text=没有数据, text=No data');
-        const hasEmptyState = await emptyState.isVisible().catch(() => false);
-        expect(hasEmptyState || cardCount === 0).toBeTruthy();
-      }
+      await expect(promptCards).toHaveCount(3);
+      const firstCard = promptCards.first();
+      await expect(firstCard.getByRole('heading')).toHaveText(/^(novel|short|screenplay)$/);
+      await expect(firstCard.getByText(/^(已启用|Active)$/)).toBeVisible();
     });
 
     test('admin can click create new prompt', async ({ page }) => {
