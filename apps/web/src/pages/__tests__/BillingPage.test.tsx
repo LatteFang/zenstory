@@ -29,12 +29,9 @@ vi.mock('react-i18next', () => ({
           'dashboard:billing.ctaUpgradePro': 'Upgrade Pro',
           'dashboard:billing.ctaBuyPro': 'Buy Pro Online',
           'dashboard:billing.ctaRenewPro': 'Renew Pro',
+          'dashboard:billing.ctaProNeutral': 'Get or renew Pro',
           'settings:subscription.redeemCode': 'Redeem Code',
           'dashboard:billing.currentPlan': 'Current plan',
-          'dashboard:billing.unlockHint': 'Unlock more features',
-          'dashboard:billing.unlockHintRedeem': 'Redeem to unlock',
-          'dashboard:billing.activationGuide': 'Pay with Alipay',
-          'dashboard:billing.activationGuideRedeem': 'Activate with a redeem code',
           'settings:subscription.wechatGuide': 'Get a code on WeChat',
           'dashboard:billing.usageTitle': 'Usage',
           'common:error': 'Load failed',
@@ -123,8 +120,12 @@ vi.mock('../../components/subscription/RedeemCodeModal', () => ({
 }))
 
 vi.mock('../../components/subscription/PaymentCheckoutModal', () => ({
-  PaymentCheckoutModal: ({ isOpen, initialCycle }: { isOpen: boolean; initialCycle: string }) =>
-    (isOpen ? <div data-cycle={initialCycle}>Payment modal</div> : null),
+  PaymentCheckoutModal: ({
+    isOpen,
+    initialCycle,
+    upgradeSource,
+  }: { isOpen: boolean; initialCycle: string; upgradeSource?: string }) =>
+    (isOpen ? <div data-cycle={initialCycle} data-source={upgradeSource}>Payment modal</div> : null),
 }))
 
 vi.mock('../../lib/subscriptionApi', () => ({
@@ -241,6 +242,8 @@ describe('BillingPage', () => {
     expect(screen.getByText('AI conversations')).toBeInTheDocument()
     expect(screen.getByText('2/10')).toBeInTheDocument()
 
+    expect(screen.queryByText('Get a code on WeChat')).not.toBeInTheDocument()
+
     fireEvent.click(screen.getByRole('button', { name: 'Buy Pro Online' }))
     expect(trackUpgradeClick).toHaveBeenCalled()
     expect(assignSpy).not.toHaveBeenCalled()
@@ -255,6 +258,7 @@ describe('BillingPage', () => {
     currentSearch = 'plan=pro&source=billing_header_upgrade'
     render(<BillingPage />)
     expect(screen.getByText('Payment modal')).toBeInTheDocument()
+    expect(screen.getByText('Payment modal')).toHaveAttribute('data-source', 'billing_header_upgrade')
     expect(assignSpy).not.toHaveBeenCalled()
   })
 
@@ -326,8 +330,6 @@ describe('BillingPage', () => {
       render(<BillingPage />)
 
       expect(screen.queryByRole('button', { name: 'Buy Pro Online' })).not.toBeInTheDocument()
-      expect(screen.getByText('Redeem to unlock')).toBeInTheDocument()
-      expect(screen.getByText('Activate with a redeem code')).toBeInTheDocument()
       expect(screen.getByText('Get a code on WeChat')).toBeInTheDocument()
 
       fireEvent.click(screen.getByRole('button', { name: 'Upgrade Pro' }))
@@ -361,5 +363,18 @@ describe('BillingPage', () => {
     render(<BillingPage />)
     expect(screen.queryByText('Payment modal')).not.toBeInTheDocument()
     expect(screen.queryByText('Redeem modal')).not.toBeInTheDocument()
+  })
+
+  it('uses neutral checkout copy while the subscription status is unknown', () => {
+    statusResponse = { ...statusResponse, data: undefined, isLoading: true }
+    render(<BillingPage />)
+    expect(screen.getByRole('button', { name: 'Get or renew Pro' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Renew Pro' })).not.toBeInTheDocument()
+  })
+
+  it('uses neutral checkout copy when the subscription status failed to load', () => {
+    statusResponse = { ...statusResponse, data: undefined, isError: true }
+    render(<BillingPage />)
+    expect(screen.getByRole('button', { name: 'Get or renew Pro' })).toBeInTheDocument()
   })
 })
