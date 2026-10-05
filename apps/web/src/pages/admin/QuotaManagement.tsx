@@ -101,7 +101,7 @@ export const QuotaManagement: React.FC = () => {
           }}
           stateClassName="admin-surface flex items-center justify-center py-12"
         >
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <StatsCard
               icon={<Upload className="h-5 w-5" />}
               title={t("quota.materialUploads")}

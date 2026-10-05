@@ -329,7 +329,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
           {/* Left navigation */}
           <div className={`${isMobile ? 'px-1 pb-2' : 'w-40 px-3 pb-4 shrink-0'}`}>
             <nav
-              className={`${isMobile ? 'flex gap-1' : 'space-y-0.5'}`}
+              className={`${isMobile ? 'grid grid-cols-3 gap-1' : 'space-y-0.5'}`}
               role="tablist"
               aria-orientation={isMobile ? 'horizontal' : 'vertical'}
             >
@@ -348,8 +348,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose,
                     onClick={() => setActiveTab(item.id)}
                     onKeyDown={(event) => handleTabKeyDown(event, index)}
                     data-testid={`settings-tab-${item.id}`}
-                    className={`flex items-center gap-2 text-sm transition-colors ${
-                      isMobile ? 'flex-1 justify-center py-2 px-3' : 'w-full py-2 px-3'
+                    className={`flex items-center text-sm transition-colors ${
+                      isMobile ? 'flex-col gap-1 justify-center min-h-11 py-2 px-1' : 'w-full gap-2 py-2 px-3'
                     } rounded-lg ${
                       isActive
                         ? 'bg-[hsl(var(--bg-tertiary))] text-[hsl(var(--text-primary))]'

@@ -62,7 +62,7 @@ function getSuggestionsToDisplay(
 }
 
 /** Minimum textarea height in pixels */
-const TEXTAREA_MIN_HEIGHT_PX = 36;
+const TEXTAREA_MIN_HEIGHT_PX = 64;
 /** Maximum textarea height in auto-layout mode before scrolling */
 const TEXTAREA_AUTO_MAX_HEIGHT_PX = 120;
 

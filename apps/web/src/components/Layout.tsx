@@ -78,9 +78,9 @@ const isEditableActiveElement = (element: Element | null): boolean => {
  * Desktop three-panel layout component.
  *
  * Renders a fixed three-column layout with resizable panels:
- * - Left: Sidebar (20% default, 15% minimum)
- * - Middle: Editor panel (55% default, 30% minimum)
- * - Right: Chat panel (25% default, 20% minimum)
+ * - Left: Sidebar (20% default, 180px minimum)
+ * - Middle: Editor panel (48% default, 30% minimum)
+ * - Right: Chat panel (32% default, 300px minimum)
  *
  * Features:
  * - Draggable panel separators for resizing
@@ -116,22 +116,22 @@ const DesktopLayout: React.FC<LayoutProps> = ({ middle, right }) => {
   }, [openSearch]);
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[hsl(var(--bg-primary))] text-[hsl(var(--text-primary))] flex flex-col fixed inset-0" data-testid="app-layout">
+    <div className="h-dvh overflow-hidden bg-[hsl(var(--bg-primary))] text-[hsl(var(--text-primary))] flex flex-col fixed inset-0" data-testid="app-layout">
       <Header />
       <main className="flex-1 overflow-hidden min-h-0">
         <Group orientation="horizontal" className="h-full">
-          <Panel defaultSize={20} minSize={15}>
+          <Panel defaultSize="20%" minSize={180}>
             <Sidebar />
           </Panel>
           <Separator className="w-px bg-[hsl(var(--separator-color))] hover:bg-[hsl(var(--accent-primary)/0.5)] transition-all hover:w-1" />
-          <Panel defaultSize={55} minSize={30}>
+          <Panel defaultSize="48%" minSize="30%">
             {/* data-testid: editor-panel - Editor panel for content editing tests */}
             <div className="h-full overflow-hidden" data-testid="editor-panel">{middle}</div>
           </Panel>
           <Separator className="w-px bg-[hsl(var(--separator-color))] hover:bg-[hsl(var(--accent-primary)/0.5)] transition-all hover:w-1" />
-          <Panel defaultSize={25} minSize={20}>
+          <Panel defaultSize="32%" minSize={300}>
             {/* data-testid: chat-panel - Chat panel for AI interaction tests */}
-            <div className="h-full overflow-hidden p-4" data-testid="chat-panel">{right}</div>
+            <div className="h-full overflow-hidden p-2" data-testid="chat-panel">{right}</div>
           </Panel>
         </Group>
       </main>
@@ -144,8 +144,8 @@ const DesktopLayout: React.FC<LayoutProps> = ({ middle, right }) => {
  *
  * Renders a three-column layout optimized for tablet screens (768px-1024px):
  * - Left: Sidebar (25% default, 20% minimum) - larger for touch interaction
- * - Middle: Editor panel (50% default, 35% minimum)
- * - Right: Chat panel (25% default, 20% minimum)
+ * - Middle: Editor panel (40% default, 30% minimum)
+ * - Right: Chat panel (35% default, 280px minimum)
  *
  * Features:
  * - Adjusted panel proportions for better touch interaction
@@ -182,20 +182,20 @@ const TabletLayout: React.FC<LayoutProps> = ({ middle, right }) => {
   }, [openSearch]);
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[hsl(var(--bg-primary))] text-[hsl(var(--text-primary))] flex flex-col fixed inset-0" data-testid="app-layout">
+    <div className="h-dvh overflow-hidden bg-[hsl(var(--bg-primary))] text-[hsl(var(--text-primary))] flex flex-col fixed inset-0" data-testid="app-layout">
       <Header />
       <main className="flex-1 overflow-hidden min-h-0">
         <Group orientation="horizontal" className="h-full">
-          <Panel defaultSize={25} minSize={20}>
+          <Panel defaultSize="25%" minSize="20%">
             <Sidebar />
           </Panel>
           <Separator className="w-px bg-[hsl(var(--separator-color))] hover:bg-[hsl(var(--accent-primary)/0.5)] transition-all hover:w-1" />
-          <Panel defaultSize={50} minSize={35}>
+          <Panel defaultSize="40%" minSize="30%">
             <div className="h-full overflow-hidden" data-testid="editor-panel">{middle}</div>
           </Panel>
           <Separator className="w-px bg-[hsl(var(--separator-color))] hover:bg-[hsl(var(--accent-primary)/0.5)] transition-all hover:w-1" />
-          <Panel defaultSize={25} minSize={20}>
-            <div className="h-full overflow-hidden p-3" data-testid="chat-panel">{right}</div>
+          <Panel defaultSize="35%" minSize={280}>
+            <div className="h-full overflow-hidden p-2" data-testid="chat-panel">{right}</div>
           </Panel>
         </Group>
       </main>
@@ -397,7 +397,7 @@ const MobileLayoutContent: React.FC<LayoutProps> = ({ middle, right }) => {
 
   return (
     <div
-      className="h-screen w-screen overflow-hidden bg-[hsl(var(--bg-primary))] text-[hsl(var(--text-primary))] flex flex-col fixed inset-0"
+      className="h-dvh overflow-hidden bg-[hsl(var(--bg-primary))] text-[hsl(var(--text-primary))] flex flex-col fixed inset-0"
       style={mobileViewportHeight ? { height: `${mobileViewportHeight}px` } : undefined}
     >
       {/* Header */}

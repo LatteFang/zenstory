@@ -544,7 +544,7 @@ function MaterialDetailContent({ novelId }: { novelId?: string }) {
     <div className="h-screen flex flex-col bg-[hsl(var(--bg-primary))]">
       {/* Header */}
       <div className="shrink-0 border-b border-[hsl(var(--border-color))] bg-[hsl(var(--bg-secondary))]">
-        <div className={`flex items-center justify-between ${isMobile ? 'px-3 py-2' : 'px-4 py-3'}`}>
+        <div className={`flex ${isMobile ? 'flex-col items-stretch gap-2 px-3 py-2' : 'items-center justify-between px-4 py-3'}`}>
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -572,7 +572,7 @@ function MaterialDetailContent({ novelId }: { novelId?: string }) {
 
           {/* Search - 在移动端内容视图隐藏 */}
           {!(isMobile && showMobileContent) && (
-            <div className={`relative ${isMobile ? 'flex-1 ml-3' : 'max-w-xs'}`}>
+            <div className={`relative ${isMobile ? 'w-full' : 'max-w-xs'}`}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--text-tertiary))]" />
               <input
                 type="text"

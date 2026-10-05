@@ -11,13 +11,14 @@ const mockSwitchToEditor = vi.fn()
 
 // Create mutable mock values
 let mockIsMobile = false
+let mockIsTablet = false
 let mockActivePanel: 'files' | 'editor' | 'chat' = 'editor'
 
 // Mock hooks
 vi.mock('../../hooks/useMediaQuery', () => ({
    
   useIsMobile: vi.fn(() => mockIsMobile),
-  useIsTablet: vi.fn(() => false),
+  useIsTablet: vi.fn(() => mockIsTablet),
 }))
 
 vi.mock('../../contexts/MobileLayoutContext', () => ({
@@ -92,8 +93,8 @@ vi.mock('../BottomTabs', () => ({
 }))
 
 vi.mock('react-resizable-panels', () => ({
-  Panel: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', { 'data-testid': 'panel' }, children),
+  Panel: ({ children, defaultSize, minSize }: { children: React.ReactNode; defaultSize?: number | string; minSize?: number | string }) =>
+    React.createElement('div', { 'data-testid': 'panel', 'data-default-size': defaultSize, 'data-min-size': minSize }, children),
   Group: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', { 'data-testid': 'group' }, children),
   Separator: () => React.createElement('div', { 'data-testid': 'separator' }),
@@ -132,15 +133,32 @@ describe('Layout', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsMobile = false
+    mockIsTablet = false
     mockActivePanel = 'editor'
   })
 
   afterEach(() => {
     mockIsMobile = false
+    mockIsTablet = false
     mockActivePanel = 'editor'
   })
 
   describe('Desktop Layout', () => {
+    it('uses explicit percentage defaults and usable pixel minimums under panel API v4', () => {
+      renderWithRouter(<Layout left={leftPanel} middle={middlePanel} right={rightPanel} />)
+      const panels = screen.getAllByTestId('panel')
+      expect(panels.map((panel) => panel.dataset.defaultSize)).toEqual(['20%', '48%', '32%'])
+      expect(panels.map((panel) => panel.dataset.minSize)).toEqual(['180', '30%', '300'])
+    })
+
+    it('keeps tablet panels usable without treating percentages as pixels', () => {
+      mockIsTablet = true
+      renderWithRouter(<Layout left={leftPanel} middle={middlePanel} right={rightPanel} />)
+      const panels = screen.getAllByTestId('panel')
+      expect(panels.map((panel) => panel.dataset.defaultSize)).toEqual(['25%', '40%', '35%'])
+      expect(panels.map((panel) => panel.dataset.minSize)).toEqual(['20%', '30%', '280'])
+    })
+
     it('renders three-panel layout', () => {
       renderWithRouter(<Layout left={leftPanel} middle={middlePanel} right={rightPanel} />)
 
@@ -437,8 +455,9 @@ describe('Layout', () => {
 
       const header = screen.getByTestId('header')
       const container = header.closest('div')
-      expect(container).toHaveClass('h-screen')
-      expect(container).toHaveClass('w-screen')
+      expect(container).toHaveClass('h-dvh')
+      expect(container).not.toHaveClass('w-screen')
+      expect(container).toHaveClass('inset-0')
     })
 
     it('has fixed positioning', () => {
@@ -456,8 +475,9 @@ describe('Layout', () => {
 
       const header = screen.getByTestId('header')
       const container = header.closest('div')
-      expect(container).toHaveClass('h-screen')
-      expect(container).toHaveClass('w-screen')
+      expect(container).toHaveClass('h-dvh')
+      expect(container).not.toHaveClass('w-screen')
+      expect(container).toHaveClass('inset-0')
       expect(container).toHaveClass('fixed')
     })
 

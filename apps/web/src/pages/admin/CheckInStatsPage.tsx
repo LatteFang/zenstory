@@ -109,7 +109,7 @@ export const CheckInStatsPage: React.FC = () => {
           }}
           stateClassName="admin-surface flex items-center justify-center py-12"
         >
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <StatsCard
               icon={<CalendarCheck className="h-5 w-5" />}
               title={t("checkIn.todayCount")}
@@ -178,7 +178,7 @@ export const CheckInStatsPage: React.FC = () => {
         >
           <>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[680px]">
                 <thead>
                   <tr className="border-b border-[hsl(var(--separator-color))]">
                     <th className="px-4 py-3 text-left text-sm font-semibold text-[hsl(var(--text-primary))]">

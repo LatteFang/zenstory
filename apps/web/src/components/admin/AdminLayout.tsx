@@ -21,14 +21,14 @@ export const AdminLayout: React.FC = () => {
   });
 
   return (
-    <div className="fixed inset-0 flex h-screen w-screen flex-col overflow-hidden bg-[hsl(var(--bg-primary))] text-[hsl(var(--text-primary))]">
+    <div className="fixed inset-0 flex h-dvh flex-col overflow-hidden bg-[hsl(var(--bg-primary))] text-[hsl(var(--text-primary))]">
       <AdminHeader
         onMenuClick={() => setSidebarOpen((open) => !open)}
         menuOpen={sidebarOpen}
         menuButtonRef={menuButtonRef}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {!isMobile ? (
           <aside className="w-64 shrink-0 overflow-y-auto border-r border-[hsl(var(--separator-color))] bg-[hsl(var(--bg-secondary)/0.7)] backdrop-blur-xl lg:w-72">
             <AdminSidebar />
@@ -60,7 +60,7 @@ export const AdminLayout: React.FC = () => {
           </>
         )}
 
-        <main className="flex-1 overflow-y-auto bg-[radial-gradient(140%_120%_at_0%_0%,hsl(var(--bg-tertiary)/0.3),transparent_58%)]">
+        <main className="flex-1 min-w-0 min-h-0 overflow-y-auto bg-[radial-gradient(140%_120%_at_0%_0%,hsl(var(--bg-tertiary)/0.3),transparent_58%)]">
           <div className="mx-auto w-full max-w-[1600px] px-3 py-4 sm:px-4 md:px-6 md:py-6">
             <Outlet />
           </div>
