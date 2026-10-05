@@ -130,7 +130,7 @@ export default function PricingPage() {
 
   const handlePrimaryCta = () => {
     const destination = user
-      ? "/dashboard/billing"
+      ? "/dashboard"
       : authConfig.registrationEnabled
         ? "/register"
         : "/login";
@@ -140,7 +140,7 @@ export default function PricingPage() {
       is_authenticated: Boolean(user),
     });
     if (user) {
-      navigate(withAttributionSource("/dashboard/billing"));
+      navigate(withAttributionSource("/dashboard"));
       return;
     }
     if (authConfig.registrationEnabled) {
@@ -152,7 +152,7 @@ export default function PricingPage() {
 
   const handleUpgradeCta = () => {
     const destination = user
-      ? "/dashboard/billing"
+      ? "/dashboard/billing?plan=pro"
       : authConfig.registrationEnabled
         ? "/register?plan=pro"
         : "/login?plan=pro";
@@ -162,7 +162,7 @@ export default function PricingPage() {
       is_authenticated: Boolean(user),
     });
     if (user) {
-      navigate(withAttributionSource("/dashboard/billing"));
+      navigate(withAttributionSource("/dashboard/billing?plan=pro"));
       return;
     }
     if (authConfig.registrationEnabled) {
@@ -406,17 +406,29 @@ export default function PricingPage() {
           </section>
         )}
 
+      <section className="rounded-xl border border-[hsl(var(--border-color))] bg-[hsl(var(--bg-secondary))] p-4">
+        <h2 className="text-base font-semibold text-[hsl(var(--text-primary))]">
+          {t("dashboard:billing.activationTitle", "如何开通专业版")}
+        </h2>
+        <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">
+          {t("dashboard:billing.activationGuide", "专业版目前通过兑换码开通，暂不支持在线支付。已有兑换码可直接兑换；还没有兑换码，请联系下方微信咨询套餐与获取方式。")}
+        </p>
+        <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">
+          {t("settings:subscription.wechatGuide", "没有兑换码？可添加微信号获取：AIchuangzuo999")}
+        </p>
+      </section>
+
         <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
             {
               key: "trust-flexible",
               icon: RefreshCw,
-              text: t("dashboard:billing.trustFlexible", "随时升级或降级，不锁死订阅"),
+              text: t("dashboard:billing.trustFlexible", "使用兑换码开通，无需绑定自动续费"),
             },
             {
               key: "trust-billing",
               icon: ReceiptText,
-              text: t("dashboard:billing.trustBilling", "账单清晰透明，月付年付都可切换"),
+              text: t("dashboard:billing.trustBilling", "月付与年付价格供套餐选择参考，开通前确认兑换码对应期限"),
             },
             {
               key: "trust-security",

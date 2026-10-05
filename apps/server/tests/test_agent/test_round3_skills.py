@@ -18,7 +18,6 @@ from agent.skills.context_injector import (
     CATALOG_DESCRIPTION_MAX_CHARS,
     SkillContextInjector,
 )
-from agent.skills.loader import load_builtin_skills
 from agent.skills.package import parse_legacy_skill_md
 from models import PublicSkill, User, UserAddedSkill, UserSkill
 
@@ -46,38 +45,6 @@ def skill_user(db_session: Session) -> User:
 @pytest.mark.unit
 class TestBug25SkillMarkdownParsing:
     """解析器必须区分「结构性节标题」与「正文里的 markdown 内容」。"""
-
-    @pytest.mark.parametrize(
-        ("skill_id", "expected_headings"),
-        [
-            (
-                "create-character",
-                ["## 基本信息", "## 外貌特征", "## 性格特点", "## 背景故事",
-                 "## 人物关系", "## 角色弧光"],
-            ),
-            (
-                "create-outline",
-                ["## 故事概念", "## 三幕结构", "## 章节规划", "## 伏笔与呼应"],
-            ),
-            (
-                "worldbuilding",
-                ["## 世界概述", "## 核心规则", "## 社会结构", "## 主要地点",
-                 "## 历史大事记"],
-            ),
-        ],
-    )
-    def test_builtin_skill_output_templates_survive_parsing(
-        self, skill_id: str, expected_headings: list[str]
-    ):
-        """三个内置技能的输出格式模板（代码围栏内的二级标题）必须完整保留。"""
-        skills = {s.id: s.skill for s in load_builtin_skills()}
-        skill = skills.get(skill_id)
-        assert skill is not None, f"内置技能 {skill_id} 未能加载"
-
-        for heading in expected_headings:
-            assert heading in skill.instructions, (
-                f"{skill_id} 的输出模板丢失了小节标题 {heading!r}"
-            )
 
     def test_headings_inside_code_fence_are_preserved(self):
         """代码围栏内的 `## ` 行是正文模板，不能被当作节标题吞掉。"""

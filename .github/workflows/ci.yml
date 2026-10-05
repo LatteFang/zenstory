@@ -201,6 +201,8 @@ jobs:
         python scripts/prefect_deployments_contract.py
 
     - name: Upload coverage to Codecov
+      # Optional reporting; mandatory tests and coverage gates above are unchanged.
+      continue-on-error: true
       uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
       with:
         file: ./apps/server/coverage.xml
@@ -351,6 +353,8 @@ jobs:
         PYTHON
 
     - name: Upload frontend coverage to Codecov
+      # Optional reporting; mandatory tests and coverage gates above are unchanged.
+      continue-on-error: true
       uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
       with:
         files: ./apps/web/coverage/lcov.info,./apps/web/coverage/site-lcov.info

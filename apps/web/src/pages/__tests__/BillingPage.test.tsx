@@ -11,6 +11,8 @@ const refetchQuota = vi.fn()
 const assignSpy = vi.fn()
 const inspirationFeature = vi.hoisted(() => ({ enabled: true }))
 
+let currentSearch = 'source=chat_quota_blocked'
+
 let statusResponse: Record<string, unknown> = {}
 let catalogResponse: Record<string, unknown> = {}
 let quotaResponse: Record<string, unknown> = {}
@@ -55,7 +57,7 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return {
     ...actual,
-    useSearchParams: () => [new URLSearchParams('source=chat_quota_blocked')],
+    useSearchParams: () => [new URLSearchParams(currentSearch)],
   }
 })
 
@@ -150,6 +152,7 @@ describe('BillingPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     inspirationFeature.enabled = true
+    currentSearch = 'source=chat_quota_blocked'
     statusResponse = {
       data: {
         tier: 'free',
@@ -202,10 +205,25 @@ describe('BillingPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Upgrade Pro' }))
     expect(trackUpgradeClick).toHaveBeenCalled()
-    expect(assignSpy).toHaveBeenCalledWith('/pricing?source=chat_quota_blocked')
+    expect(assignSpy).not.toHaveBeenCalled()
+    expect(await screen.findByText('Redeem modal')).toBeInTheDocument()
+    expect(trackUpgradeClick).toHaveBeenCalledWith('chat_quota_blocked', 'direct', 'redeem', 'page')
 
     fireEvent.click(screen.getByRole('button', { name: 'Redeem Code' }))
     expect(await screen.findByText('Redeem modal')).toBeInTheDocument()
+  })
+
+  it('opens activation directly for a selected Pro plan', () => {
+    currentSearch = 'plan=pro&source=billing_header_upgrade'
+    render(<BillingPage />)
+    expect(screen.getByText('Redeem modal')).toBeInTheDocument()
+    expect(assignSpy).not.toHaveBeenCalled()
+  })
+
+  it('does not open activation for an unrelated plan', () => {
+    currentSearch = 'plan=free'
+    render(<BillingPage />)
+    expect(screen.queryByText('Redeem modal')).not.toBeInTheDocument()
   })
 
   it('hides inspiration quota usage when inspirations are disabled', () => {

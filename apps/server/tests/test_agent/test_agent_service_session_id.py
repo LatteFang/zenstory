@@ -20,6 +20,8 @@ from config.datetime_utils import utcnow
 from models import ChatSession, Project, User
 from services.core.auth_service import hash_password
 
+pytestmark = pytest.mark.usefixtures("writing_prompt_configs")
+
 
 def _create_user_and_project(db_session: Session) -> tuple[User, Project]:
     suffix = uuid4().hex[:8]

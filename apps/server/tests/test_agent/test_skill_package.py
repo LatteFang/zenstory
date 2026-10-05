@@ -7,7 +7,6 @@ import zipfile
 
 import pytest
 
-from agent.skills.loader import load_builtin_skills
 from agent.skills.package import (
     MAX_RESOURCE_BYTES,
     MAX_RESOURCES_PER_SKILL,
@@ -161,24 +160,6 @@ class TestParseSkillMd:
         body = "输出格式：\n\n```\n---\nname: not-frontmatter\n---\n## 小节\n```\n\n完。"
         skill = parse_skill_md(f"---\nname: a\ndescription: d\n---\n{body}\n")
         assert skill.instructions == body
-
-
-# ==================== builtin skills ====================
-
-
-@pytest.mark.unit
-def test_builtin_skills_are_standard_skill_directories():
-    builtins = load_builtin_skills()
-
-    assert len(builtins) == 13
-    for builtin in builtins:
-        assert builtin.skill.name  # display_name
-        assert builtin.skill.description
-        assert builtin.skill.triggers
-        assert builtin.skill.category in {"writing", "character", "plot", "style", "worldbuilding"}
-    by_id = {builtin.id: builtin.skill for builtin in builtins}
-    assert by_id["hook-design"].name == "钩子设计"
-    assert by_id["hook-design"].category == "plot"
 
 
 # ==================== resource path ====================

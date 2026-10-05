@@ -133,6 +133,6 @@ describe("PricingPage attribution", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: /升级专业版|Upgrade Pro|Upgrade to Pro/i })[0]);
 
-    expect(mockNavigate).toHaveBeenCalledWith("/dashboard/billing?source=chat_quota_blocked");
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard/billing?plan=pro&source=chat_quota_blocked");
   });
 });

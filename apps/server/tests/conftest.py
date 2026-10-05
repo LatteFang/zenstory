@@ -260,3 +260,22 @@ def _reset_tool_context():
         yield
     finally:
         ToolContext.clear_context()
+
+
+@pytest.fixture
+def writing_prompt_configs(db_session):
+    """Minimal DB rows for tests exercising writing, not a production seed catalog.
+
+    Authority/missing-configuration tests deliberately do not request this fixture.
+    """
+    from sqlmodel import select
+
+    from models import SystemPromptConfig
+
+    for project_type in ("novel", "short", "screenplay"):
+        if db_session.exec(select(SystemPromptConfig).where(SystemPromptConfig.project_type == project_type)).first() is None:
+            db_session.add(SystemPromptConfig(
+                project_type=project_type, role_definition=f"Test {project_type} editor",
+                capabilities="Test writing capabilities", writing_guidelines="Test scope only",
+            ))
+    db_session.commit()

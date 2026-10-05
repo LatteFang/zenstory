@@ -29,6 +29,8 @@ from models import (
 )
 from services.core.auth_service import hash_password
 
+pytestmark = pytest.mark.usefixtures("writing_prompt_configs")
+
 
 @pytest.fixture
 def test_user_with_project(db_session: Session):

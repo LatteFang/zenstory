@@ -29,7 +29,7 @@ def create_mock_langgraph_events():
 
 
 @pytest.mark.integration
-async def test_agent_stream_request_success(client: AsyncClient, db_session: Session):
+async def test_agent_stream_request_success(client: AsyncClient, db_session: Session, writing_prompt_configs):
     """Test successful agent streaming request with mocked LangGraph workflow."""
     # Create user
     user = User(
@@ -147,7 +147,7 @@ async def test_agent_health_check(client: AsyncClient):
 
 
 @pytest.mark.integration
-async def test_agent_stream_workflow_error(client: AsyncClient, db_session: Session):
+async def test_agent_stream_workflow_error(client: AsyncClient, db_session: Session, writing_prompt_configs):
     """Test agent stream when LangGraph workflow returns error."""
     # Create user
     user = User(
@@ -192,7 +192,7 @@ async def test_agent_stream_workflow_error(client: AsyncClient, db_session: Sess
 
 
 @pytest.mark.integration
-async def test_agent_stream_error_refunds_quota(client: AsyncClient, db_session: Session):
+async def test_agent_stream_error_refunds_quota(client: AsyncClient, db_session: Session, writing_prompt_configs):
     """Internal stream errors should trigger quota compensation (refund)."""
     user = User(
         username="agent_user4b",
@@ -242,7 +242,7 @@ async def test_agent_stream_error_refunds_quota(client: AsyncClient, db_session:
 
 
 @pytest.mark.integration
-async def test_agent_stream_success_consumes_quota(client: AsyncClient, db_session: Session):
+async def test_agent_stream_success_consumes_quota(client: AsyncClient, db_session: Session, writing_prompt_configs):
     """Successful stream completion should consume ai_conversation quota exactly once."""
     user = User(
         username="agent_user4c",

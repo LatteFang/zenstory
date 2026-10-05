@@ -43,7 +43,7 @@
     "currentPlan": "当前套餐",
     "unknownPlan": "未开通",
     "unlockPro": "解锁 Pro",
-    "unlockHint": "可通过右上角“解锁 Pro”开通，或使用兑换码直接兑换。",
+    "unlockHint": "点击“升级专业版”可直接兑换开通，无需再跳转套餐页。",
     "usageTitle": "当前配额使用",
     "compareTitle": "套餐权益对比",
     "catalogSubtitle": "按可完成任务选择计划，而不是按技术参数做决定",
@@ -76,8 +76,8 @@
     "ctaFreeStart": "免费开始",
     "ctaUpgradePro": "升级专业版",
     "trustTitle": "放心开通，随时可调整",
-    "trustFlexible": "随时升级或降级，下一周期自动生效",
-    "trustBilling": "账单透明可追踪，费用与周期清晰可见",
+    "trustFlexible": "使用兑换码开通，无需绑定自动续费",
+    "trustBilling": "月付与年付价格供套餐选择参考，开通前确认兑换码对应期限",
     "trustSecurity": "数据传输与存储全程保护，创作资产更安心",
     "summaryStarter": "快速验证想法，从灵感到首稿轻量起步。",
     "summaryCreator": "稳定连载不掉速，适合长期日更与周更。",
@@ -118,7 +118,9 @@
     "metricPriorityQueue": "任务排队优先级",
     "metricPriorityQueueOutcome": "高峰期任务更快开始执行",
     "priorityQueueStandard": "标准队列",
-    "priorityQueuePriority": "优先队列"
+    "priorityQueuePriority": "优先队列",
+    "activationTitle": "如何开通专业版",
+    "activationGuide": "专业版目前通过兑换码开通，暂不支持在线支付。已有兑换码可直接兑换；还没有兑换码，请联系下方微信咨询套餐与获取方式。"
   },
   "todayActionPlan": {
     "title": "今日 3 步建议",

@@ -149,8 +149,8 @@ docker compose up -d --build
 docker compose exec -e ZENSTORY_ADMIN_EMAIL=you@example.com \
   -e ZENSTORY_ADMIN_PASSWORD='CHANGE-ME' server python scripts/create_admin.py
 
-# 可选：把 13 个内置技能导入「发现技能」
-docker compose exec server python scripts/migrate_skills.py --db-url sqlite:////app/db/zenstory.db
+# 项目提示词只存数据库：在管理后台配置 novel、short、screenplay 并重新加载。
+# 官方技能也只存数据库，不再附带源码种子；维护见 docs/agent-writing-guidance.md。
 ```
 
 打开 <http://localhost:5173> 登录，API 文档在 <http://localhost:8000/docs>。数据库是 SQLite，和上传文件、向量索引一起放在 Docker 卷里，`docker compose down` 和重新构建都不会清掉。

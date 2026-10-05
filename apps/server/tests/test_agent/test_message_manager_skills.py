@@ -5,6 +5,8 @@ import pytest
 from agent.core.message_manager import MessageManager
 from models import Project, User
 
+pytestmark = pytest.mark.usefixtures("writing_prompt_configs")
+
 
 def _create_user(db_session, *, suffix: str) -> User:
     user = User(

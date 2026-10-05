@@ -1,4 +1,4 @@
-"""Runtime prompt source and fallback boundary tests."""
+"""Runtime prompt DB authority boundary tests."""
 
 from sqlalchemy import create_engine
 from sqlmodel import Session, SQLModel
@@ -36,27 +36,6 @@ def test_reload_eagerly_reads_primary_database_and_reports_metadata(tmp_path, mo
     }
     rendered = prompts.get_prompt_for_project_type("novel", "project-1", folder_ids)
     assert "Database role" in rendered
-
-
-def test_file_default_is_used_only_after_successful_read_with_missing_active_row(
-    tmp_path,
-    monkeypatch,
-):
-    engine = create_engine(f"sqlite:///{tmp_path / 'empty-prompts.db'}")
-    SQLModel.metadata.create_all(engine)
-    monkeypatch.setattr(prompts, "sync_engine", engine)
-    prompts._db_config_cache = None
-
-    folder_ids = {
-        "lore": "lore-id",
-        "character": "character-id",
-        "outline": "outline-id",
-        "draft": "draft-id",
-        "material": "material-id",
-    }
-    rendered = prompts.get_prompt_for_project_type("novel", "project-1", folder_ids)
-
-    assert prompts.NOVEL_PROMPT_CONFIG["role_definition"] in rendered
 
 
 def test_database_unavailability_is_not_masked_by_file_defaults(monkeypatch):

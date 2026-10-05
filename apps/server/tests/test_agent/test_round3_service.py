@@ -22,6 +22,8 @@ from sqlmodel import Session, select
 from models import ChatMessage, ChatSession, File, Project, User
 from services.core.auth_service import hash_password
 
+pytestmark = pytest.mark.usefixtures("writing_prompt_configs")
+
 
 @pytest.fixture
 def round3_user_with_project(db_session: Session):
