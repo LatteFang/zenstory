@@ -64,6 +64,8 @@ vi.mock('../../contexts/TextQuoteContext', () => ({
   }),
 }))
 
+const mockStreamSnapshot = vi.hoisted(() => ({ items: [] as Array<Record<string, unknown>> }))
+
 const streamCallbacks = {
   onStart: vi.fn(),
   onContext: vi.fn(),
@@ -102,6 +104,7 @@ const streamCallbacks = {
 vi.mock('../../hooks/useChatStreaming', () => ({
   useChatStreaming: () => ({
     streamRenderItems: [],
+    getStreamItemsSnapshot: () => mockStreamSnapshot.items.slice(),
     clearStreamItems: vi.fn(),
     editProgress: null,
     setEditProgress: vi.fn(),
@@ -206,6 +209,7 @@ describe('ChatPanel mount smoke', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedUseAgentStream.options = null
+    mockStreamSnapshot.items = []
     mockAgentStreamState.isStreaming = false
     mockAgentStreamState.isThinking = false
     mockAgentStreamState.thinkingContent = ''
@@ -255,6 +259,42 @@ describe('ChatPanel mount smoke', () => {
     expect(lastProps.messages?.[0]?.toolCalls).toEqual([])
     expect(lastProps.messages?.[0]?.toolResults).toHaveLength(1)
     expect(lastProps.messages?.[0]?.statusCards).toHaveLength(1)
+  })
+
+  it('hydrates ordered metadata using final tool results rather than grouping categories', async () => {
+    vi.mocked(getRecentMessages).mockResolvedValueOnce([{
+      id: 'ordered-backend', session_id: 'session-1', role: 'assistant', content: 'BeforeAfter',
+      tool_calls: JSON.stringify([{ id: 'tool-1', name: 'query_files', arguments: {}, status: 'success', result: { items: [] } }]),
+      metadata: JSON.stringify({ display_events: [
+        { type: 'content', content: 'Before' }, { type: 'tool_call', tool_call_index: 0 },
+        { type: 'content', content: 'After' }, { type: 'agent_selected', data: { agent_type: 'writer', agent_name: 'Writer' } },
+      ] }), created_at: '2026-10-05T10:00:00Z',
+    }] as never)
+    render(<ChatPanel />)
+    await waitFor(() => {
+      const props = mockMessageList.mock.calls.at(-1)?.[0] as { messages?: Array<{ displayItems?: Array<{ type: string; toolCalls?: Array<{ status: string }> }> }> }
+      expect(props.messages?.[0]?.displayItems?.map(item => item.type)).toEqual(['content', 'tool_calls', 'content', 'agent_selected'])
+      expect(props.messages?.[0]?.displayItems?.[1].toolCalls?.[0].status).toBe('success')
+    })
+  })
+
+  it('preserves the synchronous stream buffer on completion including handoff events', async () => {
+    const timestamp = new Date()
+    mockStreamSnapshot.items = [
+      { type: 'content', id: 'before', content: 'Before', timestamp },
+      { type: 'thinking_status', id: 'handoff', content: 'Handing off', timestamp },
+      { type: 'content', id: 'after', content: 'After', timestamp },
+    ]
+    render(<ChatPanel />)
+    await waitFor(() => expect(capturedUseAgentStream.options).not.toBeNull())
+    await act(async () => {
+      const options = capturedUseAgentStream.options as { onComplete: (segments: unknown[], action: unknown) => Promise<void> }
+      await options.onComplete([{ type: 'content', id: 'before', content: 'Before' }, { type: 'content', id: 'after', content: 'After' }], null)
+    })
+    await waitFor(() => {
+      const props = mockMessageList.mock.calls.at(-1)?.[0] as { messages?: Array<{ displayItems?: unknown[] }> }
+      expect(props.messages?.at(-1)?.displayItems).toEqual(mockStreamSnapshot.items)
+    })
   })
 
   it('assigns backendMessageId for status-only completions using done metadata', async () => {

@@ -536,6 +536,8 @@ class AgentService:
         assistant_stop_reason: str | None = None
         assistant_usage: dict[str, Any] | None = None
         assistant_status_cards: list[dict[str, Any]] = []
+        assistant_display_events: list[dict[str, Any]] = []
+        display_text_run_type: str | None = None
         pending_done_payload: dict[str, Any] | None = None
         had_stream_error = False
         request_failed = False
@@ -570,8 +572,24 @@ class AgentService:
                 assistant_response.strip()
                 or all_tool_calls
                 or assistant_status_cards
+                or assistant_display_events
                 or (reasoning_content or "").strip()
             )
+
+        def _append_display_text(event_type: str, content: Any) -> None:
+            """Append one display text chunk, coalescing only an uninterrupted run."""
+            nonlocal display_text_run_type
+            if not isinstance(content, str) or not content:
+                return
+            if (
+                display_text_run_type == event_type
+                and assistant_display_events
+                and assistant_display_events[-1].get("type") == event_type
+            ):
+                assistant_display_events[-1]["content"] += content
+            else:
+                assistant_display_events.append({"type": event_type, "content": content})
+            display_text_run_type = event_type
 
         def _append_user_messages_sync(texts: list[str]) -> int:
             """把若干条文本作为 user 行追加进当前会话（不重写整轮历史）。
@@ -696,6 +714,7 @@ class AgentService:
                     reasoning_content if reasoning_content else None,
                     assistant_status_cards=assistant_status_cards or None,
                     steering_messages=consumed_steering or None,
+                    assistant_display_events=assistant_display_events or None,
                 )
 
         try:
@@ -924,19 +943,45 @@ class AgentService:
                         get_steering_messages=get_steering_messages,
                     )
                 ):
-                    if event.type.value == "done":
+                    event_type = event.type.value
+                    if event_type == "done":
                         pending_done_payload = event.data if isinstance(event.data, dict) else {}
                         continue
 
                     # Yield SSE event
                     yield event.to_sse()
 
+                    if event_type not in {"content", "thinking_content"}:
+                        # Even non-persisted stream markers (notably content_start /
+                        # content_end) delimit separately rendered text segments.
+                        display_text_run_type = None
+
+                    if event_type in {
+                        "agent_selected",
+                        "router_thinking",
+                        "router_decided",
+                        "handoff",
+                        "iteration_exhausted",
+                        "workflow_stopped",
+                        "workflow_complete",
+                    }:
+                        assistant_display_events.append(
+                            {
+                                "type": event_type,
+                                "data": dict(event.data),
+                            }
+                        )
+
                     # Track content for history
-                    if event.type.value == "content":
-                        assistant_response += event.data.get("text", "")
-                    elif event.type.value == "thinking_content":
-                        reasoning_content += event.data.get("content", "")
-                    elif event.type.value == "tool_call":
+                    if event_type == "content":
+                        text_chunk = event.data.get("text", "")
+                        assistant_response += text_chunk
+                        _append_display_text("content", text_chunk)
+                    elif event_type == "thinking_content":
+                        thinking_chunk = event.data.get("content", "")
+                        reasoning_content += thinking_chunk
+                        _append_display_text("thinking_content", thinking_chunk)
+                    elif event_type == "tool_call":
                         tool_use_id = str(event.data.get("tool_use_id") or "").strip()
                         tool_call_record = {
                             "id": tool_use_id,
@@ -947,13 +992,21 @@ class AgentService:
                         if tool_use_id:
                             existing_index = tool_call_index_by_id.get(tool_use_id)
                             if existing_index is None:
-                                tool_call_index_by_id[tool_use_id] = len(all_tool_calls)
+                                tool_call_index = len(all_tool_calls)
+                                tool_call_index_by_id[tool_use_id] = tool_call_index
                                 all_tool_calls.append(tool_call_record)
+                                assistant_display_events.append(
+                                    {"type": "tool_call", "tool_call_index": tool_call_index}
+                                )
                             else:
                                 all_tool_calls[existing_index].update(tool_call_record)
                         else:
+                            tool_call_index = len(all_tool_calls)
                             all_tool_calls.append(tool_call_record)
-                    elif event.type.value == "tool_result":
+                            assistant_display_events.append(
+                                {"type": "tool_call", "tool_call_index": tool_call_index}
+                            )
+                    elif event_type == "tool_result":
                         tool_use_id = str(event.data.get("tool_use_id") or "").strip()
                         target_call: dict[str, Any] | None = None
 
@@ -966,8 +1019,12 @@ class AgentService:
                                     "arguments": {},
                                     "status": "pending",
                                 }
-                                tool_call_index_by_id[tool_use_id] = len(all_tool_calls)
+                                tool_call_index = len(all_tool_calls)
+                                tool_call_index_by_id[tool_use_id] = tool_call_index
                                 all_tool_calls.append(target_call)
+                                assistant_display_events.append(
+                                    {"type": "tool_call", "tool_call_index": tool_call_index}
+                                )
                             else:
                                 target_call = all_tool_calls[existing_index]
                         elif all_tool_calls:
@@ -977,7 +1034,7 @@ class AgentService:
                             target_call["status"] = event.data.get("status", "success")
                             target_call["result"] = event.data.get("data")
                             target_call["error"] = event.data.get("error")
-                    elif event.type.value == "workflow_stopped":
+                    elif event_type == "workflow_stopped":
                         assistant_status_cards.append(
                             {
                                 "type": "workflow_stopped",
@@ -991,7 +1048,7 @@ class AgentService:
                                 "evaluation": event.data.get("evaluation"),
                             }
                         )
-                    elif event.type.value == "iteration_exhausted":
+                    elif event_type == "iteration_exhausted":
                         assistant_status_cards.append(
                             {
                                 "type": "iteration_exhausted",
@@ -1002,7 +1059,7 @@ class AgentService:
                                 "lastAgent": event.data.get("last_agent"),
                             }
                         )
-                    elif event.type.value == "error":
+                    elif event_type == "error":
                         had_stream_error = True
 
                 model_metadata = stream_adapter.get_last_message_metadata()
@@ -1080,6 +1137,7 @@ class AgentService:
                         assistant_usage=assistant_usage,
                         assistant_status_cards=assistant_status_cards or None,
                         steering_messages=consumed_steering or None,
+                        assistant_display_events=assistant_display_events or None,
                     )
                     history_saved = True
                     return saved_id

@@ -466,6 +466,9 @@ export interface UseChatStreamingReturn {
   /** Current stream render items for display */
   streamRenderItems: StreamRenderItem[];
 
+  /** Read the current unthrottled sequence before completion clears it. */
+  getStreamItemsSnapshot: () => StreamRenderItem[];
+
   /** Add or update stream render items */
   updateStreamItems: (updater: (prev: StreamRenderItem[]) => StreamRenderItem[]) => void;
 
@@ -562,6 +565,7 @@ export function useChatStreaming(): UseChatStreamingReturn {
    * Used as the source of truth during rapid streaming events.
    */
   const streamItemsRef = useRef<StreamRenderItem[]>([]);
+  const getStreamItemsSnapshot = useCallback(() => streamItemsRef.current.slice(), []);
 
   /**
    * Refs for throttling - these persist across renders without triggering re-renders.
@@ -1592,6 +1596,7 @@ export function useChatStreaming(): UseChatStreamingReturn {
   return {
     // Stream render items state
     streamRenderItems,
+    getStreamItemsSnapshot,
     updateStreamItems,
     clearStreamItems,
     forceFlushStreamItems,

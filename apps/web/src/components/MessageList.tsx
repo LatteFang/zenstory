@@ -16,6 +16,7 @@
  */
 import React, { useMemo, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import type { TFunction } from 'i18next';
+import type { StreamRenderItem } from '../hooks/useChatStreaming';
 import { useTranslation } from 'react-i18next';
 import { User, Sparkles, Bot, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { LazyMarkdown } from './LazyMarkdown';
@@ -95,6 +96,8 @@ export interface Message {
   toolCalls?: ToolCall[];
   /** Results from executed tool calls */
   toolResults?: ToolCall[];
+  /** Ordered live/persisted display sequence, when the original order is known. */
+  displayItems?: StreamRenderItem[];
   /** Consistency conflicts detected during content generation */
   conflicts?: Array<{
     /** Type of conflict detected */
@@ -143,54 +146,7 @@ interface MessageListProps {
    * Stream render items for real-time display during streaming.
    * Items are rendered in server-sent order.
    */
-  streamRenderItems?: Array<{
-    /** Type of stream item determining how it's rendered */
-    type: 'thinking_status' | 'thinking_content' | 'context' | 'tool_calls' | 'content' | 'agent_selected' | 'iteration_exhausted' | 'router_thinking' | 'router_decided' | 'workflow_stopped' | 'workflow_complete';
-    /** Unique identifier for this stream item */
-    id: string;
-    /** Text content (meaning varies by type) */
-    content?: string;
-    /** Context/citation items for 'context' type */
-    items?: AgentContextItem[];
-    /** Tool calls for 'tool_calls' type */
-    toolCalls?: ToolCall[];
-    /** Type of agent selected (for multi-agent workflows) */
-    agentType?: string;
-    /** Display name of the selected agent */
-    agentName?: string;
-    /** Current iteration number in multi-agent workflow */
-    iteration?: number;
-    /** Maximum allowed iterations */
-    maxIterations?: number;
-    /** Remaining iterations before exhaustion */
-    remaining?: number;
-    /** Which iteration layer is active */
-    layer?: "collaboration" | "tool_call";
-    /** Total iterations used so far */
-    iterationsUsed?: number;
-    /** Reason for iteration exhaustion or workflow stop */
-    reason?: string;
-    /** Name of the last active agent */
-    lastAgent?: string;
-    /** Name of the initial agent in workflow */
-    initialAgent?: string;
-    /** Workflow plan description */
-    workflowPlan?: string;
-    /** List of agents involved in the workflow */
-    workflowAgents?: string[];
-    /** Human-readable message */
-    message?: string;
-    /** Clarification question (optional) */
-    question?: string;
-    /** Clarification context (optional) */
-    context?: string;
-    /** Clarification details list (optional) */
-    details?: string[];
-    /** Confidence score for router decisions */
-    confidence?: number;
-    /** When this stream item was generated */
-    timestamp: Date;
-  }>;
+  streamRenderItems?: StreamRenderItem[];
   /** Callback invoked when user chooses a guided action after iteration exhaustion */
   onIterationAssistAction?: (
     action: 'continue' | 'split' | 'manual',
@@ -396,6 +352,289 @@ export const ContextItemsView: React.FC<ContextItemsViewProps> = ({ items, token
 /**
  * Props passed to each message Row component.
  */
+function OrderedMessageItems({ items, onUndo, onIterationAssistAction, isStreaming = false }: {
+  items: StreamRenderItem[];
+  onUndo?: MessageListProps['onUndo'];
+  onIterationAssistAction?: MessageListProps['onIterationAssistAction'];
+  isStreaming?: boolean;
+}) {
+  const { t } = useTranslation(['chat']);
+  const { isMobile } = useMobileLayout();
+  return <>
+  {items.map((item) => {
+    if (item.type === 'thinking_status' && item.content) {
+      // 1. thinking 事件 - 状态小气泡，最小、最淡
+      return (
+        <div key={item.id} className="mb-2">
+          <div className={`inline-block rounded-lg bg-[hsl(var(--bg-tertiary))] text-[hsl(var(--text-tertiary))] text-xs opacity-70 ${isMobile ? 'px-2 py-0.5' : 'px-2.5 py-1'}`}>
+            {item.content}
+          </div>
+        </div>
+      );
+    } else if (item.type === 'thinking_content' && item.content) {
+      // 2. thinking_content - 思考过程，可折叠，半透明
+      return (
+        <div key={item.id} className={isMobile ? 'mb-2' : 'mb-3'}>
+          <ThinkingContent content={item.content} isStreaming={isStreaming} />
+        </div>
+      );
+    } else if (item.type === 'content' && item.content) {
+      // 3. content - AI回复内容，主要
+      const cleanContent = stripThinkTags(item.content);
+      if (!cleanContent.trim()) return null;
+      return (
+        <div key={item.id} className={isMobile ? 'mb-2' : 'mb-3'}>
+          <div className={`inline-block max-w-full rounded-xl text-sm bg-[hsl(var(--bg-tertiary))] text-[hsl(var(--text-primary))] shadow-sm ${isMobile ? 'px-3 py-2' : 'px-4 py-3'}`}>
+            <div className="markdown-content">
+              <LazyMarkdown>{cleanContent}</LazyMarkdown>
+            </div>
+          </div>
+        </div>
+      );
+    } else if (item.type === 'tool_calls' && item.toolCalls) {
+      // 4. tool_calls - 工具调用卡片
+      return (
+        <div key={item.id} className={`${isMobile ? 'mb-2' : 'mb-3'} space-y-2`}>
+          {item.toolCalls.map((toolCall, idx) => (
+            <ToolResultCard
+              key={`${item.id}-${idx}`}
+              type={toolCall.status === 'pending' ? 'tool_call' : 'tool_result'}
+              toolName={toolCall.tool_name}
+              result={(toolCall.result || toolCall.arguments) as Record<string, unknown>}
+              error={toolCall.error}
+              isPending={toolCall.status === 'pending'}
+              onUndo={onUndo}
+            />
+          ))}
+        </div>
+      );
+    } else if (item.type === 'context' && item.items) {
+      // 5. context - 引用来源，次要
+      return (
+        <div key={item.id} className={`${isMobile ? 'mb-2' : 'mb-3'} opacity-80`}>
+          <ContextItemsView items={item.items} />
+        </div>
+      );
+    } else if (item.type === 'agent_selected' && item.agentName) {
+      // 6. agent_selected - Agent 选择提示
+      const hasIteration = item.iteration !== undefined && item.maxIterations !== undefined;
+      const isLowTurns = item.remaining !== undefined && item.remaining <= 2;
+
+      return (
+        <div key={item.id} className="mb-2">
+          <div className={`inline-flex items-center rounded-lg ${
+            isMobile ? 'gap-1 px-2 py-0.5' : 'gap-1.5 px-2.5 py-1'
+          } ${
+            isLowTurns
+              ? 'bg-[hsl(var(--warning)/0.1)] border border-[hsl(var(--warning)/0.3)]'
+              : 'bg-[hsl(var(--accent-primary)/0.1)] border border-[hsl(var(--accent-primary)/0.2)]'
+          }`}>
+            <Bot size={12} className={isLowTurns ? 'text-[hsl(var(--warning))]' : 'text-[hsl(var(--accent-primary))]'} />
+            <span className={`text-xs ${isLowTurns ? 'text-[hsl(var(--warning))]' : 'text-[hsl(var(--accent-primary))]'} ${isMobile ? 'truncate max-w-[120px]' : ''}`}>
+              {item.agentName}
+            </span>
+            {hasIteration && (
+              <span className={`text-xs ${isLowTurns ? 'text-[hsl(var(--warning))]' : 'text-[hsl(var(--text-secondary))]'}`}>
+                · {t('workflow.iteration', { ns: 'chat' })} {item.iteration}/{item.maxIterations}
+                {isLowTurns && ` (${t('workflow.remaining', { ns: 'chat' })} ${item.remaining})`}
+              </span>
+            )}
+          </div>
+          {isLowTurns && (
+            <div className={`${isMobile ? 'mt-1 ml-1' : 'mt-1 ml-1.5'} text-[11px] text-[hsl(var(--warning))]`}>
+              {t('workflow.lowTurnWarning', { ns: 'chat', remaining: item.remaining ?? 0 })}
+            </div>
+          )}
+        </div>
+      );
+    } else if (item.type === 'iteration_exhausted') {
+      // 7. iteration_exhausted - 迭代耗尽通知
+      const layerLabel = item.layer === 'collaboration'
+        ? t('workflow.agentCollaboration', { ns: 'chat' })
+        : t('workflow.toolCall', { ns: 'chat' });
+      const limitCount = item.maxIterations ?? item.iterationsUsed ?? 0;
+      const summaryText = item.layer === 'collaboration'
+        ? t('workflow.collaborationExhaustedSummary', { ns: 'chat', max: limitCount })
+        : t('workflow.toolCallExhaustedSummary', { ns: 'chat', max: limitCount });
+
+      return (
+        <div key={item.id} className={isMobile ? 'mb-2' : 'mb-3'}>
+          <div className={`inline-flex items-start gap-2 rounded-lg bg-[hsl(var(--error)/0.1)] border border-[hsl(var(--error)/0.2)] ${isMobile ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
+            <AlertTriangle size={14} className="text-[hsl(var(--error))] mt-0.5 shrink-0" />
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-xs font-medium text-[hsl(var(--error))]">
+                {t('workflow.iterationExhausted', { ns: 'chat', layer: layerLabel })}
+              </span>
+              <span className="text-xs text-[hsl(var(--text-primary))] break-words">
+                {summaryText}
+              </span>
+              <span className="text-[11px] text-[hsl(var(--text-secondary))] break-words">
+                {t('workflow.nextStepHint', { ns: 'chat' })}
+              </span>
+              <div className={`mt-1 flex flex-wrap ${isMobile ? 'gap-1' : 'gap-1.5'}`}>
+                <button
+                  type="button"
+                  className="text-[11px] px-2 py-0.5 rounded border border-[hsl(var(--accent-primary)/0.4)] text-[hsl(var(--accent-primary))] hover:bg-[hsl(var(--accent-primary)/0.1)] transition-colors"
+                  onClick={() => onIterationAssistAction?.('continue', item)}
+                >
+                  {t('workflow.actionContinue', { ns: 'chat' })}
+                </button>
+                <button
+                  type="button"
+                  className="text-[11px] px-2 py-0.5 rounded border border-[hsl(var(--warning)/0.4)] text-[hsl(var(--warning))] hover:bg-[hsl(var(--warning)/0.1)] transition-colors"
+                  onClick={() => onIterationAssistAction?.('split', item)}
+                >
+                  {t('workflow.actionSplit', { ns: 'chat' })}
+                </button>
+                <button
+                  type="button"
+                  className="text-[11px] px-2 py-0.5 rounded border border-[hsl(var(--text-secondary)/0.4)] text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-tertiary))] transition-colors"
+                  onClick={() => onIterationAssistAction?.('manual', item)}
+                >
+                  {t('workflow.actionManual', { ns: 'chat' })}
+                </button>
+              </div>
+              <details className="mt-1">
+                <summary className="cursor-pointer text-[11px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))]">
+                  {t('workflow.viewTechnicalDetails', { ns: 'chat' })}
+                </summary>
+                <span className="block mt-1 text-[11px] text-[hsl(var(--text-secondary))] break-words">
+                  {item.reason}
+                </span>
+              </details>
+            </div>
+          </div>
+        </div>
+      );
+    } else if (item.type === 'router_thinking' && item.content) {
+      // router_thinking - Router 正在分析请求
+      return (
+        <div key={item.id} className="mb-2">
+          <div className={`inline-flex items-center rounded-lg bg-[hsl(var(--accent-primary)/0.1)] border border-[hsl(var(--accent-primary)/0.2)] ${isMobile ? 'gap-1 px-2 py-0.5' : 'gap-1.5 px-2.5 py-1'}`}>
+            <Sparkles size={12} className="text-[hsl(var(--accent-primary))] animate-pulse" />
+            <span className="text-xs text-[hsl(var(--accent-primary))] truncate">
+              {item.content}
+            </span>
+          </div>
+        </div>
+      );
+    } else if (item.type === 'router_decided') {
+      // router_decided - Router 决策完成
+      const workflowAgents = (item as { workflowAgents?: string[] }).workflowAgents;
+      const workflowPlan = (item as { workflowPlan?: string }).workflowPlan;
+      return (
+        <div key={item.id} className="mb-2">
+          <div className={`inline-flex items-center rounded-lg bg-[hsl(var(--success)/0.1)] border border-[hsl(var(--success)/0.2)] ${isMobile ? 'gap-1 px-2 py-0.5' : 'gap-1.5 px-2.5 py-1'}`}>
+            <Bot size={12} className="text-[hsl(var(--success))]" />
+            <span className="text-xs text-[hsl(var(--success))]">
+              {t('workflow.workflowLabel', { ns: 'chat' })}: {workflowPlan || t('workflow.singleMode', { ns: 'chat' })}
+            </span>
+            {workflowAgents && workflowAgents.length > 0 && (
+              <span className="text-xs text-[hsl(var(--text-secondary))] truncate max-w-[150px]">
+                · {workflowAgents.join(' → ')}
+              </span>
+            )}
+          </div>
+        </div>
+      );
+    } else if (item.type === 'workflow_stopped') {
+      // workflow_stopped - 工作流因需要澄清而停止
+      const workflowQuestion =
+        (item as { question?: string; message?: string }).question?.trim() ||
+        (item as { message?: string }).message?.trim() ||
+        "";
+      const workflowContext = (item as { context?: string }).context?.trim() || "";
+      const workflowDetails = ((item as { details?: string[] }).details ?? [])
+        .map((d) => d.trim())
+        .filter(Boolean);
+      const workflowReason = (item as { reason?: string }).reason;
+      const isClarificationStop =
+        workflowReason === 'clarification_needed'
+        || (!workflowReason && Boolean(workflowQuestion || workflowDetails.length > 0));
+
+      if (!isClarificationStop) {
+        const stopMessage =
+          workflowQuestion
+          || t('workflow.stoppedGeneric', { ns: 'chat' });
+        return (
+          <div key={item.id} className={isMobile ? 'mb-2' : 'mb-3'}>
+            <div className={`inline-flex items-start gap-2 rounded-lg bg-[hsl(var(--warning)/0.1)] border border-[hsl(var(--warning)/0.2)] ${isMobile ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
+              <AlertTriangle size={14} className="text-[hsl(var(--warning))] mt-0.5 shrink-0" />
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-xs font-medium text-[hsl(var(--warning))]">
+                  {t('workflow.stoppedTitle', { ns: 'chat' })}
+                </span>
+                <span className="text-xs text-[hsl(var(--text-primary))] break-words">
+                  {stopMessage}
+                </span>
+                {workflowReason ? (
+                  <span className="text-[11px] text-[hsl(var(--text-secondary))] break-words">
+                    {t('workflow.stopReason', {
+                      ns: 'chat',
+                      reason: workflowReason,
+                    })}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div key={item.id} className={isMobile ? 'mb-2' : 'mb-3'}>
+          <div className={`inline-flex items-start gap-2 rounded-lg bg-[hsl(var(--warning)/0.1)] border border-[hsl(var(--warning)/0.2)] ${isMobile ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
+            <AlertTriangle size={14} className="text-[hsl(var(--warning))] mt-0.5 shrink-0" />
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-xs font-medium text-[hsl(var(--warning))]">
+                {t('workflow.waitingForReply', { ns: 'chat' })}
+              </span>
+              {workflowQuestion ? (
+                <span className="text-xs text-[hsl(var(--text-primary))] break-words">
+                  {workflowQuestion}
+                </span>
+              ) : (
+                <span className="text-xs text-[hsl(var(--text-secondary))] break-words">
+                  {t('workflow.needsConfirmation', { ns: 'chat' })}
+                </span>
+              )}
+              {workflowContext ? (
+                <span className="text-[11px] text-[hsl(var(--text-secondary))] break-words">
+                  {workflowContext}
+                </span>
+              ) : null}
+              {workflowDetails.length > 0 ? (
+                <ul className="mt-1 list-disc pl-4 text-xs text-[hsl(var(--text-primary))]">
+                  {workflowDetails.map((detail, detailIdx) => (
+                    <li key={detailIdx} className="break-words">
+                      {detail}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      );
+    } else if (item.type === 'workflow_complete') {
+      // workflow_complete - 任务完成
+      return (
+        <div key={item.id} className={isMobile ? 'mb-2' : 'mb-3'}>
+          <div className={`inline-flex items-start gap-2 rounded-lg bg-[hsl(var(--success)/0.1)] border border-[hsl(var(--success)/0.2)] ${isMobile ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
+            <Sparkles size={14} className="text-[hsl(var(--success))] mt-0.5 shrink-0" />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-medium text-[hsl(var(--success))]">
+                {t('workflow.taskCompleted', { ns: 'chat' })}
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  })}
+  </>;
+}
+
 interface RowDataProps {
   /** Array of all messages (for context awareness) */
   messages: Message[];
@@ -454,6 +693,7 @@ function Row({
   const displayContent =
     message.role === 'assistant' ? stripThinkTags(message.content) : message.content;
   const hasDisplayContent = Boolean(displayContent && displayContent.trim());
+  const hasDisplayItems = message.role === 'assistant' && Boolean(message.displayItems?.length);
   const shouldShowFeedbackActions = message.role === 'assistant' && Boolean(onSubmitFeedback);
   const canSubmitFeedback = shouldShowFeedbackActions && Boolean(message.backendMessageId);
   const selectedFeedbackVote = message.feedback?.vote;
@@ -505,6 +745,9 @@ function Row({
 
       {/* Content */}
       <div className="flex-1 min-w-0 overflow-hidden">
+        {hasDisplayItems ? (
+          <OrderedMessageItems items={message.displayItems!} onUndo={onUndo} onIterationAssistAction={onIterationAssistAction} isStreaming={isStreaming} />
+        ) : <>
         {/* Thinking content - show streaming if active, otherwise show historical segments */}
         {message.role === 'assistant' && (
           showStreamingThinking ? (
@@ -558,6 +801,8 @@ function Row({
           </div>
         )}
 
+        </>}
+
         {shouldShowFeedbackActions && (
           <div className="mt-2 flex items-center gap-1.5">
             <button
@@ -609,12 +854,12 @@ function Row({
         )}
 
         {/* Context items for assistant messages */}
-        {message.role === 'assistant' && message.contextItems && message.contextItems.length > 0 && (
+        {message.role === 'assistant' && !hasDisplayItems && message.contextItems && message.contextItems.length > 0 && (
           <ContextItemsView items={message.contextItems} label={t('context.citations', { ns: 'chat' })} />
         )}
 
         {/* Tool calls */}
-        {message.role === 'assistant' && message.toolCalls && message.toolCalls.length > 0 && (
+        {message.role === 'assistant' && !hasDisplayItems && message.toolCalls && message.toolCalls.length > 0 && (
           <div className={hasDisplayContent ? "mt-3 space-y-2" : "space-y-2"}>
             {message.toolCalls.map((toolCall, idx) => (
               <ToolResultCard
@@ -631,7 +876,7 @@ function Row({
         )}
 
         {/* Tool results */}
-        {message.role === 'assistant' && message.toolResults && message.toolResults.length > 0 && (
+        {message.role === 'assistant' && !hasDisplayItems && message.toolResults && message.toolResults.length > 0 && (
           <div className="mt-3 space-y-2">
             {message.toolResults.map((result, idx) => (
               <ToolResultCard
@@ -663,7 +908,7 @@ function Row({
         )}
 
         {/* Status cards (e.g. clarification needed / iteration exhausted) */}
-        {message.role === 'assistant' && message.statusCards && message.statusCards.length > 0 && (
+        {message.role === 'assistant' && !hasDisplayItems && message.statusCards && message.statusCards.length > 0 && (
           <div className="mt-3 space-y-2">
             {message.statusCards.map((card, idx) => {
               if (card.type === 'workflow_stopped') {
@@ -866,7 +1111,6 @@ export const MessageList = React.memo(
   onIterationAssistAction,
   scrollContainerRef: externalScrollContainerRef,
 }, ref) => {
-  const { t } = useTranslation(['chat']);
   const { isMobile } = useMobileLayout();
 
   // Internal scroll container ref (used if external ref not provided)
@@ -892,6 +1136,7 @@ export const MessageList = React.memo(
     const hasReasoningContent = m.role === 'assistant' && Boolean(m.reasoningContent?.trim());
 
     return (
+      Boolean(m.displayItems?.length) ||
       hasVisibleContent ||
       hasToolCalls ||
       hasToolResults ||
@@ -998,277 +1243,7 @@ export const MessageList = React.memo(
 
           {/* Stream items */}
           <div className="flex-1 min-w-0 overflow-hidden">
-            {safeStreamRenderItems.map((item) => {
-              if (item.type === 'thinking_status' && item.content) {
-                // 1. thinking 事件 - 状态小气泡，最小、最淡
-                return (
-                  <div key={item.id} className="mb-2">
-                    <div className={`inline-block rounded-lg bg-[hsl(var(--bg-tertiary))] text-[hsl(var(--text-tertiary))] text-xs opacity-70 ${isMobile ? 'px-2 py-0.5' : 'px-2.5 py-1'}`}>
-                      {item.content}
-                    </div>
-                  </div>
-                );
-              } else if (item.type === 'thinking_content' && item.content) {
-                // 2. thinking_content - 思考过程，可折叠，半透明
-                return (
-                  <div key={item.id} className={isMobile ? 'mb-2' : 'mb-3'}>
-                    <ThinkingContent content={item.content} isStreaming={true} />
-                  </div>
-                );
-              } else if (item.type === 'content' && item.content) {
-                // 3. content - AI回复内容，主要
-                const cleanContent = stripThinkTags(item.content);
-                if (!cleanContent.trim()) return null;
-                return (
-                  <div key={item.id} className={isMobile ? 'mb-2' : 'mb-3'}>
-                    <div className={`inline-block max-w-full rounded-xl text-sm bg-[hsl(var(--bg-tertiary))] text-[hsl(var(--text-primary))] shadow-sm ${isMobile ? 'px-3 py-2' : 'px-4 py-3'}`}>
-                      <div className="markdown-content">
-                        <LazyMarkdown>{cleanContent}</LazyMarkdown>
-                      </div>
-                    </div>
-                  </div>
-                );
-              } else if (item.type === 'tool_calls' && item.toolCalls) {
-                // 4. tool_calls - 工具调用卡片
-                return (
-                  <div key={item.id} className={`${isMobile ? 'mb-2' : 'mb-3'} space-y-2`}>
-                    {item.toolCalls.map((toolCall, idx) => (
-                      <ToolResultCard
-                        key={`${item.id}-${idx}`}
-                        type={toolCall.status === 'pending' ? 'tool_call' : 'tool_result'}
-                        toolName={toolCall.tool_name}
-                        result={(toolCall.result || toolCall.arguments) as Record<string, unknown>}
-                        error={toolCall.error}
-                        isPending={toolCall.status === 'pending'}
-                        onUndo={onUndo}
-                      />
-                    ))}
-                  </div>
-                );
-              } else if (item.type === 'context' && item.items) {
-                // 5. context - 引用来源，次要
-                return (
-                  <div key={item.id} className={`${isMobile ? 'mb-2' : 'mb-3'} opacity-80`}>
-                    <ContextItemsView items={item.items} />
-                  </div>
-                );
-              } else if (item.type === 'agent_selected' && item.agentName) {
-                // 6. agent_selected - Agent 选择提示
-                const hasIteration = item.iteration !== undefined && item.maxIterations !== undefined;
-                const isLowTurns = item.remaining !== undefined && item.remaining <= 2;
-
-                return (
-                  <div key={item.id} className="mb-2">
-                    <div className={`inline-flex items-center rounded-lg ${
-                      isMobile ? 'gap-1 px-2 py-0.5' : 'gap-1.5 px-2.5 py-1'
-                    } ${
-                      isLowTurns
-                        ? 'bg-[hsl(var(--warning)/0.1)] border border-[hsl(var(--warning)/0.3)]'
-                        : 'bg-[hsl(var(--accent-primary)/0.1)] border border-[hsl(var(--accent-primary)/0.2)]'
-                    }`}>
-                      <Bot size={12} className={isLowTurns ? 'text-[hsl(var(--warning))]' : 'text-[hsl(var(--accent-primary))]'} />
-                      <span className={`text-xs ${isLowTurns ? 'text-[hsl(var(--warning))]' : 'text-[hsl(var(--accent-primary))]'} ${isMobile ? 'truncate max-w-[120px]' : ''}`}>
-                        {item.agentName}
-                      </span>
-                      {hasIteration && (
-                        <span className={`text-xs ${isLowTurns ? 'text-[hsl(var(--warning))]' : 'text-[hsl(var(--text-secondary))]'}`}>
-                          · {t('workflow.iteration', { ns: 'chat' })} {item.iteration}/{item.maxIterations}
-                          {isLowTurns && ` (${t('workflow.remaining', { ns: 'chat' })} ${item.remaining})`}
-                        </span>
-                      )}
-                    </div>
-                    {isLowTurns && (
-                      <div className={`${isMobile ? 'mt-1 ml-1' : 'mt-1 ml-1.5'} text-[11px] text-[hsl(var(--warning))]`}>
-                        {t('workflow.lowTurnWarning', { ns: 'chat', remaining: item.remaining ?? 0 })}
-                      </div>
-                    )}
-                  </div>
-                );
-              } else if (item.type === 'iteration_exhausted') {
-                // 7. iteration_exhausted - 迭代耗尽通知
-                const layerLabel = item.layer === 'collaboration'
-                  ? t('workflow.agentCollaboration', { ns: 'chat' })
-                  : t('workflow.toolCall', { ns: 'chat' });
-                const limitCount = item.maxIterations ?? item.iterationsUsed ?? 0;
-                const summaryText = item.layer === 'collaboration'
-                  ? t('workflow.collaborationExhaustedSummary', { ns: 'chat', max: limitCount })
-                  : t('workflow.toolCallExhaustedSummary', { ns: 'chat', max: limitCount });
-
-                return (
-                  <div key={item.id} className={isMobile ? 'mb-2' : 'mb-3'}>
-                    <div className={`inline-flex items-start gap-2 rounded-lg bg-[hsl(var(--error)/0.1)] border border-[hsl(var(--error)/0.2)] ${isMobile ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
-                      <AlertTriangle size={14} className="text-[hsl(var(--error))] mt-0.5 shrink-0" />
-                      <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="text-xs font-medium text-[hsl(var(--error))]">
-                          {t('workflow.iterationExhausted', { ns: 'chat', layer: layerLabel })}
-                        </span>
-                        <span className="text-xs text-[hsl(var(--text-primary))] break-words">
-                          {summaryText}
-                        </span>
-                        <span className="text-[11px] text-[hsl(var(--text-secondary))] break-words">
-                          {t('workflow.nextStepHint', { ns: 'chat' })}
-                        </span>
-                        <div className={`mt-1 flex flex-wrap ${isMobile ? 'gap-1' : 'gap-1.5'}`}>
-                          <button
-                            type="button"
-                            className="text-[11px] px-2 py-0.5 rounded border border-[hsl(var(--accent-primary)/0.4)] text-[hsl(var(--accent-primary))] hover:bg-[hsl(var(--accent-primary)/0.1)] transition-colors"
-                            onClick={() => onIterationAssistAction?.('continue', item)}
-                          >
-                            {t('workflow.actionContinue', { ns: 'chat' })}
-                          </button>
-                          <button
-                            type="button"
-                            className="text-[11px] px-2 py-0.5 rounded border border-[hsl(var(--warning)/0.4)] text-[hsl(var(--warning))] hover:bg-[hsl(var(--warning)/0.1)] transition-colors"
-                            onClick={() => onIterationAssistAction?.('split', item)}
-                          >
-                            {t('workflow.actionSplit', { ns: 'chat' })}
-                          </button>
-                          <button
-                            type="button"
-                            className="text-[11px] px-2 py-0.5 rounded border border-[hsl(var(--text-secondary)/0.4)] text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-tertiary))] transition-colors"
-                            onClick={() => onIterationAssistAction?.('manual', item)}
-                          >
-                            {t('workflow.actionManual', { ns: 'chat' })}
-                          </button>
-                        </div>
-                        <details className="mt-1">
-                          <summary className="cursor-pointer text-[11px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))]">
-                            {t('workflow.viewTechnicalDetails', { ns: 'chat' })}
-                          </summary>
-                          <span className="block mt-1 text-[11px] text-[hsl(var(--text-secondary))] break-words">
-                            {item.reason}
-                          </span>
-                        </details>
-                      </div>
-                    </div>
-                  </div>
-                );
-              } else if (item.type === 'router_thinking' && item.content) {
-                // router_thinking - Router 正在分析请求
-                return (
-                  <div key={item.id} className="mb-2">
-                    <div className={`inline-flex items-center rounded-lg bg-[hsl(var(--accent-primary)/0.1)] border border-[hsl(var(--accent-primary)/0.2)] ${isMobile ? 'gap-1 px-2 py-0.5' : 'gap-1.5 px-2.5 py-1'}`}>
-                      <Sparkles size={12} className="text-[hsl(var(--accent-primary))] animate-pulse" />
-                      <span className="text-xs text-[hsl(var(--accent-primary))] truncate">
-                        {item.content}
-                      </span>
-                    </div>
-                  </div>
-                );
-              } else if (item.type === 'router_decided') {
-                // router_decided - Router 决策完成
-                const workflowAgents = (item as { workflowAgents?: string[] }).workflowAgents;
-                const workflowPlan = (item as { workflowPlan?: string }).workflowPlan;
-                return (
-                  <div key={item.id} className="mb-2">
-                    <div className={`inline-flex items-center rounded-lg bg-[hsl(var(--success)/0.1)] border border-[hsl(var(--success)/0.2)] ${isMobile ? 'gap-1 px-2 py-0.5' : 'gap-1.5 px-2.5 py-1'}`}>
-                      <Bot size={12} className="text-[hsl(var(--success))]" />
-                      <span className="text-xs text-[hsl(var(--success))]">
-                        {t('workflow.workflowLabel', { ns: 'chat' })}: {workflowPlan || t('workflow.singleMode', { ns: 'chat' })}
-                      </span>
-                      {workflowAgents && workflowAgents.length > 0 && (
-                        <span className="text-xs text-[hsl(var(--text-secondary))] truncate max-w-[150px]">
-                          · {workflowAgents.join(' → ')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              } else if (item.type === 'workflow_stopped') {
-                // workflow_stopped - 工作流因需要澄清而停止
-                const workflowQuestion =
-                  (item as { question?: string; message?: string }).question?.trim() ||
-                  (item as { message?: string }).message?.trim() ||
-                  "";
-                const workflowContext = (item as { context?: string }).context?.trim() || "";
-                const workflowDetails = ((item as { details?: string[] }).details ?? [])
-                  .map((d) => d.trim())
-                  .filter(Boolean);
-                const workflowReason = (item as { reason?: string }).reason;
-                const isClarificationStop =
-                  workflowReason === 'clarification_needed'
-                  || (!workflowReason && Boolean(workflowQuestion || workflowDetails.length > 0));
-
-                if (!isClarificationStop) {
-                  const stopMessage =
-                    workflowQuestion
-                    || t('workflow.stoppedGeneric', { ns: 'chat' });
-                  return (
-                    <div key={item.id} className={isMobile ? 'mb-2' : 'mb-3'}>
-                      <div className={`inline-flex items-start gap-2 rounded-lg bg-[hsl(var(--warning)/0.1)] border border-[hsl(var(--warning)/0.2)] ${isMobile ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
-                        <AlertTriangle size={14} className="text-[hsl(var(--warning))] mt-0.5 shrink-0" />
-                        <div className="flex flex-col gap-0.5 min-w-0">
-                          <span className="text-xs font-medium text-[hsl(var(--warning))]">
-                            {t('workflow.stoppedTitle', { ns: 'chat' })}
-                          </span>
-                          <span className="text-xs text-[hsl(var(--text-primary))] break-words">
-                            {stopMessage}
-                          </span>
-                          {workflowReason ? (
-                            <span className="text-[11px] text-[hsl(var(--text-secondary))] break-words">
-                              {t('workflow.stopReason', {
-                                ns: 'chat',
-                                reason: workflowReason,
-                              })}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-                return (
-                  <div key={item.id} className={isMobile ? 'mb-2' : 'mb-3'}>
-                    <div className={`inline-flex items-start gap-2 rounded-lg bg-[hsl(var(--warning)/0.1)] border border-[hsl(var(--warning)/0.2)] ${isMobile ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
-                      <AlertTriangle size={14} className="text-[hsl(var(--warning))] mt-0.5 shrink-0" />
-                      <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="text-xs font-medium text-[hsl(var(--warning))]">
-                          {t('workflow.waitingForReply', { ns: 'chat' })}
-                        </span>
-                        {workflowQuestion ? (
-                          <span className="text-xs text-[hsl(var(--text-primary))] break-words">
-                            {workflowQuestion}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-[hsl(var(--text-secondary))] break-words">
-                            {t('workflow.needsConfirmation', { ns: 'chat' })}
-                          </span>
-                        )}
-                        {workflowContext ? (
-                          <span className="text-[11px] text-[hsl(var(--text-secondary))] break-words">
-                            {workflowContext}
-                          </span>
-                        ) : null}
-                        {workflowDetails.length > 0 ? (
-                          <ul className="mt-1 list-disc pl-4 text-xs text-[hsl(var(--text-primary))]">
-                            {workflowDetails.map((detail, detailIdx) => (
-                              <li key={detailIdx} className="break-words">
-                                {detail}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                );
-              } else if (item.type === 'workflow_complete') {
-                // workflow_complete - 任务完成
-                return (
-                  <div key={item.id} className={isMobile ? 'mb-2' : 'mb-3'}>
-                    <div className={`inline-flex items-start gap-2 rounded-lg bg-[hsl(var(--success)/0.1)] border border-[hsl(var(--success)/0.2)] ${isMobile ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
-                      <Sparkles size={14} className="text-[hsl(var(--success))] mt-0.5 shrink-0" />
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-medium text-[hsl(var(--success))]">
-                          {t('workflow.taskCompleted', { ns: 'chat' })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            })}
+            <OrderedMessageItems items={safeStreamRenderItems} onUndo={onUndo} onIterationAssistAction={onIterationAssistAction} isStreaming={true} />
 
             {/* Timestamp - 只在非 streaming 状态时显示 */}
             {!streamingMessageId && streamRenderItems && streamRenderItems.length > 0 && (

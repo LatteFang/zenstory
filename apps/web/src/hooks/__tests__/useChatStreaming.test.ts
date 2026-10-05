@@ -47,6 +47,19 @@ describe('useChatStreaming', () => {
   })
 
   describe('stream render items', () => {
+    it('snapshots the unthrottled buffer before completion and clearing without mutating the saved sequence', () => {
+      const { result } = renderHook(() => useChatStreaming())
+      const timestamp = new Date()
+      act(() => result.current.updateStreamItems(() => [{ type: 'content', id: 'first', content: 'First', timestamp }]))
+      act(() => result.current.updateStreamItems(previous => [...previous, { type: 'thinking_status', id: 'handoff', content: 'Handoff', timestamp }]))
+      expect(result.current.streamRenderItems).toHaveLength(1)
+      const snapshot = result.current.getStreamItemsSnapshot()
+      expect(snapshot.map(item => item.id)).toEqual(['first', 'handoff'])
+      act(() => result.current.clearStreamItems())
+      expect(result.current.getStreamItemsSnapshot()).toEqual([])
+      expect(snapshot).toHaveLength(2)
+    })
+
     it('starts with empty stream render items', () => {
       const { result } = renderHook(() => useChatStreaming())
       expect(result.current.streamRenderItems).toHaveLength(0)
