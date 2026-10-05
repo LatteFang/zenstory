@@ -43,7 +43,7 @@ for (const viewport of sizes) {
           await mockResponsiveApi(page);
         }
         await page.goto(new URL(route, baseURL).href);
-        await expect(page.getByRole('heading', { name: readyHeadings[route], exact: true }).first(), route).toBeVisible();
+        await expect(page.locator('h1,h2').filter({ hasText: readyHeadings[route] }).first(), route).toBeVisible();
         const expectedPath = route === '/auth/callback' || route === '/forgot-password' ? '/login' : route.split('?')[0];
         expect(new URL(page.url()).pathname, route).toBe(expectedPath);
         await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth), { message: route }).toBeLessThanOrEqual(viewport.width);

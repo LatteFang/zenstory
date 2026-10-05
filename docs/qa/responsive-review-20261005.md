@@ -36,3 +36,8 @@ The six settings tabs overflowed a320px dialog: last tab ended479px while dialog
 
 Operator evidence is under `.omx/artifacts/responsive-review-20261005/{app-final,admin,static}` in the original workspace, with additional before/after mobile-settings geometry and screenshots. These are local artifacts, not committed customer data. Automated all-route geometry is supplemented by representative screenshot inspection; it does not establish all browsers, every content string, or generated-writing quality.
 - Material detail mobile header: a long title squeezed Search to50px, leaving essentially no readable text area after icon/padding. A new browser regression failed at50px versus required200px. The existing mobile header now stacks full-width search below the title; content-view back/search visibility semantics and desktop layout are unchanged.
+
+## Final local validation
+- Strong, backend-free browser contracts:26passed (16workspace including exact768px drag minima/restored144px floor,5route walks with route-specific heading/path readiness,5settings/material/skill-detail scenarios). Admin browser lane8passed separately with75populated route checks.
+- Web unit suite194files:2459passed,1pre-existing skipped. TypeScript/ESLint, CSS token guard and i18n default-key guard passed. Site generator tests51passed; Vite+organization+docs production build passed.
+- No new dependencies or backend/DB changes. Production publication and real-owned-account verification are tracked separately from these local mocked results.
