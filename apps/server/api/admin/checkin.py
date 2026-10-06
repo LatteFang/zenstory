@@ -9,11 +9,12 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, func, select
 
-from config.datetime_utils import utcnow
+from config.datetime_utils import beijing_date, utcnow
 from database import get_session
 from models import User
 from models.points import CheckInRecord
 from services.core.auth_service import get_current_superuser
+from services.features.points_service import effective_check_in_date
 from utils.logger import get_logger, log_with_context
 
 from .schemas import (
@@ -40,33 +41,38 @@ def get_check_in_stats(
 
     Requires superuser privileges.
     """
-    today = utcnow().date()
+    today = beijing_date(utcnow())
     yesterday = today - timedelta(days=1)
     week_ago = today - timedelta(days=6)
 
-    # Today's check-ins
-    today_count = session.exec(
-        select(func.count()).select_from(CheckInRecord).where(CheckInRecord.check_in_date == today)
-    ).one()
+    # Include the preceding stored date because legacy records used their UTC
+    # creation date, which can be one day behind the effective Beijing date.
+    recent_records = session.exec(
+        select(CheckInRecord)
+        .where(CheckInRecord.check_in_date >= week_ago - timedelta(days=1))
+        .where(CheckInRecord.check_in_date <= today)
+        .order_by(CheckInRecord.created_at.asc(), CheckInRecord.id.asc())
+    ).all()
+    records_by_day: dict = {}
+    for record in recent_records:
+        day = effective_check_in_date(record)
+        # The old UTC-day policy could award the same user twice inside one
+        # Beijing day across UTC midnight. Keep history and points intact, but
+        # count the user's latest record only in normalized admin statistics.
+        records_by_day.setdefault(day, {})[record.user_id] = record
 
-    # Yesterday's check-ins
-    yesterday_count = session.exec(
-        select(func.count()).select_from(CheckInRecord).where(CheckInRecord.check_in_date == yesterday)
-    ).one()
-
-    # Week total
-    week_total = session.exec(
-        select(func.count()).select_from(CheckInRecord).where(CheckInRecord.check_in_date >= week_ago)
-    ).one()
+    today_records = list(records_by_day.get(today, {}).values())
+    today_count = len(today_records)
+    yesterday_count = len(records_by_day.get(yesterday, {}))
+    week_total = sum(
+        len(records_by_day.get(week_ago + timedelta(days=offset), {}))
+        for offset in range(7)
+    )
 
     # Streak distribution (7, 14, 30 days)
     streak_distribution = {}
     for threshold in [7, 14, 30]:
-        count = session.exec(
-            select(func.count()).select_from(CheckInRecord)
-            .where(CheckInRecord.check_in_date == today)
-            .where(CheckInRecord.streak_days >= threshold)
-        ).one()
+        count = sum(record.streak_days >= threshold for record in today_records)
         if count > 0:
             streak_distribution[str(threshold)] = count
 
@@ -128,7 +134,7 @@ def get_check_in_records(
             id=record.id,
             user_id=record.user_id,
             username=username or "Unknown",
-            check_in_date=record.check_in_date,
+            check_in_date=effective_check_in_date(record),
             streak_days=record.streak_days,
             points_earned=record.points_earned,
             created_at=record.created_at,
