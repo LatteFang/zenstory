@@ -183,8 +183,37 @@ describe("UserManagement", () => {
     expect(screen.getByText("users.deleteConfirm")).toBeInTheDocument();
 
     mutateMock.mockClear();
-    fireEvent.click(screen.getByRole("button", { name: "common:confirm" }));
+    fireEvent.click(screen.getByRole("button", { name: "users.confirmDelete" }));
     expect(mutateMock).toHaveBeenCalledWith("user-1");
+  });
+
+  it("locks the delete dialog and shows loading while the delete is in flight", () => {
+    const mutateMock = vi.fn();
+    useMutationMock.mockReturnValue({
+      mutate: mutateMock,
+      isPending: true,
+    });
+    useQueryMock.mockReturnValue({
+      data: { users: [sampleUser], total: 1 },
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<UserManagement />);
+
+    fireEvent.click(screen.getAllByTitle("users.delete")[0]);
+    expect(screen.getByText("users.deleteConfirm")).toBeInTheDocument();
+
+    const confirmButton = screen.getByRole("button", { name: "common:loading" });
+    expect(confirmButton).toBeDisabled();
+    expect(screen.getByRole("button", { name: "common:cancel" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "users.confirmDelete" })).not.toBeInTheDocument();
+
+    fireEvent.click(confirmButton);
+    expect(mutateMock).not.toHaveBeenCalled();
   });
 
   describe("pagination total", () => {

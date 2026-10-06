@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ProjectDashboardPage from '../ProjectDashboardPage'
+import zhDashboard from '../../../public/locales/zh/dashboard.json'
 
 const mockNavigate = vi.fn()
 const mockRefetch = vi.fn()
@@ -9,6 +10,7 @@ let mockStats: Record<string, unknown> | null = null
 let mockLoading = false
 let mockFetching = false
 let mockError: Error | null = null
+let mockProjects: Array<{ id: string; name: string }> = []
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
@@ -22,11 +24,10 @@ vi.mock('react-router-dom', async () => {
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, options?: Record<string, unknown> | string) => {
-      if (typeof options === 'string') {
-        return options
-      }
-      const count = options?.count
-      const time = options?.time
+      const fallback = typeof options === 'string' ? options : undefined
+      const values = typeof options === 'string' ? undefined : options
+      const count = values?.count
+      const time = values?.time
       return (
         {
           'common.back': 'Back',
@@ -52,7 +53,7 @@ vi.mock('react-i18next', () => ({
           'statistics.aiUsage.messages': `${count} messages`,
           'statistics.aiUsage.sessions': `${count} sessions`,
         } as Record<string, string>
-      )[key] ?? key
+      )[key] ?? fallback ?? key
     },
   }),
 }))
@@ -74,7 +75,7 @@ vi.mock('../../hooks/useWritingStats', () => ({
 
 vi.mock('../../contexts/ProjectContext', () => ({
   useProject: () => ({
-    projects: [{ id: 'project-1', name: 'Novel Project' }],
+    projects: mockProjects,
   }),
 }))
 
@@ -97,6 +98,7 @@ describe('ProjectDashboardPage', () => {
     mockLoading = false
     mockFetching = false
     mockError = null
+    mockProjects = [{ id: 'project-1', name: 'Novel Project' }]
     mockStats = {
       total_word_count: 12000,
       words_today: 1200,
@@ -198,5 +200,22 @@ describe('ProjectDashboardPage', () => {
 
     fireEvent.click(screen.getByTitle('Refresh'))
     expect(mockRefetch).toHaveBeenCalled()
+  })
+  it('falls back to the localized dashboard title while the project list has not loaded', () => {
+    mockProjects = []
+    render(<ProjectDashboardPage />)
+
+    expect(screen.getByRole('heading', { level: 1, name: '项目数据统计' })).toBeInTheDocument()
+    expect(screen.getByText('追踪你的写作进度')).toBeInTheDocument()
+    expect(screen.queryByText('Novel Project')).not.toBeInTheDocument()
+    expect(zhDashboard.dashboard).toMatchObject({ title: '项目数据统计', subtitle: '追踪你的写作进度' })
+  })
+
+  it('uses the localized dashboard title when the project id does not match a loaded project', () => {
+    mockProjects = [{ id: 'other-project', name: 'Other Project' }]
+    render(<ProjectDashboardPage />)
+
+    expect(screen.getByRole('heading', { level: 1, name: '项目数据统计' })).toBeInTheDocument()
+    expect(screen.queryByText('Other Project')).not.toBeInTheDocument()
   })
 })

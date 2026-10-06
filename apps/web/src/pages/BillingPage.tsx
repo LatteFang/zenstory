@@ -116,7 +116,7 @@ export default function BillingPage() {
       [
         { key: "ai_conversations", label: t("settings:subscription.features.ai_conversations_per_day", "每日 AI 对话次数") },
         { key: "projects", label: t("settings:subscription.features.max_projects", "最大项目数") },
-        { key: "material_decompositions", label: t("settings:subscription.features.material_decompositions", "素材拆解次数") },
+        { key: "material_decompositions", label: t("settings:subscription.features.material_decompositions", "每月素材拆解次数") },
         { key: "skill_creates", label: t("settings:subscription.features.custom_skills", "自定义技能数量") },
         { key: "inspiration_copies", label: t("settings:subscription.features.inspiration_copies_monthly", "灵感复用次数") },
       ].filter((item) => inspirationsConfig.enabled || item.key !== "inspiration_copies") as { key: UsageKey; label: string }[],
@@ -164,7 +164,7 @@ export default function BillingPage() {
     <div className="space-y-6">
       <DashboardPageHeader
         title={t("dashboard:billing.title", "订阅与权益")}
-        subtitle={t("dashboard:billing.subtitle", "查看套餐权益、配额使用情况并快速升级")}
+        subtitle={t("dashboard:billing.subtitle", "查看当前套餐和用量，需要更多额度时可升级或使用兑换码。")}
         action={
           <div className="flex items-center gap-2">
             {isCheckoutEnabled ? (
@@ -181,7 +181,7 @@ export default function BillingPage() {
                 }}
               >
                 {isUpgradableTier
-                  ? t("dashboard:billing.ctaBuyPro", "在线购买 Pro")
+                  ? t("dashboard:billing.ctaBuyPro", "购买 Pro")
                   : isPaidTier
                   ? t("dashboard:billing.ctaRenewPro", "续费 Pro")
                   : t("dashboard:billing.ctaProNeutral", "开通或续费 Pro")}
@@ -239,19 +239,11 @@ export default function BillingPage() {
         </div>
       </Card>
 
-      {!isCheckoutEnabled && (
-        <Card variant="outlined" padding="lg">
-          <p className="text-sm text-[hsl(var(--text-secondary))]">
-            {t("settings:subscription.wechatGuide", "没有兑换码？可添加微信号获取：AIchuangzuo999")}
-          </p>
-        </Card>
-      )}
-
       <Card variant="outlined" padding="lg">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="w-4 h-4 text-[hsl(var(--accent-primary))]" />
           <h2 className="text-base font-semibold text-[hsl(var(--text-primary))]">
-            {t("dashboard:billing.usageTitle", "当前配额使用")}
+            {t("dashboard:billing.usageTitle", "当前用量")}
           </h2>
         </div>
         {hasError && (

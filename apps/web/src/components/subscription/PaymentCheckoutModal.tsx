@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Check, CreditCard } from 'lucide-react'
@@ -143,13 +143,6 @@ export function PaymentCheckoutModal({
     && optionsQuery.data.payment_methods.includes('alipay')
   const isUnavailable = optionsQuery.isError || (!optionsQuery.isLoading && !alipayEnabled)
 
-  const price = cycle === 'month' ? monthlyPriceCents : yearlyPriceCents
-  const formattedPrice = useMemo(() => {
-    if (price === undefined) return null
-    const locale = i18n.language?.startsWith('en') ? 'en-US' : 'zh-CN'
-    return `¥${(price / 100).toLocaleString(locale, { maximumFractionDigits: 2 })}`
-  }, [i18n.language, price])
-
   const handlePay = () => {
     if (!alipayEnabled || isBusy) return
     setError('')
@@ -168,14 +161,14 @@ export function PaymentCheckoutModal({
     <Modal
       open={isOpen}
       onClose={handleClose}
-      title={t('dashboard:billing.paymentTitle', '支付宝在线开通 Pro')}
+      title={t('dashboard:billing.paymentTitle', '开通 Pro 会员')}
       size="md"
       closeOnBackdropClick={!isBusy}
       closeOnEscape={!isBusy}
     >
       <Modal.Body>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={t('dashboard:billing.billingCycleLabel', '选择计费周期')}>
+          <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={t('dashboard:billing.billingCycleLabel', '购买时长')}>
             {(['month', 'year'] as PaymentCycle[]).map((item) => {
               const selected = cycle === item
               const itemPrice = item === 'month' ? monthlyPriceCents : yearlyPriceCents
@@ -221,7 +214,7 @@ export function PaymentCheckoutModal({
           )}
           {isUnavailable && (
             <div className="rounded-lg bg-[hsl(var(--warning)/0.1)] p-3 text-[hsl(var(--warning))]" role="alert">
-              {t('dashboard:billing.paymentUnavailable', '在线支付暂未开放，你仍可使用兑换码开通。')}
+              {t('dashboard:billing.paymentUnavailable', '暂时无法在线支付。有兑换码的话，可在「订阅权益」页点「兑换码」开通。')}
             </div>
           )}
           {error && (
@@ -240,7 +233,7 @@ export function PaymentCheckoutModal({
             ? t('dashboard:billing.paymentRedirecting', '正在前往支付宝...')
             : createOrder.isPending
             ? t('dashboard:billing.paymentCreating', '正在创建订单...')
-            : t('dashboard:billing.payWithAlipay', '支付宝支付{{price}}', { price: formattedPrice ? ` ${formattedPrice}` : '' })}
+            : t('dashboard:billing.goToPay', '去支付')}
         </Button>
       </Modal.Footer>
     </Modal>

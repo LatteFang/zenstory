@@ -627,7 +627,7 @@ test.describe('Version History', () => {
 
         // Verify rollback succeeded - content should be restored
         // The version list should refresh
-        await expect(page.locator('text=/回滚|rollback|success/i').first()).toBeVisible({ timeout: 5000 })
+        await expect(page.locator('text=/恢复|restore|success/i').first()).toBeVisible({ timeout: 5000 })
       }
     }
   })
@@ -742,7 +742,7 @@ test.describe('Version History', () => {
     await openVersionHistory(page)
 
     // Look for change type indicators (badges/labels)
-    const changeTypeLabels = page.locator('text=/编辑|edited|创建|created|回滚|restored|rollback/i')
+    const changeTypeLabels = page.locator('text=/编辑|edited|创建|created|恢复|restored|rollback/i')
     const count = await changeTypeLabels.count()
     expect(count).toBeGreaterThanOrEqual(0) // May or may not have explicit labels
   })
@@ -837,7 +837,7 @@ test.describe('Version History - Error Handling', () => {
       await page.waitForSelector('text=/历史版本|版本历史|Version History/', { timeout: 3000 })
 
       // Should show empty state or single version
-      const emptyState = page.locator('text=/暂无版本|no versions|empty/i')
+      const emptyState = page.locator('text=/还没有版本记录|no versions yet/i')
       const versionItems = page.locator('[class*="p-3"][class*="hover:bg"]')
 
       // Either empty state or at least the initial version should be shown

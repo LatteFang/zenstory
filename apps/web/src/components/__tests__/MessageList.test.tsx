@@ -174,8 +174,9 @@ describe('MessageList', () => {
     ]
     render(<MessageList messages={[createMessage({ role: 'assistant', content: '', displayItems })]} />)
     for (const marker of ['Choosing ordered agent', 'Ordered writer', 'Ordered control reply', 'workflow.taskCompleted', 'workflow.lowTurnWarning']) expect(screen.getByText(marker)).toBeInTheDocument()
-    expect(screen.getByText(/Plan then write/)).toBeInTheDocument()
-    expect(screen.getByText(/planner → writer/)).toBeInTheDocument()
+    expect(screen.getByText(/chat:workflow\.agents\.planner → chat:workflow\.agents\.writer/)).toBeInTheDocument()
+    expect(screen.queryByText(/Plan then write/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/planner → writer/)).not.toBeInTheDocument()
     expect(screen.queryByText('Not visible')).not.toBeInTheDocument()
   })
 
@@ -188,7 +189,8 @@ describe('MessageList', () => {
       fireEvent.click(button)
       expect(onAction).toHaveBeenLastCalledWith(action, item)
     }
-    expect(screen.getByText('Ordered limit reason')).toBeInTheDocument()
+    // The internal stop reason stays out of the author-facing card
+    expect(screen.queryByText('Ordered limit reason')).not.toBeInTheDocument()
   })
 
   it.each([
@@ -210,6 +212,44 @@ describe('MessageList', () => {
     const message = createMessage({ role: 'assistant', content: '', ...{ displayItems: [{ id: 'agent-only', type: 'agent_selected', agentName: 'Planner agent', timestamp: new Date() }] } })
     render(<MessageList messages={[message]} />)
     expect(screen.getByText('Planner agent')).toBeInTheDocument()
+  })
+
+  it('labels a selected agent by its localized role, its display name, or not at all when only the raw id is known', () => {
+    const timestamp = new Date()
+    const displayItems: NonNullable<Message['displayItems']> = [
+      // Known agent id: the localized role replaces both the id and the backend name.
+      { id: 'known', type: 'agent_selected', agentType: 'writer', agentName: 'writer_agent_v2', timestamp },
+      // Unknown agent id with a readable name: fall back to that name.
+      { id: 'unknown-named', type: 'agent_selected', agentType: 'lore_keeper', agentName: 'Lore Keeper', timestamp },
+      // Unknown agent id whose name is just the id again: hide it instead of leaking the internal id.
+      { id: 'raw-id', type: 'agent_selected', agentType: 'mystery_agent', agentName: 'mystery_agent', timestamp },
+      { id: 'reply', type: 'content', content: 'Agent label reply', timestamp },
+    ]
+    render(<MessageList messages={[createMessage({ role: 'assistant', content: '', displayItems })]} />)
+    expect(screen.getByText('chat:workflow.agents.writer')).toBeInTheDocument()
+    expect(screen.queryByText('writer_agent_v2')).not.toBeInTheDocument()
+    expect(screen.getByText('Lore Keeper')).toBeInTheDocument()
+    expect(screen.queryByText('lore_keeper')).not.toBeInTheDocument()
+    expect(screen.queryByText(/mystery_agent/)).not.toBeInTheDocument()
+    expect(screen.getByText('Agent label reply')).toBeInTheDocument()
+  })
+
+  it('names the workflow by deduplicated role names, or as single mode when no planned agent is recognized', () => {
+    const timestamp = new Date()
+    const { unmount } = render(<MessageList messages={[createMessage({ role: 'assistant', content: '', displayItems: [
+      { id: 'router-multi', type: 'router_decided', initialAgent: 'planner', workflowAgents: ['planner', 'hook_designer', 'writer'], timestamp },
+    ] })]} />)
+    expect(screen.getByText(
+      'workflow.workflowLabel: chat:workflow.agents.planner → chat:workflow.agents.hook_designer → chat:workflow.agents.writer',
+    )).toBeInTheDocument()
+    expect(screen.queryByText(/workflow\.singleMode/)).not.toBeInTheDocument()
+    unmount()
+
+    render(<MessageList messages={[createMessage({ role: 'assistant', content: '', displayItems: [
+      { id: 'router-single', type: 'router_decided', initialAgent: 'custom_router_target', timestamp },
+    ] })]} />)
+    expect(screen.getByText('workflow.workflowLabel: workflow.singleMode')).toBeInTheDocument()
+    expect(screen.queryByText(/custom_router_target/)).not.toBeInTheDocument()
   })
 
   it('renders user message correctly', () => {
