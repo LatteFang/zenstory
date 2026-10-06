@@ -48,10 +48,13 @@ function translate(
 }
 
 export function formatEntitlementLimit(
-  value: number,
+  value: number | undefined,
   language: string | undefined,
   t: TranslateFn,
 ): string {
+  if (value === undefined) {
+    return "-";
+  }
   if (value === -1) {
     return translate(t, "settings:subscription.unlimited", "无限");
   }
@@ -59,11 +62,23 @@ export function formatEntitlementLimit(
   return value.toLocaleString(resolveLocale(language));
 }
 
+// The web app ships before the API (Vercel deploys on merge, Railway after E2E),
+// so a newly added entitlement can be missing from the catalog for a while.
+// Hide those rows instead of formatting an undefined limit.
+export function filterAvailableMetrics(
+  definitions: EntitlementMetricDefinition[],
+  plans: SubscriptionCatalogTier[],
+): EntitlementMetricDefinition[] {
+  return definitions.filter((metric) =>
+    plans.every((plan) => plan.entitlements?.[metric.key] != null),
+  );
+}
+
 export function getEntitlementMetricDefinitions(
   t: TranslateFn,
   language: string | undefined,
 ): EntitlementMetricDefinition[] {
-  const formatLimit = (value: number) =>
+  const formatLimit = (value: number | undefined) =>
     formatEntitlementLimit(value, language, t);
 
   const monthUnit = translate(
